@@ -136,11 +136,11 @@ export function useGoMaster() {
     onError(error: Error) {
       storeRef.current.setAiThinking(false);
       storeRef.current.showBubble({
-        text: 'Hmm, I had trouble thinking. Make sure your API key is set in .env.local and try again.',
+        text: `Hmm, I had trouble thinking. ${error.message || 'Check the console for details.'}`,
         variant: 'warning',
         anchorPoint: null,
       });
-      console.error('AI error:', error);
+      console.error('[GoSensei] AI error:', error);
     },
   });
 

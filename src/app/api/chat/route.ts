@@ -73,6 +73,8 @@ export async function POST(req: Request) {
     );
   }
 
+  console.log('[GoSensei] Token exchange successful');
+
   const copilot = createOpenAI({
     baseURL: 'https://api.githubcopilot.com',
     apiKey: copilotToken,
@@ -83,14 +85,28 @@ export async function POST(req: Request) {
     },
   });
 
-  const result = streamText({
-    model: copilot('claude-sonnet-4'),
-    system: GO_MASTER_SYSTEM_PROMPT,
-    messages,
-    tools: wrappedTools,
-    stopWhen: stepCountIs(5), // Allow up to 5 tool-call steps per turn
-    temperature: 0.7,
-  });
+  const modelId = 'claude-sonnet-4';
+  console.log('[GoSensei] Calling Copilot API with model:', modelId);
+  console.log('[GoSensei] Message count:', messages.length);
+  console.log('[GoSensei] Tools:', Object.keys(wrappedTools));
 
-  return result.toUIMessageStreamResponse();
+  try {
+    const result = streamText({
+      model: copilot(modelId),
+      system: GO_MASTER_SYSTEM_PROMPT,
+      messages,
+      tools: wrappedTools,
+      stopWhen: stepCountIs(5), // Allow up to 5 tool-call steps per turn
+      temperature: 0.7,
+    });
+
+    console.log('[GoSensei] Stream started successfully');
+    return result.toUIMessageStreamResponse();
+  } catch (streamErr) {
+    console.error('[GoSensei] streamText error:', streamErr);
+    return new Response(
+      JSON.stringify({ error: `AI streaming failed: ${(streamErr as Error).message}` }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
 }
