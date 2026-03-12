@@ -30,7 +30,7 @@ export default function GamePage() {
 
   // Auto-open settings if no API key on first visit
   useEffect(() => {
-    const hasKey = localStorage.getItem('go-sensei-api-key');
+    const hasKey = localStorage.getItem('go-sensei-github-token');
     if (!hasKey) {
       setTimeout(() => setShowSettings(true), 1500);
     }

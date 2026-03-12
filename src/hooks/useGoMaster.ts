@@ -49,8 +49,8 @@ export function useGoMaster() {
       new DefaultChatTransport({
         api: '/api/chat',
         headers: () => ({
-          ...(typeof window !== 'undefined' && localStorage.getItem('go-sensei-api-key')
-            ? { 'x-api-key': localStorage.getItem('go-sensei-api-key')! }
+          ...(typeof window !== 'undefined' && localStorage.getItem('go-sensei-github-token')
+            ? { 'x-github-token': localStorage.getItem('go-sensei-github-token')! }
             : {}),
         }),
         body: () => ({

@@ -16,13 +16,13 @@ export function SettingsModal({ isOpen, onClose, onSave, currentBoardSize }: Set
   const [boardSize, setBoardSize] = useState<BoardSize>(currentBoardSize);
 
   useEffect(() => {
-    const saved = localStorage.getItem('go-sensei-api-key');
+    const saved = localStorage.getItem('go-sensei-github-token');
     if (saved) setApiKey(saved);
   }, [isOpen]);
 
   const handleSave = () => {
     if (apiKey.trim()) {
-      localStorage.setItem('go-sensei-api-key', apiKey.trim());
+      localStorage.setItem('go-sensei-github-token', apiKey.trim());
     }
     onSave({ apiKey: apiKey.trim(), boardSize });
     onClose();
@@ -52,16 +52,16 @@ export function SettingsModal({ isOpen, onClose, onSave, currentBoardSize }: Set
               ⚙ Settings
             </h2>
 
-            {/* API Key */}
+            {/* GitHub Token */}
             <div className="mb-4">
               <label className="block text-xs mb-1" style={{ color: COLORS.ui.textSecondary }}>
-                Anthropic API Key
+                GitHub Token
               </label>
               <input
                 type="password"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                placeholder="sk-ant-..."
+                placeholder="ghp_... or github_pat_..."
                 className="w-full px-3 py-2 rounded-lg text-sm outline-none"
                 style={{
                   backgroundColor: COLORS.ui.bgPrimary,
@@ -70,10 +70,10 @@ export function SettingsModal({ isOpen, onClose, onSave, currentBoardSize }: Set
                 }}
               />
               <p className="text-xs mt-1 opacity-50" style={{ color: COLORS.ui.textSecondary }}>
-                Get your key at{' '}
-                <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer"
-                  className="underline">console.anthropic.com</a>.
-                Stored locally, never sent to any server except Anthropic.
+                Create a fine-grained PAT at{' '}
+                <a href="https://github.com/settings/personal-access-tokens" target="_blank" rel="noopener noreferrer"
+                  className="underline">github.com/settings/personal-access-tokens</a>{' '}
+                with &quot;Copilot&quot; permission. Requires a GitHub Copilot subscription.
               </p>
             </div>
 

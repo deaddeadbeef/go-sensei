@@ -1,7 +1,8 @@
 import { streamText, stepCountIs } from 'ai';
-import { createAnthropic } from '@ai-sdk/anthropic';
+import { createOpenAI } from '@ai-sdk/openai';
 import { GO_MASTER_SYSTEM_PROMPT } from '@/lib/ai/system-prompt';
 import { createGoTools, reconstructGame } from '@/lib/ai/tools';
+import { getCopilotToken } from '@/lib/ai/copilot-auth';
 import { createGame, playMove } from '@/lib/go-engine';
 import type { GameState } from '@/lib/go-engine/types';
 
@@ -48,22 +49,42 @@ export async function POST(req: Request) {
     },
   };
 
-  // Resolve the API key: client header → env var
-  const apiKey = req.headers.get('x-api-key') || process.env.ANTHROPIC_API_KEY;
+  // Resolve the GitHub token: client header → env var
+  const githubToken = req.headers.get('x-github-token') || process.env.GITHUB_TOKEN;
 
-  if (!apiKey) {
+  if (!githubToken) {
     return new Response(
       JSON.stringify({
-        error: 'No API key provided. Set ANTHROPIC_API_KEY in .env.local or provide via settings.',
+        error: 'No GitHub token provided. Enter your GitHub token in Settings or set GITHUB_TOKEN in .env.local',
       }),
       { status: 401, headers: { 'Content-Type': 'application/json' } },
     );
   }
 
-  const anthropic = createAnthropic({ apiKey });
+  let copilotToken: string;
+  try {
+    copilotToken = await getCopilotToken(githubToken);
+  } catch (err) {
+    return new Response(
+      JSON.stringify({
+        error: `Copilot auth failed: ${(err as Error).message}. Make sure your GitHub token has Copilot access.`,
+      }),
+      { status: 401, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
+
+  const copilot = createOpenAI({
+    baseURL: 'https://api.githubcopilot.com',
+    apiKey: copilotToken,
+    headers: {
+      'Copilot-Integration-Id': 'vscode-chat',
+      'editor-version': 'vscode/1.95.0',
+      'editor-plugin-version': 'copilot/1.250.0',
+    },
+  });
 
   const result = streamText({
-    model: anthropic('claude-sonnet-4-20250514'),
+    model: copilot('claude-sonnet-4'),
     system: GO_MASTER_SYSTEM_PROMPT,
     messages,
     tools: wrappedTools,
