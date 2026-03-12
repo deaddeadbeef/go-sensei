@@ -10,102 +10,92 @@ import type { GameState, Point } from '@/lib/go-engine/types';
 
 export const maxDuration = 60;
 
-const MODEL = 'claude-sonnet-4';
+const MODEL = 'gpt-5.4';
 
-// OpenAI-format tool definitions
+// Responses API tool format — flat, NOT nested under a "function" key
 const TOOLS = [
   {
     type: 'function' as const,
-    function: {
-      name: 'make_move',
-      description: 'Place a stone on the board. Validated by the game engine.',
-      parameters: {
-        type: 'object',
-        properties: {
-          x: { type: 'number', description: 'Column index, 0-indexed from left' },
-          y: { type: 'number', description: 'Row index, 0-indexed from top' },
-          reasoning: { type: 'string', description: 'Brief reasoning shown to student' },
-        },
-        required: ['x', 'y', 'reasoning'],
+    name: 'make_move',
+    description: 'Place a stone on the board. Validated by the game engine.',
+    parameters: {
+      type: 'object',
+      properties: {
+        x: { type: 'number', description: 'Column index, 0-indexed from left' },
+        y: { type: 'number', description: 'Row index, 0-indexed from top' },
+        reasoning: { type: 'string', description: 'Brief reasoning shown to student' },
       },
+      required: ['x', 'y', 'reasoning'],
     },
   },
   {
     type: 'function' as const,
-    function: {
-      name: 'pass_turn',
-      description: 'Pass your turn. Two consecutive passes end the game.',
-      parameters: {
-        type: 'object',
-        properties: {
-          reasoning: { type: 'string', description: 'Why you are passing' },
-        },
-        required: ['reasoning'],
+    name: 'pass_turn',
+    description: 'Pass your turn. Two consecutive passes end the game.',
+    parameters: {
+      type: 'object',
+      properties: {
+        reasoning: { type: 'string', description: 'Why you are passing' },
       },
+      required: ['reasoning'],
     },
   },
   {
     type: 'function' as const,
-    function: {
-      name: 'highlight_positions',
-      description: 'Highlight board positions to teach the student visually.',
-      parameters: {
-        type: 'object',
-        properties: {
-          positions: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: { x: { type: 'number' }, y: { type: 'number' } },
-              required: ['x', 'y'],
-            },
-          },
-          style: { type: 'string', enum: ['positive', 'warning', 'danger', 'neutral'] },
-          label: { type: 'string' },
-        },
-        required: ['positions', 'style'],
-      },
-    },
-  },
-  {
-    type: 'function' as const,
-    function: {
-      name: 'show_liberty_count',
-      description: "Show a group's liberty count on the board.",
-      parameters: {
-        type: 'object',
-        properties: {
-          x: { type: 'number', description: 'X of any stone in the group' },
-          y: { type: 'number', description: 'Y of any stone in the group' },
-        },
-        required: ['x', 'y'],
-      },
-    },
-  },
-  {
-    type: 'function' as const,
-    function: {
-      name: 'suggest_moves',
-      description: 'Show 1-3 suggested moves to the student.',
-      parameters: {
-        type: 'object',
-        properties: {
-          suggestions: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                x: { type: 'number' },
-                y: { type: 'number' },
-                label: { type: 'string' },
-                reason: { type: 'string' },
-              },
-              required: ['x', 'y', 'label', 'reason'],
-            },
+    name: 'highlight_positions',
+    description: 'Highlight board positions to teach the student visually.',
+    parameters: {
+      type: 'object',
+      properties: {
+        positions: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: { x: { type: 'number' }, y: { type: 'number' } },
+            required: ['x', 'y'],
           },
         },
-        required: ['suggestions'],
+        style: { type: 'string', enum: ['positive', 'warning', 'danger', 'neutral'] },
+        label: { type: 'string' },
       },
+      required: ['positions', 'style'],
+    },
+  },
+  {
+    type: 'function' as const,
+    name: 'show_liberty_count',
+    description: "Show a group's liberty count on the board.",
+    parameters: {
+      type: 'object',
+      properties: {
+        x: { type: 'number', description: 'X of any stone in the group' },
+        y: { type: 'number', description: 'Y of any stone in the group' },
+      },
+      required: ['x', 'y'],
+    },
+  },
+  {
+    type: 'function' as const,
+    name: 'suggest_moves',
+    description: 'Show 1-3 suggested moves to the student.',
+    parameters: {
+      type: 'object',
+      properties: {
+        suggestions: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              x: { type: 'number' },
+              y: { type: 'number' },
+              label: { type: 'string' },
+              reason: { type: 'string' },
+            },
+            required: ['x', 'y', 'label', 'reason'],
+          },
+        },
+      },
+      required: ['suggestions'],
     },
   },
 ];
@@ -158,26 +148,12 @@ function executeTool(
   }
 }
 
-async function callCopilot(
-  apiUrl: string,
-  token: string,
-  messages: any[],
-  withTools: boolean,
-) {
-  const body: Record<string, any> = {
-    model: MODEL,
-    messages,
-    temperature: 0.7,
-    max_tokens: 2048,
-  };
-  if (withTools) {
-    body.tools = TOOLS;
-    body.tool_choice = 'auto';
-  }
+/* ── Responses API helpers ── */
 
-  console.log(`[GoSensei] callCopilot → model=${MODEL}, tools=${withTools}, messages=${messages.length}`);
+async function callResponses(apiUrl: string, token: string, body: Record<string, any>) {
+  console.log('[GoSensei] POST /responses, model:', body.model, 'input items:', Array.isArray(body.input) ? body.input.length : 1);
 
-  const resp = await fetch(`${apiUrl}/chat/completions`, {
+  const resp = await fetch(`${apiUrl}/responses`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -194,9 +170,34 @@ async function callCopilot(
 
   if (!resp.ok) {
     const txt = await resp.text();
-    throw new Error(`Copilot API ${resp.status}: ${txt.slice(0, 300)}`);
+    throw new Error(`Copilot API ${resp.status}: ${txt.slice(0, 500)}`);
   }
   return resp.json();
+}
+
+/** Extract assistant text from a Responses API output array */
+function extractText(output: any[]): string {
+  const parts: string[] = [];
+  for (const item of output) {
+    if (item.type === 'message' && item.content) {
+      for (const c of item.content) {
+        if (c.type === 'output_text' && c.text) parts.push(c.text);
+      }
+    }
+  }
+  return parts.join('\n');
+}
+
+/** Extract function_call items from a Responses API output array */
+function extractFunctionCalls(output: any[]): { id: string; callId: string; name: string; arguments: string }[] {
+  return output
+    .filter((item: any) => item.type === 'function_call')
+    .map((item: any) => ({
+      id: item.id || '',
+      callId: item.call_id || item.id || '',
+      name: item.name,
+      arguments: item.arguments,
+    }));
 }
 
 export async function POST(req: Request) {
@@ -218,9 +219,8 @@ export async function POST(req: Request) {
     const session = await getCopilotSession(ghToken);
     console.log('[GoSensei] Session OK, API:', session.apiUrl, 'Model:', MODEL);
 
-    // Build messages
-    const msgs: any[] = [
-      { role: 'system', content: GO_MASTER_SYSTEM_PROMPT },
+    // Build input array for Responses API (system prompt goes into `instructions`)
+    const input: any[] = [
       ...chatHistory.slice(-20),
       { role: 'user', content: message },
     ];
@@ -230,32 +230,51 @@ export async function POST(req: Request) {
     let finalText = '';
 
     for (let step = 0; step < 5; step++) {
-      const data = await callCopilot(session.apiUrl, session.token, msgs, true);
-      const choice = data.choices?.[0];
-      if (!choice) throw new Error('Empty Copilot response');
+      const data = await callResponses(session.apiUrl, session.token, {
+        model: MODEL,
+        instructions: GO_MASTER_SYSTEM_PROMPT,
+        input,
+        tools: TOOLS,
+        temperature: 0.7,
+        max_output_tokens: 2048,
+      });
 
-      const am = choice.message;
-      if (am.content) finalText += (finalText ? '\n' : '') + am.content;
+      const output: any[] = data.output || [];
 
-      if (!am.tool_calls?.length) break;
+      // Collect text from this response
+      const text = extractText(output);
+      if (text) finalText += (finalText ? '\n' : '') + text;
 
-      msgs.push(am); // assistant message with tool_calls
+      // Check for function calls
+      const fnCalls = extractFunctionCalls(output);
+      if (fnCalls.length === 0) break; // No tool calls — done
 
-      for (const tc of am.tool_calls) {
+      // Add ALL output items to input for next round (preserves the conversation)
+      for (const item of output) {
+        input.push(item);
+      }
+
+      // Execute each function call and add results to input
+      for (const fc of fnCalls) {
         let args: Record<string, any>;
         try {
-          args = JSON.parse(tc.function.arguments);
+          args = JSON.parse(fc.arguments);
         } catch {
           args = {};
         }
-        const { result, newState } = executeTool(tc.function.name, args, state);
+
+        const { result, newState } = executeTool(fc.name, args, state);
         if (newState) state = newState;
 
-        toolResults.push({ toolName: tc.function.name, args, result });
-        msgs.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify(result) });
-      }
+        toolResults.push({ toolName: fc.name, args, result });
 
-      if (choice.finish_reason === 'stop') break;
+        // Feed tool result back as function_call_output
+        input.push({
+          type: 'function_call_output',
+          call_id: fc.callId,
+          output: JSON.stringify(result),
+        });
+      }
     }
 
     return NextResponse.json({
