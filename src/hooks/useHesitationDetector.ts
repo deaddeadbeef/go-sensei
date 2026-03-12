@@ -10,10 +10,12 @@ export function useHesitationDetector(onHint: () => void) {
   const setHesitationLevel = useGameStore((s) => s.setHesitationLevel);
   const hintOffered = useGameStore((s) => s.hintOffered);
   const showBubble = useGameStore((s) => s.showBubble);
+  const bubbleVisible = useGameStore((s) => s.bubble.visible);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (isAiThinking || phase !== 'playing') {
+    // Don't run hints while: AI is thinking, not playing, or bubble is showing
+    if (isAiThinking || phase !== 'playing' || bubbleVisible) {
       if (timerRef.current) clearInterval(timerRef.current);
       return;
     }
@@ -27,7 +29,7 @@ export function useHesitationDetector(onHint: () => void) {
       } else if (elapsed >= HESITATION_NUDGE_TIME && !hintOffered) {
         setHesitationLevel('mild');
         showBubble({
-          text: 'Would you like a hint? I can suggest some good moves.',
+          text: 'Take your time! Would you like me to suggest some good moves?',
           variant: 'teaching',
           anchorPoint: null,
           actions: [{ id: 'hint', label: 'Show me' }],
@@ -35,9 +37,9 @@ export function useHesitationDetector(onHint: () => void) {
       }
     };
 
-    timerRef.current = setInterval(checkHesitation, 2000);
+    timerRef.current = setInterval(checkHesitation, 5000);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [lastInteractionTime, isAiThinking, phase, hintOffered, setHesitationLevel, showBubble, onHint]);
+  }, [lastInteractionTime, isAiThinking, phase, bubbleVisible, hintOffered, setHesitationLevel, showBubble, onHint]);
 }

@@ -45,7 +45,7 @@ export default function GamePage() {
     if (phase === 'welcome' && !welcomeShown.current) {
       welcomeShown.current = true;
       showBubble({
-        text: "Welcome! I'm Go Sensei, your personal Go teacher. This is a 9×9 board — perfect for learning. Go ahead and click anywhere to place your first black stone. I'll explain everything as we play!",
+        text: "Welcome! I'm Go Sensei, your Go teacher. Go is a game where two players take turns placing black and white stones. You're Black — you go first! The goal is to surround more territory than your opponent. Click any intersection on the board to place your first stone. I'll teach you everything as we play!",
         variant: 'teaching',
         anchorPoint: null,
         actions: [],

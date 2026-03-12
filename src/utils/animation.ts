@@ -12,7 +12,7 @@ export const OVERLAY_FADE_OUT = 0.5;
 export const BUBBLE_SLIDE_IN = 0.3;
 export const BUBBLE_SLIDE_OUT = 0.3;
 export const BUBBLE_TYPEWRITER_SPEED = 30; // chars per second
-export const BUBBLE_AUTO_DISMISS = 5000; // ms
+export const BUBBLE_AUTO_DISMISS = 15000; // ms
 
 // Capture animations
 export const CAPTURE_FLASH = 0.15;
@@ -33,8 +33,8 @@ export const SUGGESTION_PULSE_CYCLE = 2.0;
 export const HOVER_GROUP_DELAY = 100; // ms
 
 // Hesitation
-export const HESITATION_NUDGE_TIME = 8000; // ms
-export const HESITATION_PROACTIVE_TIME = 30000; // ms
+export const HESITATION_NUDGE_TIME = 30000; // ms
+export const HESITATION_PROACTIVE_TIME = 60000; // ms
 
 // Teaching
 export const TEACHING_STONE_STAGGER = 0.3;
