@@ -1,210 +1,144 @@
 "use client";
 
-import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport } from 'ai';
 import { useGameStore } from '@/stores/game-store';
 import {
   formatMoveMessage,
   formatFirstMoveMessage,
   formatHesitationMessage,
 } from '@/lib/ai/format-board';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useRef } from 'react';
+
+interface ChatMsg {
+  role: 'user' | 'assistant';
+  content: string;
+}
 
 export function useGoMaster() {
+  const showBubble = useGameStore((s) => s.showBubble);
+  const dismissBubble = useGameStore((s) => s.dismissBubble);
   const setAiThinking = useGameStore((s) => s.setAiThinking);
   const applyHighlights = useGameStore((s) => s.applyHighlights);
   const applyLibertyOverlay = useGameStore((s) => s.applyLibertyOverlay);
   const applySuggestions = useGameStore((s) => s.applySuggestions);
   const applyAiMove = useGameStore((s) => s.applyAiMove);
-  const showBubble = useGameStore((s) => s.showBubble);
-  const dismissBubble = useGameStore((s) => s.dismissBubble);
   const clearOverlays = useGameStore((s) => s.clearOverlays);
-  const addPendingCaptures = useGameStore((s) => s.addPendingCaptures);
 
-  // Stable refs so callbacks don't cause re-init of the chat
-  const storeRef = useRef({
-    applyHighlights,
-    applyLibertyOverlay,
-    applySuggestions,
-    applyAiMove,
-    showBubble,
-    addPendingCaptures,
-    setAiThinking,
-  });
-  useEffect(() => {
-    storeRef.current = {
-      applyHighlights,
-      applyLibertyOverlay,
-      applySuggestions,
-      applyAiMove,
-      showBubble,
-      addPendingCaptures,
-      setAiThinking,
-    };
-  });
+  const historyRef = useRef<ChatMsg[]>([]);
 
-  // Transport with dynamic body that reads game state at send time
-  const transport = useMemo(
-    () =>
-      new DefaultChatTransport({
-        api: '/api/chat',
-        headers: () => ({
-          ...(typeof window !== 'undefined' && localStorage.getItem('go-sensei-github-token')
-            ? { 'x-github-token': localStorage.getItem('go-sensei-github-token')! }
-            : {}),
-        }),
-        body: () => ({
-          gameState: {
-            moveHistory: useGameStore.getState().game.moveHistory.map((m) => {
-              if (m.type === 'place')
-                return { type: 'place', x: m.point.x, y: m.point.y, color: m.color };
-              if (m.type === 'pass') return { type: 'pass', color: m.color };
-              return { type: 'resign', color: m.color };
-            }),
-            boardSize: useGameStore.getState().game.board.size,
-            komi: useGameStore.getState().game.komi,
-          },
-        }),
+  const headers = useCallback(() => {
+    const t = typeof window !== 'undefined' ? localStorage.getItem('go-sensei-github-token') : null;
+    return { 'Content-Type': 'application/json', ...(t ? { 'x-github-token': t } : {}) };
+  }, []);
+
+  const gameBody = useCallback(() => {
+    const g = useGameStore.getState().game;
+    return {
+      moveHistory: g.moveHistory.map((m) => {
+        if (m.type === 'place') return { type: 'place', x: m.point.x, y: m.point.y, color: m.color };
+        if (m.type === 'pass') return { type: 'pass', color: m.color };
+        return { type: 'resign', color: m.color };
       }),
-    [],
-  );
+      boardSize: g.board.size,
+      komi: g.komi,
+    };
+  }, []);
 
-  const { messages, sendMessage: chatSendMessage, status } = useChat({
-    transport,
-    onToolCall({ toolCall }) {
-      const toolName = toolCall.toolName;
-      const args = (toolCall.input ?? {}) as Record<string, unknown>;
-      const s = storeRef.current;
+  const applyTools = useCallback((results: any[]) => {
+    for (const { toolName, args, result } of results) {
+      if (toolName === 'make_move' && result.success)
+        applyAiMove({ x: args.x, y: args.y });
 
-      if (toolName === 'make_move') {
-        if (args && typeof args.x === 'number' && typeof args.y === 'number') {
-          s.applyAiMove({ x: args.x, y: args.y });
-        }
-      }
+      if (toolName === 'highlight_positions' && result.positions)
+        applyHighlights(
+          result.positions.map((p: any, i: number) => ({
+            id: `hl-${Date.now()}-${i}`,
+            point: { x: p.x, y: p.y },
+            variant: result.style || 'neutral',
+            label: result.label,
+          })),
+        );
 
-      if (toolName === 'highlight_positions' && args?.positions) {
-        const positions = (args.positions as { x: number; y: number }[]).map((p, i) => ({
-          id: `hl-${Date.now()}-${i}`,
-          point: { x: p.x, y: p.y },
-          variant: ((args.style as string) || 'neutral') as
-            | 'positive'
-            | 'warning'
-            | 'danger'
-            | 'neutral',
-          label: args.label as string | undefined,
-        }));
-        s.applyHighlights(positions);
-      }
-
-      if (toolName === 'show_liberty_count' && args) {
-        s.applyLibertyOverlay({
+      if (toolName === 'show_liberty_count' && result.success)
+        applyLibertyOverlay({
           id: `lib-${Date.now()}`,
-          point: { x: args.x as number, y: args.y as number },
-          count: (args.count as number) || 0,
-          libertyPoints: (args.liberties as { x: number; y: number }[]) || [],
+          point: { x: args.x, y: args.y },
+          count: result.count,
+          libertyPoints: result.liberties || [],
         });
-      }
 
-      if (toolName === 'suggest_moves' && args?.suggestions) {
-        const suggestions = (
-          args.suggestions as { x: number; y: number; reason?: string; label?: string }[]
-        ).map((sg, i) => ({
-          id: `sug-${Date.now()}-${i}`,
-          point: { x: sg.x, y: sg.y },
-          rank: i + 1,
-          reason: sg.reason || '',
-          label: sg.label || String(i + 1),
-        }));
-        s.applySuggestions(suggestions);
-      }
+      if (toolName === 'suggest_moves' && result.suggestions)
+        applySuggestions(
+          result.suggestions.map((s: any, i: number) => ({
+            id: `sug-${Date.now()}-${i}`,
+            point: { x: s.x, y: s.y },
+            rank: i + 1,
+            reason: s.reason || '',
+            label: s.label || String(i + 1),
+          })),
+        );
 
-      if (toolName === 'pass_turn') {
-        useGameStore.getState().pass();
-      }
-
-      if (toolName === 'resign_game') {
-        s.showBubble({
-          text: (args?.message as string) || 'You win! Great game!',
-          variant: 'celebrate',
-          anchorPoint: null,
-        });
-      }
-    },
-    onFinish() {
-      storeRef.current.setAiThinking(false);
-    },
-    onError(error: Error) {
-      storeRef.current.setAiThinking(false);
-      storeRef.current.showBubble({
-        text: `Hmm, I had trouble thinking. ${error.message || 'Check the console for details.'}`,
-        variant: 'warning',
-        anchorPoint: null,
-      });
-      console.error('[GoSensei] AI error:', error);
-    },
-  });
-
-  const isThinking = status === 'submitted' || status === 'streaming';
-
-  // Show AI text responses in the bubble
-  useEffect(() => {
-    if (messages.length === 0) return;
-    const lastMessage = messages[messages.length - 1];
-    if (lastMessage.role === 'assistant') {
-      // Extract text content from parts
-      const textParts = lastMessage.parts.filter(
-        (p): p is { type: 'text'; text: string } => p.type === 'text',
-      );
-      const content = textParts.map((p) => p.text).join('');
-      if (content) {
-        showBubble({
-          text: content,
-          variant: 'neutral',
-          anchorPoint: null,
-          streamingComplete: !isThinking,
-        });
-      }
+      if (toolName === 'pass_turn') useGameStore.getState().pass();
     }
-  }, [messages, isThinking, showBubble]);
+  }, [applyAiMove, applyHighlights, applyLibertyOverlay, applySuggestions]);
 
-  // Sync thinking state
-  useEffect(() => {
-    setAiThinking(isThinking);
-  }, [isThinking, setAiThinking]);
-
-  const sendPlayerMove = useCallback(
-    (wasCapture: boolean, capturedCount: number) => {
-      const currentGame = useGameStore.getState().game;
+  const send = useCallback(
+    async (message: string) => {
       clearOverlays();
       dismissBubble();
       setAiThinking(true);
+      try {
+        const r = await fetch('/api/chat', {
+          method: 'POST',
+          headers: headers(),
+          body: JSON.stringify({
+            message,
+            gameState: gameBody(),
+            chatHistory: historyRef.current.slice(-20),
+          }),
+        });
+        if (!r.ok) {
+          const d = await r.json().catch(() => ({ error: 'Request failed' }));
+          throw new Error(d.error || `HTTP ${r.status}`);
+        }
+        const d = await r.json();
+        if (d.toolResults?.length) applyTools(d.toolResults);
+        if (d.text) showBubble({ text: d.text, variant: 'neutral', anchorPoint: null, streamingComplete: true });
 
-      const isFirstMove = currentGame.moveHistory.length === 1;
-      const content = isFirstMove
-        ? formatFirstMoveMessage(currentGame)
-        : formatMoveMessage(currentGame, wasCapture, capturedCount);
-
-      chatSendMessage({ text: content });
+        historyRef.current.push({ role: 'user', content: message });
+        if (d.text) historyRef.current.push({ role: 'assistant', content: d.text });
+        if (historyRef.current.length > 20) historyRef.current = historyRef.current.slice(-20);
+      } catch (err) {
+        showBubble({
+          text: `Hmm, I had trouble thinking. ${(err as Error).message}`,
+          variant: 'warning',
+          anchorPoint: null,
+        });
+        console.error('AI error:', err);
+      } finally {
+        setAiThinking(false);
+      }
     },
-    [chatSendMessage, clearOverlays, dismissBubble, setAiThinking],
+    [clearOverlays, dismissBubble, setAiThinking, headers, gameBody, applyTools, showBubble],
+  );
+
+  const sendPlayerMove = useCallback(
+    (wasCapture: boolean, capturedCount: number) => {
+      const g = useGameStore.getState().game;
+      send(g.moveHistory.length === 1 ? formatFirstMoveMessage(g) : formatMoveMessage(g, wasCapture, capturedCount));
+    },
+    [send],
   );
 
   const sendMessage = useCallback(
     (text: string) => {
-      const currentGame = useGameStore.getState().game;
-      clearOverlays();
-      setAiThinking(true);
-      const content = formatMoveMessage(currentGame, false, 0, text);
-      chatSendMessage({ text: content });
+      send(formatMoveMessage(useGameStore.getState().game, false, 0, text));
     },
-    [chatSendMessage, clearOverlays, setAiThinking],
+    [send],
   );
 
   const requestHint = useCallback(() => {
-    const currentGame = useGameStore.getState().game;
-    setAiThinking(true);
-    chatSendMessage({ text: formatHesitationMessage(currentGame) });
-  }, [chatSendMessage, setAiThinking]);
+    send(formatHesitationMessage(useGameStore.getState().game));
+  }, [send]);
 
-  return { sendPlayerMove, sendMessage, requestHint, messages, isLoading: isThinking };
+  return { sendPlayerMove, sendMessage, requestHint };
 }

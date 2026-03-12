@@ -1,84 +1,185 @@
-import { streamText, stepCountIs } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
-import { GO_MASTER_SYSTEM_PROMPT } from '@/lib/ai/system-prompt';
-import { createGoTools, reconstructGame } from '@/lib/ai/tools';
+import { NextResponse } from 'next/server';
 import { getCopilotSession } from '@/lib/ai/copilot-auth';
-import { createGame, playMove } from '@/lib/go-engine';
-import type { GameState } from '@/lib/go-engine/types';
+import { GO_MASTER_SYSTEM_PROMPT } from '@/lib/ai/system-prompt';
+import { reconstructGame } from '@/lib/ai/tools';
+import {
+  createGame, playMove, isValidMove,
+  getGroup, getLibertiesOf, countLiberties, boardToText,
+} from '@/lib/go-engine';
+import type { GameState, Point } from '@/lib/go-engine/types';
 
-export const maxDuration = 60; // Allow up to 60 seconds for AI response
+export const maxDuration = 60;
 
-export async function POST(req: Request) {
-  const { messages, gameState: gameStateData } = await req.json();
+const MODEL = 'gpt-5.4';
 
-  // Reconstruct game state from the client-provided move history
-  let gameState: GameState;
-  if (gameStateData?.moveHistory) {
-    gameState = reconstructGame(
-      gameStateData.moveHistory,
-      gameStateData.boardSize || 9,
-      gameStateData.komi || 6.5,
-    );
-  } else {
-    gameState = createGame(9, 6.5);
-  }
-
-  // Mutable reference — updated when make_move executes so subsequent
-  // tool calls within the same turn see the latest board.
-  let currentState = gameState;
-  const tools = createGoTools(() => currentState);
-
-  // Wrap make_move to keep currentState in sync after a successful play
-  const wrappedTools = {
-    ...tools,
-    make_move: {
-      ...tools.make_move,
-      execute: async (args: { x: number; y: number; reasoning: string }) => {
-        const result = await tools.make_move.execute!(args, {
-          toolCallId: '',
-          messages: [],
-        });
-        if (result && 'success' in result && result.success) {
-          const moveResult = playMove(currentState, { x: args.x, y: args.y });
-          if (moveResult.success) {
-            currentState = moveResult.newState;
-          }
-        }
-        return result;
+// OpenAI-format tool definitions
+const TOOLS = [
+  {
+    type: 'function' as const,
+    function: {
+      name: 'make_move',
+      description: 'Place a stone on the board. Validated by the game engine.',
+      parameters: {
+        type: 'object',
+        properties: {
+          x: { type: 'number', description: 'Column index, 0-indexed from left' },
+          y: { type: 'number', description: 'Row index, 0-indexed from top' },
+          reasoning: { type: 'string', description: 'Brief reasoning shown to student' },
+        },
+        required: ['x', 'y', 'reasoning'],
       },
     },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'pass_turn',
+      description: 'Pass your turn. Two consecutive passes end the game.',
+      parameters: {
+        type: 'object',
+        properties: {
+          reasoning: { type: 'string', description: 'Why you are passing' },
+        },
+        required: ['reasoning'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'highlight_positions',
+      description: 'Highlight board positions to teach the student visually.',
+      parameters: {
+        type: 'object',
+        properties: {
+          positions: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: { x: { type: 'number' }, y: { type: 'number' } },
+              required: ['x', 'y'],
+            },
+          },
+          style: { type: 'string', enum: ['positive', 'warning', 'danger', 'neutral'] },
+          label: { type: 'string' },
+        },
+        required: ['positions', 'style'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'show_liberty_count',
+      description: "Show a group's liberty count on the board.",
+      parameters: {
+        type: 'object',
+        properties: {
+          x: { type: 'number', description: 'X of any stone in the group' },
+          y: { type: 'number', description: 'Y of any stone in the group' },
+        },
+        required: ['x', 'y'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'suggest_moves',
+      description: 'Show 1-3 suggested moves to the student.',
+      parameters: {
+        type: 'object',
+        properties: {
+          suggestions: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                x: { type: 'number' },
+                y: { type: 'number' },
+                label: { type: 'string' },
+                reason: { type: 'string' },
+              },
+              required: ['x', 'y', 'label', 'reason'],
+            },
+          },
+        },
+        required: ['suggestions'],
+      },
+    },
+  },
+];
+
+function executeTool(
+  name: string,
+  args: Record<string, any>,
+  state: GameState,
+): { result: Record<string, any>; newState?: GameState } {
+  switch (name) {
+    case 'make_move': {
+      const pt: Point = { x: args.x, y: args.y };
+      if (!isValidMove(state, pt)) {
+        return { result: { success: false, error: `Invalid move at (${args.x},${args.y})` } };
+      }
+      const r = playMove(state, pt);
+      if (!r.success) return { result: { success: false, error: r.reason } };
+      return {
+        result: {
+          success: true,
+          move: { x: args.x, y: args.y },
+          reasoning: args.reasoning,
+          captured: r.captured,
+          capturedCount: r.captured.length,
+          newBoardText: boardToText(r.newState),
+        },
+        newState: r.newState,
+      };
+    }
+    case 'pass_turn':
+      return { result: { success: true, reasoning: args.reasoning } };
+    case 'highlight_positions':
+      return { result: { positions: args.positions, style: args.style, label: args.label } };
+    case 'show_liberty_count': {
+      const g = getGroup(state.board, { x: args.x, y: args.y });
+      if (!g) return { result: { success: false, error: `No stone at (${args.x},${args.y})` } };
+      return {
+        result: {
+          success: true,
+          group: g.stones,
+          liberties: getLibertiesOf(state.board, { x: args.x, y: args.y }),
+          count: countLiberties(state.board, { x: args.x, y: args.y }),
+        },
+      };
+    }
+    case 'suggest_moves':
+      return { result: { suggestions: args.suggestions } };
+    default:
+      return { result: { error: `Unknown tool: ${name}` } };
+  }
+}
+
+async function callCopilot(
+  apiUrl: string,
+  token: string,
+  messages: any[],
+  withTools: boolean,
+) {
+  const body: Record<string, any> = {
+    model: MODEL,
+    messages,
+    temperature: 0.7,
+    max_tokens: 2048,
   };
-
-  // Resolve the GitHub token: client header → env var
-  const githubToken = req.headers.get('x-github-token') || process.env.GITHUB_TOKEN;
-
-  if (!githubToken) {
-    return new Response(
-      JSON.stringify({
-        error: 'No GitHub token provided. Enter your GitHub token in Settings or set GITHUB_TOKEN in .env.local',
-      }),
-      { status: 401, headers: { 'Content-Type': 'application/json' } },
-    );
+  if (withTools) {
+    body.tools = TOOLS;
+    body.tool_choice = 'auto';
   }
 
-  let session;
-  try {
-    session = await getCopilotSession(githubToken);
-  } catch (err) {
-    return new Response(
-      JSON.stringify({
-        error: `Copilot auth failed: ${(err as Error).message}. Make sure your GitHub token has Copilot access.`,
-      }),
-      { status: 401, headers: { 'Content-Type': 'application/json' } },
-    );
-  }
-
-  console.log('[GoSensei] Copilot session obtained, API URL:', session.apiUrl);
-
-  const copilot = createOpenAI({
-    baseURL: session.apiUrl,
-    apiKey: session.token,
+  const resp = await fetch(`${apiUrl}/chat/completions`, {
+    method: 'POST',
     headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
       'Copilot-Integration-Id': 'vscode-chat',
       'Editor-Version': 'vscode/1.96.0',
       'Editor-Plugin-Version': 'copilot-chat/0.24.0',
@@ -86,30 +187,82 @@ export async function POST(req: Request) {
       'Openai-Intent': 'conversation-panel',
       'User-Agent': 'GitHubCopilotChat/0.24.0',
     },
+    body: JSON.stringify(body),
   });
 
-  const modelId = 'gpt-4o';
-  console.log('[GoSensei] Calling Copilot API with model:', modelId);
-  console.log('[GoSensei] Message count:', messages.length);
-  console.log('[GoSensei] Tools:', Object.keys(wrappedTools));
+  if (!resp.ok) {
+    const txt = await resp.text();
+    throw new Error(`Copilot API ${resp.status}: ${txt.slice(0, 300)}`);
+  }
+  return resp.json();
+}
 
+export async function POST(req: Request) {
   try {
-    const result = streamText({
-      model: copilot(modelId),
-      system: GO_MASTER_SYSTEM_PROMPT,
-      messages,
-      tools: wrappedTools,
-      stopWhen: stepCountIs(5), // Allow up to 5 tool-call steps per turn
-      temperature: 0.7,
-    });
+    const { message, gameState: gsData, chatHistory = [] } = await req.json();
 
-    console.log('[GoSensei] Stream started successfully');
-    return result.toUIMessageStreamResponse();
-  } catch (streamErr) {
-    console.error('[GoSensei] streamText error:', streamErr);
-    return new Response(
-      JSON.stringify({ error: `AI streaming failed: ${(streamErr as Error).message}` }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } },
-    );
+    let state: GameState;
+    if (gsData?.moveHistory) {
+      state = reconstructGame(gsData.moveHistory, gsData.boardSize || 9, gsData.komi || 6.5);
+    } else {
+      state = createGame(9, 6.5);
+    }
+
+    const ghToken = req.headers.get('x-github-token') || process.env.GITHUB_TOKEN;
+    if (!ghToken) {
+      return NextResponse.json({ error: 'No GitHub token. Login via Settings.' }, { status: 401 });
+    }
+
+    const session = await getCopilotSession(ghToken);
+    console.log('[GoSensei] Session OK, API:', session.apiUrl, 'Model:', MODEL);
+
+    // Build messages
+    const msgs: any[] = [
+      { role: 'system', content: GO_MASTER_SYSTEM_PROMPT },
+      ...chatHistory.slice(-20),
+      { role: 'user', content: message },
+    ];
+
+    // Agentic loop — up to 5 tool-call rounds
+    const toolResults: any[] = [];
+    let finalText = '';
+
+    for (let step = 0; step < 5; step++) {
+      const data = await callCopilot(session.apiUrl, session.token, msgs, true);
+      const choice = data.choices?.[0];
+      if (!choice) throw new Error('Empty Copilot response');
+
+      const am = choice.message;
+      if (am.content) finalText += (finalText ? '\n' : '') + am.content;
+
+      if (!am.tool_calls?.length) break;
+
+      msgs.push(am); // assistant message with tool_calls
+
+      for (const tc of am.tool_calls) {
+        let args: Record<string, any>;
+        try {
+          args = JSON.parse(tc.function.arguments);
+        } catch {
+          args = {};
+        }
+        const { result, newState } = executeTool(tc.function.name, args, state);
+        if (newState) state = newState;
+
+        toolResults.push({ toolName: tc.function.name, args, result });
+        msgs.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify(result) });
+      }
+
+      if (choice.finish_reason === 'stop') break;
+    }
+
+    return NextResponse.json({
+      text: finalText,
+      toolResults,
+      assistantMessage: { role: 'assistant', content: finalText },
+    });
+  } catch (err) {
+    console.error('[GoSensei]', err);
+    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
   }
 }
