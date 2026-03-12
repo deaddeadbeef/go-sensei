@@ -19,7 +19,6 @@ export function GoBoard() {
     <svg
       viewBox={`0 0 ${SVG_SIZE} ${SVG_SIZE}`}
       className="w-full h-full select-none"
-      style={{ maxWidth: SVG_SIZE, maxHeight: SVG_SIZE }}
     >
       <defs>
         {/* Stone gradients for 3D look */}
