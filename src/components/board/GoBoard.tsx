@@ -1,0 +1,57 @@
+"use client";
+
+import { SVG_SIZE } from '@/utils/coordinates';
+import { COLORS } from '@/utils/colors';
+import { BoardGrid } from './BoardGrid';
+import { StoneLayer } from './StoneLayer';
+import { GhostStone } from './GhostStone';
+import { HighlightOverlay } from './overlays/HighlightOverlay';
+import { LibertyOverlay } from './overlays/LibertyOverlay';
+import { SuggestionOverlay } from './overlays/SuggestionOverlay';
+import { CaptureAnimation } from './overlays/CaptureAnimation';
+import { TerritoryOverlay } from './overlays/TerritoryOverlay';
+import { KoMarker } from './overlays/KoMarker';
+import { InteractionLayer } from './InteractionLayer';
+import { CoordinateLabels } from './CoordinateLabels';
+
+export function GoBoard() {
+  return (
+    <svg
+      viewBox={`0 0 ${SVG_SIZE} ${SVG_SIZE}`}
+      className="w-full h-full select-none"
+      style={{ maxWidth: SVG_SIZE, maxHeight: SVG_SIZE }}
+    >
+      <defs>
+        {/* Stone gradients for 3D look */}
+        <radialGradient id="black-stone-gradient" cx="35%" cy="35%">
+          <stop offset="0%" stopColor={COLORS.stone.blackShine} />
+          <stop offset="100%" stopColor={COLORS.stone.black} />
+        </radialGradient>
+        <radialGradient id="white-stone-gradient" cx="35%" cy="35%">
+          <stop offset="0%" stopColor={COLORS.stone.whiteShine} />
+          <stop offset="100%" stopColor={COLORS.stone.whiteShadow} />
+        </radialGradient>
+        {/* Drop shadow for stones */}
+        <filter id="stone-shadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="1" dy="1" stdDeviation="1.5" floodColor="#00000040" />
+        </filter>
+      </defs>
+
+      {/* Background rect */}
+      <rect width={SVG_SIZE} height={SVG_SIZE} fill={COLORS.board.bg} rx="4" />
+
+      {/* Layers in z-order (bottom to top) */}
+      <BoardGrid />
+      <CoordinateLabels />
+      <TerritoryOverlay />
+      <StoneLayer />
+      <CaptureAnimation />
+      <HighlightOverlay />
+      <LibertyOverlay />
+      <SuggestionOverlay />
+      <KoMarker />
+      <GhostStone />
+      <InteractionLayer />
+    </svg>
+  );
+}
