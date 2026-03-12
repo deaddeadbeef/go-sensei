@@ -10,6 +10,7 @@ import { GameControls } from '@/components/game/GameControls';
 import { ScoreCard } from '@/components/game/ScoreCard';
 import { useGameStore } from '@/stores/game-store';
 import { useGoMaster } from '@/hooks/useGoMaster';
+import { useGitHubAuth } from '@/hooks/useGitHubAuth';
 import { useHesitationDetector } from '@/hooks/useHesitationDetector';
 import { COLORS } from '@/utils/colors';
 import type { BoardSize } from '@/lib/go-engine/types';
@@ -27,14 +28,14 @@ export default function GamePage() {
   const showBubble = useGameStore((s) => s.showBubble);
 
   const { sendPlayerMove, sendMessage, requestHint } = useGoMaster();
+  const { authState, isLoggedIn, startLogin, logout } = useGitHubAuth();
 
-  // Auto-open settings if no API key on first visit
+  // Auto-open settings if not logged in
   useEffect(() => {
-    const hasKey = localStorage.getItem('go-sensei-github-token');
-    if (!hasKey) {
+    if (!isLoggedIn) {
       setTimeout(() => setShowSettings(true), 1500);
     }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useHesitationDetector(requestHint);
 
@@ -74,7 +75,7 @@ export default function GamePage() {
   const handleUndo = useCallback(() => undo(), [undo]);
 
   const handleSettingsSave = useCallback(
-    (settings: { apiKey: string; boardSize: BoardSize }) => {
+    (settings: { boardSize: BoardSize }) => {
       if (settings.boardSize !== game.board.size) {
         welcomeShown.current = false;
         startNewGame(settings.boardSize);
@@ -85,12 +86,16 @@ export default function GamePage() {
 
   return (
     <div className="flex flex-col h-dvh overflow-hidden" style={{ backgroundColor: COLORS.ui.bgPrimary }}>
-      <SenseiBar onSettingsClick={() => setShowSettings(true)} />
+      <SenseiBar onSettingsClick={() => setShowSettings(true)} isLoggedIn={isLoggedIn} />
       <SettingsModal
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
         onSave={handleSettingsSave}
         currentBoardSize={game.board.size as BoardSize}
+        isLoggedIn={isLoggedIn}
+        authState={authState}
+        onLogin={startLogin}
+        onLogout={logout}
       />
       <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden">
         <div

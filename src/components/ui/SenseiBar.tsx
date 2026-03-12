@@ -5,9 +5,10 @@ import { motion } from 'framer-motion';
 
 interface SenseiBarProps {
   onSettingsClick: () => void;
+  isLoggedIn: boolean;
 }
 
-export function SenseiBar({ onSettingsClick }: SenseiBarProps) {
+export function SenseiBar({ onSettingsClick, isLoggedIn }: SenseiBarProps) {
   const moveCount = useGameStore((s) => s.game.moveHistory.length);
   const captures = useGameStore((s) => s.game.captures);
   const isAiThinking = useGameStore((s) => s.isAiThinking);
@@ -51,14 +52,19 @@ export function SenseiBar({ onSettingsClick }: SenseiBarProps) {
         {phase === 'scoring' && <span>Scoring</span>}
         {phase === 'finished' && <span>Game Over</span>}
       </div>
-      <button
-        onClick={onSettingsClick}
-        className="text-sm opacity-60 hover:opacity-100 transition-opacity"
-        style={{ color: COLORS.ui.textSecondary }}
-        title="Settings"
-      >
-        ⚙
-      </button>
+      <div className="flex items-center gap-2">
+        {isLoggedIn && (
+          <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: COLORS.overlay.positive }} title="Connected to GitHub" />
+        )}
+        <button
+          onClick={onSettingsClick}
+          className="text-sm opacity-60 hover:opacity-100 transition-opacity"
+          style={{ color: COLORS.ui.textSecondary }}
+          title="Settings"
+        >
+          ⚙
+        </button>
+      </div>
     </div>
   );
 }
