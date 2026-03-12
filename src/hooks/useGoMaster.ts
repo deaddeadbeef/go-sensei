@@ -78,15 +78,7 @@ export function useGoMaster() {
 
       if (toolName === 'make_move') {
         if (args && typeof args.x === 'number' && typeof args.y === 'number') {
-          const result = s.applyAiMove({ x: args.x, y: args.y });
-          if (result.success && result.captured.length > 0) {
-            s.addPendingCaptures(
-              result.captured.map((p) => ({
-                point: p,
-                color: 'black' as const,
-              })),
-            );
-          }
+          s.applyAiMove({ x: args.x, y: args.y });
         }
       }
 

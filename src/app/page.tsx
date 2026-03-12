@@ -66,13 +66,17 @@ export default function GamePage() {
     prevMoveCountRef.current = currentMoveCount;
   }, [game.moveHistory.length, lastPlayerMove]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleNewGame = useCallback(() => startNewGame(game.board.size as BoardSize), [startNewGame, game.board.size]);
+  const handleNewGame = useCallback(() => {
+    welcomeShown.current = false;
+    startNewGame(game.board.size as BoardSize);
+  }, [startNewGame, game.board.size]);
   const handlePass = useCallback(() => pass(), [pass]);
   const handleUndo = useCallback(() => undo(), [undo]);
 
   const handleSettingsSave = useCallback(
     (settings: { apiKey: string; boardSize: BoardSize }) => {
       if (settings.boardSize !== game.board.size) {
+        welcomeShown.current = false;
         startNewGame(settings.boardSize);
       }
     },

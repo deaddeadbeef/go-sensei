@@ -365,7 +365,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { game } = get();
     const prev = undoMove(game);
     if (prev) {
-      set({ game: prev, koRejection: null });
+      set({ game: prev, koRejection: null, pendingCaptures: [] });
     }
   },
 
@@ -394,7 +394,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   // Bubble
   showBubble(config: Partial<SenseiBubbleState>) {
     set((s) => ({
-      bubble: { ...s.bubble, ...config, visible: true, streamingComplete: false },
+      bubble: { ...s.bubble, streamingComplete: false, ...config, visible: true },
     }));
   },
 

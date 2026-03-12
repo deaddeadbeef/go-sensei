@@ -91,9 +91,20 @@ export function applyCaptures(board: BoardState, captures: Point[]): BoardState 
 export function detectKo(
   prevBoard: BoardState,
   newBoard: BoardState,
-  captures: Point[]
+  captures: Point[],
+  lastMove: Point
 ): Point | null {
   if (captures.length !== 1) return null;
+
+  // The capturing stone must be alone (no friendly neighbors) for ko
+  const capturingColor = getStone(newBoard, lastMove);
+  if (capturingColor === null) return null;
+
+  for (const adj of getAdjacentPoints(newBoard, lastMove)) {
+    if (getStone(newBoard, adj) === capturingColor) {
+      return null; // Has a friendly neighbor — not a ko
+    }
+  }
 
   // The ko point is the position of the single captured stone
   return captures[0];

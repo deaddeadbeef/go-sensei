@@ -300,6 +300,46 @@ describe('Multiple groups captured simultaneously', () => {
   });
 });
 
+describe('Ko false positive — group capture is not ko', () => {
+  it('large group capturing a single stone does NOT set ko', () => {
+    const state = createGame(9);
+    // Black group at (0,1) and (1,0) (connected).
+    // White stone at (0,0) with liberties only from (0,1) and (1,0) directions.
+    // When Black plays to capture White(0,0), it's a single-stone capture but
+    // the capturing group is connected (not a lone stone), so ko must NOT apply.
+    //
+    // Setup:
+    //   (0,0)=W  (1,0)=B
+    //   (0,1)=B
+    // Black plays at some point that causes capture? Actually let's think more carefully.
+    //
+    // Simpler: Black has stones at (2,0) and (1,1) forming a connected group.
+    // White at (1,0) has liberties at (0,0) only (adj: (2,0)=B, (1,1)=B, (0,0)=empty).
+    // Black plays (0,0) capturing White(1,0). Black at (0,0) connects to (1,0)→(2,0)=B.
+    // Wait, (0,0) adj are (1,0) and (0,1). After capture (1,0) is empty. So (0,0) has
+    // neighbor (0,1) — need that to be B for connection.
+    //
+    // Let's use a clear setup via playSequence:
+    //   B(0,1), W(0,0), B(1,1), W(8,8), B(2,0), W(7,7), B(1,0) — captures W(0,0)
+    //   After capture: B at (1,0) has neighbor B(2,0) and B(1,1), so NOT alone.
+    //   Single stone captured, but capturer is not alone → no ko.
+    const { state: s, result: r } = playSequence(state, [
+      [0, 1], // B
+      [0, 0], // W - target
+      [1, 1], // B
+      [8, 8], // W elsewhere
+      [2, 0], // B
+      [7, 7], // W elsewhere
+      [1, 0], // B captures W(0,0) — B(1,0) connects to B(2,0) and B(1,1)
+    ]);
+
+    expect(r.captured).toHaveLength(1);
+    expect(r.captured).toContainEqual(p(0, 0));
+    // Ko must NOT be set because the capturing stone at (1,0) has friendly neighbors
+    expect(s.koPoint).toBeNull();
+  });
+});
+
 describe('isSuicide', () => {
   it('returns true for placing in fully surrounded position', () => {
     const board = setupBoard(9, [white(1, 0), white(0, 1)]);

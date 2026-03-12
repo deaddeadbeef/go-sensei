@@ -44,7 +44,7 @@ export function playMove(state: GameState, point: Point): PlayResult {
   }
 
   // 3. Detect ko
-  const koPoint = detectKo(state.board, newBoard, captured);
+  const koPoint = detectKo(state.board, newBoard, captured, point);
 
   // 4. Build the move record
   const move: Move = { type: 'place', point, color, captured };

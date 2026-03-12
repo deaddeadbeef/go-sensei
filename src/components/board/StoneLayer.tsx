@@ -121,7 +121,7 @@ export function StoneLayer() {
 
   return (
     <AnimatePresence>
-      <g>{stones}</g>
+      {stones}
     </AnimatePresence>
   );
 }
