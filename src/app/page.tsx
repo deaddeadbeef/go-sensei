@@ -3,9 +3,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { BoardContainer } from '@/components/board/BoardContainer';
 import { SenseiBar } from '@/components/ui/SenseiBar';
-import { SenseiBubble } from '@/components/ui/SenseiBubble';
 import { SenseiInput } from '@/components/ui/SenseiInput';
 import { SettingsModal } from '@/components/ui/SettingsModal';
+import { RulesPanel } from '@/components/ui/RulesPanel';
+import { SenseiChatLog } from '@/components/chat/SenseiChatLog';
 import { GameControls } from '@/components/game/GameControls';
 import { ScoreCard } from '@/components/game/ScoreCard';
 import { useGameStore } from '@/stores/game-store';
@@ -26,11 +27,11 @@ export default function GamePage() {
   const lastPlayerMove = useGameStore((s) => s.lastPlayerMove);
   const game = useGameStore((s) => s.game);
   const showBubble = useGameStore((s) => s.showBubble);
+  const isAiThinking = useGameStore((s) => s.isAiThinking);
 
   const { sendPlayerMove, sendMessage, requestHint } = useGoMaster();
   const { authState, isLoggedIn, startLogin, logout } = useGitHubAuth();
 
-  // Auto-open settings if not logged in
   useEffect(() => {
     if (!isLoggedIn) {
       setTimeout(() => setShowSettings(true), 1500);
@@ -39,13 +40,12 @@ export default function GamePage() {
 
   useHesitationDetector(requestHint);
 
-  // Welcome message on first load
   const welcomeShown = useRef(false);
   useEffect(() => {
     if (phase === 'welcome' && !welcomeShown.current) {
       welcomeShown.current = true;
       showBubble({
-        text: "Welcome! I'm Go Sensei, your Go teacher. Go is a game where two players take turns placing black and white stones. You're Black — you go first! The goal is to surround more territory than your opponent. Click any intersection on the board to place your first stone. I'll teach you everything as we play!",
+        text: "Welcome! I'm Go Sensei, your Go teacher. Go is a game where two players take turns placing black and white stones on intersections. You're Black — you go first! The goal is to surround more territory than your opponent. Click any intersection on the board to place your first stone. I'll teach you everything as we play!",
         variant: 'teaching',
         anchorPoint: null,
         actions: [],
@@ -54,7 +54,6 @@ export default function GamePage() {
     }
   }, [phase, showBubble, setPhase]);
 
-  // Watch for player moves and trigger AI response
   const prevMoveCountRef = useRef(0);
   useEffect(() => {
     const currentMoveCount = game.moveHistory.length;
@@ -73,7 +72,6 @@ export default function GamePage() {
   }, [startNewGame, game.board.size]);
   const handlePass = useCallback(() => pass(), [pass]);
   const handleUndo = useCallback(() => undo(), [undo]);
-
   const handleSettingsSave = useCallback(
     (settings: { boardSize: BoardSize }) => {
       if (settings.boardSize !== game.board.size) {
@@ -97,19 +95,52 @@ export default function GamePage() {
         onLogin={startLogin}
         onLogout={logout}
       />
-      <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden">
+
+      {/* Main content: board (left) + sidebar (right) */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left: Board area (~70%) */}
+        <div className="flex-[7] flex flex-col items-center justify-center relative min-w-0">
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: `radial-gradient(circle at center, ${COLORS.board.bg}15 0%, transparent 70%)`,
+            }}
+          />
+          <BoardContainer />
+          <GameControls onNewGame={handleNewGame} onPass={handlePass} onUndo={handleUndo} />
+          <ScoreCard onPlayAgain={handleNewGame} />
+        </div>
+
+        {/* Right: Sidebar (~30%) — rules + chat + input */}
         <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: `radial-gradient(circle at center, ${COLORS.board.bg}15 0%, transparent 70%)`,
-          }}
-        />
-        <SenseiBubble />
-        <BoardContainer />
-        <GameControls onNewGame={handleNewGame} onPass={handlePass} onUndo={handleUndo} />
-        <ScoreCard onPlayAgain={handleNewGame} />
+          className="flex-[3] flex flex-col min-w-[280px] max-w-[400px] border-l"
+          style={{ borderColor: COLORS.ui.bgCard, backgroundColor: COLORS.ui.bgPrimary }}
+        >
+          {/* Rules panel (compact, top) */}
+          <div className="shrink-0 p-3 border-b" style={{ borderColor: COLORS.ui.bgCard }}>
+            <RulesPanel />
+          </div>
+
+          {/* Chat log (scrollable, fills remaining space) */}
+          <div className="flex-1 flex flex-col overflow-hidden p-3 gap-2">
+            <SenseiChatLog />
+
+            {/* Thinking indicator */}
+            {isAiThinking && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs"
+                style={{ backgroundColor: COLORS.ui.bgCard, color: COLORS.ui.textSecondary }}>
+                <span className="animate-pulse">🤔</span>
+                Sensei is thinking...
+              </div>
+            )}
+          </div>
+
+          {/* Input at bottom of sidebar */}
+          <div className="shrink-0 border-t" style={{ borderColor: COLORS.ui.bgCard }}>
+            <SenseiInput onSendMessage={sendMessage} onPass={handlePass} />
+          </div>
+        </div>
       </div>
-      <SenseiInput onSendMessage={sendMessage} onPass={handlePass} />
     </div>
   );
 }

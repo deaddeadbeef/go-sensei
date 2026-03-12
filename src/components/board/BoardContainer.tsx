@@ -5,13 +5,14 @@ import { GoBoard } from './GoBoard';
 
 export function BoardContainer() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [boardSize, setBoardSize] = useState(500);
+  const [size, setSize] = useState(500);
 
   useEffect(() => {
     const updateSize = () => {
       if (!containerRef.current) return;
       const { width, height } = containerRef.current.getBoundingClientRect();
-      setBoardSize(Math.min(width, height, 600));
+      // Use almost all available space — no arbitrary cap
+      setSize(Math.min(width - 16, height - 16));
     };
     updateSize();
     window.addEventListener('resize', updateSize);
@@ -21,10 +22,9 @@ export function BoardContainer() {
   return (
     <div
       ref={containerRef}
-      className="flex-1 flex items-center justify-center relative"
-      style={{ padding: 16 }}
+      className="flex-1 flex items-center justify-center"
     >
-      <div style={{ width: boardSize, height: boardSize }}>
+      <div style={{ width: size, height: size }}>
         <GoBoard />
       </div>
     </div>

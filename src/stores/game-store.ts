@@ -115,6 +115,9 @@ interface GameStore {
   // Sensei bubble
   bubble: SenseiBubbleState;
 
+  // Chat messages (accumulated log)
+  chatMessages: { id: string; text: string; variant: string; timestamp: number }[];
+
   // Lesson mode
   lesson: LessonState;
 
@@ -166,6 +169,9 @@ interface GameStore {
   showBubble: (config: Partial<SenseiBubbleState>) => void;
   updateBubbleText: (text: string) => void;
   dismissBubble: () => void;
+
+  // Chat
+  addChatMessage: (text: string, variant: string) => void;
 
   // Overlays
   clearOverlays: () => void;
@@ -251,6 +257,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   pendingCaptures: [],
 
   bubble: { ...defaultBubble },
+
+  chatMessages: [],
 
   lesson: { ...defaultLesson },
 
@@ -393,9 +401,23 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   // Bubble
   showBubble(config: Partial<SenseiBubbleState>) {
-    set((s) => ({
-      bubble: { ...s.bubble, streamingComplete: false, ...config, visible: true },
-    }));
+    set((s) => {
+      const text = config.text || '';
+      const variant = config.variant || 'neutral';
+      const lastMsg = s.chatMessages[s.chatMessages.length - 1];
+      const isDuplicate = lastMsg && lastMsg.text === text;
+      return {
+        bubble: { ...s.bubble, streamingComplete: false, ...config, visible: true },
+        ...(text && !isDuplicate ? {
+          chatMessages: [...s.chatMessages, {
+            id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            text,
+            variant,
+            timestamp: Date.now(),
+          }],
+        } : {}),
+      };
+    });
   },
 
   updateBubbleText(text: string) {
@@ -404,6 +426,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   dismissBubble() {
     set({ bubble: { ...defaultBubble } });
+  },
+
+  // Chat
+  addChatMessage(text: string, variant: string) {
+    set((s) => ({
+      chatMessages: [...s.chatMessages, {
+        id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        text,
+        variant,
+        timestamp: Date.now(),
+      }],
+    }));
   },
 
   // Overlays
@@ -497,6 +531,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       overlays: { highlights: [], liberties: [], suggestions: [] },
       pendingCaptures: [],
       bubble: { ...defaultBubble },
+      chatMessages: [],
       lesson: { ...defaultLesson },
       territory: null,
       scorecard: null,
