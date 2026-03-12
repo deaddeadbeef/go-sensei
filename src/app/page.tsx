@@ -40,6 +40,15 @@ export default function GamePage() {
 
   useHesitationDetector(requestHint);
 
+  // Auto-dismiss bubble after it's been shown (since SenseiBubble is no longer rendered)
+  const bubbleVisible = useGameStore((s) => s.bubble.visible);
+  const dismissBubble = useGameStore((s) => s.dismissBubble);
+  useEffect(() => {
+    if (!bubbleVisible) return;
+    const timer = setTimeout(dismissBubble, 2000);
+    return () => clearTimeout(timer);
+  }, [bubbleVisible, dismissBubble]);
+
   const welcomeShown = useRef(false);
   useEffect(() => {
     if (phase === 'welcome' && !welcomeShown.current) {
@@ -137,7 +146,7 @@ export default function GamePage() {
 
           {/* Input at bottom of sidebar */}
           <div className="shrink-0 border-t" style={{ borderColor: COLORS.ui.bgCard }}>
-            <SenseiInput onSendMessage={sendMessage} onPass={handlePass} />
+            <SenseiInput onSendMessage={sendMessage} />
           </div>
         </div>
       </div>

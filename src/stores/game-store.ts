@@ -200,6 +200,7 @@ interface GameStore {
   // Hesitation
   recordInteraction: () => void;
   setHesitationLevel: (level: 'none' | 'mild' | 'stuck') => void;
+  setHintOffered: (offered: boolean) => void;
 
   // Meta
   startNewGame: (size?: BoardSize) => void;
@@ -517,6 +518,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   setHesitationLevel(level) {
     set({ hesitationLevel: level });
+  },
+
+  setHintOffered(offered) {
+    set({ hintOffered: offered });
   },
 
   // Meta

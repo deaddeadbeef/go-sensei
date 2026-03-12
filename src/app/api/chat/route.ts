@@ -3,7 +3,7 @@ import { getCopilotSession } from '@/lib/ai/copilot-auth';
 import { GO_MASTER_SYSTEM_PROMPT } from '@/lib/ai/system-prompt';
 import { reconstructGame } from '@/lib/ai/tools';
 import {
-  createGame, playMove, isValidMove,
+  createGame, playMove, passMove, isValidMove,
   getGroup, getLibertiesOf, countLiberties, boardToText,
 } from '@/lib/go-engine';
 import type { GameState, Point } from '@/lib/go-engine/types';
@@ -125,8 +125,10 @@ function executeTool(
         newState: r.newState,
       };
     }
-    case 'pass_turn':
-      return { result: { success: true, reasoning: args.reasoning } };
+    case 'pass_turn': {
+      const newState = passMove(state);
+      return { result: { success: true, reasoning: args.reasoning, phase: newState.phase }, newState };
+    }
     case 'highlight_positions':
       return { result: { positions: args.positions, style: args.style, label: args.label } };
     case 'show_liberty_count': {

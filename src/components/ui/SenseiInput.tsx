@@ -5,13 +5,11 @@ import { COLORS } from '@/utils/colors';
 
 interface SenseiInputProps {
   onSendMessage: (text: string) => void;
-  onPass: () => void;
 }
 
-export function SenseiInput({ onSendMessage, onPass }: SenseiInputProps) {
+export function SenseiInput({ onSendMessage }: SenseiInputProps) {
   const [text, setText] = useState('');
   const isAiThinking = useGameStore((s) => s.isAiThinking);
-  const phase = useGameStore((s) => s.phase);
 
   const handleSend = useCallback(() => {
     if (!text.trim() || isAiThinking) return;
@@ -31,16 +29,6 @@ export function SenseiInput({ onSendMessage, onPass }: SenseiInputProps) {
       className="flex items-center gap-2 px-4 h-14 shrink-0"
       style={{ backgroundColor: COLORS.ui.bgCard, borderTop: `1px solid ${COLORS.ui.bgPrimary}` }}
     >
-      {phase === 'playing' && (
-        <button
-          onClick={onPass}
-          disabled={isAiThinking}
-          className="text-xs px-3 py-1.5 rounded-lg transition-opacity hover:opacity-80 disabled:opacity-40"
-          style={{ backgroundColor: COLORS.ui.bgPrimary, color: COLORS.ui.textSecondary }}
-        >
-          Pass
-        </button>
-      )}
       <input
         type="text"
         value={text}

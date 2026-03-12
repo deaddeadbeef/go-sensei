@@ -10,6 +10,7 @@ export function useHesitationDetector(onHint: () => void) {
   const setHesitationLevel = useGameStore((s) => s.setHesitationLevel);
   const hintOffered = useGameStore((s) => s.hintOffered);
   const showBubble = useGameStore((s) => s.showBubble);
+  const setHintOffered = useGameStore((s) => s.setHintOffered);
   const bubbleVisible = useGameStore((s) => s.bubble.visible);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -25,9 +26,11 @@ export function useHesitationDetector(onHint: () => void) {
 
       if (elapsed >= HESITATION_PROACTIVE_TIME && !hintOffered) {
         setHesitationLevel('stuck');
+        setHintOffered(true);
         onHint();
       } else if (elapsed >= HESITATION_NUDGE_TIME && !hintOffered) {
         setHesitationLevel('mild');
+        setHintOffered(true);
         showBubble({
           text: 'Take your time! Would you like me to suggest some good moves?',
           variant: 'teaching',
@@ -41,5 +44,5 @@ export function useHesitationDetector(onHint: () => void) {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [lastInteractionTime, isAiThinking, phase, bubbleVisible, hintOffered, setHesitationLevel, showBubble, onHint]);
+  }, [lastInteractionTime, isAiThinking, phase, bubbleVisible, hintOffered, setHesitationLevel, setHintOffered, showBubble, onHint]);
 }
