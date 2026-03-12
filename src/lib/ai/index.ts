@@ -9,4 +9,4 @@ export {
   formatHesitationMessage,
   formatPassMessage,
 } from './format-board';
-export { getCopilotToken, clearCopilotTokenCache } from './copilot-auth';
+export { getCopilotSession, getCopilotToken, clearCopilotTokenCache } from './copilot-auth';

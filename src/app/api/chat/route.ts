@@ -2,7 +2,7 @@ import { streamText, stepCountIs } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { GO_MASTER_SYSTEM_PROMPT } from '@/lib/ai/system-prompt';
 import { createGoTools, reconstructGame } from '@/lib/ai/tools';
-import { getCopilotToken } from '@/lib/ai/copilot-auth';
+import { getCopilotSession } from '@/lib/ai/copilot-auth';
 import { createGame, playMove } from '@/lib/go-engine';
 import type { GameState } from '@/lib/go-engine/types';
 
@@ -61,9 +61,9 @@ export async function POST(req: Request) {
     );
   }
 
-  let copilotToken: string;
+  let session;
   try {
-    copilotToken = await getCopilotToken(githubToken);
+    session = await getCopilotSession(githubToken);
   } catch (err) {
     return new Response(
       JSON.stringify({
@@ -73,19 +73,22 @@ export async function POST(req: Request) {
     );
   }
 
-  console.log('[GoSensei] Token exchange successful');
+  console.log('[GoSensei] Copilot session obtained, API URL:', session.apiUrl);
 
   const copilot = createOpenAI({
-    baseURL: 'https://api.githubcopilot.com',
-    apiKey: copilotToken,
+    baseURL: session.apiUrl,
+    apiKey: session.token,
     headers: {
       'Copilot-Integration-Id': 'vscode-chat',
-      'editor-version': 'vscode/1.95.0',
-      'editor-plugin-version': 'copilot/1.250.0',
+      'Editor-Version': 'vscode/1.96.0',
+      'Editor-Plugin-Version': 'copilot-chat/0.24.0',
+      'Openai-Organization': 'github-copilot',
+      'Openai-Intent': 'conversation-panel',
+      'User-Agent': 'GitHubCopilotChat/0.24.0',
     },
   });
 
-  const modelId = 'claude-sonnet-4';
+  const modelId = 'gpt-4o';
   console.log('[GoSensei] Calling Copilot API with model:', modelId);
   console.log('[GoSensei] Message count:', messages.length);
   console.log('[GoSensei] Tools:', Object.keys(wrappedTools));
