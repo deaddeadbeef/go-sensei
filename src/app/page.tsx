@@ -108,7 +108,7 @@ export default function GamePage() {
       {/* Main content: board (left) + sidebar (right) */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left: Board area (~70%) */}
-        <div className="flex-[7] flex flex-col items-center justify-center relative min-w-0 min-h-0">
+        <div className="flex-[7] flex flex-col relative min-w-0 min-h-0 overflow-hidden">
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
