@@ -10,7 +10,7 @@ import type { GameState, Point } from '@/lib/go-engine/types';
 
 export const maxDuration = 60;
 
-const MODEL = 'gpt-5.4';
+const MODEL = 'claude-sonnet-4';
 
 // OpenAI-format tool definitions
 const TOOLS = [
@@ -174,6 +174,8 @@ async function callCopilot(
     body.tools = TOOLS;
     body.tool_choice = 'auto';
   }
+
+  console.log(`[GoSensei] callCopilot → model=${MODEL}, tools=${withTools}, messages=${messages.length}`);
 
   const resp = await fetch(`${apiUrl}/chat/completions`, {
     method: 'POST',
