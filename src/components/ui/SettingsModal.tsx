@@ -142,7 +142,7 @@ export function SettingsModal({
                 ))}
               </div>
               <p className="text-xs mt-1 opacity-50" style={{ color: COLORS.ui.textSecondary }}>
-                9×9 recommended for beginners
+                19×19 is the standard board size
               </p>
             </div>
 

@@ -54,7 +54,7 @@ export default function GamePage() {
     if (phase === 'welcome' && !welcomeShown.current) {
       welcomeShown.current = true;
       showBubble({
-        text: "Welcome! I'm Go Sensei, your Go teacher. Go is a game where two players take turns placing black and white stones on intersections. You're Black — you go first! The goal is to surround more territory than your opponent. Click any intersection on the board to place your first stone. I'll teach you everything as we play!",
+        text: "Welcome! I'm Go Sensei, your Go teacher. You're playing on a standard 19×19 board — the same size used in professional tournaments. Go is a game where two players take turns placing black and white stones on intersections. You're Black — you go first! The goal is to surround more territory than your opponent. Click any intersection to place your first stone. I'll teach you everything as we play!",
         variant: 'teaching',
         anchorPoint: null,
         actions: [],
@@ -108,7 +108,7 @@ export default function GamePage() {
       {/* Main content: board (left) + sidebar (right) */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left: Board area (~70%) */}
-        <div className="flex-[7] flex flex-col items-center justify-center relative min-w-0">
+        <div className="flex-[7] flex flex-col items-center justify-center relative min-w-0 min-h-0">
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
@@ -116,7 +116,9 @@ export default function GamePage() {
             }}
           />
           <BoardContainer />
-          <GameControls onNewGame={handleNewGame} onPass={handlePass} onUndo={handleUndo} />
+          <div className="shrink-0">
+            <GameControls onNewGame={handleNewGame} onPass={handlePass} onUndo={handleUndo} />
+          </div>
           <ScoreCard onPlayAgain={handleNewGame} />
         </div>
 

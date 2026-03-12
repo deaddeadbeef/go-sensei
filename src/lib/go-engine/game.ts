@@ -5,7 +5,7 @@ import { findCaptures, applyCaptures, detectKo, isValidMove } from './rules';
 /**
  * Creates a new game with default settings.
  */
-export function createGame(size: BoardSize = 9, komi: number = 6.5): GameState {
+export function createGame(size: BoardSize = 19, komi: number = 6.5): GameState {
   return {
     board: createBoard(size),
     currentPlayer: 'black',

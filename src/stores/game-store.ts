@@ -244,7 +244,7 @@ const defaultOverlays = {
 
 export const useGameStore = create<GameStore>((set, get) => ({
   // ---- Initial state ----
-  game: createGame(9),
+  game: createGame(19),
 
   hoveredPoint: null,
   hoveredGroup: null,
@@ -500,7 +500,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   endLesson() {
     const { lesson } = get();
     set({
-      game: lesson.savedGameState ?? createGame(9),
+      game: lesson.savedGameState ?? createGame(19),
       phase: 'playing',
       lesson: { ...defaultLesson },
     });
@@ -525,7 +525,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   // Meta
-  startNewGame(size: BoardSize = 9) {
+  startNewGame(size: BoardSize = 19) {
     set({
       game: createGame(size),
       hoveredPoint: null,
