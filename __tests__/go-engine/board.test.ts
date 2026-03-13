@@ -70,6 +70,18 @@ describe('setStone', () => {
     const cleared = setStone(board, p(0, 0), null);
     expect(getStone(cleared, p(0, 0))).toBeNull();
   });
+
+  it('returns unchanged board for out-of-bounds point', () => {
+    const board = createBoard(9);
+    const result = setStone(board, p(-1, 0), 'black');
+    expect(result).toBe(board); // exact same reference
+
+    const result2 = setStone(board, p(0, 9), 'white');
+    expect(result2).toBe(board);
+
+    const result3 = setStone(board, p(100, 100), 'black');
+    expect(result3).toBe(board);
+  });
 });
 
 describe('isOnBoard', () => {

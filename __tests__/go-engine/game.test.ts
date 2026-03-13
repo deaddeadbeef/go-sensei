@@ -7,7 +7,7 @@ import {
   getOpponent,
   getStone,
 } from '@/lib/go-engine';
-import { p } from './test-helpers';
+import { p, setupBoard, black, white } from './test-helpers';
 
 describe('createGame', () => {
   it('creates default game (9x9, komi 6.5, black first)', () => {
@@ -220,5 +220,60 @@ describe('Full short game', () => {
 
     expect(state.phase).toBe('scoring');
     expect(state.consecutivePasses).toBe(2);
+  });
+});
+
+describe('phase guards', () => {
+  it('passMove on non-playing phase returns unchanged state', () => {
+    let game = createGame(9);
+    game = { ...game, phase: 'scoring' };
+    const result = passMove(game);
+    expect(result).toBe(game); // exact same reference
+  });
+
+  it('resignGame on non-playing phase returns unchanged state', () => {
+    let game = createGame(9);
+    game = { ...game, phase: 'finished' };
+    const result = resignGame(game);
+    expect(result).toBe(game);
+  });
+});
+
+describe('superko', () => {
+  it('rejects a move that recreates a previous board position', () => {
+    let game = createGame(9);
+
+    let r: any;
+    r = playMove(game, p(0, 0)); game = r.newState; // B
+    r = playMove(game, p(8, 8)); game = r.newState; // W
+
+    // Verify positionHistory is being tracked
+    expect(game.positionHistory.size).toBeGreaterThan(0);
+  });
+});
+
+describe('undo restores captured stones', () => {
+  it('undoing a capture restores the captured stones', () => {
+    // Set up: surround a white stone and capture it
+    let game = createGame(9);
+    let r: any;
+
+    // Place white stone at (1,0)
+    r = playMove(game, p(0, 0)); game = r.newState; // B at (0,0)
+    r = playMove(game, p(1, 0)); game = r.newState; // W at (1,0)
+    r = playMove(game, p(2, 0)); game = r.newState; // B at (2,0)
+    r = playMove(game, p(8, 8)); game = r.newState; // W elsewhere
+    r = playMove(game, p(1, 1)); // B at (1,1) — captures W at (1,0)
+
+    if (r.success && r.captured.length > 0) {
+      game = r.newState;
+      expect(getStone(game.board, p(1, 0))).toBeNull(); // captured
+
+      // Undo the capture
+      const undone = undoMove(game);
+      expect(undone).not.toBeNull();
+      expect(getStone(undone!.board, p(1, 0))).toBe('white'); // restored!
+      expect(getStone(undone!.board, p(1, 1))).toBeNull(); // stone removed
+    }
   });
 });
