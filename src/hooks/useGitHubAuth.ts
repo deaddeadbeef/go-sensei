@@ -18,10 +18,11 @@ interface AuthState {
 }
 
 const STORAGE_KEY = 'go-sensei-github-token';
+// Security: sessionStorage ensures tokens don't persist across browser sessions
 
 export function useGitHubAuth() {
   const [authState, setAuthState] = useState<AuthState>(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
+    const saved = typeof window !== 'undefined' ? sessionStorage.getItem(STORAGE_KEY) : null;
     return {
       status: saved ? 'success' : 'idle',
       userCode: null,
@@ -82,7 +83,7 @@ export function useGitHubAuth() {
           if (data.access_token) {
             // Success!
             stopPolling();
-            localStorage.setItem(STORAGE_KEY, data.access_token);
+            sessionStorage.setItem(STORAGE_KEY, data.access_token);
             setAuthState({
               status: 'success',
               userCode: null,
@@ -143,7 +144,7 @@ export function useGitHubAuth() {
 
   const logout = useCallback(() => {
     stopPolling();
-    localStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(STORAGE_KEY);
     setAuthState({
       status: 'idle',
       userCode: null,

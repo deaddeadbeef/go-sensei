@@ -26,7 +26,7 @@ export function useGoMaster() {
   const historyRef = useRef<ChatMsg[]>([]);
 
   const headers = useCallback(() => {
-    const t = typeof window !== 'undefined' ? localStorage.getItem('go-sensei-github-token') : null;
+    const t = typeof window !== 'undefined' ? sessionStorage.getItem('go-sensei-github-token') : null;
     return { 'Content-Type': 'application/json', ...(t ? { 'x-github-token': t } : {}) };
   }, []);
 

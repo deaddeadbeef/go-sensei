@@ -7,12 +7,14 @@ interface CopilotSession {
   apiUrl: string;
 }
 
-let cachedSession: CopilotSession | null = null;
+// S1: Per-token cache to prevent cross-user session leakage
+const sessionCache = new Map<string, CopilotSession>();
 
 export async function getCopilotSession(githubToken: string): Promise<CopilotSession> {
   // Return cached session if still valid (with 60s buffer)
-  if (cachedSession && Date.now() < cachedSession.expiresAt - 60_000) {
-    return cachedSession;
+  const cached = sessionCache.get(githubToken);
+  if (cached && Date.now() < cached.expiresAt - 60_000) {
+    return cached;
   }
 
   const resp = await fetch('https://api.github.com/copilot_internal/v2/token', {
@@ -37,13 +39,14 @@ export async function getCopilotSession(githubToken: string): Promise<CopilotSes
     apiUrl = data.endpoints.api;
   }
 
-  cachedSession = {
+  const session: CopilotSession = {
     token: data.token,
     expiresAt: data.expires_at ? data.expires_at * 1000 : Date.now() + 25 * 60 * 1000,
     apiUrl,
   };
 
-  return cachedSession;
+  sessionCache.set(githubToken, session);
+  return session;
 }
 
 // Backward compat
@@ -53,5 +56,5 @@ export async function getCopilotToken(githubToken: string): Promise<string> {
 }
 
 export function clearCopilotTokenCache() {
-  cachedSession = null;
+  sessionCache.clear();
 }
