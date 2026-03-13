@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import type {
   GameState,
   Point,
@@ -139,6 +140,10 @@ interface GameStore {
     winner: StoneColor | 'draw' | null;
   } | null;
 
+  // Dead stones (scoring phase)
+  deadStones: Point[];
+  toggleDeadStone: (point: Point) => void;
+
   // Ko
   koRejection: { point: Point; timestamp: number } | null;
 
@@ -242,7 +247,9 @@ const defaultOverlays = {
 // Store
 // ---------------------------------------------------------------------------
 
-export const useGameStore = create<GameStore>((set, get) => ({
+export const useGameStore = create<GameStore>()(
+  persist(
+    (set, get) => ({
   // ---- Initial state ----
   game: createGame(19),
 
@@ -265,6 +272,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   territory: null,
   scorecard: null,
+
+  deadStones: [],
 
   koRejection: null,
 
@@ -536,6 +545,19 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({ phase: 'scoring', territory });
   },
 
+  toggleDeadStone(point: Point) {
+    set((s) => {
+      const exists = s.deadStones.some(
+        (ds) => ds.x === point.x && ds.y === point.y,
+      );
+      return {
+        deadStones: exists
+          ? s.deadStones.filter((ds) => !(ds.x === point.x && ds.y === point.y))
+          : [...s.deadStones, point],
+      };
+    });
+  },
+
   // Hesitation
   recordInteraction() {
     set({ lastInteractionTime: Date.now(), hesitationLevel: 'none' });
@@ -565,6 +587,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       lesson: { ...defaultLesson },
       territory: null,
       scorecard: null,
+      deadStones: [],
       koRejection: null,
       lastInteractionTime: Date.now(),
       hesitationLevel: 'none',
@@ -585,4 +608,29 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setPhase(phase) {
     set({ phase });
   },
-}));
+    }),
+    {
+      name: 'go-sensei-game',
+      storage: createJSONStorage(() => sessionStorage, {
+        replacer: (_key: string, value: unknown) => {
+          if (value instanceof Set) {
+            return { __type: 'Set', values: [...value] };
+          }
+          return value;
+        },
+        reviver: (_key: string, value: unknown) => {
+          if (value && typeof value === 'object' && (value as Record<string, unknown>).__type === 'Set') {
+            return new Set((value as Record<string, unknown[]>).values);
+          }
+          return value;
+        },
+      }),
+      partialize: (state) => ({
+        game: state.game,
+        chatMessages: state.chatMessages,
+        phase: state.phase,
+        learnedConcepts: state.learnedConcepts,
+      }),
+    },
+  ),
+);

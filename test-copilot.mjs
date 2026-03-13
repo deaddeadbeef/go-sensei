@@ -1,4 +1,9 @@
 #!/usr/bin/env node
+// Note: This test uses the Chat Completions API (/chat/completions) for diagnostics,
+// but the app's route.ts uses the Responses API (/responses) which has a different
+// format: flat tool definitions (not nested under "function"), "input" instead of
+// "messages", and "output" instead of "choices".
+//
 // Quick diagnostic: does the token exchange + Copilot API work?
 // Usage: node test-copilot.mjs <github-token>
 

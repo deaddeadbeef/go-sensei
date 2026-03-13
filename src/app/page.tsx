@@ -101,8 +101,8 @@ export default function GamePage() {
       />
 
       {/* Main content: board (left) + sidebar (right) */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left: Board area (~70%) */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+        {/* Left: Board area */}
         <div className="flex-[7] flex flex-col relative min-w-0 min-h-0 overflow-hidden">
           <div
             className="absolute inset-0 pointer-events-none"
@@ -118,9 +118,9 @@ export default function GamePage() {
           <ScoreCard onPlayAgain={handleNewGame} />
         </div>
 
-        {/* Right: Sidebar (~30%) — rules + chat + input */}
+        {/* Right: Sidebar — full-width on mobile, side panel on desktop */}
         <div
-          className="flex-[3] flex flex-col min-w-[280px] max-w-[400px] border-l"
+          className="flex-[3] flex flex-col md:min-w-[280px] md:max-w-[400px] border-t md:border-t-0 md:border-l"
           style={{ borderColor: COLORS.ui.bgCard, backgroundColor: COLORS.ui.bgPrimary }}
         >
           {/* Rules panel (compact, top) */}

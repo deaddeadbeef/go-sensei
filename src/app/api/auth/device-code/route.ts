@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 
-// GitHub OAuth App client ID for Copilot integrations
-// This is the well-known public client used by VS Code Copilot
+// ⚠️ WARNING: This is the VS Code Copilot OAuth App client ID.
+// Reusing it means our app inherits VS Code's OAuth scopes and rate limits.
+// For production, register a dedicated GitHub OAuth App.
 const CLIENT_ID = 'Iv1.b507a08c87ecfe98';
 
 export async function POST() {

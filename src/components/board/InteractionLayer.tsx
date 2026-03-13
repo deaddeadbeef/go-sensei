@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useGameStore } from '@/stores/game-store';
 import { pointToSvg, cellSize } from '@/utils/coordinates';
 
@@ -12,10 +12,10 @@ export function InteractionLayer() {
   const phase = useGameStore((s) => s.phase);
   const recordInteraction = useGameStore((s) => s.recordInteraction);
 
-  const lastInteractionRef = useRef(0);
-
   const cell = cellSize(boardSize);
   const hitRadius = cell * 0.45;
+  const lastInteractionRef = useRef(0);
+  const [focusedPoint, setFocusedPoint] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const handleClick = useCallback(
     (x: number, y: number) => {
@@ -42,6 +42,40 @@ export function InteractionLayer() {
     setHover(null);
   }, [setHover]);
 
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      let { x, y } = focusedPoint;
+      switch (e.key) {
+        case 'ArrowUp':
+          y = Math.max(0, y - 1);
+          e.preventDefault();
+          break;
+        case 'ArrowDown':
+          y = Math.min(boardSize - 1, y + 1);
+          e.preventDefault();
+          break;
+        case 'ArrowLeft':
+          x = Math.max(0, x - 1);
+          e.preventDefault();
+          break;
+        case 'ArrowRight':
+          x = Math.min(boardSize - 1, x + 1);
+          e.preventDefault();
+          break;
+        case 'Enter':
+        case ' ':
+          handleClick(x, y);
+          e.preventDefault();
+          return;
+        default:
+          return;
+      }
+      setFocusedPoint({ x, y });
+      setHover({ x, y });
+    },
+    [focusedPoint, boardSize, handleClick, setHover],
+  );
+
   const circles: React.ReactNode[] = [];
 
   for (let y = 0; y < boardSize; y++) {
@@ -65,5 +99,14 @@ export function InteractionLayer() {
     }
   }
 
-  return <g>{circles}</g>;
+  return (
+    <g
+      tabIndex={0}
+      role="grid"
+      aria-label={`${boardSize}×${boardSize} Go board`}
+      onKeyDown={handleKeyDown}
+    >
+      {circles}
+    </g>
+  );
 }
