@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useGameStore } from '@/stores/game-store';
 import { pointToSvg, stoneRadius } from '@/utils/coordinates';
 import { CAPTURE_FLASH, CAPTURE_DISSOLVE } from '@/utils/animation';
@@ -13,15 +13,28 @@ export function CaptureAnimation() {
     (s) => s.completeCaptureAnimation,
   );
 
-  // Auto-complete captures after animation duration
+  // Track which captures we've already scheduled timers for
+  const processedRef = useRef(new Set<string>());
+
   useEffect(() => {
-    if (pendingCaptures.length === 0) return;
-    const timer = setTimeout(
-      () => {
-        completeCaptureAnimation(pendingCaptures.map((c) => c.point));
-      },
-      (CAPTURE_FLASH + CAPTURE_DISSOLVE) * 1000 + 100,
+    const newCaptures = pendingCaptures.filter(
+      (c) => !processedRef.current.has(`${c.point.x},${c.point.y}`)
     );
+    if (newCaptures.length === 0) return;
+
+    // Mark as processed
+    for (const c of newCaptures) {
+      processedRef.current.add(`${c.point.x},${c.point.y}`);
+    }
+
+    const timer = setTimeout(() => {
+      completeCaptureAnimation(newCaptures.map((c) => c.point));
+      // Clean up processed tracking
+      for (const c of newCaptures) {
+        processedRef.current.delete(`${c.point.x},${c.point.y}`);
+      }
+    }, (CAPTURE_FLASH + CAPTURE_DISSOLVE) * 1000 + 100);
+
     return () => clearTimeout(timer);
   }, [pendingCaptures, completeCaptureAnimation]);
 

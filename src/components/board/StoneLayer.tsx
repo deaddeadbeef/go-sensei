@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useGameStore } from '@/stores/game-store';
 import { pointToSvg, stoneRadius } from '@/utils/coordinates';
 import { STONE_DROP } from '@/utils/animation';
@@ -73,55 +73,59 @@ function LastMoveMarker({
   );
 }
 
-export function StoneLayer() {
+export const StoneLayer = React.memo(function StoneLayer() {
   const grid = useGameStore((s) => s.game.board.grid);
   const boardSize = useGameStore((s) => s.game.board.size);
   const lastPlayerMove = useGameStore((s) => s.lastPlayerMove);
   const lastAiMove = useGameStore((s) => s.lastAiMove);
   const pendingCaptures = useGameStore((s) => s.pendingCaptures);
 
-  // Build set of pending capture positions to exclude from rendering
-  const pendingSet = new Set(
-    pendingCaptures.map((c) => `${c.point.x},${c.point.y}`),
-  );
-
-  const stones: React.ReactNode[] = [];
   const lastMove = lastAiMove || lastPlayerMove;
 
-  for (let y = 0; y < boardSize; y++) {
-    for (let x = 0; x < boardSize; x++) {
-      const cell = grid[y][x];
-      if (cell && !pendingSet.has(`${x},${y}`)) {
-        const isLast = lastMove
-          ? lastMove.x === x && lastMove.y === y
-          : false;
-        stones.push(
-          <Stone
-            key={`stone-${x}-${y}`}
-            x={x}
-            y={y}
-            color={cell}
-            boardSize={boardSize}
-          />,
-        );
-        if (isLast) {
-          stones.push(
-            <LastMoveMarker
-              key={`last-${x}-${y}`}
+  const stones = useMemo(() => {
+    const pendingSet = new Set(
+      pendingCaptures.map((c) => `${c.point.x},${c.point.y}`),
+    );
+
+    const result: React.ReactNode[] = [];
+
+    for (let y = 0; y < boardSize; y++) {
+      for (let x = 0; x < boardSize; x++) {
+        const cell = grid[y][x];
+        if (cell && !pendingSet.has(`${x},${y}`)) {
+          const isLast = lastMove
+            ? lastMove.x === x && lastMove.y === y
+            : false;
+          result.push(
+            <Stone
+              key={`stone-${x}-${y}`}
               x={x}
               y={y}
               color={cell}
               boardSize={boardSize}
             />,
           );
+          if (isLast) {
+            result.push(
+              <LastMoveMarker
+                key={`last-${x}-${y}`}
+                x={x}
+                y={y}
+                color={cell}
+                boardSize={boardSize}
+              />,
+            );
+          }
         }
       }
     }
-  }
+
+    return result;
+  }, [grid, boardSize, lastMove, pendingCaptures]);
 
   return (
     <AnimatePresence>
       {stones}
     </AnimatePresence>
   );
-}
+});
