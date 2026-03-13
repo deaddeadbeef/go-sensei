@@ -372,10 +372,35 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   undo() {
     const { game } = get();
-    const prev = undoMove(game);
-    if (prev) {
-      set({ game: prev, koRejection: null, pendingCaptures: [] });
+
+    // If AI just moved (last move is white), undo both AI and player moves
+    const lastMove = game.moveHistory[game.moveHistory.length - 1];
+    let current = game;
+
+    if (lastMove && lastMove.color === 'white') {
+      // Undo AI move first
+      const afterUndoAi = undoMove(current);
+      if (!afterUndoAi) return;
+      current = afterUndoAi;
+      // Then undo player move
+      const afterUndoPlayer = undoMove(current);
+      if (afterUndoPlayer) {
+        current = afterUndoPlayer;
+      }
+    } else {
+      // Undo single move (player hasn't received AI response yet)
+      const prev = undoMove(current);
+      if (!prev) return;
+      current = prev;
     }
+
+    set({
+      game: current,
+      koRejection: null,
+      pendingCaptures: [],
+      lastPlayerMove: null,
+      lastAiMove: null,
+    });
   },
 
   // AI actions

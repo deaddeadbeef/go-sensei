@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { BoardContainer } from '@/components/board/BoardContainer';
+import { SenseiBubble } from '@/components/ui/SenseiBubble';
 import { SenseiBar } from '@/components/ui/SenseiBar';
 import { SenseiInput } from '@/components/ui/SenseiInput';
 import { SettingsModal } from '@/components/ui/SettingsModal';
@@ -24,7 +25,6 @@ export default function GamePage() {
   const startNewGame = useGameStore((s) => s.startNewGame);
   const pass = useGameStore((s) => s.pass);
   const undo = useGameStore((s) => s.undo);
-  const lastPlayerMove = useGameStore((s) => s.lastPlayerMove);
   const game = useGameStore((s) => s.game);
   const showBubble = useGameStore((s) => s.showBubble);
   const isAiThinking = useGameStore((s) => s.isAiThinking);
@@ -39,15 +39,6 @@ export default function GamePage() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useHesitationDetector(requestHint);
-
-  // Auto-dismiss bubble after it's been shown (since SenseiBubble is no longer rendered)
-  const bubbleVisible = useGameStore((s) => s.bubble.visible);
-  const dismissBubble = useGameStore((s) => s.dismissBubble);
-  useEffect(() => {
-    if (!bubbleVisible) return;
-    const timer = setTimeout(dismissBubble, 2000);
-    return () => clearTimeout(timer);
-  }, [bubbleVisible, dismissBubble]);
 
   const welcomeShown = useRef(false);
   useEffect(() => {
@@ -66,14 +57,18 @@ export default function GamePage() {
   const prevMoveCountRef = useRef(0);
   useEffect(() => {
     const currentMoveCount = game.moveHistory.length;
-    if (currentMoveCount > prevMoveCountRef.current && lastPlayerMove) {
+    if (currentMoveCount > prevMoveCountRef.current) {
       const lastMove = game.moveHistory[currentMoveCount - 1];
-      if (lastMove && lastMove.type === 'place' && lastMove.color === 'black') {
-        sendPlayerMove(lastMove.captured.length > 0, lastMove.captured.length);
+      if (lastMove && lastMove.color === 'black') {
+        if (lastMove.type === 'place') {
+          sendPlayerMove(lastMove.captured.length > 0, lastMove.captured.length);
+        } else if (lastMove.type === 'pass') {
+          sendPlayerMove(false, 0);
+        }
       }
     }
     prevMoveCountRef.current = currentMoveCount;
-  }, [game.moveHistory.length, lastPlayerMove]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [game.moveHistory.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleNewGame = useCallback(() => {
     welcomeShown.current = false;
@@ -115,6 +110,7 @@ export default function GamePage() {
               background: `radial-gradient(circle at center, ${COLORS.board.bg}15 0%, transparent 70%)`,
             }}
           />
+          <SenseiBubble />
           <BoardContainer />
           <div className="shrink-0">
             <GameControls onNewGame={handleNewGame} onPass={handlePass} onUndo={handleUndo} />

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 interface DeviceCodeResponse {
   device_code: string;
@@ -32,6 +32,29 @@ export function useGitHubAuth() {
     };
   });
 
+  // Validate saved token on mount
+  useEffect(() => {
+    const saved = typeof window !== 'undefined' ? sessionStorage.getItem(STORAGE_KEY) : null;
+    if (!saved) return;
+
+    fetch('https://api.github.com/user', {
+      headers: { Authorization: `Bearer ${saved}` },
+    }).then((resp) => {
+      if (resp.status === 401) {
+        sessionStorage.removeItem(STORAGE_KEY);
+        setAuthState({
+          status: 'idle',
+          userCode: null,
+          verificationUri: null,
+          error: null,
+          token: null,
+        });
+      }
+    }).catch(() => {
+      // Network error — keep token, might be transient
+    });
+  }, []);
+
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const deviceCodeRef = useRef<string | null>(null);
 
@@ -41,6 +64,11 @@ export function useGitHubAuth() {
       pollingRef.current = null;
     }
   }, []);
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => stopPolling();
+  }, [stopPolling]);
 
   const startLogin = useCallback(async () => {
     stopPolling();

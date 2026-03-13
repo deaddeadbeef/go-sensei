@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { useGameStore } from '@/stores/game-store';
 import { pointToSvg, cellSize } from '@/utils/coordinates';
 
@@ -11,6 +11,8 @@ export function InteractionLayer() {
   const isAiThinking = useGameStore((s) => s.isAiThinking);
   const phase = useGameStore((s) => s.phase);
   const recordInteraction = useGameStore((s) => s.recordInteraction);
+
+  const lastInteractionRef = useRef(0);
 
   const cell = cellSize(boardSize);
   const hitRadius = cell * 0.45;
@@ -27,7 +29,11 @@ export function InteractionLayer() {
   const handleHover = useCallback(
     (x: number, y: number) => {
       setHover({ x, y });
-      recordInteraction();
+      const now = Date.now();
+      if (now - lastInteractionRef.current > 200) {
+        lastInteractionRef.current = now;
+        recordInteraction();
+      }
     },
     [setHover, recordInteraction],
   );
