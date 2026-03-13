@@ -56,6 +56,7 @@ export {
   passMove,
   resignGame,
   undoMove,
+  finishGame,
   getOpponent,
 } from './game';
 

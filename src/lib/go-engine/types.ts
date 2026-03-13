@@ -23,6 +23,7 @@ export interface GameState {
   phase: 'playing' | 'scoring' | 'finished';
   komi: number; // 6.5 default for even game
   winner: StoneColor | 'draw' | null;
+  positionHistory: Set<string>; // board hashes for superko detection
 }
 
 export type Move =
@@ -54,6 +55,6 @@ export interface TerritoryResult {
   whiteTerritory: Point[];
   blackScore: number;
   whiteScore: number;
-  finalBlackScore: number; // territory + captures + stones on board
-  finalWhiteScore: number; // territory + captures + stones on board + komi
+  finalBlackScore: number; // Chinese scoring: territory + stones on board
+  finalWhiteScore: number; // Chinese scoring: territory + stones on board + komi
 }

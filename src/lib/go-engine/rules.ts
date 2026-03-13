@@ -1,5 +1,6 @@
 import type { BoardState, GameState, Point, StoneColor } from './types';
 import {
+  cloneBoard,
   getAdjacentPoints,
   getStone,
   isOnBoard,
@@ -76,9 +77,10 @@ export function findCaptures(
  * Removes captured stones from the board, returning a new board.
  */
 export function applyCaptures(board: BoardState, captures: Point[]): BoardState {
-  let result = board;
+  if (captures.length === 0) return board;
+  const result = cloneBoard(board);
   for (const point of captures) {
-    result = setStone(result, point, null);
+    result.grid[point.y][point.x] = null;
   }
   return result;
 }

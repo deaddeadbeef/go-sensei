@@ -34,6 +34,7 @@ export function getStone(board: BoardState, point: Point): CellState {
  * Returns a NEW board with the stone set at the given point (immutable).
  */
 export function setStone(board: BoardState, point: Point, value: CellState): BoardState {
+  if (!isOnBoard(board, point)) return board;
   const newBoard = cloneBoard(board);
   newBoard.grid[point.y][point.x] = value;
   return newBoard;
