@@ -1,25 +1,38 @@
 import type { BoardState, Point, StoneColor, TerritoryResult } from './types';
-import { getAdjacentPoints, getStone, pointKey } from './board';
+import { cloneBoard, getAdjacentPoints, getStone, pointKey } from './board';
 
 /**
  * Calculates territory using Chinese scoring rules.
  * Score = territory + stones on board. Komi added to white.
  */
-export function calculateTerritory(board: BoardState, komi: number = 6.5): TerritoryResult {
+export function calculateTerritory(
+  board: BoardState,
+  komi: number = 6.5,
+  deadStones: Point[] = [],
+): TerritoryResult {
+  // Clone board and remove dead stones before scoring
+  let scoringBoard = board;
+  if (deadStones.length > 0) {
+    scoringBoard = cloneBoard(board);
+    for (const ds of deadStones) {
+      scoringBoard.grid[ds.y][ds.x] = null;
+    }
+  }
+
   const visited = new Set<string>();
   const blackTerritory: Point[] = [];
   const whiteTerritory: Point[] = [];
 
   // Find all empty regions and determine ownership
-  for (let y = 0; y < board.size; y++) {
-    for (let x = 0; x < board.size; x++) {
+  for (let y = 0; y < scoringBoard.size; y++) {
+    for (let x = 0; x < scoringBoard.size; x++) {
       const point: Point = { x, y };
       const key = pointKey(point);
       if (visited.has(key)) continue;
-      if (getStone(board, point) !== null) continue;
+      if (getStone(scoringBoard, point) !== null) continue;
 
       // Flood-fill this empty region
-      const { points, adjacentColors } = floodFillEmpty(board, point, visited);
+      const { points, adjacentColors } = floodFillEmpty(scoringBoard, point, visited);
 
       if (adjacentColors.size === 1) {
         // Region borders only one color — it's that color's territory
@@ -34,8 +47,8 @@ export function calculateTerritory(board: BoardState, komi: number = 6.5): Terri
     }
   }
 
-  const blackStones = countStones(board, 'black');
-  const whiteStones = countStones(board, 'white');
+  const blackStones = countStones(scoringBoard, 'black');
+  const whiteStones = countStones(scoringBoard, 'white');
 
   const blackScore = blackTerritory.length;
   const whiteScore = whiteTerritory.length;

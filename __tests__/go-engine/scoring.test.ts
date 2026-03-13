@@ -136,3 +136,25 @@ describe('Chinese scoring with komi', () => {
     expect(result.finalWhiteScore).toBe(15.5);
   });
 });
+
+describe('dead stone support', () => {
+  it('dead stone inside territory is excluded from scoring', () => {
+    // Black encloses corner with a dead white stone inside
+    const board = setupBoard(9, [
+      black(2, 0), black(2, 1), black(0, 2), black(1, 2), black(2, 2),
+      white(1, 1), // dead white stone inside black territory
+    ]);
+
+    // Without marking dead: white stone breaks territory
+    const withoutDead = calculateTerritory(board, 0);
+
+    // With marking dead: white stone removed, territory restored
+    const withDead = calculateTerritory(board, 0, [p(1, 1)]);
+    expect(withDead.blackTerritory.length).toBeGreaterThan(withoutDead.blackTerritory.length);
+    // Should have 4 points of territory (the dead stone position + 3 empty)
+    expect(withDead.blackTerritory).toContainEqual(p(0, 0));
+    expect(withDead.blackTerritory).toContainEqual(p(1, 0));
+    expect(withDead.blackTerritory).toContainEqual(p(0, 1));
+    expect(withDead.blackTerritory).toContainEqual(p(1, 1));
+  });
+});
