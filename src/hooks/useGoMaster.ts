@@ -77,7 +77,8 @@ export function useGoMaster() {
           })),
         );
 
-      if (toolName === 'pass_turn') useGameStore.getState().pass();
+      // A6: pass_turn — server already applies the pass in the agentic loop.
+      // Don't apply client-side to avoid double-pass.
     }
   }, [applyAiMove, applyHighlights, applyLibertyOverlay, applySuggestions]);
 

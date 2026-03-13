@@ -15,10 +15,14 @@ export function reconstructGame(
   komi: number = 6.5,
 ): GameState {
   let game = createGame(size, komi);
-  for (const move of moves) {
+  for (let i = 0; i < moves.length; i++) {
+    const move = moves[i];
     if (move.type === 'place' && move.x !== undefined && move.y !== undefined) {
       const result = playMove(game, { x: move.x, y: move.y });
-      if (result.success) game = result.newState;
+      if (!result.success) {
+        throw new Error(`Invalid move at index ${i}: (${move.x},${move.y}) — ${result.reason}`);
+      }
+      game = result.newState;
     } else if (move.type === 'pass') {
       game = passMove(game);
     }

@@ -206,11 +206,35 @@ export async function POST(req: Request) {
   try {
     const { message, gameState: gsData, chatHistory = [] } = await req.json();
 
+    // S3: Sanitize chat history — only allow user/assistant roles with string content
+    const sanitizedHistory = (chatHistory as any[])
+      .filter((msg: any) =>
+        msg && typeof msg === 'object' &&
+        (msg.role === 'user' || msg.role === 'assistant') &&
+        typeof msg.content === 'string'
+      )
+      .map((msg: any) => ({
+        role: msg.role as 'user' | 'assistant',
+        content: (msg.content as string).slice(0, 10_000),
+      }));
+
+    // A2: Validate boardSize and komi
+    const boardSize = [9, 13, 19].includes(gsData?.boardSize) ? gsData.boardSize : 9;
+    const komi = typeof gsData?.komi === 'number' ? Math.min(Math.max(gsData.komi, 0), 100) : 6.5;
+
+    // A3: Reconstruct game state, return 400 on invalid move history
     let state: GameState;
-    if (gsData?.moveHistory) {
-      state = reconstructGame(gsData.moveHistory, gsData.boardSize || 9, gsData.komi || 6.5);
-    } else {
-      state = createGame(9, 6.5);
+    try {
+      if (gsData?.moveHistory) {
+        state = reconstructGame(gsData.moveHistory, boardSize, komi);
+      } else {
+        state = createGame(9, 6.5);
+      }
+    } catch (err) {
+      return NextResponse.json(
+        { error: 'Invalid game state: move history could not be replayed.' },
+        { status: 400 },
+      );
     }
 
     const ghToken = req.headers.get('x-github-token') || process.env.GITHUB_TOKEN;
@@ -223,7 +247,7 @@ export async function POST(req: Request) {
 
     // Build input array for Responses API (system prompt goes into `instructions`)
     const input: any[] = [
-      ...chatHistory.slice(-20),
+      ...sanitizedHistory.slice(-20),
       { role: 'user', content: message },
     ];
 
@@ -258,11 +282,17 @@ export async function POST(req: Request) {
 
       // Execute each function call and add results to input
       for (const fc of fnCalls) {
+        // A1: Return parse error to model on JSON failure instead of empty args
         let args: Record<string, any>;
         try {
           args = JSON.parse(fc.arguments);
         } catch {
-          args = {};
+          input.push({
+            type: 'function_call_output',
+            call_id: fc.callId,
+            output: JSON.stringify({ error: 'Failed to parse tool arguments' }),
+          });
+          continue;
         }
 
         const { result, newState } = executeTool(fc.name, args, state);
@@ -285,7 +315,8 @@ export async function POST(req: Request) {
       assistantMessage: { role: 'assistant', content: finalText },
     });
   } catch (err) {
-    console.error('[GoSensei]', err);
-    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
+    // A4: Generic error message to client, detailed logging server-side
+    console.error('[GoSensei] API error:', err);
+    return NextResponse.json({ error: 'An internal error occurred. Please try again.' }, { status: 500 });
   }
 }
