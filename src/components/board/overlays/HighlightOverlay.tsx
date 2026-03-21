@@ -28,28 +28,47 @@ export function HighlightOverlay() {
         const isDanger = h.variant === 'danger' || h.variant === 'warning';
 
         return (
-          <motion.circle
-            key={h.id}
-            cx={cx}
-            cy={cy}
-            r={r}
-            fill="none"
-            stroke={color}
-            strokeWidth={2.5}
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{
-              opacity: [0, 0.8, isDanger ? 0.4 : 0.7],
-              scale: isDanger ? [0.5, 1.1, 0.95, 1.05] : [0.5, 1],
-            }}
-            exit={{ opacity: 0, scale: 0.5 }}
-            transition={{
-              duration: isDanger ? DANGER_PULSE_CYCLE : OVERLAY_FADE_IN,
-              delay: i * OVERLAY_STAGGER,
-              repeat: isDanger ? Infinity : 0,
-              repeatType: 'reverse',
-            }}
-            style={{ transformOrigin: `${cx}px ${cy}px` }}
-          />
+          <motion.g key={h.id}>
+            <motion.circle
+              cx={cx}
+              cy={cy}
+              r={r}
+              fill="none"
+              stroke={color}
+              strokeWidth={2.5}
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{
+                opacity: [0, 0.8, isDanger ? 0.4 : 0.7],
+                scale: isDanger ? [0.5, 1.1, 0.95, 1.05] : [0.5, 1],
+              }}
+              exit={{ opacity: 0, scale: 0.5 }}
+              transition={{
+                duration: isDanger ? DANGER_PULSE_CYCLE : OVERLAY_FADE_IN,
+                delay: i * OVERLAY_STAGGER,
+                repeat: isDanger ? Infinity : 0,
+                repeatType: 'reverse',
+              }}
+              style={{ transformOrigin: `${cx}px ${cy}px` }}
+            />
+            {h.label && (
+              <motion.text
+                x={cx}
+                y={cy}
+                textAnchor="middle"
+                dominantBaseline="central"
+                fill={color}
+                fontSize={stoneRadius(boardSize) * 0.6}
+                fontWeight="bold"
+                style={{ pointerEvents: 'none' }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.9 }}
+                exit={{ opacity: 0 }}
+                transition={{ delay: i * OVERLAY_STAGGER + 0.15 }}
+              >
+                {h.label}
+              </motion.text>
+            )}
+          </motion.g>
         );
       })}
     </AnimatePresence>
