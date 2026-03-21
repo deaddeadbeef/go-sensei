@@ -1,6 +1,13 @@
 // Exchanges a GitHub token (PAT or OAuth) for a short-lived Copilot API token
 // Caches the token and refreshes when expired
 
+export class AuthError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AuthError';
+  }
+}
+
 interface CopilotSession {
   token: string;
   expiresAt: number;
@@ -27,8 +34,12 @@ export async function getCopilotSession(githubToken: string): Promise<CopilotSes
   });
 
   if (!resp.ok) {
+    sessionCache.delete(githubToken);
     const text = await resp.text();
-    throw new Error(`Failed to get Copilot token (${resp.status}): ${text}`);
+    if (resp.status === 401) {
+      throw new AuthError('GitHub token expired or invalid. Please re-login.');
+    }
+    throw new AuthError(`Failed to authenticate with GitHub Copilot (${resp.status}): ${text}`);
   }
 
   const data = await resp.json();

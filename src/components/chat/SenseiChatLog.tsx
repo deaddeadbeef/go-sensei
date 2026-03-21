@@ -11,6 +11,7 @@ const variantIcons: Record<string, string> = {
   teaching: '💡',
   thinking: '🤔',
   user: '💬',
+  system: '⚠️',
 };
 
 export function SenseiChatLog() {
@@ -42,7 +43,7 @@ export function SenseiChatLog() {
               backgroundColor: COLORS.ui.bgPrimary,
               borderLeft: `2px solid ${
                 msg.variant === 'user' ? COLORS.ui.textSecondary
-                : msg.variant === 'warning' ? COLORS.overlay.warning
+                : msg.variant === 'warning' || msg.variant === 'system' ? COLORS.overlay.warning
                 : msg.variant === 'celebrate' ? COLORS.overlay.positive
                 : msg.variant === 'teaching' ? COLORS.overlay.suggestion
                 : COLORS.ui.accent
@@ -53,7 +54,7 @@ export function SenseiChatLog() {
             <div className="flex items-center gap-1.5 mb-0.5">
               <span className="text-xs">{variantIcons[msg.variant] || '🎓'}</span>
               <span className="text-xs font-medium" style={{ color: msg.variant === 'user' ? COLORS.ui.textSecondary : COLORS.ui.accent }}>
-                {msg.variant === 'user' ? 'You' : 'Go Sensei'}
+                {msg.variant === 'user' ? 'You' : msg.variant === 'system' ? 'System' : 'Go Sensei'}
               </span>
             </div>
             <p className="text-xs leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
