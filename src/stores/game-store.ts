@@ -57,6 +57,14 @@ interface OverlayInfluence {
   value: number; // -1.0 (full black) to +1.0 (full white), 0 = neutral
 }
 
+interface OverlayGroup {
+  id: string;
+  stones: Point[];
+  color: 'black' | 'white';
+  liberties: number;
+  label?: string;
+}
+
 // ---------------------------------------------------------------------------
 // Sensei bubble
 // ---------------------------------------------------------------------------
@@ -123,6 +131,7 @@ interface GameStore {
     suggestions: OverlaySuggestion[];
     arrows: OverlayArrow[];
     influence: OverlayInfluence[];
+    groups: OverlayGroup[];
   };
 
   // Capture animations
@@ -187,6 +196,7 @@ interface GameStore {
   applySuggestions: (suggestions: OverlaySuggestion[]) => void;
   applyArrows: (arrows: OverlayArrow[]) => void;
   applyInfluence: (influence: OverlayInfluence[]) => void;
+  applyGroups: (groups: OverlayGroup[]) => void;
   applyAiMove: (point: Point) => { success: boolean; captured: Point[] };
 
   // Bubble
@@ -262,6 +272,7 @@ const defaultOverlays = {
   suggestions: [] as OverlaySuggestion[],
   arrows: [] as OverlayArrow[],
   influence: [] as OverlayInfluence[],
+  groups: [] as OverlayGroup[],
 };
 
 // ---------------------------------------------------------------------------
@@ -464,6 +475,10 @@ export const useGameStore = create<GameStore>()(
     set((s) => ({ overlays: { ...s.overlays, influence } }));
   },
 
+  applyGroups(groups: OverlayGroup[]) {
+    set((s) => ({ overlays: { ...s.overlays, groups } }));
+  },
+
   // Bubble
   showBubble(config: Partial<SenseiBubbleState>) {
     set((s) => {
@@ -514,6 +529,7 @@ export const useGameStore = create<GameStore>()(
         suggestions: [],
         arrows: [],
         influence: [],
+        groups: [],
       },
     });
   },
@@ -612,7 +628,7 @@ export const useGameStore = create<GameStore>()(
       lastPlayerMove: null,
       lastAiMove: null,
       isAiThinking: false,
-      overlays: { highlights: [], liberties: [], suggestions: [], arrows: [], influence: [] },
+      overlays: { highlights: [], liberties: [], suggestions: [], arrows: [], influence: [], groups: [] },
       pendingCaptures: [],
       bubble: { ...defaultBubble },
       chatMessages: [],
