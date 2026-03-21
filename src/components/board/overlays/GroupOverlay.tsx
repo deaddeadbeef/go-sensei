@@ -29,11 +29,6 @@ export function GroupOverlay() {
         const badgeStone = sorted[0];
         const badge = badgeStone ? pointToSvg(badgeStone, boardSize) : null;
 
-        // Compute centroid for label
-        const cx = group.stones.reduce((sum, s) => sum + s.x, 0) / group.stones.length;
-        const cy = group.stones.reduce((sum, s) => sum + s.y, 0) / group.stones.length;
-        const centroid = pointToSvg({ x: Math.round(cx), y: Math.round(cy) }, boardSize);
-
         return (
           <motion.g
             key={group.id}
@@ -98,23 +93,6 @@ export function GroupOverlay() {
               </motion.g>
             )}
 
-            {/* Optional label at group centroid */}
-            {group.label && (
-              <motion.text
-                x={centroid.cx}
-                y={centroid.cy + r + cell * 0.25}
-                textAnchor="middle"
-                fill={isWeak ? '#ef4444' : '#334155'}
-                fontSize={cell * 0.28}
-                fontWeight="600"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: OVERLAY_FADE_IN, delay: gi * OVERLAY_STAGGER + 0.15 }}
-                style={{ pointerEvents: 'none' }}
-              >
-                {group.label}
-              </motion.text>
-            )}
           </motion.g>
         );
       })}
