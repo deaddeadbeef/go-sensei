@@ -137,3 +137,12 @@ ${formatGameStateForAI(game)}
 
 Decide whether to pass as well (ending the game for scoring) or explain why there are still important moves to make.`;
 }
+
+/**
+ * Formats a free-text question from the student (not a move).
+ */
+export function formatFreeTextMessage(game: GameState, question: string): string {
+  return `The student has a question about the current position.
+
+${formatGameStateForAI(game, question)}`;
+}

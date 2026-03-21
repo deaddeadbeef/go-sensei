@@ -6,6 +6,7 @@ import {
   formatFirstMoveMessage,
   formatHesitationMessage,
   formatReviewRequest,
+  formatFreeTextMessage,
 } from '@/lib/ai/format-board';
 import { useCallback, useRef } from 'react';
 
@@ -23,6 +24,7 @@ export function useGoMaster() {
   const applySuggestions = useGameStore((s) => s.applySuggestions);
   const applyAiMove = useGameStore((s) => s.applyAiMove);
   const clearOverlays = useGameStore((s) => s.clearOverlays);
+  const addChatMessage = useGameStore((s) => s.addChatMessage);
 
   const historyRef = useRef<ChatMsg[]>([]);
 
@@ -135,9 +137,11 @@ export function useGoMaster() {
 
   const sendMessage = useCallback(
     (text: string) => {
-      send(formatMoveMessage(useGameStore.getState().game, false, 0, text));
+      addChatMessage(text, 'user');
+      const game = useGameStore.getState().game;
+      send(formatFreeTextMessage(game, text));
     },
-    [send],
+    [send, addChatMessage],
   );
 
   const requestHint = useCallback(() => {
