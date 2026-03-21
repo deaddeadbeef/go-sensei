@@ -6,7 +6,7 @@ import { reconstructGame } from '@/lib/ai/tools';
 import {
   createGame, playMove, passMove, isValidMove,
   getGroup, getLibertiesOf, countLiberties, boardToText,
-  coordToPoint,
+  coordToPoint, computeInfluence,
 } from '@/lib/go-engine';
 import type { GameState } from '@/lib/go-engine/types';
 
@@ -123,6 +123,12 @@ const TOOLS = [
       required: ['moves'],
     },
   },
+  {
+    type: 'function' as const,
+    name: 'show_influence',
+    description: 'Display an influence/moyo heatmap on the board showing which areas each player controls or influences. Blue = black, orange = white.',
+    parameters: { type: 'object', properties: {} },
+  },
 ];
 
 function executeTool(
@@ -193,6 +199,10 @@ function executeTool(
         return { from, to, label: m.label, order: i + 1 };
       }).filter(Boolean);
       return { result: { moves } };
+    }
+    case 'show_influence': {
+      const influence = computeInfluence(state.board);
+      return { result: { influence } };
     }
     default:
       return { result: { error: `Unknown tool: ${name}` } };

@@ -11,6 +11,7 @@ import { SuggestionOverlay } from './overlays/SuggestionOverlay';
 import { ArrowOverlay } from './overlays/ArrowOverlay';
 import { CaptureAnimation } from './overlays/CaptureAnimation';
 import { TerritoryOverlay } from './overlays/TerritoryOverlay';
+import { InfluenceOverlay } from './overlays/InfluenceOverlay';
 import { KoMarker } from './overlays/KoMarker';
 import { InteractionLayer } from './InteractionLayer';
 import { CoordinateLabels } from './CoordinateLabels';
@@ -43,6 +44,7 @@ export function GoBoard() {
       {/* Layers in z-order (bottom to top) */}
       <BoardGrid />
       <CoordinateLabels />
+      <InfluenceOverlay />
       <TerritoryOverlay />
       <StoneLayer />
       <CaptureAnimation />

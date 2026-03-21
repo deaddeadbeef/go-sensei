@@ -65,3 +65,6 @@ export { calculateTerritory, countStones, floodFillEmpty } from './scoring';
 
 // Serialization
 export { boardToText, pointToCoord, coordToPoint } from './serialization';
+
+// Influence
+export { computeInfluence } from './influence';
