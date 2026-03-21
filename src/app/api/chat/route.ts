@@ -100,6 +100,29 @@ const TOOLS = [
       required: ['suggestions'],
     },
   },
+  {
+    type: 'function' as const,
+    name: 'show_sequence',
+    description: 'Show a sequence of moves as numbered arrows on the board to illustrate reading/variations.',
+    parameters: {
+      type: 'object',
+      properties: {
+        moves: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              from: { type: 'string', description: 'Starting Go coordinate (e.g., "D4")' },
+              to: { type: 'string', description: 'Ending Go coordinate (e.g., "E5")' },
+              label: { type: 'string', description: 'Short explanation of this move' },
+            },
+            required: ['from', 'to'],
+          },
+        },
+      },
+      required: ['moves'],
+    },
+  },
 ];
 
 function executeTool(
@@ -161,6 +184,15 @@ function executeTool(
         return pt ? { x: pt.x, y: pt.y, label: s.label, reason: s.reason } : null;
       }).filter(Boolean);
       return { result: { suggestions } };
+    }
+    case 'show_sequence': {
+      const moves = (args.moves || []).map((m: any, i: number) => {
+        const from = coordToPoint(m.from, state.board.size);
+        const to = coordToPoint(m.to, state.board.size);
+        if (!from || !to) return null;
+        return { from, to, label: m.label, order: i + 1 };
+      }).filter(Boolean);
+      return { result: { moves } };
     }
     default:
       return { result: { error: `Unknown tool: ${name}` } };

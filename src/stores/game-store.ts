@@ -44,6 +44,19 @@ interface OverlaySuggestion {
   reason: string;
 }
 
+interface OverlayArrow {
+  id: string;
+  from: Point;
+  to: Point;
+  label?: string;
+  order: number;
+}
+
+interface OverlayInfluence {
+  point: Point;
+  value: number; // -1.0 (full black) to +1.0 (full white), 0 = neutral
+}
+
 // ---------------------------------------------------------------------------
 // Sensei bubble
 // ---------------------------------------------------------------------------
@@ -108,6 +121,8 @@ interface GameStore {
     highlights: OverlayHighlight[];
     liberties: OverlayLiberty[];
     suggestions: OverlaySuggestion[];
+    arrows: OverlayArrow[];
+    influence: OverlayInfluence[];
   };
 
   // Capture animations
@@ -170,6 +185,8 @@ interface GameStore {
   applyHighlights: (highlights: OverlayHighlight[]) => void;
   applyLibertyOverlay: (overlay: OverlayLiberty) => void;
   applySuggestions: (suggestions: OverlaySuggestion[]) => void;
+  applyArrows: (arrows: OverlayArrow[]) => void;
+  applyInfluence: (influence: OverlayInfluence[]) => void;
   applyAiMove: (point: Point) => { success: boolean; captured: Point[] };
 
   // Bubble
@@ -243,6 +260,8 @@ const defaultOverlays = {
   highlights: [] as OverlayHighlight[],
   liberties: [] as OverlayLiberty[],
   suggestions: [] as OverlaySuggestion[],
+  arrows: [] as OverlayArrow[],
+  influence: [] as OverlayInfluence[],
 };
 
 // ---------------------------------------------------------------------------
@@ -437,6 +456,14 @@ export const useGameStore = create<GameStore>()(
     set((s) => ({ overlays: { ...s.overlays, suggestions } }));
   },
 
+  applyArrows(arrows: OverlayArrow[]) {
+    set((s) => ({ overlays: { ...s.overlays, arrows } }));
+  },
+
+  applyInfluence(influence: OverlayInfluence[]) {
+    set((s) => ({ overlays: { ...s.overlays, influence } }));
+  },
+
   // Bubble
   showBubble(config: Partial<SenseiBubbleState>) {
     set((s) => {
@@ -485,6 +512,8 @@ export const useGameStore = create<GameStore>()(
         highlights: [],
         liberties: [],
         suggestions: [],
+        arrows: [],
+        influence: [],
       },
     });
   },
@@ -583,7 +612,7 @@ export const useGameStore = create<GameStore>()(
       lastPlayerMove: null,
       lastAiMove: null,
       isAiThinking: false,
-      overlays: { highlights: [], liberties: [], suggestions: [] },
+      overlays: { highlights: [], liberties: [], suggestions: [], arrows: [], influence: [] },
       pendingCaptures: [],
       bubble: { ...defaultBubble },
       chatMessages: [],
