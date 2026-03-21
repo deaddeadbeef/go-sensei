@@ -7,8 +7,9 @@ import type { BoardSize } from '@/lib/go-engine/types';
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (settings: { boardSize: BoardSize }) => void;
+  onSave: (settings: { boardSize: BoardSize; teachingLevel: 'beginner' | 'intermediate' | 'advanced' }) => void;
   currentBoardSize: BoardSize;
+  currentTeachingLevel: 'beginner' | 'intermediate' | 'advanced';
   // Auth props from useGitHubAuth
   isLoggedIn: boolean;
   authState: {
@@ -22,13 +23,14 @@ interface SettingsModalProps {
 }
 
 export function SettingsModal({
-  isOpen, onClose, onSave, currentBoardSize,
+  isOpen, onClose, onSave, currentBoardSize, currentTeachingLevel,
   isLoggedIn, authState, onLogin, onLogout,
 }: SettingsModalProps) {
   const [boardSize, setBoardSize] = useState<BoardSize>(currentBoardSize);
+  const [teachingLevel, setTeachingLevel] = useState<'beginner' | 'intermediate' | 'advanced'>(currentTeachingLevel);
 
   const handleSave = () => {
-    onSave({ boardSize });
+    onSave({ boardSize, teachingLevel });
     onClose();
   };
 
@@ -143,6 +145,34 @@ export function SettingsModal({
               </div>
               <p className="text-xs mt-1 opacity-50" style={{ color: COLORS.ui.textSecondary }}>
                 19×19 is the standard board size
+              </p>
+            </div>
+
+            {/* Teaching Level */}
+            <div className="mb-6">
+              <label className="block text-xs mb-2" style={{ color: COLORS.ui.textSecondary }}>
+                Sensei Strictness
+              </label>
+              <div className="flex gap-2">
+                {(['beginner', 'intermediate', 'advanced'] as const).map((level) => (
+                  <button
+                    key={level}
+                    onClick={() => setTeachingLevel(level)}
+                    className="flex-1 py-2 rounded-lg text-sm font-medium transition-all"
+                    style={{
+                      backgroundColor: teachingLevel === level ? COLORS.ui.accent : COLORS.ui.bgPrimary,
+                      color: teachingLevel === level ? COLORS.ui.bgPrimary : COLORS.ui.textSecondary,
+                      border: `1px solid ${teachingLevel === level ? COLORS.ui.accent : COLORS.ui.textSecondary + '30'}`,
+                    }}
+                  >
+                    {level === 'beginner' ? '🌱 Beginner' : level === 'intermediate' ? '⚔️ Mid' : '🔥 Advanced'}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs mt-1 opacity-50" style={{ color: COLORS.ui.textSecondary }}>
+                {teachingLevel === 'beginner' && 'Firm but fair — teaches fundamentals with real critique'}
+                {teachingLevel === 'intermediate' && 'No mercy on mistakes — expects you to know basics'}
+                {teachingLevel === 'advanced' && 'Plays full strength — only speaks when you blunder or impress'}
               </p>
             </div>
 

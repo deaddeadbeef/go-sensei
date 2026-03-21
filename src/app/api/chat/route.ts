@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCopilotSession } from '@/lib/ai/copilot-auth';
-import { GO_MASTER_SYSTEM_PROMPT } from '@/lib/ai/system-prompt';
+import { buildSystemPrompt } from '@/lib/ai/system-prompt';
+import type { TeachingLevel } from '@/lib/ai/system-prompt';
 import { reconstructGame } from '@/lib/ai/tools';
 import {
   createGame, playMove, passMove, isValidMove,
@@ -222,6 +223,9 @@ export async function POST(req: Request) {
     const boardSize = [9, 13, 19].includes(gsData?.boardSize) ? gsData.boardSize : 9;
     const komi = typeof gsData?.komi === 'number' ? Math.min(Math.max(gsData.komi, 0), 100) : 6.5;
 
+    const validLevels: TeachingLevel[] = ['beginner', 'intermediate', 'advanced'];
+    const teachingLevel: TeachingLevel = validLevels.includes(gsData?.teachingLevel) ? gsData.teachingLevel : 'beginner';
+
     // A3: Reconstruct game state, return 400 on invalid move history
     let state: GameState;
     try {
@@ -251,6 +255,8 @@ export async function POST(req: Request) {
       { role: 'user', content: message },
     ];
 
+    const isReviewRequest = typeof message === 'string' && message.includes('GAME REVIEW REQUEST');
+
     // Agentic loop — up to 5 tool-call rounds
     const toolResults: any[] = [];
     let finalText = '';
@@ -258,11 +264,11 @@ export async function POST(req: Request) {
     for (let step = 0; step < 5; step++) {
       const data = await callResponses(session.apiUrl, session.token, {
         model: MODEL,
-        instructions: GO_MASTER_SYSTEM_PROMPT,
+        instructions: buildSystemPrompt(teachingLevel),
         input,
         tools: TOOLS,
         temperature: 0.7,
-        max_output_tokens: 2048,
+        max_output_tokens: isReviewRequest ? 4096 : 2048,
       });
 
       const output: any[] = data.output || [];
