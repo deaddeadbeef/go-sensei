@@ -129,6 +129,29 @@ const TOOLS = [
     description: 'Display an influence/moyo heatmap on the board showing which areas each player controls or influences. Blue = black, orange = white.',
     parameters: { type: 'object', properties: {} },
   },
+  {
+    type: 'function' as const,
+    name: 'show_groups',
+    description: 'Highlight stone groups showing boundaries, connections, and liberty counts. Weak groups (≤2 liberties) shown with red dashed borders. Use to teach connections, cutting, life and death.',
+    parameters: {
+      type: 'object',
+      properties: {
+        positions: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              position: { type: 'string', description: 'Go coordinate of a stone in the group (e.g., "D4")' },
+              label: { type: 'string', description: 'Educational label (e.g., "Strong wall", "Weak — needs help")' },
+            },
+            required: ['position'],
+          },
+          description: 'One stone from each group to visualize. Server auto-expands to full group.',
+        },
+      },
+      required: ['positions'],
+    },
+  },
 ];
 
 function executeTool(
@@ -203,6 +226,22 @@ function executeTool(
     case 'show_influence': {
       const influence = computeInfluence(state.board);
       return { result: { influence } };
+    }
+    case 'show_groups': {
+      const groups = (args.positions || []).map((p: any, i: number) => {
+        const pt = coordToPoint(p.position, state.board.size);
+        if (!pt) return null;
+        const group = getGroup(state.board, pt);
+        if (!group) return null;
+        return {
+          id: `grp-${i}`,
+          stones: group.stones,
+          color: group.color, // already 'black' | 'white'
+          liberties: group.liberties.length,
+          label: p.label,
+        };
+      }).filter(Boolean);
+      return { result: { groups } };
     }
     default:
       return { result: { error: `Unknown tool: ${name}` } };
