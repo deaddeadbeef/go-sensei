@@ -25,6 +25,7 @@ export function useGoMaster() {
   const applySuggestions = useGameStore((s) => s.applySuggestions);
   const applyArrows = useGameStore((s) => s.applyArrows);
   const applyInfluence = useGameStore((s) => s.applyInfluence);
+  const applyGroups = useGameStore((s) => s.applyGroups);
   const applyAiMove = useGameStore((s) => s.applyAiMove);
   const clearOverlays = useGameStore((s) => s.clearOverlays);
   const addChatMessage = useGameStore((s) => s.addChatMessage);
@@ -101,10 +102,21 @@ export function useGoMaster() {
       if (toolName === 'show_influence' && result.influence)
         applyInfluence(result.influence);
 
+      if (toolName === 'show_groups' && result.groups)
+        applyGroups(
+          result.groups.map((g: any) => ({
+            id: g.id,
+            stones: g.stones.map((s: any) => ({ x: s.x, y: s.y })),
+            color: g.color,
+            liberties: g.liberties,
+            label: g.label,
+          })),
+        );
+
       // A6: pass_turn — server already applies the pass in the agentic loop.
       // Don't apply client-side to avoid double-pass.
     }
-  }, [applyAiMove, applyHighlights, applyLibertyOverlay, applySuggestions, applyArrows, applyInfluence]);
+  }, [applyAiMove, applyHighlights, applyLibertyOverlay, applySuggestions, applyArrows, applyInfluence, applyGroups]);
 
   const send = useCallback(
     async (message: string) => {
