@@ -8,6 +8,7 @@ import { GhostStone } from './GhostStone';
 import { HighlightOverlay } from './overlays/HighlightOverlay';
 import { LibertyOverlay } from './overlays/LibertyOverlay';
 import { SuggestionOverlay } from './overlays/SuggestionOverlay';
+import { ArrowOverlay } from './overlays/ArrowOverlay';
 import { CaptureAnimation } from './overlays/CaptureAnimation';
 import { TerritoryOverlay } from './overlays/TerritoryOverlay';
 import { KoMarker } from './overlays/KoMarker';
@@ -48,6 +49,7 @@ export function GoBoard() {
       <HighlightOverlay />
       <LibertyOverlay />
       <SuggestionOverlay />
+      <ArrowOverlay />
       <KoMarker />
       <GhostStone />
       <InteractionLayer />

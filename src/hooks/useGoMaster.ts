@@ -23,6 +23,7 @@ export function useGoMaster() {
   const applyHighlights = useGameStore((s) => s.applyHighlights);
   const applyLibertyOverlay = useGameStore((s) => s.applyLibertyOverlay);
   const applySuggestions = useGameStore((s) => s.applySuggestions);
+  const applyArrows = useGameStore((s) => s.applyArrows);
   const applyAiMove = useGameStore((s) => s.applyAiMove);
   const clearOverlays = useGameStore((s) => s.clearOverlays);
   const addChatMessage = useGameStore((s) => s.addChatMessage);
@@ -85,10 +86,21 @@ export function useGoMaster() {
           })),
         );
 
+      if (toolName === 'show_sequence' && result.moves)
+        applyArrows(
+          result.moves.map((m: any) => ({
+            id: `arr-${Date.now()}-${m.order}`,
+            from: { x: m.from.x, y: m.from.y },
+            to: { x: m.to.x, y: m.to.y },
+            label: m.label,
+            order: m.order,
+          })),
+        );
+
       // A6: pass_turn — server already applies the pass in the agentic loop.
       // Don't apply client-side to avoid double-pass.
     }
-  }, [applyAiMove, applyHighlights, applyLibertyOverlay, applySuggestions]);
+  }, [applyAiMove, applyHighlights, applyLibertyOverlay, applySuggestions, applyArrows]);
 
   const send = useCallback(
     async (message: string) => {
