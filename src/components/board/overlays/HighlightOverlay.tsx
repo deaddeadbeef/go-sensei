@@ -50,24 +50,7 @@ export function HighlightOverlay() {
               }}
               style={{ transformOrigin: `${cx}px ${cy}px` }}
             />
-            {h.label && (
-              <motion.text
-                x={cx}
-                y={cy}
-                textAnchor="middle"
-                dominantBaseline="central"
-                fill={color}
-                fontSize={stoneRadius(boardSize) * 0.6}
-                fontWeight="bold"
-                style={{ pointerEvents: 'none' }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 0.9 }}
-                exit={{ opacity: 0 }}
-                transition={{ delay: i * OVERLAY_STAGGER + 0.15 }}
-              >
-                {h.label}
-              </motion.text>
-            )}
+
           </motion.g>
         );
       })}
