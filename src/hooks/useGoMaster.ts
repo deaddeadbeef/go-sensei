@@ -5,6 +5,7 @@ import {
   formatMoveMessage,
   formatFirstMoveMessage,
   formatHesitationMessage,
+  formatReviewRequest,
 } from '@/lib/ai/format-board';
 import { useCallback, useRef } from 'react';
 
@@ -31,7 +32,8 @@ export function useGoMaster() {
   }, []);
 
   const gameBody = useCallback(() => {
-    const g = useGameStore.getState().game;
+    const s = useGameStore.getState();
+    const g = s.game;
     return {
       moveHistory: g.moveHistory.map((m) => {
         if (m.type === 'place') return { type: 'place', x: m.point.x, y: m.point.y, color: m.color };
@@ -40,6 +42,7 @@ export function useGoMaster() {
       }),
       boardSize: g.board.size,
       komi: g.komi,
+      teachingLevel: s.teachingLevel,
     };
   }, []);
 
@@ -141,5 +144,10 @@ export function useGoMaster() {
     send(formatHesitationMessage(useGameStore.getState().game));
   }, [send]);
 
-  return { sendPlayerMove, sendMessage, requestHint };
+  const requestReview = useCallback(() => {
+    const g = useGameStore.getState().game;
+    send(formatReviewRequest(g));
+  }, [send]);
+
+  return { sendPlayerMove, sendMessage, requestHint, requestReview };
 }

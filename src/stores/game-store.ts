@@ -155,6 +155,8 @@ interface GameStore {
   // Meta
   phase: 'welcome' | 'playing' | 'scoring' | 'finished' | 'lesson' | 'review';
   learnedConcepts: string[];
+  teachingLevel: 'beginner' | 'intermediate' | 'advanced';
+  setTeachingLevel: (level: 'beginner' | 'intermediate' | 'advanced') => void;
 
   // === ACTIONS ===
   placeStone: (point: Point) => { success: boolean; captured: Point[] };
@@ -283,6 +285,7 @@ export const useGameStore = create<GameStore>()(
 
   phase: 'welcome',
   learnedConcepts: [],
+  teachingLevel: 'beginner' as const,
 
   // ---- Actions ----
 
@@ -605,6 +608,10 @@ export const useGameStore = create<GameStore>()(
     }));
   },
 
+  setTeachingLevel(level: 'beginner' | 'intermediate' | 'advanced') {
+    set({ teachingLevel: level });
+  },
+
   setPhase(phase) {
     set({ phase });
   },
@@ -630,6 +637,7 @@ export const useGameStore = create<GameStore>()(
         chatMessages: state.chatMessages,
         phase: state.phase,
         learnedConcepts: state.learnedConcepts,
+        teachingLevel: state.teachingLevel,
       }),
     },
   ),

@@ -6,9 +6,10 @@ import { SCORE_LINE_STAGGER } from '@/utils/animation';
 
 interface ScoreCardProps {
   onPlayAgain: () => void;
+  onReviewGame?: () => void;
 }
 
-export function ScoreCard({ onPlayAgain }: ScoreCardProps) {
+export function ScoreCard({ onPlayAgain, onReviewGame }: ScoreCardProps) {
   const scorecard = useGameStore((s) => s.scorecard);
   if (!scorecard?.visible) return null;
 
@@ -63,16 +64,33 @@ export function ScoreCard({ onPlayAgain }: ScoreCardProps) {
         >
           {scorecard.winner === 'black' ? '● Black wins!' : scorecard.winner === 'white' ? '○ White wins!' : "It's a draw!"}
         </motion.div>
-        <motion.button
-          className="w-full mt-3 py-2 rounded-lg text-sm font-medium"
-          style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
-          onClick={onPlayAgain}
+        <motion.div
+          className="flex gap-2 mt-3"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: (lines.length + 1) * SCORE_LINE_STAGGER }}
         >
-          Play Again
-        </motion.button>
+          <button
+            className="flex-1 py-2 rounded-lg text-sm font-medium"
+            style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
+            onClick={onPlayAgain}
+          >
+            Play Again
+          </button>
+          {onReviewGame && (
+            <button
+              onClick={onReviewGame}
+              className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+              style={{
+                backgroundColor: 'transparent',
+                color: COLORS.ui.accent,
+                border: `1px solid ${COLORS.ui.accent}`,
+              }}
+            >
+              📋 Review Game
+            </button>
+          )}
+        </motion.div>
       </motion.div>
     </AnimatePresence>
   );

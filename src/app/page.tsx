@@ -28,8 +28,10 @@ export default function GamePage() {
   const game = useGameStore((s) => s.game);
   const showBubble = useGameStore((s) => s.showBubble);
   const isAiThinking = useGameStore((s) => s.isAiThinking);
+  const teachingLevel = useGameStore((s) => s.teachingLevel);
+  const setTeachingLevel = useGameStore((s) => s.setTeachingLevel);
 
-  const { sendPlayerMove, sendMessage, requestHint } = useGoMaster();
+  const { sendPlayerMove, sendMessage, requestHint, requestReview } = useGoMaster();
   const { authState, isLoggedIn, startLogin, logout } = useGitHubAuth();
 
   useEffect(() => {
@@ -44,8 +46,14 @@ export default function GamePage() {
   useEffect(() => {
     if (phase === 'welcome' && !welcomeShown.current) {
       welcomeShown.current = true;
+      const level = useGameStore.getState().teachingLevel;
+      const welcomeMessages = {
+        beginner: "I'm Go Sensei. You're here to learn Go — good. This is a 19×19 board, the same one professionals use. You're Black, you move first. Place a stone on any intersection to claim territory. I'll teach you as we play, but I won't sugarcoat your mistakes. Make a move.",
+        intermediate: "Go Sensei. 19×19 board. You know the basics — show me what you've got. You're Black.",
+        advanced: "19×19. You're Black. Impress me.",
+      };
       showBubble({
-        text: "Welcome! I'm Go Sensei, your Go teacher. You're playing on a standard 19×19 board — the same size used in professional tournaments. Go is a game where two players take turns placing black and white stones on intersections. You're Black — you go first! The goal is to surround more territory than your opponent. Click any intersection to place your first stone. I'll teach you everything as we play!",
+        text: welcomeMessages[level],
         variant: 'teaching',
         anchorPoint: null,
         actions: [],
@@ -74,16 +82,21 @@ export default function GamePage() {
     welcomeShown.current = false;
     startNewGame(game.board.size as BoardSize);
   }, [startNewGame, game.board.size]);
+  const handleReviewGame = useCallback(() => {
+    setPhase('review');
+    requestReview();
+  }, [setPhase, requestReview]);
   const handlePass = useCallback(() => pass(), [pass]);
   const handleUndo = useCallback(() => undo(), [undo]);
   const handleSettingsSave = useCallback(
-    (settings: { boardSize: BoardSize }) => {
+    (settings: { boardSize: BoardSize; teachingLevel: 'beginner' | 'intermediate' | 'advanced' }) => {
       if (settings.boardSize !== game.board.size) {
         welcomeShown.current = false;
         startNewGame(settings.boardSize);
       }
+      setTeachingLevel(settings.teachingLevel);
     },
-    [game.board.size, startNewGame],
+    [game.board.size, startNewGame, setTeachingLevel],
   );
 
   return (
@@ -94,6 +107,7 @@ export default function GamePage() {
         onClose={() => setShowSettings(false)}
         onSave={handleSettingsSave}
         currentBoardSize={game.board.size as BoardSize}
+        currentTeachingLevel={teachingLevel}
         isLoggedIn={isLoggedIn}
         authState={authState}
         onLogin={startLogin}
@@ -115,7 +129,7 @@ export default function GamePage() {
           <div className="shrink-0">
             <GameControls onNewGame={handleNewGame} onPass={handlePass} onUndo={handleUndo} />
           </div>
-          <ScoreCard onPlayAgain={handleNewGame} />
+          <ScoreCard onPlayAgain={handleNewGame} onReviewGame={handleReviewGame} />
         </div>
 
         {/* Right: Sidebar — full-width on mobile, side panel on desktop */}

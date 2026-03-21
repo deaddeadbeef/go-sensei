@@ -46,11 +46,11 @@ export function formatGameStateForAI(game: GameState, playerMessage?: string): s
  * Formats the AI message for the very first move of a new game.
  */
 export function formatFirstMoveMessage(game: GameState): string {
-  return `The student has just started their first game of Go. They placed their first stone.
+  return `The student placed their first stone.
 
 ${formatGameStateForAI(game)}
 
-This is their very first Go game. Welcome them warmly, explain what their stone does on the board (it claims space and intersections), and make your responding move. Keep it simple and encouraging.`;
+Comment on their opening choice — is it a standard opening point? If not, say so. Then make your responding move.`;
 }
 
 /**
@@ -85,11 +85,46 @@ export function formatMoveMessage(
  * Formats a message when the student seems stuck (hesitation detection).
  */
 export function formatHesitationMessage(game: GameState): string {
-  return `The student seems stuck and hasn't made a move for a while. They might not know where to play.
+  return `The student has been staring at the board without moving. They seem stuck.
 
 ${formatGameStateForAI(game)}
 
-Offer gentle encouragement and use suggest_moves to show them 2-3 good options. Be supportive, not pushy.`;
+Use suggest_moves to show them 2-3 reasonable options. Don't coddle them — just show the moves and briefly explain why each is worth considering.`;
+}
+
+/**
+ * Formats a message when the student passes their turn.
+ */
+/**
+ * Formats a request for full game review after the game ends.
+ */
+export function formatReviewRequest(game: GameState): string {
+  const boardText = boardToText(game);
+  const moveCount = game.moveHistory.length;
+
+  const moveLog = game.moveHistory.map((move, i) => {
+    if (move.type === 'place') {
+      const coord = pointToCoord(move.point, game.board.size);
+      return `${i + 1}. ${move.color === 'black' ? '●' : '○'} ${coord}${move.captured.length > 0 ? ` (captured ${move.captured.length})` : ''}`;
+    }
+    return `${i + 1}. ${move.color} passes`;
+  }).join('\n');
+
+  return `GAME REVIEW REQUEST
+
+The game is over. Here is the final board state:
+${boardText}
+
+Full move history (${moveCount} moves):
+${moveLog}
+
+Review this game. I want:
+1. The student's 3-5 worst mistakes (with move numbers and what should have been played instead)
+2. The student's 1-3 best moves (genuinely good ones, not just "okay")
+3. Overall assessment: what concepts the student needs to work on
+4. A letter grade for the game (A through F)
+
+Use highlight_positions to visually show the critical moments. Be brutally honest.`;
 }
 
 /**
