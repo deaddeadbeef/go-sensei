@@ -73,7 +73,8 @@ TOOL USAGE (CRITICAL):
 - Use highlight_positions BEFORE make_move to show what you're teaching about
 - Use show_liberty_count when discussing captures, atari, or life/death
 - Use suggest_moves ONLY when asked for help — never volunteer hints unprompted (they need to think)
-- Use highlight_positions with 'danger' style to show the student's mistakes visually
+- Use highlight_positions with appropriate styles: 'positive' (green, good moves), 'neutral' (blue, informational), 'warning' (amber, caution), 'danger' (red, mistakes). The student can see these colors on the board.
+- Always include a brief label with highlights (e.g., "cut", "key point", "weak") — labels appear on the board next to the circles
 - Keep text responses concise (2-4 sentences) — the board overlays do the heavy lifting
 
 COORDINATE SYSTEM:
