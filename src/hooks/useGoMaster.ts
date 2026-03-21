@@ -124,18 +124,34 @@ export function useGoMaster() {
       dismissBubble();
       setAiThinking(true);
       try {
-        const r = await fetch('/api/chat', {
-          method: 'POST',
-          headers: headers(),
-          body: JSON.stringify({
-            message,
-            gameState: gameBody(),
-            chatHistory: historyRef.current.slice(-20),
-          }),
+        let r: Response;
+        const reqBody = JSON.stringify({
+          message,
+          gameState: gameBody(),
+          chatHistory: historyRef.current.slice(-20),
         });
+        try {
+          r = await fetch('/api/chat', { method: 'POST', headers: headers(), body: reqBody });
+        } catch (networkErr) {
+          // Retry once on network failure
+          console.log('[GoSensei] Network error, retrying...', networkErr);
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          r = await fetch('/api/chat', { method: 'POST', headers: headers(), body: reqBody });
+        }
+
         if (!r.ok) {
-          const d = await r.json().catch(() => ({ error: 'Request failed' }));
-          throw new Error(d.error || `HTTP ${r.status}`);
+          const errData = await r.json().catch(() => ({} as any));
+
+          if (r.status === 401 || errData.code === 'AUTH_EXPIRED') {
+            // Clear expired token and notify user
+            sessionStorage.removeItem('go-sensei-github-token');
+            showBubble({ text: 'Your session has expired. Please open Settings and re-login with GitHub.', variant: 'warning', anchorPoint: null });
+            addChatMessage('⚠️ Session expired. Please re-login via Settings (⚙).', 'system');
+            setAiThinking(false);
+            return;
+          }
+
+          throw new Error(errData.error || `HTTP ${r.status}`);
         }
         const d = await r.json();
         if (d.toolResults?.length) applyTools(d.toolResults);

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCopilotSession } from '@/lib/ai/copilot-auth';
+import { getCopilotSession, AuthError } from '@/lib/ai/copilot-auth';
 import { buildSystemPrompt } from '@/lib/ai/system-prompt';
 import type { TeachingLevel } from '@/lib/ai/system-prompt';
 import { reconstructGame } from '@/lib/ai/tools';
@@ -250,10 +250,31 @@ function executeTool(
 
 /* ── Responses API helpers ── */
 
+async function fetchWithRetry(fn: () => Promise<Response>, retries = 1): Promise<Response> {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const resp = await fn();
+      if (resp.ok || i === retries) return resp;
+      // Retry on 5xx server errors
+      if (resp.status >= 500) {
+        console.log(`[GoSensei] Server error ${resp.status}, retrying...`);
+        await new Promise(r => setTimeout(r, 1000));
+        continue;
+      }
+      return resp;
+    } catch (err) {
+      if (i === retries) throw err;
+      console.log(`[GoSensei] Network error, retrying...`, (err as Error).message);
+      await new Promise(r => setTimeout(r, 1000));
+    }
+  }
+  throw new Error('Unreachable');
+}
+
 async function callResponses(apiUrl: string, token: string, body: Record<string, any>) {
   console.log('[GoSensei] POST /responses, model:', body.model, 'input items:', Array.isArray(body.input) ? body.input.length : 1);
 
-  const resp = await fetch(`${apiUrl}/responses`, {
+  const resp = await fetchWithRetry(() => fetch(`${apiUrl}/responses`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -266,7 +287,7 @@ async function callResponses(apiUrl: string, token: string, body: Record<string,
       'User-Agent': 'GitHubCopilotChat/0.24.0',
     },
     body: JSON.stringify(body),
-  });
+  }));
 
   if (!resp.ok) {
     const txt = await resp.text();
@@ -417,9 +438,20 @@ export async function POST(req: Request) {
       toolResults,
       assistantMessage: { role: 'assistant', content: finalText },
     });
-  } catch (err) {
-    // A4: Generic error message to client, detailed logging server-side
+  } catch (err: any) {
     console.error('[GoSensei] API error:', err);
-    return NextResponse.json({ error: 'An internal error occurred. Please try again.' }, { status: 500 });
+
+    // Auth errors → 401 so client knows to re-login
+    if (err?.name === 'AuthError' || err?.message?.includes('401') || err?.message?.includes('Bad credentials')) {
+      return NextResponse.json(
+        { error: 'Your session has expired. Please re-login with GitHub.', code: 'AUTH_EXPIRED' },
+        { status: 401 },
+      );
+    }
+
+    return NextResponse.json(
+      { error: 'An internal error occurred. Please try again.' },
+      { status: 500 },
+    );
   }
 }
