@@ -6,18 +6,23 @@ An AI-powered Go teaching app that plays against you and teaches you the game in
 
 ## What is this?
 
-Go Sensei is a web app where an AI teacher (powered by GPT-5.4 via GitHub Copilot) plays Go against you while explaining every move. It's designed for people who have **never played Go before**.
+Go Sensei is a web app where a strict AI Go master (powered by GPT-5.4 via GitHub Copilot) teaches you Go through real games. It genuinely praises good moves and harshly critiques mistakes. Designed for **complete beginners** through **advanced players** with adjustable teaching levels.
 
-The AI uses tools to interact with the board — highlighting positions, showing liberty counts, suggesting moves — making the teaching visual and spatial, not just text.
+The AI uses 8 tools to interact with the board — placing stones, highlighting positions with educational labels, showing liberty counts, suggesting moves, drawing move sequence arrows, displaying influence heatmaps, and visualizing group boundaries. Teaching is visual and spatial, not just text.
 
 ### Features
 
 - 🎮 **Full Go game engine** — captures, ko, suicide detection, Chinese scoring, all board sizes (9×9, 13×13, 19×19)
-- 🤖 **AI Go Master** with 5 teaching tools — makes moves, highlights board areas, shows liberties, suggests moves
+- 🤖 **Strict AI Go Master** with 8 teaching tools — genuinely praises good moves, critiques mistakes
+- 🎚️ **Adjustable teaching levels** — Beginner (🌱), Intermediate (⚔️), Advanced (🔥)
 - 🎯 **Agentic tool loop** — the AI calls multiple tools per turn (highlight → explain → move) via OpenAI Responses API
+- 🏹 **Move sequence arrows** — numbered arrows showing reading/joseki/tactical variations
+- 🔥 **Influence heatmap** — blue/orange territory influence visualization
+- 🔗 **Group visualization** — group boundaries, liberty counts, weakness indicators
+- 📝 **Educational annotations** — per-position labels explaining why positions matter
 - ✨ **Animated SVG board** — Framer Motion spring-based stone placement, capture dissolve effects, pulsing highlights
-- 💬 **Scrollable chat log** — Sensei's teaching messages accumulate (no overwriting)
-- 📖 **Rules panel** — Go rules always visible on the right sidebar
+- 💬 **Interactive chat** — ask Sensei questions, messages show in scrollable chat log
+- 📋 **Post-game review** — full game analysis at the end of each game
 - 🔐 **GitHub OAuth** — login with your GitHub account (Device Flow), no API keys needed
 - 🧪 **118 tests** — comprehensive engine test suite (captures, ko, scoring, serialization)
 
@@ -92,22 +97,26 @@ src/lib/go-engine/
 ├── game.ts          # Game lifecycle (play, pass, resign, undo)
 ├── scoring.ts       # Chinese territory scoring
 ├── serialization.ts # Board → text for AI, coordinate conversion
+├── influence.ts     # Distance-based influence/moyo computation
 └── index.ts         # Public API
 ```
 
 ### AI Teaching Tools
 
-The AI has 5 tools it can call each turn:
+The AI has 8 tools it can call each turn:
 
 | Tool | What it does | Visual |
 |------|-------------|--------|
 | `make_move` | Places a stone on the board | Animated stone drop |
 | `pass_turn` | Passes the turn | — |
-| `highlight_positions` | Highlights board areas (danger/opportunity/info) | Colored pulsing rings |
+| `highlight_positions` | Highlights positions with educational labels | Colored rings + annotation panel |
 | `show_liberty_count` | Shows a group's liberties | Numbered badges + dots |
-| `suggest_moves` | Suggests 1-3 moves | Pulsing ghost stones |
+| `suggest_moves` | Suggests 1-3 candidate moves with reasons | Pulsing ghost stones |
+| `show_sequence` | Draws numbered move sequence arrows | Amber arrows with numbers |
+| `show_influence` | Displays territory influence heatmap | Blue (black) / orange (white) cells |
+| `show_groups` | Visualizes group boundaries and strength | Colored outlines + liberty badges |
 
-The agentic loop runs server-side: GPT-5.4 can call multiple tools per turn (e.g., highlight a group → show its liberties → make a move → explain). Up to 5 tool-call rounds per turn.
+All tools use standard Go coordinates (A1-T19). The agentic loop runs server-side: GPT-5.4 can call multiple tools per turn (e.g., highlight a group → show its liberties → draw arrows → explain). Up to 5 tool-call rounds per turn.
 
 ### Authentication Flow
 
@@ -147,10 +156,10 @@ go-sensei/
 │   │   ├── api/chat/route.ts   # AI endpoint (Responses API)
 │   │   └── api/auth/           # OAuth device flow routes
 │   ├── lib/
-│   │   ├── go-engine/          # Pure TS game engine (9 files)
+│   │   ├── go-engine/          # Pure TS game engine (10 files)
 │   │   └── ai/                 # AI tools, prompts, auth
 │   ├── components/
-│   │   ├── board/              # SVG board + overlays (13 files)
+│   │   ├── board/              # SVG board + overlays (16 files)
 │   │   ├── chat/               # Chat log
 │   │   ├── game/               # Controls, score card
 │   │   ├── tutorial/           # (planned)
@@ -167,9 +176,11 @@ go-sensei/
 - [ ] Streaming AI responses (currently waits for full response)
 - [ ] Interactive tutorials (planned component structure exists)
 - [ ] Sound effects (stone placement, captures)
-- [ ] Move review / replay mode
+- [x] ~~Move review / replay mode~~ (post-game review implemented)
 - [ ] Responsive mobile layout
-- [ ] Scoring phase UI (dead stone marking)
+- [ ] Scoring phase UI improvements
+- [ ] Move number indicators on stones
+- [ ] Joseki database integration
 
 ## License
 
