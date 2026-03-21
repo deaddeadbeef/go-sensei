@@ -50,10 +50,6 @@ export function ArrowOverlay() {
           const x2 = to.cx - ux * shortenBy;
           const y2 = to.cy - uy * shortenBy;
 
-          // Midpoint for optional label
-          const mx = (x1 + x2) / 2;
-          const my = (y1 + y2) / 2;
-
           return (
             <motion.g
               key={arrow.id}
@@ -97,22 +93,6 @@ export function ArrowOverlay() {
                 {arrow.order}
               </text>
 
-              {/* Optional label near midpoint */}
-              {arrow.label && (
-                <text
-                  x={mx}
-                  y={my - r * 0.5}
-                  textAnchor="middle"
-                  dominantBaseline="auto"
-                  fill={ARROW_COLOR}
-                  fontSize={r * 0.45}
-                  fontWeight="600"
-                  fontFamily="sans-serif"
-                  pointerEvents="none"
-                >
-                  {arrow.label}
-                </text>
-              )}
             </motion.g>
           );
         })}
