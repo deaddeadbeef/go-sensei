@@ -1,55 +1,59 @@
-"use client";
+'use client';
 
 import { useGameStore } from '@/stores/game-store';
-import { COLORS } from '@/utils/colors';
 import { AnimatePresence, motion } from 'framer-motion';
 
-const legendItems = [
-  { color: COLORS.overlay.positive, label: 'Good / Key point', variant: 'positive' },
-  { color: COLORS.overlay.suggestion, label: 'Informational', variant: 'neutral' },
-  { color: COLORS.overlay.warning, label: 'Caution', variant: 'warning' },
-  { color: COLORS.overlay.danger, label: 'Danger / Mistake', variant: 'danger' },
-];
+const variantColors: Record<string, string> = {
+  positive: '#4ade80',
+  warning: '#f59e0b',
+  danger: '#ef4444',
+  neutral: '#818cf8',
+};
+
+const GO_COLS = 'ABCDEFGHJKLMNOPQRST';
 
 export function OverlayLegend() {
   const highlights = useGameStore((s) => s.overlays.highlights);
-  const liberties = useGameStore((s) => s.overlays.liberties);
-  const hasOverlays = highlights.length > 0 || liberties.length > 0;
+  const boardSize = useGameStore((s) => s.game.board.size);
 
-  // Get unique variants currently shown
-  const activeVariants = new Set(highlights.map((h) => h.variant));
-  const visibleItems = legendItems.filter((item) => {
-    if (item.variant === 'positive') return activeVariants.has('positive') || liberties.length > 0;
-    if (item.variant === 'neutral') return activeVariants.has('neutral');
-    if (item.variant === 'warning') return activeVariants.has('warning') || liberties.length > 0;
-    if (item.variant === 'danger') return activeVariants.has('danger') || liberties.length > 0;
-    return false;
-  });
+  const labeled = highlights.filter((h) => h.label);
+  if (labeled.length === 0) return null;
 
   return (
     <AnimatePresence>
-      {hasOverlays && visibleItems.length > 0 && (
-        <motion.div
-          className="absolute bottom-2 left-2 flex gap-3 px-2.5 py-1.5 rounded-md z-10"
-          style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 8 }}
-          transition={{ duration: 0.2 }}
-        >
-          {visibleItems.map((item) => (
-            <div key={item.variant} className="flex items-center gap-1.5">
-              <div
-                className="w-2.5 h-2.5 rounded-full"
-                style={{ backgroundColor: item.color }}
-              />
-              <span className="text-[10px] text-white/80 whitespace-nowrap">
-                {item.label}
+      <motion.div
+        className="absolute bottom-2 left-2 flex flex-col gap-1 px-3 py-2 rounded-lg z-10"
+        style={{
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          backdropFilter: 'blur(4px)',
+          maxWidth: 220,
+          maxHeight: 160,
+          overflowY: 'auto',
+          pointerEvents: 'auto',
+        }}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 8 }}
+        transition={{ duration: 0.2 }}
+      >
+        {labeled.map((h) => {
+          const color = variantColors[h.variant] || variantColors.neutral;
+          const coord = `${GO_COLS[h.point.x]}${boardSize - h.point.y}`;
+          return (
+            <div key={h.id} className="flex items-center gap-1.5">
+              <span
+                className="font-mono font-bold text-[11px] shrink-0"
+                style={{ color, minWidth: 28 }}
+              >
+                {coord}
+              </span>
+              <span className="text-[11px] text-slate-200 leading-tight">
+                {h.label}
               </span>
             </div>
-          ))}
-        </motion.div>
-      )}
+          );
+        })}
+      </motion.div>
     </AnimatePresence>
   );
 }
