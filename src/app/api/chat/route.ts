@@ -275,7 +275,7 @@ export async function POST(req: Request) {
 
       // Collect text from this response
       const text = extractText(output);
-      if (text) finalText += (finalText ? '\n' : '') + text;
+      if (text) finalText = text;
 
       // Check for function calls
       const fnCalls = extractFunctionCalls(output);
