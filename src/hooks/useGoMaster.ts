@@ -62,7 +62,7 @@ export function useGoMaster() {
             id: `hl-${Date.now()}-${i}`,
             point: { x: p.x, y: p.y },
             variant: result.style || 'neutral',
-            label: result.label,
+            label: p.label,
           })),
         );
 

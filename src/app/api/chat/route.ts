@@ -52,12 +52,15 @@ const TOOLS = [
           type: 'array',
           items: {
             type: 'object',
-            properties: { position: { type: 'string', description: 'Go coordinate like "D4"' } },
+            properties: {
+              position: { type: 'string', description: 'Go coordinate like "D4", "Q16"' },
+              label: { type: 'string', description: 'Short educational label for this position (e.g., "Star point", "Weak group", "Cut point")' },
+            },
             required: ['position'],
           },
+          description: 'Positions to highlight with optional per-position labels',
         },
-        style: { type: 'string', enum: ['positive', 'warning', 'danger', 'neutral'] },
-        label: { type: 'string' },
+        style: { type: 'string', enum: ['positive', 'warning', 'danger', 'neutral'], description: 'Visual style for the highlights' },
       },
       required: ['positions', 'style'],
     },
@@ -134,9 +137,9 @@ function executeTool(
     case 'highlight_positions': {
       const positions = (args.positions || []).map((p: any) => {
         const pt = coordToPoint(p.position, state.board.size);
-        return pt ? { x: pt.x, y: pt.y } : null;
+        return pt ? { x: pt.x, y: pt.y, label: p.label } : null;
       }).filter(Boolean);
-      return { result: { positions, style: args.style, label: args.label } };
+      return { result: { positions, style: args.style } };
     }
     case 'show_liberty_count': {
       const pt = coordToPoint(args.position, state.board.size);
