@@ -1,6 +1,7 @@
 "use client";
 
 import { useGameStore } from '@/stores/game-store';
+import { coordToPoint } from '@/lib/go-engine';
 import {
   formatMoveMessage,
   formatFirstMoveMessage,
@@ -50,8 +51,10 @@ export function useGoMaster() {
 
   const applyTools = useCallback((results: any[]) => {
     for (const { toolName, args, result } of results) {
-      if (toolName === 'make_move' && result.success)
-        applyAiMove({ x: args.x, y: args.y });
+      if (toolName === 'make_move' && result.success) {
+        const pt = coordToPoint(args.position, useGameStore.getState().game.board.size);
+        if (pt) applyAiMove(pt);
+      }
 
       if (toolName === 'highlight_positions' && result.positions)
         applyHighlights(
