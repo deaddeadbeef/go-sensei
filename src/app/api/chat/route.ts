@@ -6,8 +6,9 @@ import { reconstructGame } from '@/lib/ai/tools';
 import {
   createGame, playMove, passMove, isValidMove,
   getGroup, getLibertiesOf, countLiberties, boardToText,
+  coordToPoint,
 } from '@/lib/go-engine';
-import type { GameState, Point } from '@/lib/go-engine/types';
+import type { GameState } from '@/lib/go-engine/types';
 
 export const maxDuration = 60;
 
@@ -18,15 +19,14 @@ const TOOLS = [
   {
     type: 'function' as const,
     name: 'make_move',
-    description: 'Place a stone on the board. Validated by the game engine.',
+    description: 'Place a stone on the board. Use standard Go coordinates (e.g., "D4", "Q16").',
     parameters: {
       type: 'object',
       properties: {
-        x: { type: 'number', description: 'Column index, 0-indexed from left' },
-        y: { type: 'number', description: 'Row index, 0-indexed from top' },
+        position: { type: 'string', description: 'Go coordinate like "D4", "Q16", "K10". Letter=column (A-T, skipping I), Number=row (1-19 for 19x19).' },
         reasoning: { type: 'string', description: 'Brief reasoning shown to student' },
       },
-      required: ['x', 'y', 'reasoning'],
+      required: ['position', 'reasoning'],
     },
   },
   {
@@ -52,8 +52,8 @@ const TOOLS = [
           type: 'array',
           items: {
             type: 'object',
-            properties: { x: { type: 'number' }, y: { type: 'number' } },
-            required: ['x', 'y'],
+            properties: { position: { type: 'string', description: 'Go coordinate like "D4"' } },
+            required: ['position'],
           },
         },
         style: { type: 'string', enum: ['positive', 'warning', 'danger', 'neutral'] },
@@ -69,10 +69,9 @@ const TOOLS = [
     parameters: {
       type: 'object',
       properties: {
-        x: { type: 'number', description: 'X of any stone in the group' },
-        y: { type: 'number', description: 'Y of any stone in the group' },
+        position: { type: 'string', description: 'Go coordinate of any stone in the group, e.g., "D4"' },
       },
-      required: ['x', 'y'],
+      required: ['position'],
     },
   },
   {
@@ -87,12 +86,11 @@ const TOOLS = [
           items: {
             type: 'object',
             properties: {
-              x: { type: 'number' },
-              y: { type: 'number' },
+              position: { type: 'string', description: 'Go coordinate like "D4"' },
               label: { type: 'string' },
               reason: { type: 'string' },
             },
-            required: ['x', 'y', 'label', 'reason'],
+            required: ['position', 'label', 'reason'],
           },
         },
       },
@@ -108,16 +106,19 @@ function executeTool(
 ): { result: Record<string, any>; newState?: GameState } {
   switch (name) {
     case 'make_move': {
-      const pt: Point = { x: args.x, y: args.y };
+      const pt = coordToPoint(args.position, state.board.size);
+      if (!pt) {
+        return { result: { success: false, error: `Invalid coordinate: "${args.position}". Use format like "D4" or "Q16".` } };
+      }
       if (!isValidMove(state, pt)) {
-        return { result: { success: false, error: `Invalid move at (${args.x},${args.y})` } };
+        return { result: { success: false, error: `Invalid move at ${args.position}. That position may be occupied, suicidal, or violate ko.`, currentBoard: boardToText(state) } };
       }
       const r = playMove(state, pt);
       if (!r.success) return { result: { success: false, error: r.reason } };
       return {
         result: {
           success: true,
-          move: { x: args.x, y: args.y },
+          move: args.position,
           reasoning: args.reasoning,
           captured: r.captured,
           capturedCount: r.captured.length,
@@ -130,22 +131,34 @@ function executeTool(
       const newState = passMove(state);
       return { result: { success: true, reasoning: args.reasoning, phase: newState.phase }, newState };
     }
-    case 'highlight_positions':
-      return { result: { positions: args.positions, style: args.style, label: args.label } };
+    case 'highlight_positions': {
+      const positions = (args.positions || []).map((p: any) => {
+        const pt = coordToPoint(p.position, state.board.size);
+        return pt ? { x: pt.x, y: pt.y } : null;
+      }).filter(Boolean);
+      return { result: { positions, style: args.style, label: args.label } };
+    }
     case 'show_liberty_count': {
-      const g = getGroup(state.board, { x: args.x, y: args.y });
-      if (!g) return { result: { success: false, error: `No stone at (${args.x},${args.y})` } };
+      const pt = coordToPoint(args.position, state.board.size);
+      if (!pt) return { result: { success: false, error: `Invalid coordinate: "${args.position}"` } };
+      const g = getGroup(state.board, pt);
+      if (!g) return { result: { success: false, error: `No stone at ${args.position}` } };
       return {
         result: {
           success: true,
           group: g.stones,
-          liberties: getLibertiesOf(state.board, { x: args.x, y: args.y }),
-          count: countLiberties(state.board, { x: args.x, y: args.y }),
+          liberties: getLibertiesOf(state.board, pt),
+          count: countLiberties(state.board, pt),
         },
       };
     }
-    case 'suggest_moves':
-      return { result: { suggestions: args.suggestions } };
+    case 'suggest_moves': {
+      const suggestions = (args.suggestions || []).map((s: any) => {
+        const pt = coordToPoint(s.position, state.board.size);
+        return pt ? { x: pt.x, y: pt.y, label: s.label, reason: s.reason } : null;
+      }).filter(Boolean);
+      return { result: { suggestions } };
+    }
     default:
       return { result: { error: `Unknown tool: ${name}` } };
   }
