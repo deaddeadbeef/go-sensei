@@ -223,15 +223,12 @@ interface GameStore {
 
   // Lesson
   startLesson: (lessonId: string) => void;
-  advanceLessonStep: () => void;
-  endLesson: () => void;
 
   // Lesson navigation
   showLessons: () => void;
-  nextStep: () => void;
+  nextStep: (maxSteps: number) => void;
   prevStep: () => void;
   completeLesson: () => void;
-  exitLesson: () => void;
   returnToGame: () => void;
 
   // Scoring
@@ -570,28 +567,10 @@ export const useGameStore = create<GameStore>()(
   // Lesson
   startLesson: (lessonId: string) => set({ appPhase: 'lesson', currentLessonId: lessonId, currentStep: 0 }),
 
-  advanceLessonStep() {
-    set((s) => ({
-      lesson: {
-        ...s.lesson,
-        step: Math.min(s.lesson.step + 1, s.lesson.totalSteps - 1),
-      },
-    }));
-  },
-
-  endLesson() {
-    const { lesson } = get();
-    set({
-      game: lesson.savedGameState ?? createGame(19),
-      phase: 'playing',
-      lesson: { ...defaultLesson },
-    });
-  },
-
   // Lesson navigation
   showLessons: () => set({ appPhase: 'lessons', currentLessonId: null, currentStep: 0 }),
 
-  nextStep: () => set((state) => ({ currentStep: state.currentStep + 1 })),
+  nextStep: (maxSteps: number) => set((state) => ({ currentStep: Math.min(state.currentStep + 1, maxSteps - 1) })),
 
   prevStep: () => set((state) => ({ currentStep: Math.max(0, state.currentStep - 1) })),
 
@@ -603,8 +582,6 @@ export const useGameStore = create<GameStore>()(
     currentLessonId: null,
     currentStep: 0,
   })),
-
-  exitLesson: () => set({ appPhase: 'lessons', currentLessonId: null, currentStep: 0 }),
 
   returnToGame: () => set({ appPhase: 'game' }),
 
