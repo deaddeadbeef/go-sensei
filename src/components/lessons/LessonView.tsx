@@ -111,7 +111,7 @@ export function LessonView() {
   const lessonData = LESSONS.find((l) => l.id === currentLessonId);
 
   const handlePrev = useCallback(() => prevStep(), [prevStep]);
-  const handleNext = useCallback(() => nextStep(), [nextStep]);
+  const handleNext = useCallback(() => nextStep(lessonData?.steps.length ?? 0), [nextStep, lessonData]);
   const handleComplete = useCallback(() => {
     completeLesson();
   }, [completeLesson]);
