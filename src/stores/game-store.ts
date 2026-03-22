@@ -180,6 +180,13 @@ interface GameStore {
   phase: 'welcome' | 'playing' | 'scoring' | 'finished' | 'lesson' | 'review';
   learnedConcepts: string[];
   teachingLevel: 'beginner' | 'intermediate' | 'advanced';
+
+  // App-level navigation (lessons)
+  appPhase: 'game' | 'lessons' | 'lesson';
+  currentLessonId: string | null;
+  currentStep: number;
+  completedLessons: string[];
+
   setTeachingLevel: (level: 'beginner' | 'intermediate' | 'advanced') => void;
 
   // === ACTIONS ===
@@ -215,14 +222,17 @@ interface GameStore {
   completeCaptureAnimation: (points: Point[]) => void;
 
   // Lesson
-  startLesson: (config: {
-    title: string;
-    stones: LessonState['stones'];
-    arrows: LessonState['arrows'];
-    totalSteps: number;
-  }) => void;
+  startLesson: (lessonId: string) => void;
   advanceLessonStep: () => void;
   endLesson: () => void;
+
+  // Lesson navigation
+  showLessons: () => void;
+  nextStep: () => void;
+  prevStep: () => void;
+  completeLesson: () => void;
+  exitLesson: () => void;
+  returnToGame: () => void;
 
   // Scoring
   enterScoring: (territory: {
@@ -316,6 +326,11 @@ export const useGameStore = create<GameStore>()(
   phase: 'welcome',
   learnedConcepts: [],
   teachingLevel: 'beginner' as const,
+
+  appPhase: 'game' as const,
+  currentLessonId: null,
+  currentStep: 0,
+  completedLessons: [],
 
   // ---- Actions ----
 
@@ -553,22 +568,7 @@ export const useGameStore = create<GameStore>()(
   },
 
   // Lesson
-  startLesson(config) {
-    const { game } = get();
-    set({
-      phase: 'lesson',
-      lesson: {
-        active: true,
-        title: config.title,
-        savedGameState: game,
-        stones: config.stones,
-        arrows: config.arrows,
-        step: 0,
-        totalSteps: config.totalSteps,
-        interactiveChallenge: null,
-      },
-    });
-  },
+  startLesson: (lessonId: string) => set({ appPhase: 'lesson', currentLessonId: lessonId, currentStep: 0 }),
 
   advanceLessonStep() {
     set((s) => ({
@@ -587,6 +587,26 @@ export const useGameStore = create<GameStore>()(
       lesson: { ...defaultLesson },
     });
   },
+
+  // Lesson navigation
+  showLessons: () => set({ appPhase: 'lessons', currentLessonId: null, currentStep: 0 }),
+
+  nextStep: () => set((state) => ({ currentStep: state.currentStep + 1 })),
+
+  prevStep: () => set((state) => ({ currentStep: Math.max(0, state.currentStep - 1) })),
+
+  completeLesson: () => set((state) => ({
+    appPhase: 'lessons',
+    completedLessons: state.currentLessonId && !state.completedLessons.includes(state.currentLessonId)
+      ? [...state.completedLessons, state.currentLessonId]
+      : state.completedLessons,
+    currentLessonId: null,
+    currentStep: 0,
+  })),
+
+  exitLesson: () => set({ appPhase: 'lessons', currentLessonId: null, currentStep: 0 }),
+
+  returnToGame: () => set({ appPhase: 'game' }),
 
   // Scoring
   enterScoring(territory) {
@@ -642,6 +662,9 @@ export const useGameStore = create<GameStore>()(
       hintOffered: false,
       phase: 'welcome',
       learnedConcepts: [],
+      appPhase: 'game',
+      currentLessonId: null,
+      currentStep: 0,
     });
   },
 
@@ -683,6 +706,7 @@ export const useGameStore = create<GameStore>()(
         phase: state.phase,
         learnedConcepts: state.learnedConcepts,
         teachingLevel: state.teachingLevel,
+        completedLessons: state.completedLessons,
       }),
     },
   ),
