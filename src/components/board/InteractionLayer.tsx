@@ -10,6 +10,7 @@ export function InteractionLayer() {
   const placeStone = useGameStore((s) => s.placeStone);
   const isAiThinking = useGameStore((s) => s.isAiThinking);
   const phase = useGameStore((s) => s.phase);
+  const currentPlayer = useGameStore((s) => s.game.currentPlayer);
   const recordInteraction = useGameStore((s) => s.recordInteraction);
 
   const cell = cellSize(boardSize);
@@ -19,11 +20,11 @@ export function InteractionLayer() {
 
   const handleClick = useCallback(
     (x: number, y: number) => {
-      if (isAiThinking || phase !== 'playing') return;
+      if (isAiThinking || phase !== 'playing' || currentPlayer !== 'black') return;
       recordInteraction();
       placeStone({ x, y });
     },
-    [isAiThinking, phase, placeStone, recordInteraction],
+    [isAiThinking, phase, currentPlayer, placeStone, recordInteraction],
   );
 
   const handleHover = useCallback(
@@ -89,7 +90,7 @@ export function InteractionLayer() {
           r={hitRadius}
           fill="transparent"
           cursor={
-            phase === 'playing' && !isAiThinking ? 'pointer' : 'default'
+            phase === 'playing' && !isAiThinking && currentPlayer === 'black' ? 'pointer' : 'default'
           }
           onClick={() => handleClick(x, y)}
           onMouseEnter={() => handleHover(x, y)}
