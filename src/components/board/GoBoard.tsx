@@ -1,6 +1,6 @@
 "use client";
 
-import { SVG_SIZE } from '@/utils/coordinates';
+import { SVG_SIZE, BOARD_PADDING } from '@/utils/coordinates';
 import { COLORS } from '@/utils/colors';
 import { BoardGrid } from './BoardGrid';
 import { StoneLayer } from './StoneLayer';
@@ -16,6 +16,9 @@ import { InfluenceOverlay } from './overlays/InfluenceOverlay';
 import { KoMarker } from './overlays/KoMarker';
 import { InteractionLayer } from './InteractionLayer';
 import { CoordinateLabels } from './CoordinateLabels';
+
+// Inset so coordinate labels sit outside the gold board area
+const boardInset = BOARD_PADDING * 0.75;
 
 export function GoBoard() {
   return (
@@ -39,8 +42,8 @@ export function GoBoard() {
         </filter>
       </defs>
 
-      {/* Background rect */}
-      <rect width={SVG_SIZE} height={SVG_SIZE} fill={COLORS.board.bg} rx="4" />
+      {/* Background rect – inset so coordinate labels sit outside the gold area */}
+      <rect x={boardInset} y={boardInset} width={SVG_SIZE - boardInset * 2} height={SVG_SIZE - boardInset * 2} fill={COLORS.board.bg} rx="4" />
 
       {/* Layers in z-order (bottom to top) */}
       <BoardGrid />
