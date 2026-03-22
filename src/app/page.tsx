@@ -7,6 +7,7 @@ import { SenseiBar } from '@/components/ui/SenseiBar';
 import { SenseiInput } from '@/components/ui/SenseiInput';
 import { SettingsModal } from '@/components/ui/SettingsModal';
 import { RulesPanel } from '@/components/ui/RulesPanel';
+import { TeachingPanel } from '@/components/sidebar/TeachingPanel';
 import { SenseiChatLog } from '@/components/chat/SenseiChatLog';
 import { GameControls } from '@/components/game/GameControls';
 import { ScoreCard } from '@/components/game/ScoreCard';
@@ -141,6 +142,8 @@ export default function GamePage() {
           <div className="shrink-0 p-3 border-b" style={{ borderColor: COLORS.ui.bgCard }}>
             <RulesPanel />
           </div>
+
+          <TeachingPanel />
 
           {/* Chat log (scrollable, fills remaining space) */}
           <div className="flex-1 flex flex-col overflow-hidden p-3 gap-2">
