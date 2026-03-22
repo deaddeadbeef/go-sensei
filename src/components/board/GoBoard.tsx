@@ -43,7 +43,7 @@ export function GoBoard() {
       </defs>
 
       {/* Background rect – inset so coordinate labels sit outside the gold area */}
-      <rect x={boardInset} y={boardInset} width={SVG_SIZE - boardInset * 2} height={SVG_SIZE - boardInset * 2} fill={COLORS.board.bg} rx="4" />
+      <rect x={boardInset} y={boardInset} width={SVG_SIZE - boardInset * 2} height={SVG_SIZE - boardInset * 2} fill={COLORS.board.bg} stroke="none" />
 
       {/* Layers in z-order (bottom to top) */}
       <BoardGrid />
