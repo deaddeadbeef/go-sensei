@@ -397,7 +397,22 @@ export async function POST(req: Request) {
 
       // Check for function calls
       const fnCalls = extractFunctionCalls(output);
-      if (fnCalls.length === 0) break; // No tool calls — done
+      if (fnCalls.length === 0) {
+        // Mechanism-based enforcement: if this is the first round and the AI
+        // didn't use any visual tools, re-prompt once asking it to use one.
+        // "Constraints by mechanism, not hope" — TW93
+        if (step === 0 && toolResults.length === 0) {
+          input.push(
+            ...output.map((item: any) => item),
+            {
+              role: 'user' as const,
+              content: '[SYSTEM: Your response is missing a visual tool call. You MUST call at least one visual tool (highlight_positions, show_sequence, show_influence, show_groups, or show_liberty_count) before responding with text. Try again.]',
+            }
+          );
+          continue; // retry the loop — give the AI another chance
+        }
+        break;
+      }
 
       // Add ALL output items to input for next round (preserves the conversation)
       for (const item of output) {
