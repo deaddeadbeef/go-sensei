@@ -402,8 +402,9 @@ export async function POST(req: Request) {
         // didn't use any visual tools, re-prompt once asking it to use one.
         // "Constraints by mechanism, not hope" — TW93
         if (step === 0 && toolResults.length === 0) {
+          finalText = ''; // clear stale text from failed text-only attempt
           input.push(
-            ...output.map((item: any) => item),
+            ...output,
             {
               role: 'user' as const,
               content: '[SYSTEM: Your response is missing a visual tool call. You MUST call at least one visual tool (highlight_positions, show_sequence, show_influence, show_groups, or show_liberty_count) before responding with text. Try again.]',
