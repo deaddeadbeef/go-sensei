@@ -13,6 +13,7 @@ export function SenseiBar({ onSettingsClick, isLoggedIn }: SenseiBarProps) {
   const captures = useGameStore((s) => s.game.captures);
   const isAiThinking = useGameStore((s) => s.isAiThinking);
   const phase = useGameStore((s) => s.phase);
+  const appPhase = useGameStore((s) => s.appPhase);
 
   return (
     <div
@@ -55,6 +56,16 @@ export function SenseiBar({ onSettingsClick, isLoggedIn }: SenseiBarProps) {
       <div className="flex items-center gap-2">
         {isLoggedIn && (
           <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: COLORS.overlay.positive }} title="Connected to GitHub" />
+        )}
+        {appPhase === 'game' && (
+          <button
+            onClick={() => useGameStore.getState().showLessons()}
+            className="text-sm opacity-60 hover:opacity-100 transition-opacity"
+            style={{ color: COLORS.ui.textSecondary }}
+            title="Learn Go"
+          >
+            📚 Learn
+          </button>
         )}
         <button
           onClick={onSettingsClick}
