@@ -2,7 +2,6 @@
 
 import { useRef, useState, useEffect } from 'react';
 import { GoBoard } from './GoBoard';
-import { OverlayLegend } from './overlays/OverlayLegend';
 
 export function BoardContainer() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -35,7 +34,6 @@ export function BoardContainer() {
     >
       <div style={{ width: size, height: size, position: 'relative' }}>
         <GoBoard />
-        <OverlayLegend />
       </div>
     </div>
   );
