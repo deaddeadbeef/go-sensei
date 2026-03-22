@@ -1,3 +1,5 @@
+import { getGoKnowledge } from './go-knowledge';
+
 export type TeachingLevel = 'beginner' | 'intermediate' | 'advanced';
 
 const LEVEL_CONFIG = {
@@ -58,6 +60,8 @@ ${config.playStyle}
 
 CONCEPTS TO TEACH AT THIS LEVEL:
 ${config.concepts}
+
+${getGoKnowledge(level)}
 
 MOVE EVALUATION FRAMEWORK:
 Before commenting on any student move, analyze it against these criteria:
