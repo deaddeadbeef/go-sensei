@@ -102,6 +102,7 @@ export function InteractionLayer() {
   return (
     <g
       tabIndex={0}
+      style={{ outline: 'none' }}
       role="grid"
       aria-label={`${boardSize}×${boardSize} Go board`}
       onKeyDown={handleKeyDown}
