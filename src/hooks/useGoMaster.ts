@@ -157,6 +157,15 @@ export function useGoMaster() {
         if (d.toolResults?.length) applyTools(d.toolResults);
         if (d.text) showBubble({ text: d.text, variant: 'neutral', anchorPoint: null, streamingComplete: true });
 
+        // Check if AI failed to place a stone when it should have
+        const aiMoved = d.toolResults?.some((r: any) => r.toolName === 'make_move' && r.result?.success);
+        if (!aiMoved && useGameStore.getState().game.currentPlayer !== 'black') {
+          // AI didn't move — force pass to return turn to player
+          const { pass, addChatMessage: addMsg } = useGameStore.getState();
+          pass();
+          addMsg('Sensei skipped their move.', 'system');
+        }
+
         historyRef.current.push({ role: 'user', content: message });
         if (d.text) historyRef.current.push({ role: 'assistant', content: d.text });
         if (historyRef.current.length > 20) historyRef.current = historyRef.current.slice(-20);
