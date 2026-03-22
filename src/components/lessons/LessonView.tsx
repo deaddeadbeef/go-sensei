@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useCallback, useRef, useEffect, useState } from 'react';
 import { useGameStore } from '@/stores/game-store';
 import { LESSONS } from '@/lib/lessons/lesson-data';
 import { LessonOverlay } from './LessonOverlay';
@@ -83,11 +83,12 @@ function LessonCoordinateLabels({ boardSize }: { boardSize: BoardSize }) {
 // ---------------------------------------------------------------------------
 
 export function LessonView() {
-  const lesson = useGameStore((s) => s.lesson);
-  const endLesson = useGameStore((s) => s.endLesson);
-  const addLearnedConcept = useGameStore((s) => s.addLearnedConcept);
-
-  const [step, setStep] = useState(0);
+  const currentLessonId = useGameStore((s) => s.currentLessonId);
+  const currentStep = useGameStore((s) => s.currentStep);
+  const nextStep = useGameStore((s) => s.nextStep);
+  const prevStep = useGameStore((s) => s.prevStep);
+  const completeLesson = useGameStore((s) => s.completeLesson);
+  const showLessons = useGameStore((s) => s.showLessons);
 
   // Board sizing (mirrors BoardContainer approach)
   const containerRef = useRef<HTMLDivElement>(null);
@@ -106,30 +107,26 @@ export function LessonView() {
     return () => observer.disconnect();
   }, []);
 
-  // Find lesson data by title (set by startLesson)
-  const lessonData = LESSONS.find((l) => l.title === lesson.title);
+  // Find lesson data by ID
+  const lessonData = LESSONS.find((l) => l.id === currentLessonId);
 
-  const handlePrev = useCallback(() => setStep((s) => Math.max(s - 1, 0)), []);
-  const handleNext = useCallback(
-    () => setStep((s) => Math.min(s + 1, (lessonData?.steps.length ?? 1) - 1)),
-    [lessonData],
-  );
+  const handlePrev = useCallback(() => prevStep(), [prevStep]);
+  const handleNext = useCallback(() => nextStep(), [nextStep]);
   const handleComplete = useCallback(() => {
-    if (lessonData) addLearnedConcept(lessonData.id);
-    endLesson();
-  }, [addLearnedConcept, endLesson, lessonData]);
-  const handleExit = useCallback(() => endLesson(), [endLesson]);
+    completeLesson();
+  }, [completeLesson]);
+  const handleExit = useCallback(() => showLessons(), [showLessons]);
 
-  if (!lessonData || !lesson.active) return null;
+  if (!lessonData || !currentLessonId) return null;
 
   const totalSteps = lessonData.steps.length;
-  const currentStep = lessonData.steps[step];
-  if (!currentStep) return null;
+  const stepData = lessonData.steps[currentStep];
+  if (!stepData) return null;
 
-  const boardSize = (currentStep.boardSize ?? 9) as BoardSize;
+  const boardSize = (stepData.boardSize ?? 9) as BoardSize;
   const r = stoneRadius(boardSize);
-  const isFirstStep = step === 0;
-  const isLastStep = step >= totalSteps - 1;
+  const isFirstStep = currentStep === 0;
+  const isLastStep = currentStep >= totalSteps - 1;
 
   return (
     <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
@@ -175,13 +172,13 @@ export function LessonView() {
               {/* Stones + highlights — animated per step */}
               <AnimatePresence mode="wait">
                 <motion.g
-                  key={step}
+                  key={currentStep}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: LESSON_TRANSITION }}
                 >
-                  {currentStep.stones.map((s) => {
+                  {stepData.stones.map((s) => {
                     const { cx, cy } = pointToSvg(s.point, boardSize);
                     return (
                       <circle
@@ -194,7 +191,7 @@ export function LessonView() {
                       />
                     );
                   })}
-                  <LessonOverlay highlights={currentStep.highlights} boardSize={boardSize} />
+                  <LessonOverlay highlights={stepData.highlights} boardSize={boardSize} />
                 </motion.g>
               </AnimatePresence>
             </svg>
@@ -223,13 +220,13 @@ export function LessonView() {
         {/* Step counter + progress bar */}
         <div className="shrink-0 px-4 pt-3 pb-2">
           <span className="text-sm font-medium" style={{ color: COLORS.ui.textSecondary }}>
-            Step {step + 1} of {totalSteps}
+            Step {currentStep + 1} of {totalSteps}
           </span>
           <div className="mt-2 h-1 rounded-full overflow-hidden" style={{ backgroundColor: COLORS.ui.bgCard }}>
             <motion.div
               className="h-full rounded-full"
               style={{ backgroundColor: COLORS.ui.accent }}
-              animate={{ width: `${((step + 1) / totalSteps) * 100}%` }}
+              animate={{ width: `${((currentStep + 1) / totalSteps) * 100}%` }}
               transition={{ duration: 0.3 }}
             />
           </div>
@@ -239,7 +236,7 @@ export function LessonView() {
         <div className="flex-1 overflow-y-auto px-4 py-3">
           <AnimatePresence mode="wait">
             <motion.div
-              key={step}
+              key={currentStep}
               className="rounded-xl p-4"
               style={{ backgroundColor: COLORS.ui.bgCard }}
               initial={{ opacity: 0, y: 10 }}
@@ -248,7 +245,7 @@ export function LessonView() {
               transition={{ duration: 0.25 }}
             >
               <p className="text-sm leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
-                {currentStep.text}
+                {stepData.text}
               </p>
             </motion.div>
           </AnimatePresence>

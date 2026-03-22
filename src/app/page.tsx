@@ -11,6 +11,8 @@ import { TeachingPanel } from '@/components/sidebar/TeachingPanel';
 import { SenseiChatLog } from '@/components/chat/SenseiChatLog';
 import { GameControls } from '@/components/game/GameControls';
 import { ScoreCard } from '@/components/game/ScoreCard';
+import { LessonPicker } from '@/components/lessons/LessonPicker';
+import { LessonView } from '@/components/lessons/LessonView';
 import { useGameStore } from '@/stores/game-store';
 import { useGoMaster } from '@/hooks/useGoMaster';
 import { useGitHubAuth } from '@/hooks/useGitHubAuth';
@@ -23,6 +25,7 @@ export default function GamePage() {
 
   const phase = useGameStore((s) => s.phase);
   const setPhase = useGameStore((s) => s.setPhase);
+  const appPhase = useGameStore((s) => s.appPhase);
   const startNewGame = useGameStore((s) => s.startNewGame);
   const pass = useGameStore((s) => s.pass);
   const undo = useGameStore((s) => s.undo);
@@ -115,56 +118,60 @@ export default function GamePage() {
         onLogout={logout}
       />
 
-      {/* Main content: board (left) + sidebar (right) */}
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-        {/* Left: Board area */}
-        <div className="flex-[7] flex flex-col relative min-w-0 min-h-0 overflow-hidden">
+      {/* Main content: conditionally render based on appPhase */}
+      {appPhase === 'lessons' && <LessonPicker />}
+      {appPhase === 'lesson' && <LessonView />}
+      {appPhase === 'game' && (
+        <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+          {/* Left: Board area */}
+          <div className="flex-[7] flex flex-col relative min-w-0 min-h-0 overflow-hidden">
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: `radial-gradient(circle at center, ${COLORS.board.bg}15 0%, transparent 70%)`,
+              }}
+            />
+            <SenseiBubble />
+            <BoardContainer />
+            <div className="shrink-0">
+              <GameControls onNewGame={handleNewGame} onPass={handlePass} onUndo={handleUndo} />
+            </div>
+            <ScoreCard onPlayAgain={handleNewGame} onReviewGame={handleReviewGame} />
+          </div>
+
+          {/* Right: Sidebar — full-width on mobile, side panel on desktop */}
           <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background: `radial-gradient(circle at center, ${COLORS.board.bg}15 0%, transparent 70%)`,
-            }}
-          />
-          <SenseiBubble />
-          <BoardContainer />
-          <div className="shrink-0">
-            <GameControls onNewGame={handleNewGame} onPass={handlePass} onUndo={handleUndo} />
-          </div>
-          <ScoreCard onPlayAgain={handleNewGame} onReviewGame={handleReviewGame} />
-        </div>
+            className="flex-[3] flex flex-col md:min-w-[280px] md:max-w-[400px] border-t md:border-t-0 md:border-l"
+            style={{ borderColor: COLORS.ui.bgCard, backgroundColor: COLORS.ui.bgPrimary }}
+          >
+            {/* Rules panel (compact, top) */}
+            <div className="shrink-0 p-3 border-b" style={{ borderColor: COLORS.ui.bgCard }}>
+              <RulesPanel />
+            </div>
 
-        {/* Right: Sidebar — full-width on mobile, side panel on desktop */}
-        <div
-          className="flex-[3] flex flex-col md:min-w-[280px] md:max-w-[400px] border-t md:border-t-0 md:border-l"
-          style={{ borderColor: COLORS.ui.bgCard, backgroundColor: COLORS.ui.bgPrimary }}
-        >
-          {/* Rules panel (compact, top) */}
-          <div className="shrink-0 p-3 border-b" style={{ borderColor: COLORS.ui.bgCard }}>
-            <RulesPanel />
-          </div>
+            <TeachingPanel />
 
-          <TeachingPanel />
+            {/* Chat log (scrollable, fills remaining space) */}
+            <div className="flex-1 flex flex-col overflow-hidden p-3 gap-2">
+              <SenseiChatLog />
 
-          {/* Chat log (scrollable, fills remaining space) */}
-          <div className="flex-1 flex flex-col overflow-hidden p-3 gap-2">
-            <SenseiChatLog />
+              {/* Thinking indicator */}
+              {isAiThinking && (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs"
+                  style={{ backgroundColor: COLORS.ui.bgCard, color: COLORS.ui.textSecondary }}>
+                  <span className="animate-pulse">🤔</span>
+                  Sensei is thinking...
+                </div>
+              )}
+            </div>
 
-            {/* Thinking indicator */}
-            {isAiThinking && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs"
-                style={{ backgroundColor: COLORS.ui.bgCard, color: COLORS.ui.textSecondary }}>
-                <span className="animate-pulse">🤔</span>
-                Sensei is thinking...
-              </div>
-            )}
-          </div>
-
-          {/* Input at bottom of sidebar */}
-          <div className="shrink-0 border-t" style={{ borderColor: COLORS.ui.bgCard }}>
-            <SenseiInput onSendMessage={sendMessage} />
+            {/* Input at bottom of sidebar */}
+            <div className="shrink-0 border-t" style={{ borderColor: COLORS.ui.bgCard }}>
+              <SenseiInput onSendMessage={sendMessage} />
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import type { LessonHighlight } from '@/lib/lessons/types';
+import type { BoardSize } from '@/lib/go-engine/types';
 import { pointToSvg, stoneRadius } from '@/utils/coordinates';
 
 const HIGHLIGHT_COLORS: Record<string, string> = {
@@ -12,7 +13,7 @@ const HIGHLIGHT_COLORS: Record<string, string> = {
 
 interface LessonOverlayProps {
   highlights: LessonHighlight[];
-  boardSize: number;
+  boardSize: BoardSize;
 }
 
 export function LessonOverlay({ highlights, boardSize }: LessonOverlayProps) {
