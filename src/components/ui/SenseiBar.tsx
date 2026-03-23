@@ -83,6 +83,14 @@ export function SenseiBar({ onSettingsClick, isLoggedIn }: SenseiBarProps) {
             >
               🌳 Skills
             </button>
+            <button
+              onClick={() => useGameStore.getState().showReview()}
+              className="text-sm opacity-60 hover:opacity-100 transition-opacity"
+              style={{ color: COLORS.ui.textSecondary }}
+              title="Daily Review"
+            >
+              📖 Review
+            </button>
           </>
         )}
         {(appPhase === 'problems' || appPhase === 'problem') && (
@@ -96,6 +104,16 @@ export function SenseiBar({ onSettingsClick, isLoggedIn }: SenseiBarProps) {
           </button>
         )}
         {appPhase === 'skills' && (
+          <button
+            onClick={() => useGameStore.getState().returnToGame()}
+            className="text-sm opacity-60 hover:opacity-100 transition-opacity"
+            style={{ color: COLORS.ui.textSecondary }}
+            title="Back to Game"
+          >
+            ← Game
+          </button>
+        )}
+        {appPhase === 'review' && (
           <button
             onClick={() => useGameStore.getState().returnToGame()}
             className="text-sm opacity-60 hover:opacity-100 transition-opacity"
