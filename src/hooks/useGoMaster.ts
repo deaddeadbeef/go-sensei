@@ -2,6 +2,7 @@
 
 import { useGameStore } from '@/stores/game-store';
 import { useConceptStore } from '@/stores/concept-store';
+import { CONCEPTS } from '@/lib/concepts/concept-data';
 import { coordToPoint } from '@/lib/go-engine';
 import {
   formatMoveMessage,
@@ -15,6 +16,30 @@ import { useCallback, useRef } from 'react';
 interface ChatMsg {
   role: 'user' | 'assistant';
   content: string;
+}
+
+function buildGuidedContext(mastery: Record<string, any>): string {
+  const mastered: string[] = [];
+  const practiced: string[] = [];
+  const introduced: string[] = [];
+  const unseen: string[] = [];
+
+  for (const concept of CONCEPTS) {
+    const m = mastery[concept.id];
+    if (!m || m.level === 0) unseen.push(concept.name);
+    else if (m.level === 1) introduced.push(concept.name);
+    else if (m.level === 2) practiced.push(concept.name);
+    else if (m.level >= 3) mastered.push(concept.name);
+  }
+
+  const lines: string[] = [];
+  if (mastered.length) lines.push(`Mastered: ${mastered.join(', ')}`);
+  if (practiced.length) lines.push(`Practicing: ${practiced.join(', ')}`);
+  if (introduced.length) lines.push(`Introduced: ${introduced.join(', ')}`);
+  if (unseen.length) lines.push(`Not yet seen: ${unseen.join(', ')}`);
+  lines.push(`Focus on teaching concepts the student hasn't mastered yet.`);
+
+  return lines.join('\n');
 }
 
 export function useGoMaster() {
@@ -31,6 +56,7 @@ export function useGoMaster() {
   const clearOverlays = useGameStore((s) => s.clearOverlays);
   const addChatMessage = useGameStore((s) => s.addChatMessage);
   const recordEncounter = useConceptStore((s) => s.recordEncounter);
+  const conceptMastery = useConceptStore((s) => s.mastery);
 
   const historyRef = useRef<ChatMsg[]>([]);
 
@@ -51,8 +77,9 @@ export function useGoMaster() {
       boardSize: g.board.size,
       komi: g.komi,
       teachingLevel: s.teachingLevel,
+      guidedContext: s.teachingLevel === 'guided' ? buildGuidedContext(conceptMastery) : undefined,
     };
-  }, []);
+  }, [conceptMastery]);
 
   const applyTools = useCallback((results: any[]) => {
     for (const { toolName, args, result } of results) {

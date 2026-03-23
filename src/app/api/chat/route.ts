@@ -390,7 +390,7 @@ export async function POST(req: Request) {
     const boardSize = [9, 13, 19].includes(gsData?.boardSize) ? gsData.boardSize : 9;
     const komi = typeof gsData?.komi === 'number' ? Math.min(Math.max(gsData.komi, 0), 100) : 6.5;
 
-    const validLevels: TeachingLevel[] = ['beginner', 'intermediate', 'advanced'];
+    const validLevels: TeachingLevel[] = ['beginner', 'intermediate', 'advanced', 'guided'];
     const teachingLevel: TeachingLevel = validLevels.includes(gsData?.teachingLevel) ? gsData.teachingLevel : 'beginner';
 
     // A3: Reconstruct game state, return 400 on invalid move history
@@ -431,7 +431,7 @@ export async function POST(req: Request) {
     for (let step = 0; step < 5; step++) {
       const data = await callResponses(session.apiUrl, session.token, {
         model: MODEL,
-        instructions: buildSystemPrompt(teachingLevel),
+        instructions: buildSystemPrompt(teachingLevel, gsData?.guidedContext),
         input,
         tools: TOOLS,
         temperature: 0.7,
