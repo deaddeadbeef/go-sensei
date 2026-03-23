@@ -75,9 +75,27 @@ export function SenseiBar({ onSettingsClick, isLoggedIn }: SenseiBarProps) {
             >
               🧩 Problems
             </button>
+            <button
+              onClick={() => useGameStore.getState().showSkillTree()}
+              className="text-sm opacity-60 hover:opacity-100 transition-opacity"
+              style={{ color: COLORS.ui.textSecondary }}
+              title="Skill Tree"
+            >
+              🌳 Skills
+            </button>
           </>
         )}
         {(appPhase === 'problems' || appPhase === 'problem') && (
+          <button
+            onClick={() => useGameStore.getState().returnToGame()}
+            className="text-sm opacity-60 hover:opacity-100 transition-opacity"
+            style={{ color: COLORS.ui.textSecondary }}
+            title="Back to Game"
+          >
+            ← Game
+          </button>
+        )}
+        {appPhase === 'skills' && (
           <button
             onClick={() => useGameStore.getState().returnToGame()}
             className="text-sm opacity-60 hover:opacity-100 transition-opacity"
