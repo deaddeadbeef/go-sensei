@@ -205,7 +205,7 @@ interface GameStore {
   // Meta
   phase: 'welcome' | 'playing' | 'scoring' | 'finished' | 'lesson' | 'review';
   learnedConcepts: string[];
-  teachingLevel: 'beginner' | 'intermediate' | 'advanced';
+  teachingLevel: 'beginner' | 'intermediate' | 'advanced' | 'guided';
 
   // App-level navigation (lessons)
   appPhase: 'game' | 'lessons' | 'lesson' | 'problems' | 'problem';
@@ -213,7 +213,7 @@ interface GameStore {
   currentStep: number;
   completedLessons: string[];
 
-  setTeachingLevel: (level: 'beginner' | 'intermediate' | 'advanced') => void;
+  setTeachingLevel: (level: 'beginner' | 'intermediate' | 'advanced' | 'guided') => void;
 
   // === ACTIONS ===
   placeStone: (point: Point) => { success: boolean; captured: Point[] };
@@ -900,7 +900,7 @@ export const useGameStore = create<GameStore>()(
     }));
   },
 
-  setTeachingLevel(level: 'beginner' | 'intermediate' | 'advanced') {
+  setTeachingLevel(level: 'beginner' | 'intermediate' | 'advanced' | 'guided') {
     set({ teachingLevel: level });
   },
 

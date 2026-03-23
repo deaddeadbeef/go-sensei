@@ -187,17 +187,18 @@ export function getGoKnowledge(level: TeachingLevel): string {
     'Use this knowledge to teach accurately. Reference specific principles when evaluating moves.',
   ];
 
-  const addSection = (title: string, source: Record<TeachingLevel, string>) => {
+  const addSection = (title: string, source: Record<string, string>) => {
+    const effectiveLevel = level === 'guided' ? 'beginner' : level;
     sections.push('');
     sections.push(`### ${title}`);
     sections.push(source.beginner);
 
-    if (level === 'intermediate' || level === 'advanced') {
+    if (effectiveLevel === 'intermediate' || effectiveLevel === 'advanced') {
       sections.push('');
       sections.push(source.intermediate);
     }
 
-    if (level === 'advanced') {
+    if (effectiveLevel === 'advanced') {
       sections.push('');
       sections.push(source.advanced);
     }

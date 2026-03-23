@@ -7,9 +7,9 @@ import type { BoardSize } from '@/lib/go-engine/types';
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (settings: { boardSize: BoardSize; teachingLevel: 'beginner' | 'intermediate' | 'advanced' }) => void;
+  onSave: (settings: { boardSize: BoardSize; teachingLevel: 'beginner' | 'intermediate' | 'advanced' | 'guided' }) => void;
   currentBoardSize: BoardSize;
-  currentTeachingLevel: 'beginner' | 'intermediate' | 'advanced';
+  currentTeachingLevel: 'beginner' | 'intermediate' | 'advanced' | 'guided';
   // Auth props from useGitHubAuth
   isLoggedIn: boolean;
   authState: {
@@ -27,7 +27,7 @@ export function SettingsModal({
   isLoggedIn, authState, onLogin, onLogout,
 }: SettingsModalProps) {
   const [boardSize, setBoardSize] = useState<BoardSize>(currentBoardSize);
-  const [teachingLevel, setTeachingLevel] = useState<'beginner' | 'intermediate' | 'advanced'>(currentTeachingLevel);
+  const [teachingLevel, setTeachingLevel] = useState<'beginner' | 'intermediate' | 'advanced' | 'guided'>(currentTeachingLevel);
 
   const handleSave = () => {
     onSave({ boardSize, teachingLevel });
@@ -154,7 +154,7 @@ export function SettingsModal({
                 Sensei Strictness
               </label>
               <div className="flex gap-2">
-                {(['beginner', 'intermediate', 'advanced'] as const).map((level) => (
+                {(['beginner', 'intermediate', 'advanced', 'guided'] as const).map((level) => (
                   <button
                     key={level}
                     onClick={() => setTeachingLevel(level)}
@@ -165,7 +165,7 @@ export function SettingsModal({
                       border: `1px solid ${teachingLevel === level ? COLORS.ui.accent : COLORS.ui.textSecondary + '30'}`,
                     }}
                   >
-                    {level === 'beginner' ? '🌱 Beginner' : level === 'intermediate' ? '⚔️ Mid' : '🔥 Advanced'}
+                    {level === 'beginner' ? '🌱 Beginner' : level === 'intermediate' ? '⚔️ Mid' : level === 'advanced' ? '🔥 Advanced' : '📖 Guided'}
                   </button>
                 ))}
               </div>
@@ -173,6 +173,7 @@ export function SettingsModal({
                 {teachingLevel === 'beginner' && 'Firm but fair — teaches fundamentals with real critique'}
                 {teachingLevel === 'intermediate' && 'No mercy on mistakes — expects you to know basics'}
                 {teachingLevel === 'advanced' && 'Plays full strength — only speaks when you blunder or impress'}
+                {teachingLevel === 'guided' && 'Step-by-step teaching — names every concept, tracks your progress'}
               </p>
             </div>
 
