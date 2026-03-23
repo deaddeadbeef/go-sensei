@@ -1,0 +1,223 @@
+import type { Concept } from './types';
+
+export const CONCEPTS: Concept[] = [
+  // === FUNDAMENTALS (8) ===
+  {
+    id: 'stones-and-board',
+    name: 'Stones & Board',
+    category: 'fundamentals',
+    description: 'The 19×19 grid, black and white stones, alternating play.',
+    prerequisites: [],
+  },
+  {
+    id: 'liberties',
+    name: 'Liberties',
+    category: 'fundamentals',
+    description: 'Empty points adjacent to a stone or group. A stone with zero liberties is captured.',
+    prerequisites: ['stones-and-board'],
+  },
+  {
+    id: 'capture',
+    name: 'Capture',
+    category: 'fundamentals',
+    description: 'Removing opponent stones by filling all their liberties.',
+    prerequisites: ['liberties'],
+  },
+  {
+    id: 'groups',
+    name: 'Groups',
+    category: 'fundamentals',
+    description: 'Connected stones of the same color share liberties.',
+    prerequisites: ['liberties'],
+  },
+  {
+    id: 'eyes',
+    name: 'Eyes',
+    category: 'fundamentals',
+    description: 'An enclosed empty point within a group. Two eyes = unconditionally alive.',
+    prerequisites: ['groups', 'capture'],
+  },
+  {
+    id: 'ko',
+    name: 'Ko Rule',
+    category: 'fundamentals',
+    description: 'A position cannot repeat — prevents infinite capture loops.',
+    prerequisites: ['capture'],
+  },
+  {
+    id: 'territory',
+    name: 'Territory',
+    category: 'fundamentals',
+    description: 'Enclosed empty intersections surrounded by your stones.',
+    prerequisites: ['groups'],
+  },
+  {
+    id: 'scoring',
+    name: 'Scoring',
+    category: 'fundamentals',
+    description: 'Count territory + captures (or territory + stones). Komi compensates white.',
+    prerequisites: ['territory', 'capture'],
+  },
+
+  // === TACTICS (10) ===
+  {
+    id: 'atari',
+    name: 'Atari',
+    category: 'tactics',
+    description: 'A move that reduces an opponent group to one liberty.',
+    prerequisites: ['liberties', 'capture'],
+  },
+  {
+    id: 'ladder',
+    name: 'Ladder (Shicho)',
+    category: 'tactics',
+    description: 'A zigzag chase that captures a stone if no ladder-breaker exists.',
+    prerequisites: ['atari'],
+  },
+  {
+    id: 'net',
+    name: 'Net (Geta)',
+    category: 'tactics',
+    description: 'Surrounding a stone loosely so it cannot escape — alternative to ladder.',
+    prerequisites: ['atari'],
+  },
+  {
+    id: 'snapback',
+    name: 'Snapback',
+    category: 'tactics',
+    description: 'Allowing a capture, then immediately recapturing a larger group.',
+    prerequisites: ['capture', 'atari'],
+  },
+  {
+    id: 'double-atari',
+    name: 'Double Atari',
+    category: 'tactics',
+    description: 'A single move that puts two groups in atari simultaneously.',
+    prerequisites: ['atari'],
+  },
+  {
+    id: 'connect-and-cut',
+    name: 'Connect & Cut',
+    category: 'tactics',
+    description: 'Connecting your own stones while cutting the opponent\'s.',
+    prerequisites: ['groups', 'atari'],
+  },
+  {
+    id: 'throw-in',
+    name: 'Throw-In',
+    category: 'tactics',
+    description: 'Sacrificing a stone inside the opponent\'s shape to reduce eye space.',
+    prerequisites: ['eyes', 'snapback'],
+  },
+  {
+    id: 'life-and-death',
+    name: 'Life & Death',
+    category: 'tactics',
+    description: 'Determining whether a group can make two eyes or will be captured.',
+    prerequisites: ['eyes'],
+  },
+  {
+    id: 'seki',
+    name: 'Seki (Mutual Life)',
+    category: 'tactics',
+    description: 'Neither player can capture the other without losing their own group.',
+    prerequisites: ['life-and-death'],
+  },
+  {
+    id: 'tesuji',
+    name: 'Tesuji',
+    category: 'tactics',
+    description: 'A clever tactical move — the best move in a local position.',
+    prerequisites: ['ladder', 'net', 'snapback'],
+  },
+
+  // === STRATEGY (7) ===
+  {
+    id: 'influence',
+    name: 'Influence',
+    category: 'strategy',
+    description: 'Stones that radiate power outward rather than claiming territory directly.',
+    prerequisites: ['territory'],
+  },
+  {
+    id: 'thickness',
+    name: 'Thickness',
+    category: 'strategy',
+    description: 'A strong, solid wall with no weaknesses — use it to attack, not to make territory.',
+    prerequisites: ['influence', 'groups'],
+  },
+  {
+    id: 'moyō',
+    name: 'Moyō (Framework)',
+    category: 'strategy',
+    description: 'A large potential territory that can be expanded or invaded.',
+    prerequisites: ['influence', 'territory'],
+  },
+  {
+    id: 'invasion-vs-reduction',
+    name: 'Invasion vs Reduction',
+    category: 'strategy',
+    description: 'Invading deep into opponent territory vs. limiting it from outside.',
+    prerequisites: ['moyō', 'life-and-death'],
+  },
+  {
+    id: 'shape',
+    name: 'Good Shape',
+    category: 'strategy',
+    description: 'Efficient stone formations — avoid empty triangles, prefer tiger\'s mouths.',
+    prerequisites: ['connect-and-cut', 'eyes'],
+  },
+  {
+    id: 'direction-of-play',
+    name: 'Direction of Play',
+    category: 'strategy',
+    description: 'Choosing which area of the board matters most right now.',
+    prerequisites: ['influence', 'thickness'],
+  },
+  {
+    id: 'fighting',
+    name: 'Fighting',
+    category: 'strategy',
+    description: 'Complex tactical exchanges — reading multiple variations.',
+    prerequisites: ['tesuji', 'life-and-death'],
+  },
+
+  // === OPENING (3) ===
+  {
+    id: 'corner-opening',
+    name: 'Corner Openings',
+    category: 'opening',
+    description: 'Corners are most efficient for territory — start there.',
+    prerequisites: ['territory', 'influence'],
+  },
+  {
+    id: 'joseki',
+    name: 'Joseki',
+    category: 'opening',
+    description: 'Established sequences of moves in the corner — locally even exchanges.',
+    prerequisites: ['corner-opening', 'shape'],
+  },
+  {
+    id: 'fuseki',
+    name: 'Fuseki',
+    category: 'opening',
+    description: 'Whole-board opening strategy — balancing territory, influence, and framework.',
+    prerequisites: ['corner-opening', 'moyō', 'direction-of-play'],
+  },
+
+  // === ENDGAME (2) ===
+  {
+    id: 'sente-gote',
+    name: 'Sente & Gote',
+    category: 'endgame',
+    description: 'Sente = forcing move (opponent must respond). Gote = non-forcing. Play sente first.',
+    prerequisites: ['scoring', 'atari'],
+  },
+  {
+    id: 'endgame-counting',
+    name: 'Endgame Counting',
+    category: 'endgame',
+    description: 'Calculating the value of endgame moves to play the largest ones first.',
+    prerequisites: ['sente-gote', 'scoring'],
+  },
+];
