@@ -13,6 +13,7 @@ import {
   getStarPoints,
 } from '@/utils/coordinates';
 import { COLORS } from '@/utils/colors';
+import { useReviewStore } from '@/stores/review-store';
 import type { BoardSize } from '@/lib/go-engine/types';
 
 // ---------------------------------------------------------------------------
@@ -88,6 +89,7 @@ export function ProblemView() {
   const requestProblemHint = useGameStore((s) => s.requestProblemHint);
   const showProblems = useGameStore((s) => s.showProblems);
   const startProblem = useGameStore((s) => s.startProblem);
+  const recordAttempt = useReviewStore((s) => s.recordAttempt);
 
   // Feedback animation state
   const [feedbackPoint, setFeedbackPoint] = useState<{ x: number; y: number; type: 'correct' | 'wrong' } | null>(null);
@@ -137,11 +139,21 @@ export function ProblemView() {
     if (result.status === 'wrong') {
       setFeedbackPoint({ x: bx, y: by, type: 'wrong' });
       setTimeout(() => setFeedbackPoint(null), 600);
+      // If this wrong move caused failure (3rd attempt), record in review store
+      const pi = useGameStore.getState().problemInteraction;
+      if (pi.status === 'failed' && currentProblemId) {
+        recordAttempt(currentProblemId, false, pi.attempts, pi.showHint);
+      }
     } else {
       setFeedbackPoint({ x: bx, y: by, type: 'correct' });
       setTimeout(() => setFeedbackPoint(null), 700);
+      // If solved, record in review store
+      const pi = useGameStore.getState().problemInteraction;
+      if (result.status === 'solved' && currentProblemId) {
+        recordAttempt(currentProblemId, true, pi.attempts, pi.showHint);
+      }
     }
-  }, [problemInteraction, boardSize, submitProblemMove]);
+  }, [problemInteraction, boardSize, submitProblemMove, currentProblemId, recordAttempt]);
 
   if (!problem || !currentProblemId) return null;
 
