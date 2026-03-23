@@ -13,6 +13,8 @@ import { GameControls } from '@/components/game/GameControls';
 import { ScoreCard } from '@/components/game/ScoreCard';
 import { LessonPicker } from '@/components/lessons/LessonPicker';
 import { LessonView } from '@/components/lessons/LessonView';
+import { ProblemPicker } from '@/components/problems/ProblemPicker';
+import { ProblemView } from '@/components/problems/ProblemView';
 import { useGameStore } from '@/stores/game-store';
 import { useGoMaster } from '@/hooks/useGoMaster';
 import { useGitHubAuth } from '@/hooks/useGitHubAuth';
@@ -121,6 +123,8 @@ export default function GamePage() {
       {/* Main content: conditionally render based on appPhase */}
       {appPhase === 'lessons' && <LessonPicker />}
       {appPhase === 'lesson' && <LessonView />}
+      {appPhase === 'problems' && <ProblemPicker />}
+      {appPhase === 'problem' && <ProblemView />}
       {appPhase === 'game' && (
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           {/* Left: Board area */}
