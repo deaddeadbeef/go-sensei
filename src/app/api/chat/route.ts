@@ -152,6 +152,42 @@ const TOOLS = [
       required: ['positions'],
     },
   },
+  {
+    type: 'function' as const,
+    name: 'evaluate_concepts',
+    description:
+      'Identify which Go concepts are demonstrated in the current position or recent move. ' +
+      'Use this after notable moves or when teaching to track what the student is learning. ' +
+      'Only report concepts that are clearly relevant to what just happened.',
+    parameters: {
+      type: 'object',
+      properties: {
+        concepts: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              conceptId: {
+                type: 'string',
+                description:
+                  'Concept ID from the known set: stones-and-board, liberties, capture, groups, eyes, ko, territory, scoring, ' +
+                  'atari, ladder, net, snapback, double-atari, connect-and-cut, throw-in, life-and-death, seki, tesuji, ' +
+                  'influence, thickness, moyō, invasion-vs-reduction, shape, direction-of-play, fighting, ' +
+                  'corner-opening, joseki, fuseki, sente-gote, endgame-counting',
+              },
+              reason: {
+                type: 'string',
+                description: 'Brief explanation of why this concept is relevant right now.',
+              },
+            },
+            required: ['conceptId', 'reason'],
+          },
+          description: 'List of concepts demonstrated in the current position.',
+        },
+      },
+      required: ['concepts'],
+    },
+  },
 ];
 
 function executeTool(
@@ -242,6 +278,19 @@ function executeTool(
         };
       }).filter(Boolean);
       return { result: { groups } };
+    }
+    case 'evaluate_concepts': {
+      const validIds = new Set([
+        'stones-and-board', 'liberties', 'capture', 'groups', 'eyes', 'ko', 'territory', 'scoring',
+        'atari', 'ladder', 'net', 'snapback', 'double-atari', 'connect-and-cut', 'throw-in',
+        'life-and-death', 'seki', 'tesuji', 'influence', 'thickness', 'moyō',
+        'invasion-vs-reduction', 'shape', 'direction-of-play', 'fighting',
+        'corner-opening', 'joseki', 'fuseki', 'sente-gote', 'endgame-counting',
+      ]);
+      const concepts = (args.concepts || [])
+        .filter((c: any) => validIds.has(c.conceptId))
+        .map((c: any) => ({ conceptId: c.conceptId, reason: c.reason }));
+      return { result: { concepts, count: concepts.length } };
     }
     default:
       return { result: { error: `Unknown tool: ${name}` } };
