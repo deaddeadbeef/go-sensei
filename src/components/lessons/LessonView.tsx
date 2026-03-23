@@ -89,6 +89,13 @@ export function LessonView() {
   const prevStep = useGameStore((s) => s.prevStep);
   const completeLesson = useGameStore((s) => s.completeLesson);
   const showLessons = useGameStore((s) => s.showLessons);
+  const lessonInteraction = useGameStore((s) => s.lessonInteraction);
+  const setLessonPrompt = useGameStore((s) => s.setLessonPrompt);
+  const checkLessonAnswer = useGameStore((s) => s.checkLessonAnswer);
+  const clearLessonPrompt = useGameStore((s) => s.clearLessonPrompt);
+
+  // Feedback animation state
+  const [feedbackPoint, setFeedbackPoint] = useState<{ x: number; y: number; type: 'correct' | 'wrong' } | null>(null);
 
   // Board sizing (mirrors BoardContainer approach)
   const containerRef = useRef<HTMLDivElement>(null);
@@ -107,26 +114,73 @@ export function LessonView() {
     return () => observer.disconnect();
   }, []);
 
-  // Find lesson data by ID
+  // Find lesson data by ID — derive step data early so hooks can reference it
   const lessonData = LESSONS.find((l) => l.id === currentLessonId);
+  const totalSteps = lessonData?.steps.length ?? 0;
+  const stepData = lessonData?.steps[currentStep];
+  const boardSize = ((stepData?.boardSize ?? 9) as BoardSize);
+  const r = stoneRadius(boardSize);
+  const isFirstStep = currentStep === 0;
+  const isLastStep = currentStep >= totalSteps - 1;
 
   const handlePrev = useCallback(() => prevStep(), [prevStep]);
-  const handleNext = useCallback(() => nextStep(lessonData?.steps.length ?? 0), [nextStep, lessonData]);
+  const handleNext = useCallback(() => nextStep(totalSteps), [nextStep, totalSteps]);
   const handleComplete = useCallback(() => {
     completeLesson();
   }, [completeLesson]);
   const handleExit = useCallback(() => showLessons(), [showLessons]);
 
-  if (!lessonData || !currentLessonId) return null;
+  // Set prompt when step changes
+  useEffect(() => {
+    clearLessonPrompt();
+    if (stepData?.prompt && stepData?.expectedMove) {
+      setLessonPrompt({
+        prompt: stepData.prompt,
+        expectedMove: stepData.expectedMove,
+        wrongMoveHint: stepData.wrongMoveHint ?? null,
+        branchOnFail: stepData.branchOnFail ?? null,
+        acceptRadius: stepData.acceptRadius ?? 0,
+      });
+    }
+  }, [currentStep]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const totalSteps = lessonData.steps.length;
-  const stepData = lessonData.steps[currentStep];
-  if (!stepData) return null;
+  const handleBoardClick = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
+    if (!lessonInteraction.awaitingClick) return;
 
-  const boardSize = (stepData.boardSize ?? 9) as BoardSize;
-  const r = stoneRadius(boardSize);
-  const isFirstStep = currentStep === 0;
-  const isLastStep = currentStep >= totalSteps - 1;
+    const svg = e.currentTarget;
+    const rect = svg.getBoundingClientRect();
+    const svgX = ((e.clientX - rect.left) / rect.width) * SVG_SIZE;
+    const svgY = ((e.clientY - rect.top) / rect.height) * SVG_SIZE;
+
+    const cell = cellSize(boardSize);
+    const bx = Math.round((svgX - BOARD_PADDING) / cell);
+    const by = Math.round((svgY - BOARD_PADDING) / cell);
+
+    if (bx < 0 || bx >= boardSize || by < 0 || by >= boardSize) return;
+
+    const result = checkLessonAnswer({ x: bx, y: by });
+    if (result === 'correct') {
+      setFeedbackPoint({ x: bx, y: by, type: 'correct' });
+      setTimeout(() => {
+        clearLessonPrompt();
+        setFeedbackPoint(null);
+        handleNext();
+      }, 700);
+    } else {
+      setFeedbackPoint({ x: bx, y: by, type: 'wrong' });
+      setTimeout(() => setFeedbackPoint(null), 600);
+      // Branch on fail after 3 attempts
+      if (lessonInteraction.attempts + 1 >= 3 && lessonInteraction.branchOnFail !== null) {
+        setTimeout(() => {
+          clearLessonPrompt();
+          setFeedbackPoint(null);
+          useGameStore.setState({ currentStep: lessonInteraction.branchOnFail! });
+        }, 800);
+      }
+    }
+  }, [lessonInteraction, boardSize, checkLessonAnswer, clearLessonPrompt, handleNext]);
+
+  if (!lessonData || !currentLessonId || !stepData) return null;
 
   return (
     <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
@@ -142,7 +196,12 @@ export function LessonView() {
           style={{ flex: '1 1 0%', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}
         >
           <div style={{ width: boardPx, height: boardPx, position: 'relative' }}>
-            <svg viewBox={`0 0 ${SVG_SIZE} ${SVG_SIZE}`} className="w-full h-full select-none">
+            <svg
+              viewBox={`0 0 ${SVG_SIZE} ${SVG_SIZE}`}
+              className="w-full h-full select-none"
+              onClick={handleBoardClick}
+              style={{ cursor: lessonInteraction.awaitingClick ? 'crosshair' : 'default' }}
+            >
               <defs>
                 <radialGradient id="lesson-black-stone" cx="35%" cy="35%">
                   <stop offset="0%" stopColor={COLORS.stone.blackShine} />
@@ -192,6 +251,26 @@ export function LessonView() {
                     );
                   })}
                   <LessonOverlay highlights={stepData.highlights} boardSize={boardSize} />
+                  {feedbackPoint && (() => {
+                    const { cx, cy } = pointToSvg(feedbackPoint, boardSize);
+                    const color = feedbackPoint.type === 'correct' ? '#4ade80' : '#ef4444';
+                    return (
+                      <motion.circle
+                        cx={cx}
+                        cy={cy}
+                        r={r * 0.7}
+                        fill={`${color}60`}
+                        stroke={color}
+                        strokeWidth={3}
+                        initial={{ scale: 0.3, opacity: 1 }}
+                        animate={feedbackPoint.type === 'correct'
+                          ? { scale: 1.5, opacity: 0 }
+                          : { x: [0, -4, 4, -4, 4, 0], scale: 1, opacity: [1, 1, 1, 1, 1, 0] }
+                        }
+                        transition={{ duration: 0.6 }}
+                      />
+                    );
+                  })()}
                 </motion.g>
               </AnimatePresence>
             </svg>
@@ -247,6 +326,28 @@ export function LessonView() {
               <p className="text-sm leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
                 {stepData.text}
               </p>
+              {lessonInteraction.awaitingClick && lessonInteraction.prompt && (
+                <motion.div
+                  className="mt-3 rounded-lg p-3"
+                  style={{ backgroundColor: `${COLORS.ui.accent}15`, border: `1px solid ${COLORS.ui.accent}40` }}
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <p className="text-sm font-medium" style={{ color: COLORS.ui.accent }}>
+                    👆 {lessonInteraction.prompt}
+                  </p>
+                  {lessonInteraction.attempts > 0 && lessonInteraction.wrongMoveHint && (
+                    <p className="mt-2 text-xs" style={{ color: COLORS.ui.textSecondary }}>
+                      💡 {lessonInteraction.wrongMoveHint}
+                    </p>
+                  )}
+                  {lessonInteraction.attempts > 0 && (
+                    <p className="mt-1 text-xs" style={{ color: COLORS.ui.textSecondary }}>
+                      Attempt {lessonInteraction.attempts}/3
+                    </p>
+                  )}
+                </motion.div>
+              )}
             </motion.div>
           </AnimatePresence>
         </div>
@@ -273,10 +374,11 @@ export function LessonView() {
             ) : (
               <button
                 onClick={handleNext}
-                className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-transform hover:scale-[1.02] active:scale-95"
+                disabled={lessonInteraction.awaitingClick}
+                className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
               >
-                Next →
+                {lessonInteraction.awaitingClick ? 'Click the board...' : 'Next →'}
               </button>
             )}
           </div>
