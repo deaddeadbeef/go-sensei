@@ -19,6 +19,9 @@ export interface LessonStep {
   text: string;
   prompt?: string;        // ask user to click a position
   expectedMove?: Point;   // correct answer for the prompt
+  wrongMoveHint?: string;      // hint shown on wrong click
+  branchOnFail?: number;       // step index to jump to on repeated failure
+  acceptRadius?: number;       // how many intersections away still counts (0 = exact)
   boardSize?: number;     // override, default 9
 }
 
