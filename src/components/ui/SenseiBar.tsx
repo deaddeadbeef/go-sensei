@@ -101,47 +101,7 @@ export function SenseiBar({ onSettingsClick, isLoggedIn }: SenseiBarProps) {
             </button>
           </>
         )}
-        {(appPhase === 'problems' || appPhase === 'problem') && (
-          <button
-            onClick={() => useGameStore.getState().returnToGame()}
-            className="text-sm opacity-60 hover:opacity-100 transition-opacity"
-            style={{ color: COLORS.ui.textSecondary }}
-            title="Back to Game"
-          >
-            ← Game
-          </button>
-        )}
-        {appPhase === 'skills' && (
-          <button
-            onClick={() => useGameStore.getState().returnToGame()}
-            className="text-sm opacity-60 hover:opacity-100 transition-opacity"
-            style={{ color: COLORS.ui.textSecondary }}
-            title="Back to Game"
-          >
-            ← Game
-          </button>
-        )}
-        {appPhase === 'review' && (
-          <button
-            onClick={() => useGameStore.getState().returnToGame()}
-            className="text-sm opacity-60 hover:opacity-100 transition-opacity"
-            style={{ color: COLORS.ui.textSecondary }}
-            title="Back to Game"
-          >
-            ← Game
-          </button>
-        )}
-        {appPhase === 'dashboard' && (
-          <button
-            onClick={() => useGameStore.getState().returnToGame()}
-            className="text-sm opacity-60 hover:opacity-100 transition-opacity"
-            style={{ color: COLORS.ui.textSecondary }}
-            title="Back to Game"
-          >
-            ← Game
-          </button>
-        )}
-        {(appPhase === 'lessons' || appPhase === 'lesson') && (
+        {appPhase !== 'game' && (
           <button
             onClick={() => useGameStore.getState().returnToGame()}
             className="text-sm opacity-60 hover:opacity-100 transition-opacity"

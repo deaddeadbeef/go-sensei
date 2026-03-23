@@ -15,7 +15,21 @@ import {
 } from '@/utils/coordinates';
 import { COLORS } from '@/utils/colors';
 import { LESSON_TRANSITION } from '@/utils/animation';
+import { useConceptStore } from '@/stores/concept-store';
 import type { BoardSize } from '@/lib/go-engine/types';
+
+const LESSON_CONCEPTS: Record<string, string[]> = {
+  groups: ['groups'],
+  liberties: ['liberties'],
+  capture: ['capture'],
+  territory: ['territory'],
+  eyes: ['eyes'],
+  ko: ['ko'],
+  ladder: ['ladder'],
+  net: ['net'],
+  snapback: ['snapback'],
+  'territory-vs-influence': ['influence', 'territory'],
+};
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -93,6 +107,7 @@ export function LessonView() {
   const setLessonPrompt = useGameStore((s) => s.setLessonPrompt);
   const checkLessonAnswer = useGameStore((s) => s.checkLessonAnswer);
   const clearLessonPrompt = useGameStore((s) => s.clearLessonPrompt);
+  const recordEncounter = useConceptStore((s) => s.recordEncounter);
 
   // Feedback animation state
   const [feedbackPoint, setFeedbackPoint] = useState<{ x: number; y: number; type: 'correct' | 'wrong' } | null>(null);
@@ -127,7 +142,13 @@ export function LessonView() {
   const handleNext = useCallback(() => nextStep(totalSteps), [nextStep, totalSteps]);
   const handleComplete = useCallback(() => {
     completeLesson();
-  }, [completeLesson]);
+    if (currentLessonId) {
+      const concepts = LESSON_CONCEPTS[currentLessonId];
+      if (concepts) {
+        concepts.forEach((c) => recordEncounter(c));
+      }
+    }
+  }, [completeLesson, currentLessonId, recordEncounter]);
   const handleExit = useCallback(() => showLessons(), [showLessons]);
 
   // Set prompt when step changes
