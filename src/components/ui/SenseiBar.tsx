@@ -58,13 +58,43 @@ export function SenseiBar({ onSettingsClick, isLoggedIn }: SenseiBarProps) {
           <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: COLORS.overlay.positive }} title="Connected to GitHub" />
         )}
         {appPhase === 'game' && (
+          <>
+            <button
+              onClick={() => useGameStore.getState().showLessons()}
+              className="text-sm opacity-60 hover:opacity-100 transition-opacity"
+              style={{ color: COLORS.ui.textSecondary }}
+              title="Learn Go"
+            >
+              📚 Learn
+            </button>
+            <button
+              onClick={() => useGameStore.getState().showProblems()}
+              className="text-sm opacity-60 hover:opacity-100 transition-opacity"
+              style={{ color: COLORS.ui.textSecondary }}
+              title="Solve Tsumego"
+            >
+              🧩 Problems
+            </button>
+          </>
+        )}
+        {(appPhase === 'problems' || appPhase === 'problem') && (
           <button
-            onClick={() => useGameStore.getState().showLessons()}
+            onClick={() => useGameStore.getState().returnToGame()}
             className="text-sm opacity-60 hover:opacity-100 transition-opacity"
             style={{ color: COLORS.ui.textSecondary }}
-            title="Learn Go"
+            title="Back to Game"
           >
-            📚 Learn
+            ← Game
+          </button>
+        )}
+        {(appPhase === 'lessons' || appPhase === 'lesson') && (
+          <button
+            onClick={() => useGameStore.getState().returnToGame()}
+            className="text-sm opacity-60 hover:opacity-100 transition-opacity"
+            style={{ color: COLORS.ui.textSecondary }}
+            title="Back to Game"
+          >
+            ← Game
           </button>
         )}
         <button
