@@ -18,6 +18,9 @@ import {
   pointEquals,
   getStone,
 } from '@/lib/go-engine';
+import type { Problem, ProblemAttempt } from '@/lib/problems/types';
+import type { MoveNode } from '@/lib/problems/types';
+import { validateMove, type ValidationResult } from '@/lib/problems/validator';
 
 // ---------------------------------------------------------------------------
 // Overlay types
@@ -108,6 +111,18 @@ interface LessonInteraction {
   feedback: 'correct' | 'wrong' | null;
 }
 
+interface ProblemInteraction {
+  active: boolean;
+  problemId: string | null;
+  currentNodes: MoveNode[];
+  playerMoves: Point[];
+  opponentMoves: Point[];
+  status: 'playing' | 'solved' | 'failed';
+  attempts: number;
+  feedback: string | null;
+  showHint: boolean;
+}
+
 // ---------------------------------------------------------------------------
 // Capture animation
 // ---------------------------------------------------------------------------
@@ -193,7 +208,7 @@ interface GameStore {
   teachingLevel: 'beginner' | 'intermediate' | 'advanced';
 
   // App-level navigation (lessons)
-  appPhase: 'game' | 'lessons' | 'lesson';
+  appPhase: 'game' | 'lessons' | 'lesson' | 'problems' | 'problem';
   currentLessonId: string | null;
   currentStep: number;
   completedLessons: string[];
@@ -253,6 +268,16 @@ interface GameStore {
   checkLessonAnswer: (point: Point) => 'correct' | 'wrong';
   clearLessonPrompt: () => void;
 
+  // Problem (tsumego)
+  currentProblemId: string | null;
+  problemInteraction: ProblemInteraction;
+  problemAttempts: ProblemAttempt[];
+  startProblem: (problem: Problem) => void;
+  submitProblemMove: (point: Point) => ValidationResult;
+  resetProblem: () => void;
+  showProblems: () => void;
+  requestProblemHint: () => void;
+
   returnToGame: () => void;
 
   // Scoring
@@ -308,6 +333,18 @@ const defaultLessonInteraction: LessonInteraction = {
   feedback: null,
 };
 
+const defaultProblemInteraction: ProblemInteraction = {
+  active: false,
+  problemId: null,
+  currentNodes: [],
+  playerMoves: [],
+  opponentMoves: [],
+  status: 'playing',
+  attempts: 0,
+  feedback: null,
+  showHint: false,
+};
+
 const defaultOverlays = {
   highlights: [] as OverlayHighlight[],
   liberties: [] as OverlayLiberty[],
@@ -345,6 +382,10 @@ export const useGameStore = create<GameStore>()(
   lesson: { ...defaultLesson },
 
   lessonInteraction: { ...defaultLessonInteraction },
+
+  currentProblemId: null,
+  problemInteraction: { ...defaultProblemInteraction },
+  problemAttempts: [],
 
   territory: null,
   scorecard: null,
@@ -664,6 +705,127 @@ export const useGameStore = create<GameStore>()(
     set({ lessonInteraction: { ...defaultLessonInteraction } });
   },
 
+  showProblems: () => set({ appPhase: 'problems', currentProblemId: null }),
+
+  startProblem: (problem: Problem) => set({
+    appPhase: 'problem',
+    currentProblemId: problem.id,
+    problemInteraction: {
+      active: true,
+      problemId: problem.id,
+      currentNodes: problem.solutionTree,
+      playerMoves: [],
+      opponentMoves: [],
+      status: 'playing',
+      attempts: 0,
+      feedback: null,
+      showHint: false,
+    },
+  }),
+
+  submitProblemMove: (point: Point) => {
+    const state = get();
+    const pi = state.problemInteraction;
+    if (!pi.active || pi.status !== 'playing') {
+      return { status: 'wrong' as const, message: 'No active problem.' };
+    }
+
+    const result = validateMove(pi.currentNodes, point);
+
+    if (result.status === 'wrong') {
+      const newAttempts = pi.attempts + 1;
+      const failed = newAttempts >= 3;
+      set({
+        problemInteraction: {
+          ...pi,
+          attempts: newAttempts,
+          feedback: result.message ?? 'Incorrect.',
+          status: failed ? 'failed' : 'playing',
+        },
+      });
+      if (failed) {
+        set((s) => ({
+          problemAttempts: [
+            ...s.problemAttempts,
+            {
+              problemId: pi.problemId!,
+              solved: false,
+              attempts: newAttempts,
+              moveSequence: [...pi.playerMoves, point],
+              timestamp: Date.now(),
+            },
+          ],
+        }));
+      }
+      return result;
+    }
+
+    if (result.status === 'solved') {
+      const newPlayerMoves = [...pi.playerMoves, point];
+      const newOpponentMoves = result.opponentResponse
+        ? [...pi.opponentMoves, result.opponentResponse.move]
+        : pi.opponentMoves;
+      set({
+        problemInteraction: {
+          ...pi,
+          playerMoves: newPlayerMoves,
+          opponentMoves: newOpponentMoves,
+          status: 'solved',
+          feedback: result.message ?? 'Solved!',
+        },
+      });
+      set((s) => ({
+        problemAttempts: [
+          ...s.problemAttempts,
+          {
+            problemId: pi.problemId!,
+            solved: true,
+            attempts: pi.attempts + 1,
+            moveSequence: newPlayerMoves,
+            timestamp: Date.now(),
+          },
+        ],
+      }));
+      return result;
+    }
+
+    // correct but continue
+    const newPlayerMoves = [...pi.playerMoves, point];
+    const newOpponentMoves = result.opponentResponse
+      ? [...pi.opponentMoves, result.opponentResponse.move]
+      : pi.opponentMoves;
+    set({
+      problemInteraction: {
+        ...pi,
+        playerMoves: newPlayerMoves,
+        opponentMoves: newOpponentMoves,
+        currentNodes: result.nextNodes ?? [],
+        attempts: pi.attempts,
+        feedback: result.message ?? 'Good move!',
+      },
+    });
+    return result;
+  },
+
+  resetProblem: () => {
+    const state = get();
+    const pid = state.currentProblemId;
+    set({
+      problemInteraction: {
+        ...defaultProblemInteraction,
+        active: !!pid,
+        problemId: pid,
+      },
+    });
+  },
+
+  requestProblemHint: () => set((state) => ({
+    problemInteraction: {
+      ...state.problemInteraction,
+      showHint: true,
+    },
+  })),
+
   returnToGame: () => set({ appPhase: 'game' }),
 
   // Scoring
@@ -724,6 +886,9 @@ export const useGameStore = create<GameStore>()(
       appPhase: 'game',
       currentLessonId: null,
       currentStep: 0,
+      currentProblemId: null,
+      problemInteraction: { ...defaultProblemInteraction },
+      problemAttempts: [],
     });
   },
 
@@ -766,6 +931,8 @@ export const useGameStore = create<GameStore>()(
         learnedConcepts: state.learnedConcepts,
         teachingLevel: state.teachingLevel,
         completedLessons: state.completedLessons,
+        appPhase: state.appPhase,
+        problemAttempts: state.problemAttempts,
       }),
     },
   ),
