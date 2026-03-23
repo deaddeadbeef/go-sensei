@@ -1,6 +1,7 @@
 "use client";
 
 import { useGameStore } from '@/stores/game-store';
+import { useConceptStore } from '@/stores/concept-store';
 import { coordToPoint } from '@/lib/go-engine';
 import {
   formatMoveMessage,
@@ -29,6 +30,7 @@ export function useGoMaster() {
   const applyAiMove = useGameStore((s) => s.applyAiMove);
   const clearOverlays = useGameStore((s) => s.clearOverlays);
   const addChatMessage = useGameStore((s) => s.addChatMessage);
+  const recordEncounter = useConceptStore((s) => s.recordEncounter);
 
   const historyRef = useRef<ChatMsg[]>([]);
 
@@ -113,10 +115,16 @@ export function useGoMaster() {
           })),
         );
 
+      if (toolName === 'evaluate_concepts' && result.concepts) {
+        for (const c of result.concepts) {
+          recordEncounter(c.conceptId);
+        }
+      }
+
       // A6: pass_turn — server already applies the pass in the agentic loop.
       // Don't apply client-side to avoid double-pass.
     }
-  }, [applyAiMove, applyHighlights, applyLibertyOverlay, applySuggestions, applyArrows, applyInfluence, applyGroups]);
+  }, [applyAiMove, applyHighlights, applyLibertyOverlay, applySuggestions, applyArrows, applyInfluence, applyGroups, recordEncounter]);
 
   const send = useCallback(
     async (message: string) => {
