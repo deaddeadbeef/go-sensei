@@ -97,6 +97,17 @@ interface LessonState {
   } | null;
 }
 
+interface LessonInteraction {
+  awaitingClick: boolean;
+  prompt: string | null;
+  expectedMove: Point | null;
+  wrongMoveHint: string | null;
+  branchOnFail: number | null;
+  acceptRadius: number;
+  attempts: number;
+  feedback: 'correct' | 'wrong' | null;
+}
+
 // ---------------------------------------------------------------------------
 // Capture animation
 // ---------------------------------------------------------------------------
@@ -229,6 +240,19 @@ interface GameStore {
   nextStep: (maxSteps: number) => void;
   prevStep: () => void;
   completeLesson: () => void;
+
+  // Lesson interaction
+  lessonInteraction: LessonInteraction;
+  setLessonPrompt: (config: {
+    prompt: string;
+    expectedMove: Point;
+    wrongMoveHint: string | null;
+    branchOnFail: number | null;
+    acceptRadius: number;
+  }) => void;
+  checkLessonAnswer: (point: Point) => 'correct' | 'wrong';
+  clearLessonPrompt: () => void;
+
   returnToGame: () => void;
 
   // Scoring
@@ -273,6 +297,17 @@ const defaultLesson: LessonState = {
   interactiveChallenge: null,
 };
 
+const defaultLessonInteraction: LessonInteraction = {
+  awaitingClick: false,
+  prompt: null,
+  expectedMove: null,
+  wrongMoveHint: null,
+  branchOnFail: null,
+  acceptRadius: 0,
+  attempts: 0,
+  feedback: null,
+};
+
 const defaultOverlays = {
   highlights: [] as OverlayHighlight[],
   liberties: [] as OverlayLiberty[],
@@ -308,6 +343,8 @@ export const useGameStore = create<GameStore>()(
   chatMessages: [],
 
   lesson: { ...defaultLesson },
+
+  lessonInteraction: { ...defaultLessonInteraction },
 
   territory: null,
   scorecard: null,
@@ -583,6 +620,50 @@ export const useGameStore = create<GameStore>()(
     currentStep: 0,
   })),
 
+  setLessonPrompt(config) {
+    set({
+      lessonInteraction: {
+        awaitingClick: true,
+        prompt: config.prompt,
+        expectedMove: config.expectedMove,
+        wrongMoveHint: config.wrongMoveHint,
+        branchOnFail: config.branchOnFail,
+        acceptRadius: config.acceptRadius,
+        attempts: 0,
+        feedback: null,
+      },
+    });
+  },
+
+  checkLessonAnswer(point: Point) {
+    const { lessonInteraction } = get();
+    if (!lessonInteraction.expectedMove) return 'wrong';
+
+    const dx = Math.abs(point.x - lessonInteraction.expectedMove.x);
+    const dy = Math.abs(point.y - lessonInteraction.expectedMove.y);
+    const isCorrect = (dx + dy) <= lessonInteraction.acceptRadius;
+
+    if (isCorrect) {
+      set({
+        lessonInteraction: { ...lessonInteraction, feedback: 'correct', awaitingClick: false },
+      });
+      return 'correct';
+    } else {
+      set({
+        lessonInteraction: {
+          ...lessonInteraction,
+          feedback: 'wrong',
+          attempts: lessonInteraction.attempts + 1,
+        },
+      });
+      return 'wrong';
+    }
+  },
+
+  clearLessonPrompt() {
+    set({ lessonInteraction: { ...defaultLessonInteraction } });
+  },
+
   returnToGame: () => set({ appPhase: 'game' }),
 
   // Scoring
@@ -630,6 +711,7 @@ export const useGameStore = create<GameStore>()(
       bubble: { ...defaultBubble },
       chatMessages: [],
       lesson: { ...defaultLesson },
+      lessonInteraction: { ...defaultLessonInteraction },
       territory: null,
       scorecard: null,
       deadStones: [],
