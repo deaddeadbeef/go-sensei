@@ -208,7 +208,7 @@ interface GameStore {
   teachingLevel: 'beginner' | 'intermediate' | 'advanced' | 'guided';
 
   // App-level navigation (lessons)
-  appPhase: 'game' | 'lessons' | 'lesson' | 'problems' | 'problem' | 'skills';
+  appPhase: 'game' | 'lessons' | 'lesson' | 'problems' | 'problem' | 'skills' | 'review';
   currentLessonId: string | null;
   currentStep: number;
   completedLessons: string[];
@@ -278,6 +278,7 @@ interface GameStore {
   showProblems: () => void;
   requestProblemHint: () => void;
   showSkillTree: () => void;
+  showReview: () => void;
 
   returnToGame: () => void;
 
@@ -709,6 +710,8 @@ export const useGameStore = create<GameStore>()(
   showProblems: () => set({ appPhase: 'problems', currentProblemId: null }),
 
   showSkillTree: () => set({ appPhase: 'skills' }),
+
+  showReview: () => set({ appPhase: 'review' }),
 
   startProblem: (problem: Problem) => set({
     appPhase: 'problem',

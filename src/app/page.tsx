@@ -16,6 +16,7 @@ import { LessonView } from '@/components/lessons/LessonView';
 import { ProblemPicker } from '@/components/problems/ProblemPicker';
 import { ProblemView } from '@/components/problems/ProblemView';
 import { SkillTree } from '@/components/concepts/SkillTree';
+import { DailyReview } from '@/components/review/DailyReview';
 import { useGameStore } from '@/stores/game-store';
 import { useGoMaster } from '@/hooks/useGoMaster';
 import { useGitHubAuth } from '@/hooks/useGitHubAuth';
@@ -128,6 +129,7 @@ export default function GamePage() {
       {appPhase === 'problems' && <ProblemPicker />}
       {appPhase === 'problem' && <ProblemView />}
       {appPhase === 'skills' && <SkillTree />}
+      {appPhase === 'review' && <DailyReview />}
       {appPhase === 'game' && (
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           {/* Left: Board area */}
