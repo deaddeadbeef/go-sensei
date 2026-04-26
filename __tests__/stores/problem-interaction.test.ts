@@ -1,6 +1,8 @@
 import { act } from '@testing-library/react';
 import { useGameStore } from '@/stores/game-store';
+import { PROBLEMS } from '@/lib/problems/problem-data';
 import type { Problem } from '@/lib/problems/types';
+import type { ValidationResult } from '@/lib/problems/validator';
 
 const testProblem: Problem = {
   id: 'test-capture',
@@ -21,28 +23,12 @@ const testProblem: Problem = {
   ],
 };
 
-const multiStepProblem: Problem = {
-  id: 'test-multi',
-  title: 'Multi Step',
-  category: 'reading',
-  difficulty: 2,
-  boardSize: 9,
-  description: 'Two-move sequence',
-  playerColor: 'black',
-  setupStones: [{ point: { x: 4, y: 4 }, color: 'white' }],
-  solutionTree: [
-    {
-      move: { x: 3, y: 4 }, isCorrect: true, label: 'First move',
-      responses: [
-        {
-          move: { x: 5, y: 4 }, isCorrect: true, label: 'Opponent',
-          responses: [
-            { move: { x: 4, y: 5 }, isCorrect: true, label: 'Solved!', responses: [] },
-          ],
-        },
-      ],
-    },
-  ],
+const bundledProblem = (id: string): Problem => {
+  const problem = PROBLEMS.find((candidate) => candidate.id === id);
+  if (!problem) {
+    throw new Error(`Missing test problem: ${id}`);
+  }
+  return problem;
 };
 
 beforeEach(() => {
@@ -58,30 +44,91 @@ describe('problem interaction store', () => {
     expect(s.problemInteraction.active).toBe(true);
     expect(s.problemInteraction.status).toBe('playing');
     expect(s.problemInteraction.currentNodes.length).toBe(2);
+    expect(s.problemInteraction.problem).toBe(testProblem);
+    expect(s.problemInteraction.game?.board.size).toBe(testProblem.boardSize);
+    expect(s.problemInteraction.game?.currentPlayer).toBe(testProblem.playerColor);
   });
 
   it('submitProblemMove returns solved for correct move', () => {
-    act(() => useGameStore.getState().startProblem(testProblem));
-    let result: any;
+    const problem = bundledProblem('capture-001');
+    act(() => useGameStore.getState().startProblem(problem));
+    let result: ValidationResult = { status: 'wrong' };
     act(() => { result = useGameStore.getState().submitProblemMove({ x: 0, y: 1 }); });
     expect(result.status).toBe('solved');
     expect(useGameStore.getState().problemInteraction.status).toBe('solved');
     expect(useGameStore.getState().problemAttempts.length).toBe(1);
     expect(useGameStore.getState().problemAttempts[0].solved).toBe(true);
+    expect(useGameStore.getState().problemAttempts[0].attempts).toBe(1);
+  });
+
+  it('records solved attempt count as wrong attempts plus final solve', () => {
+    const problem = bundledProblem('capture-001');
+    act(() => useGameStore.getState().startProblem(problem));
+
+    act(() => { useGameStore.getState().submitProblemMove({ x: 5, y: 5 }); });
+    act(() => { useGameStore.getState().submitProblemMove({ x: 0, y: 1 }); });
+
+    const attempt = useGameStore.getState().problemAttempts[0];
+    expect(attempt.solved).toBe(true);
+    expect(attempt.attempts).toBe(2);
+  });
+
+  it('submitProblemMove applies a solved move to runtime board for capture-001', () => {
+    const problem = bundledProblem('capture-001');
+    act(() => useGameStore.getState().startProblem(problem));
+
+    act(() => {
+      useGameStore.getState().submitProblemMove({ x: 0, y: 1 });
+    });
+
+    const game = useGameStore.getState().problemInteraction.game;
+    expect(game?.board.grid[0][0]).toBeNull();
+    expect(game?.board.grid[1][0]).toBe('black');
+    expect(game?.currentPlayer).toBe('white');
+    expect(game?.moveHistory).toHaveLength(1);
+    expect(game?.captures.black).toBe(1);
+  });
+
+  it('supports submit and reset for an inline problem not present in PROBLEMS', () => {
+    expect(PROBLEMS.some((problem) => problem.id === testProblem.id)).toBe(false);
+
+    act(() => useGameStore.getState().startProblem(testProblem));
+
+    let result: ValidationResult = { status: 'wrong' };
+    act(() => {
+      result = useGameStore.getState().submitProblemMove({ x: 0, y: 1 });
+    });
+    expect(result.status).toBe('solved');
+    expect(useGameStore.getState().problemInteraction.game?.board.grid[0][0]).toBeNull();
+    expect(useGameStore.getState().problemInteraction.game?.board.grid[1][0]).toBe('black');
+
+    act(() => useGameStore.getState().resetProblem());
+
+    const pi = useGameStore.getState().problemInteraction;
+    expect(pi.active).toBe(true);
+    expect(pi.problem).toBe(testProblem);
+    expect(pi.problemId).toBe(testProblem.id);
+    expect(pi.currentNodes).toBe(testProblem.solutionTree);
+    expect(pi.game?.board.grid[0][0]).toBe('white');
+    expect(pi.game?.board.grid[0][1]).toBe('black');
+    expect(pi.game?.board.grid[1][0]).toBeNull();
+    expect(pi.game?.moveHistory).toHaveLength(0);
   });
 
   it('submitProblemMove returns wrong for incorrect move', () => {
-    act(() => useGameStore.getState().startProblem(testProblem));
-    let result: any;
+    const problem = bundledProblem('capture-001');
+    act(() => useGameStore.getState().startProblem(problem));
+    let result: ValidationResult = { status: 'wrong' };
     act(() => { result = useGameStore.getState().submitProblemMove({ x: 5, y: 5 }); });
     expect(result.status).toBe('wrong');
-    expect(result.message).toBe('Wrong spot');
+    expect(result.message).toBe('That move is not in the solution tree.');
     expect(useGameStore.getState().problemInteraction.attempts).toBe(1);
     expect(useGameStore.getState().problemInteraction.status).toBe('playing');
   });
 
   it('fails after 3 wrong attempts', () => {
-    act(() => useGameStore.getState().startProblem(testProblem));
+    const problem = bundledProblem('capture-001');
+    act(() => useGameStore.getState().startProblem(problem));
     act(() => useGameStore.getState().submitProblemMove({ x: 5, y: 5 }));
     act(() => useGameStore.getState().submitProblemMove({ x: 5, y: 5 }));
     act(() => useGameStore.getState().submitProblemMove({ x: 5, y: 5 }));
@@ -92,15 +139,16 @@ describe('problem interaction store', () => {
   });
 
   it('multi-step problem: correct → continue → solved', () => {
-    act(() => useGameStore.getState().startProblem(multiStepProblem));
-    let r1: any;
-    act(() => { r1 = useGameStore.getState().submitProblemMove({ x: 3, y: 4 }); });
+    const problem = bundledProblem('capture-003');
+    act(() => useGameStore.getState().startProblem(problem));
+    let r1: ValidationResult = { status: 'wrong' };
+    act(() => { r1 = useGameStore.getState().submitProblemMove({ x: 5, y: 4 }); });
     expect(r1.status).toBe('correct');
     expect(r1.opponentResponse).toBeDefined();
     expect(useGameStore.getState().problemInteraction.opponentMoves.length).toBe(1);
 
-    let r2: any;
-    act(() => { r2 = useGameStore.getState().submitProblemMove({ x: 4, y: 5 }); });
+    let r2: ValidationResult = { status: 'wrong' };
+    act(() => { r2 = useGameStore.getState().submitProblemMove({ x: 5, y: 5 }); });
     expect(r2.status).toBe('solved');
     expect(useGameStore.getState().problemInteraction.playerMoves.length).toBe(2);
   });
@@ -108,6 +156,39 @@ describe('problem interaction store', () => {
   it('showProblems navigates to problems list', () => {
     act(() => useGameStore.getState().showProblems());
     expect(useGameStore.getState().appPhase).toBe('problems');
+    expect(useGameStore.getState().preferredProblemFilter).toBeNull();
+  });
+
+  it('showProblems can carry a recommended category filter', () => {
+    act(() => useGameStore.getState().showProblems('capture'));
+    expect(useGameStore.getState().appPhase).toBe('problems');
+    expect(useGameStore.getState().preferredProblemFilter).toBe('capture');
+  });
+
+  it('showLearningPath navigates to learning path', () => {
+    act(() => useGameStore.getState().showLearningPath());
+    expect(useGameStore.getState().appPhase).toBe('path');
+  });
+
+  it('startGuidedIntroGame starts a playable 9x9 guided beginner game', () => {
+    act(() => useGameStore.getState().startGuidedIntroGame());
+
+    const state = useGameStore.getState();
+    expect(state.appPhase).toBe('game');
+    expect(state.phase).toBe('playing');
+    expect(state.game.board.size).toBe(9);
+    expect(state.game.moveHistory).toHaveLength(0);
+    expect(state.teachingLevel).toBe('guided');
+    expect(state.hasStartedIntroGame).toBe(true);
+    expect(state.bubble.visible).toBe(true);
+    expect(state.bubble.text).toContain('9x9');
+  });
+
+  it('startNewGame preserves the intro-started flag', () => {
+    act(() => useGameStore.getState().startGuidedIntroGame());
+    act(() => useGameStore.getState().startNewGame(9));
+
+    expect(useGameStore.getState().hasStartedIntroGame).toBe(true);
   });
 
   it('requestProblemHint sets showHint', () => {
@@ -117,13 +198,30 @@ describe('problem interaction store', () => {
   });
 
   it('resetProblem clears interaction but keeps problemId', () => {
-    act(() => useGameStore.getState().startProblem(testProblem));
+    const problem = bundledProblem('capture-001');
+    act(() => useGameStore.getState().startProblem(problem));
     act(() => useGameStore.getState().submitProblemMove({ x: 5, y: 5 }));
     act(() => useGameStore.getState().resetProblem());
     const s = useGameStore.getState();
     expect(s.problemInteraction.attempts).toBe(0);
     expect(s.problemInteraction.status).toBe('playing');
-    expect(s.problemInteraction.problemId).toBe('test-capture');
+    expect(s.problemInteraction.problemId).toBe('capture-001');
+  });
+
+  it('resetProblem restores original setup board and clears runtime move history', () => {
+    const problem = bundledProblem('capture-001');
+    act(() => useGameStore.getState().startProblem(problem));
+    act(() => useGameStore.getState().submitProblemMove({ x: 0, y: 1 }));
+    expect(useGameStore.getState().problemInteraction.game?.moveHistory).toHaveLength(1);
+
+    act(() => useGameStore.getState().resetProblem());
+
+    const pi = useGameStore.getState().problemInteraction;
+    expect(pi.game?.board.grid[0][0]).toBe('white');
+    expect(pi.game?.board.grid[0][1]).toBe('black');
+    expect(pi.game?.board.grid[1][0]).toBeNull();
+    expect(pi.game?.moveHistory).toHaveLength(0);
+    expect(pi.currentNodes).toBe(problem.solutionTree);
   });
 
   it('startNewGame resets problem state', () => {

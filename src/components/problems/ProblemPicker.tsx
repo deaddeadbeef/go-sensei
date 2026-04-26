@@ -43,9 +43,10 @@ function difficultyStars(d: number) {
 
 export function ProblemPicker() {
   const problemAttempts = useGameStore((s) => s.problemAttempts);
+  const preferredProblemFilter = useGameStore((s) => s.preferredProblemFilter);
   const startProblem = useGameStore((s) => s.startProblem);
   const returnToGame = useGameStore((s) => s.returnToGame);
-  const [filter, setFilter] = useState<FilterKey>('all');
+  const [filter, setFilter] = useState<FilterKey>(preferredProblemFilter ?? 'all');
 
   const filtered = filter === 'all'
     ? PROBLEMS

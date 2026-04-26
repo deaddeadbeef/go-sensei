@@ -10,17 +10,18 @@ export function useTypewriter(text: string, speed: number = BUBBLE_TYPEWRITER_SP
 
   useEffect(() => {
     if (text === prevTextRef.current) return;
+    const timers: ReturnType<typeof setTimeout>[] = [];
 
     // If new text extends old text, continue from current position
     if (text.startsWith(prevTextRef.current)) {
       indexRef.current = prevTextRef.current.length;
     } else {
       indexRef.current = 0;
-      setDisplayedText('');
+      timers.push(setTimeout(() => setDisplayedText(''), 0));
     }
 
     prevTextRef.current = text;
-    setIsTyping(true);
+    timers.push(setTimeout(() => setIsTyping(true), 0));
 
     const interval = setInterval(() => {
       if (indexRef.current < text.length) {
@@ -32,7 +33,10 @@ export function useTypewriter(text: string, speed: number = BUBBLE_TYPEWRITER_SP
       }
     }, 1000 / speed);
 
-    return () => clearInterval(interval);
+    return () => {
+      for (const timer of timers) clearTimeout(timer);
+      clearInterval(interval);
+    };
   }, [text, speed]);
 
   return { displayedText, isTyping, isComplete: displayedText === text };

@@ -4,11 +4,13 @@ import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '@/stores/game-store';
 import { useReviewStore } from '@/stores/review-store';
+import { useConceptStore } from '@/stores/concept-store';
 import { PROBLEMS } from '@/lib/problems/problem-data';
 import type { Problem } from '@/lib/problems/types';
 import type { MoveNode } from '@/lib/problems/types';
-import { validateMove } from '@/lib/problems/validator';
-import type { Point, BoardSize } from '@/lib/go-engine/types';
+import type { Point, BoardSize, GameState } from '@/lib/go-engine/types';
+import type { ProblemCategory } from '@/lib/problems/types';
+import { applyProblemMove, buildProblemGame } from '@/lib/problems/runtime';
 import {
   SVG_SIZE,
   BOARD_PADDING,
@@ -24,15 +26,15 @@ import { COLORS } from '@/utils/colors';
 // ---------------------------------------------------------------------------
 
 interface ReviewState {
+  problemIds: string[];
   currentIndex: number;
   results: Array<{ problemId: string; solved: boolean; attempts: number }>;
   phase: 'reviewing' | 'complete';
 }
 
 interface ProblemState {
+  game: GameState;
   currentNodes: MoveNode[];
-  playerMoves: Point[];
-  opponentMoves: Point[];
   status: 'playing' | 'solved' | 'failed';
   attempts: number;
   feedback: string | null;
@@ -45,6 +47,13 @@ interface ProblemState {
 
 const COLUMN_LETTERS = 'ABCDEFGHJKLMNOPQRST';
 const boardInset = BOARD_PADDING * 0.75;
+const PROBLEM_CONCEPTS: Record<ProblemCategory, string[]> = {
+  capture: ['capture', 'atari'],
+  'life-and-death': ['eyes', 'life-and-death'],
+  tesuji: ['tesuji'],
+  reading: ['ladder', 'net', 'connect-and-cut'],
+  endgame: ['sente-gote', 'endgame-counting'],
+};
 
 function ReviewBoardGrid({ boardSize }: { boardSize: BoardSize }) {
   const cell = cellSize(boardSize);
@@ -102,9 +111,8 @@ function ReviewCoordinateLabels({ boardSize }: { boardSize: BoardSize }) {
 
 function initProblemState(problem: Problem): ProblemState {
   return {
+    game: buildProblemGame(problem),
     currentNodes: problem.solutionTree,
-    playerMoves: [],
-    opponentMoves: [],
     status: 'playing',
     attempts: 0,
     feedback: null,
@@ -121,19 +129,25 @@ export function DailyReview() {
   const getDueProblems = useReviewStore((s) => s.getDueProblems);
   const recordAttempt = useReviewStore((s) => s.recordAttempt);
   const getReviewStats = useReviewStore((s) => s.getReviewStats);
+  const recordEvidence = useConceptStore((s) => s.recordEvidence);
 
-  const dueIds = getDueProblems();
-  const dueProblems = dueIds
-    .map((id) => PROBLEMS.find((p) => p.id === id))
-    .filter(Boolean) as Problem[];
+  const [review, setReview] = useState<ReviewState>(() => {
+    const problemIds = getDueProblems().filter((id) =>
+      PROBLEMS.some((problem) => problem.id === id),
+    );
 
-  const [review, setReview] = useState<ReviewState>({
-    currentIndex: 0,
-    results: [],
-    phase: dueProblems.length > 0 ? 'reviewing' : 'complete',
+    return {
+      problemIds,
+      currentIndex: 0,
+      results: [],
+      phase: problemIds.length > 0 ? 'reviewing' : 'complete',
+    };
   });
 
-  const currentProblem = dueProblems[review.currentIndex] ?? null;
+  const currentProblemId = review.problemIds[review.currentIndex] ?? null;
+  const currentProblem = currentProblemId
+    ? PROBLEMS.find((problem) => problem.id === currentProblemId) ?? null
+    : null;
 
   const [problemState, setProblemState] = useState<ProblemState>(() =>
     currentProblem ? initProblemState(currentProblem) : initProblemState(PROBLEMS[0]),
@@ -157,7 +171,7 @@ export function DailyReview() {
       if (bx < 0 || bx >= currentProblem.boardSize || by < 0 || by >= currentProblem.boardSize) return;
 
       const played: Point = { x: bx, y: by };
-      const result = validateMove(problemState.currentNodes, played);
+      const result = applyProblemMove(currentProblem, problemState.game, problemState.currentNodes, played);
       const newAttempts = problemState.attempts + 1;
 
       setFeedbackPoint({ point: played, correct: result.status !== 'wrong' });
@@ -172,27 +186,17 @@ export function DailyReview() {
           status: failed ? 'failed' : 'playing',
         }));
       } else if (result.status === 'solved') {
-        const newPlayerMoves = [...problemState.playerMoves, played];
-        const newOpponentMoves = result.opponentResponse
-          ? [...problemState.opponentMoves, result.opponentResponse.move]
-          : problemState.opponentMoves;
         setProblemState((s) => ({
           ...s,
-          playerMoves: newPlayerMoves,
-          opponentMoves: newOpponentMoves,
+          game: result.game,
           status: 'solved',
           feedback: result.message ?? 'Solved!',
         }));
       } else {
         // correct, continue
-        const newPlayerMoves = [...problemState.playerMoves, played];
-        const newOpponentMoves = result.opponentResponse
-          ? [...problemState.opponentMoves, result.opponentResponse.move]
-          : problemState.opponentMoves;
         setProblemState((s) => ({
           ...s,
-          playerMoves: newPlayerMoves,
-          opponentMoves: newOpponentMoves,
+          game: result.game,
           currentNodes: result.nextNodes ?? [],
           feedback: result.message ?? 'Good move!',
         }));
@@ -206,27 +210,32 @@ export function DailyReview() {
     if (!currentProblem) return;
 
     const solved = problemState.status === 'solved';
-    recordAttempt(currentProblem.id, solved, problemState.attempts, problemState.showHint);
+    const reviewAttempts = solved ? problemState.attempts + 1 : problemState.attempts;
+    recordAttempt(currentProblem.id, solved, reviewAttempts, problemState.showHint);
+    for (const conceptId of PROBLEM_CONCEPTS[currentProblem.category] ?? []) {
+      recordEvidence(conceptId, solved ? 'review_solved' : 'review_failed');
+    }
 
     const newResults = [
       ...review.results,
-      { problemId: currentProblem.id, solved, attempts: problemState.attempts },
+      { problemId: currentProblem.id, solved, attempts: reviewAttempts },
     ];
     const nextIndex = review.currentIndex + 1;
 
-    if (nextIndex >= dueProblems.length) {
-      setReview({ currentIndex: nextIndex, results: newResults, phase: 'complete' });
+    if (nextIndex >= review.problemIds.length) {
+      setReview({ ...review, currentIndex: nextIndex, results: newResults, phase: 'complete' });
     } else {
-      setReview({ currentIndex: nextIndex, results: newResults, phase: 'reviewing' });
-      const nextProblem = dueProblems[nextIndex];
+      setReview({ ...review, currentIndex: nextIndex, results: newResults, phase: 'reviewing' });
+      const nextProblem = PROBLEMS.find((problem) => problem.id === review.problemIds[nextIndex]);
+      if (!nextProblem) return;
       setProblemState(initProblemState(nextProblem));
     }
-  }, [currentProblem, problemState, review, dueProblems, recordAttempt]);
+  }, [currentProblem, problemState, review, recordAttempt, recordEvidence]);
 
   // =======================================================================
   // NO PROBLEMS DUE / COMPLETE
   // =======================================================================
-  if (dueProblems.length === 0 || review.phase === 'complete') {
+  if (review.problemIds.length === 0 || review.phase === 'complete') {
     const stats = getReviewStats();
     const accuracy =
       review.results.length > 0
@@ -291,7 +300,6 @@ export function DailyReview() {
   const boardSize = currentProblem.boardSize as BoardSize;
   const r = stoneRadius(boardSize);
   const playerColor = currentProblem.playerColor;
-  const opponentColor = playerColor === 'black' ? 'white' : 'black';
 
   return (
     <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
@@ -334,56 +342,23 @@ export function DailyReview() {
           <ReviewBoardGrid boardSize={boardSize} />
           <ReviewCoordinateLabels boardSize={boardSize} />
 
-          {/* Setup stones */}
-          {currentProblem.setupStones.map((s) => {
-            const { cx, cy } = pointToSvg(s.point, boardSize);
-            return (
-              <circle
-                key={`setup-${s.point.x}-${s.point.y}`}
-                cx={cx}
-                cy={cy}
-                r={r}
-                fill={s.color === 'black' ? 'url(#review-black-stone)' : 'url(#review-white-stone)'}
-                filter="url(#review-shadow)"
-              />
-            );
-          })}
-
-          {/* Player moves */}
-          {problemState.playerMoves.map((pt, i) => {
-            const { cx, cy } = pointToSvg(pt, boardSize);
-            return (
-              <motion.circle
-                key={`player-${i}-${pt.x}-${pt.y}`}
-                cx={cx}
-                cy={cy}
-                r={r}
-                fill={playerColor === 'black' ? 'url(#review-black-stone)' : 'url(#review-white-stone)'}
-                filter="url(#review-shadow)"
-                initial={{ scale: 0.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.2 }}
-              />
-            );
-          })}
-
-          {/* Opponent moves */}
-          {problemState.opponentMoves.map((pt, i) => {
-            const { cx, cy } = pointToSvg(pt, boardSize);
-            return (
-              <motion.circle
-                key={`opp-${i}-${pt.x}-${pt.y}`}
-                cx={cx}
-                cy={cy}
-                r={r}
-                fill={opponentColor === 'black' ? 'url(#review-black-stone)' : 'url(#review-white-stone)'}
-                filter="url(#review-shadow)"
-                initial={{ scale: 0.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.2, delay: 0.3 }}
-              />
-            );
-          })}
+          {/* Runtime board stones */}
+          {problemState.game.board.grid.map((row, y) =>
+            row.map((cell, x) => {
+              if (!cell) return null;
+              const { cx, cy } = pointToSvg({ x, y }, boardSize);
+              return (
+                <circle
+                  key={`review-stone-${x}-${y}-${cell}`}
+                  cx={cx}
+                  cy={cy}
+                  r={r}
+                  fill={cell === 'black' ? 'url(#review-black-stone)' : 'url(#review-white-stone)'}
+                  filter="url(#review-shadow)"
+                />
+              );
+            }),
+          )}
 
           {/* Feedback animation */}
           <AnimatePresence>
@@ -421,13 +396,13 @@ export function DailyReview() {
         {/* Progress header */}
         <div className="shrink-0 p-4 border-b" style={{ borderColor: COLORS.ui.bgCard }}>
           <div className="text-xs mb-2" style={{ color: COLORS.ui.textSecondary }}>
-            Problem {review.currentIndex + 1} of {dueProblems.length}
+            Problem {review.currentIndex + 1} of {review.problemIds.length}
           </div>
           <div className="w-full h-1.5 rounded-full" style={{ backgroundColor: COLORS.ui.bgCard }}>
             <div
               className="h-full rounded-full transition-all"
               style={{
-                width: `${(review.currentIndex / dueProblems.length) * 100}%`,
+                width: `${(review.currentIndex / review.problemIds.length) * 100}%`,
                 backgroundColor: COLORS.ui.accent,
               }}
             />
@@ -562,7 +537,7 @@ export function DailyReview() {
               className="w-full px-4 py-2.5 rounded-lg text-sm font-bold transition-transform hover:scale-[1.02] active:scale-95"
               style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
             >
-              {review.currentIndex + 1 < dueProblems.length ? 'Next Problem →' : 'Finish Review'}
+              {review.currentIndex + 1 < review.problemIds.length ? 'Next Problem →' : 'Finish Review'}
             </button>
           )}
           <button

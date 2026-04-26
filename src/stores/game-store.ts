@@ -18,9 +18,11 @@ import {
   pointEquals,
   getStone,
 } from '@/lib/go-engine';
-import type { Problem, ProblemAttempt } from '@/lib/problems/types';
+import type { Problem, ProblemAttempt, ProblemCategory } from '@/lib/problems/types';
 import type { MoveNode } from '@/lib/problems/types';
-import { validateMove, type ValidationResult } from '@/lib/problems/validator';
+import { PROBLEMS } from '@/lib/problems/problem-data';
+import { applyProblemMove, buildProblemGame } from '@/lib/problems/runtime';
+import type { ValidationResult } from '@/lib/problems/validator';
 
 // ---------------------------------------------------------------------------
 // Overlay types
@@ -114,6 +116,8 @@ interface LessonInteraction {
 interface ProblemInteraction {
   active: boolean;
   problemId: string | null;
+  problem: Problem | null;
+  game: GameState | null;
   currentNodes: MoveNode[];
   playerMoves: Point[];
   opponentMoves: Point[];
@@ -208,10 +212,11 @@ interface GameStore {
   teachingLevel: 'beginner' | 'intermediate' | 'advanced' | 'guided';
 
   // App-level navigation (lessons)
-  appPhase: 'game' | 'lessons' | 'lesson' | 'problems' | 'problem' | 'skills' | 'review' | 'dashboard';
+  appPhase: 'path' | 'game' | 'lessons' | 'lesson' | 'problems' | 'problem' | 'skills' | 'review' | 'dashboard';
   currentLessonId: string | null;
   currentStep: number;
   completedLessons: string[];
+  hasStartedIntroGame: boolean;
 
   setTeachingLevel: (level: 'beginner' | 'intermediate' | 'advanced' | 'guided') => void;
 
@@ -270,16 +275,18 @@ interface GameStore {
 
   // Problem (tsumego)
   currentProblemId: string | null;
+  preferredProblemFilter: ProblemCategory | null;
   problemInteraction: ProblemInteraction;
   problemAttempts: ProblemAttempt[];
   startProblem: (problem: Problem) => void;
   submitProblemMove: (point: Point) => ValidationResult;
   resetProblem: () => void;
-  showProblems: () => void;
+  showProblems: (filter?: ProblemCategory) => void;
   requestProblemHint: () => void;
   showSkillTree: () => void;
   showReview: () => void;
   showDashboard: () => void;
+  showLearningPath: () => void;
 
   returnToGame: () => void;
 
@@ -297,6 +304,7 @@ interface GameStore {
 
   // Meta
   startNewGame: (size?: BoardSize) => void;
+  startGuidedIntroGame: () => void;
   addLearnedConcept: (concept: string) => void;
   setPhase: (phase: GameStore['phase']) => void;
 }
@@ -339,6 +347,8 @@ const defaultLessonInteraction: LessonInteraction = {
 const defaultProblemInteraction: ProblemInteraction = {
   active: false,
   problemId: null,
+  problem: null,
+  game: null,
   currentNodes: [],
   playerMoves: [],
   opponentMoves: [],
@@ -387,6 +397,7 @@ export const useGameStore = create<GameStore>()(
   lessonInteraction: { ...defaultLessonInteraction },
 
   currentProblemId: null,
+  preferredProblemFilter: null,
   problemInteraction: { ...defaultProblemInteraction },
   problemAttempts: [],
 
@@ -405,10 +416,11 @@ export const useGameStore = create<GameStore>()(
   learnedConcepts: [],
   teachingLevel: 'beginner' as const,
 
-  appPhase: 'game' as const,
+  appPhase: 'path' as const,
   currentLessonId: null,
   currentStep: 0,
   completedLessons: [],
+  hasStartedIntroGame: false,
 
   // ---- Actions ----
 
@@ -708,7 +720,11 @@ export const useGameStore = create<GameStore>()(
     set({ lessonInteraction: { ...defaultLessonInteraction } });
   },
 
-  showProblems: () => set({ appPhase: 'problems', currentProblemId: null }),
+  showProblems: (filter) => set({
+    appPhase: 'problems',
+    currentProblemId: null,
+    preferredProblemFilter: filter ?? null,
+  }),
 
   showSkillTree: () => set({ appPhase: 'skills' }),
 
@@ -716,12 +732,16 @@ export const useGameStore = create<GameStore>()(
 
   showDashboard: () => set({ appPhase: 'dashboard' }),
 
+  showLearningPath: () => set({ appPhase: 'path' }),
+
   startProblem: (problem: Problem) => set({
     appPhase: 'problem',
     currentProblemId: problem.id,
     problemInteraction: {
       active: true,
       problemId: problem.id,
+      problem,
+      game: buildProblemGame(problem),
       currentNodes: problem.solutionTree,
       playerMoves: [],
       opponentMoves: [],
@@ -739,7 +759,14 @@ export const useGameStore = create<GameStore>()(
       return { status: 'wrong' as const, message: 'No active problem.' };
     }
 
-    const result = validateMove(pi.currentNodes, point);
+    const problem = pi.problem ?? (pi.problemId
+      ? PROBLEMS.find((candidate) => candidate.id === pi.problemId)
+      : undefined);
+    if (!problem || !pi.game) {
+      return { status: 'wrong' as const, message: 'No active problem.' };
+    }
+
+    const result = applyProblemMove(problem, pi.game, pi.currentNodes, point);
 
     if (result.status === 'wrong') {
       const newAttempts = pi.attempts + 1;
@@ -777,6 +804,7 @@ export const useGameStore = create<GameStore>()(
       set({
         problemInteraction: {
           ...pi,
+          game: result.game,
           playerMoves: newPlayerMoves,
           opponentMoves: newOpponentMoves,
           status: 'solved',
@@ -806,6 +834,7 @@ export const useGameStore = create<GameStore>()(
     set({
       problemInteraction: {
         ...pi,
+        game: result.game,
         playerMoves: newPlayerMoves,
         opponentMoves: newOpponentMoves,
         currentNodes: result.nextNodes ?? [],
@@ -819,11 +848,17 @@ export const useGameStore = create<GameStore>()(
   resetProblem: () => {
     const state = get();
     const pid = state.currentProblemId;
+    const problem = state.problemInteraction.problem ?? (pid
+      ? PROBLEMS.find((candidate) => candidate.id === pid)
+      : undefined);
     set({
       problemInteraction: {
         ...defaultProblemInteraction,
-        active: !!pid,
+        active: !!problem,
         problemId: pid,
+        problem: problem ?? null,
+        game: problem ? buildProblemGame(problem) : null,
+        currentNodes: problem ? problem.solutionTree : [],
       },
     });
   },
@@ -901,6 +936,43 @@ export const useGameStore = create<GameStore>()(
     });
   },
 
+  startGuidedIntroGame: () => set({
+    game: createGame(9),
+    appPhase: 'game',
+    phase: 'playing',
+    teachingLevel: 'guided',
+    hoveredPoint: null,
+    hoveredGroup: null,
+    lastPlayerMove: null,
+    lastAiMove: null,
+    isAiThinking: false,
+    overlays: { ...defaultOverlays },
+    pendingCaptures: [],
+    chatMessages: [],
+    lesson: { ...defaultLesson },
+    lessonInteraction: { ...defaultLessonInteraction },
+    scorecard: null,
+    territory: null,
+    deadStones: [],
+    koRejection: null,
+    lastInteractionTime: Date.now(),
+    hesitationLevel: 'none',
+    hintOffered: false,
+    currentLessonId: null,
+    currentStep: 0,
+    currentProblemId: null,
+    preferredProblemFilter: null,
+    problemInteraction: { ...defaultProblemInteraction },
+    bubble: {
+      ...defaultBubble,
+      visible: true,
+      text: 'This is a 9x9 board. Your first goal is simple: play near a corner and learn why corners are easier to surround.',
+      variant: 'teaching',
+      streamingComplete: true,
+    },
+    hasStartedIntroGame: true,
+  }),
+
   addLearnedConcept(concept: string) {
     set((s) => ({
       learnedConcepts: s.learnedConcepts.includes(concept)
@@ -940,6 +1012,7 @@ export const useGameStore = create<GameStore>()(
         learnedConcepts: state.learnedConcepts,
         teachingLevel: state.teachingLevel,
         completedLessons: state.completedLessons,
+        hasStartedIntroGame: state.hasStartedIntroGame,
         appPhase: state.appPhase,
         problemAttempts: state.problemAttempts,
       }),

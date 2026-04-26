@@ -1,5 +1,5 @@
 import type { BoardState, Point, StoneColor } from './types';
-import { getAdjacentPoints, getStone, setStone, pointKey } from './board';
+import { getAdjacentPoints, getStone } from './board';
 import { getGroup } from './groups';
 
 /**

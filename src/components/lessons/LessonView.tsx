@@ -107,7 +107,7 @@ export function LessonView() {
   const setLessonPrompt = useGameStore((s) => s.setLessonPrompt);
   const checkLessonAnswer = useGameStore((s) => s.checkLessonAnswer);
   const clearLessonPrompt = useGameStore((s) => s.clearLessonPrompt);
-  const recordEncounter = useConceptStore((s) => s.recordEncounter);
+  const recordEvidence = useConceptStore((s) => s.recordEvidence);
 
   // Feedback animation state
   const [feedbackPoint, setFeedbackPoint] = useState<{ x: number; y: number; type: 'correct' | 'wrong' } | null>(null);
@@ -145,10 +145,10 @@ export function LessonView() {
     if (currentLessonId) {
       const concepts = LESSON_CONCEPTS[currentLessonId];
       if (concepts) {
-        concepts.forEach((c) => recordEncounter(c));
+        concepts.forEach((c) => recordEvidence(c, 'lesson_completed'));
       }
     }
-  }, [completeLesson, currentLessonId, recordEncounter]);
+  }, [completeLesson, currentLessonId, recordEvidence]);
   const handleExit = useCallback(() => showLessons(), [showLessons]);
 
   // Set prompt when step changes

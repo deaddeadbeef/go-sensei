@@ -1,4 +1,4 @@
-import { validateMove, validateSequence, type ValidationResult } from '@/lib/problems/validator';
+import { validateMove, validateSequence } from '@/lib/problems/validator';
 import type { MoveNode } from '@/lib/problems/types';
 
 // Simple linear problem: play (2,2) → opponent (3,3) → play (4,4) → solved

@@ -37,6 +37,32 @@ describe('concept store', () => {
     expect(m.encounterCount).toBe(7);
   });
 
+  it('recordEvidence applies stronger progress for solved problems than AI mentions', () => {
+    act(() => {
+      useConceptStore.getState().recordEvidence('liberties', 'ai_tag_success');
+      useConceptStore.getState().recordEvidence('capture', 'problem_solved');
+    });
+
+    const aiMention = useConceptStore.getState().getMastery('liberties');
+    const solvedProblem = useConceptStore.getState().getMastery('capture');
+    expect(aiMention.level).toBe(1);
+    expect(solvedProblem.level).toBe(2);
+    expect(aiMention.encounterCount).toBe(1);
+    expect(solvedProblem.encounterCount).toBe(1);
+  });
+
+  it('recordEvidence repeated problem failures introduce without promoting mastery', () => {
+    act(() => {
+      for (let i = 0; i < 20; i++) {
+        useConceptStore.getState().recordEvidence('ko', 'problem_failed');
+      }
+    });
+
+    const m = useConceptStore.getState().getMastery('ko');
+    expect(m.level).toBe(1);
+    expect(m.encounterCount).toBe(20);
+  });
+
   it('setMasteryLevel directly sets the level', () => {
     act(() => useConceptStore.getState().setMasteryLevel('ko', 3));
     const m = useConceptStore.getState().getMastery('ko');
@@ -59,6 +85,14 @@ describe('concept store', () => {
     // 'eyes' requires 'groups' AND 'capture' — neither introduced
     const unlocked = useConceptStore.getState().getUnlockedConcepts();
     expect(unlocked).not.toContain('eyes');
+  });
+
+  it('getUnlockedConcepts includes introduced concepts even when prerequisites are unmet', () => {
+    act(() => useConceptStore.getState().recordEvidence('eyes', 'ai_tag_success'));
+
+    const unlocked = useConceptStore.getState().getUnlockedConcepts();
+    expect(useConceptStore.getState().getMastery('eyes').level).toBe(1);
+    expect(unlocked).toContain('eyes');
   });
 
   it('getNextToLearn returns unlocked but unseen concepts', () => {

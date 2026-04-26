@@ -6,17 +6,20 @@ import {
   isSuicide,
   getStone,
 } from '@/lib/go-engine';
+import type { GameState, MoveResult } from '@/lib/go-engine/types';
 import { setupBoard, p, black, white } from './test-helpers';
 
 // Helper to play a sequence of moves, returning final state
-function playSequence(startState: any, moves: [number, number][]) {
+function playSequence(startState: GameState, moves: [number, number][]) {
   let state = startState;
-  let result: any;
+  let result: MoveResult | null = null;
   for (const [x, y] of moves) {
-    result = playMove(state, p(x, y));
-    if (!result.success) throw new Error(`Move at (${x},${y}) failed: ${result.reason}`);
-    state = result.newState;
+    const next = playMove(state, p(x, y));
+    if (!next.success) throw new Error(`Move at (${x},${y}) failed: ${next.reason}`);
+    result = next;
+    state = next.newState;
   }
+  if (!result) throw new Error('playSequence requires at least one move');
   return { state, result };
 }
 

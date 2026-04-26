@@ -6,6 +6,7 @@ import { BoardGrid } from './BoardGrid';
 import { StoneLayer } from './StoneLayer';
 import { GhostStone } from './GhostStone';
 import { HighlightOverlay } from './overlays/HighlightOverlay';
+import { BeginnerTargetOverlay } from './overlays/BeginnerTargetOverlay';
 import { GroupOverlay } from './overlays/GroupOverlay';
 import { LibertyOverlay } from './overlays/LibertyOverlay';
 import { SuggestionOverlay } from './overlays/SuggestionOverlay';
@@ -54,6 +55,7 @@ export function GoBoard() {
       <CaptureAnimation />
       <GroupOverlay />
       <HighlightOverlay />
+      <BeginnerTargetOverlay />
       <LibertyOverlay />
       <SuggestionOverlay />
       <ArrowOverlay />

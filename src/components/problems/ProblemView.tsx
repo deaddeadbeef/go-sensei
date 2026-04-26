@@ -14,7 +14,9 @@ import {
 } from '@/utils/coordinates';
 import { COLORS } from '@/utils/colors';
 import { useReviewStore } from '@/stores/review-store';
+import { useConceptStore } from '@/stores/concept-store';
 import type { BoardSize } from '@/lib/go-engine/types';
+import type { ProblemCategory } from '@/lib/problems/types';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -22,6 +24,13 @@ import type { BoardSize } from '@/lib/go-engine/types';
 
 const COLUMN_LETTERS = 'ABCDEFGHJKLMNOPQRST'; // skip I
 const boardInset = BOARD_PADDING * 0.75;
+const PROBLEM_CONCEPTS: Record<ProblemCategory, string[]> = {
+  capture: ['capture', 'atari'],
+  'life-and-death': ['eyes', 'life-and-death'],
+  tesuji: ['tesuji'],
+  reading: ['ladder', 'net', 'connect-and-cut'],
+  endgame: ['sente-gote', 'endgame-counting'],
+};
 
 // ---------------------------------------------------------------------------
 // Board sub-components
@@ -90,6 +99,7 @@ export function ProblemView() {
   const showProblems = useGameStore((s) => s.showProblems);
   const startProblem = useGameStore((s) => s.startProblem);
   const recordAttempt = useReviewStore((s) => s.recordAttempt);
+  const recordEvidence = useConceptStore((s) => s.recordEvidence);
 
   // Feedback animation state
   const [feedbackPoint, setFeedbackPoint] = useState<{ x: number; y: number; type: 'correct' | 'wrong' } | null>(null);
@@ -122,7 +132,7 @@ export function ProblemView() {
   })();
 
   const handleBoardClick = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
-    if (!problemInteraction.active || problemInteraction.status !== 'playing') return;
+    if (!problem || !problemInteraction.active || problemInteraction.status !== 'playing') return;
 
     const svg = e.currentTarget;
     const rect = svg.getBoundingClientRect();
@@ -143,6 +153,9 @@ export function ProblemView() {
       const pi = useGameStore.getState().problemInteraction;
       if (pi.status === 'failed' && currentProblemId) {
         recordAttempt(currentProblemId, false, pi.attempts, pi.showHint);
+        for (const conceptId of PROBLEM_CONCEPTS[problem.category] ?? []) {
+          recordEvidence(conceptId, 'problem_failed');
+        }
       }
     } else {
       setFeedbackPoint({ x: bx, y: by, type: 'correct' });
@@ -150,15 +163,17 @@ export function ProblemView() {
       // If solved, record in review store
       const pi = useGameStore.getState().problemInteraction;
       if (result.status === 'solved' && currentProblemId) {
-        recordAttempt(currentProblemId, true, pi.attempts, pi.showHint);
+        recordAttempt(currentProblemId, true, pi.attempts + 1, pi.showHint);
+        for (const conceptId of PROBLEM_CONCEPTS[problem.category] ?? []) {
+          recordEvidence(conceptId, 'problem_solved');
+        }
       }
     }
-  }, [problemInteraction, boardSize, submitProblemMove, currentProblemId, recordAttempt]);
+  }, [problem, problemInteraction, boardSize, submitProblemMove, currentProblemId, recordAttempt, recordEvidence]);
 
   if (!problem || !currentProblemId) return null;
 
   const playerColor = problem.playerColor;
-  const opponentColor = playerColor === 'black' ? 'white' : 'black';
 
   return (
     <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
@@ -206,56 +221,23 @@ export function ProblemView() {
               <ProblemBoardGrid boardSize={boardSize} />
               <ProblemCoordinateLabels boardSize={boardSize} />
 
-              {/* Setup stones */}
-              {problem.setupStones.map((s) => {
-                const { cx, cy } = pointToSvg(s.point, boardSize);
-                return (
-                  <circle
-                    key={`setup-${s.point.x}-${s.point.y}`}
-                    cx={cx}
-                    cy={cy}
-                    r={r}
-                    fill={s.color === 'black' ? 'url(#problem-black-stone)' : 'url(#problem-white-stone)'}
-                    filter="url(#problem-shadow)"
-                  />
-                );
-              })}
-
-              {/* Player moves */}
-              {problemInteraction.playerMoves.map((pt, i) => {
-                const { cx, cy } = pointToSvg(pt, boardSize);
-                return (
-                  <motion.circle
-                    key={`player-${i}-${pt.x}-${pt.y}`}
-                    cx={cx}
-                    cy={cy}
-                    r={r}
-                    fill={playerColor === 'black' ? 'url(#problem-black-stone)' : 'url(#problem-white-stone)'}
-                    filter="url(#problem-shadow)"
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: 0.2 }}
-                  />
-                );
-              })}
-
-              {/* Opponent moves */}
-              {problemInteraction.opponentMoves.map((pt, i) => {
-                const { cx, cy } = pointToSvg(pt, boardSize);
-                return (
-                  <motion.circle
-                    key={`opp-${i}-${pt.x}-${pt.y}`}
-                    cx={cx}
-                    cy={cy}
-                    r={r}
-                    fill={opponentColor === 'black' ? 'url(#problem-black-stone)' : 'url(#problem-white-stone)'}
-                    filter="url(#problem-shadow)"
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: 0.2, delay: 0.3 }}
-                  />
-                );
-              })}
+              {/* Runtime board stones */}
+              {(problemInteraction.game?.board.grid ?? []).map((row, y) =>
+                row.map((cell, x) => {
+                  if (!cell) return null;
+                  const { cx, cy } = pointToSvg({ x, y }, boardSize);
+                  return (
+                    <circle
+                      key={`stone-${x}-${y}-${cell}`}
+                      cx={cx}
+                      cy={cy}
+                      r={r}
+                      fill={cell === 'black' ? 'url(#problem-black-stone)' : 'url(#problem-white-stone)'}
+                      filter="url(#problem-shadow)"
+                    />
+                  );
+                }),
+              )}
 
               {/* Feedback animation */}
               <AnimatePresence>
@@ -445,7 +427,7 @@ export function ProblemView() {
             )}
           </div>
           <button
-            onClick={showProblems}
+            onClick={() => showProblems()}
             className="text-sm text-center transition-opacity hover:opacity-100"
             style={{ color: COLORS.ui.textSecondary, opacity: 0.7 }}
           >

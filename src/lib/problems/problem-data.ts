@@ -52,6 +52,8 @@ export const PROBLEMS: Problem[] = [
       { point: { x: 4, y: 4 }, color: 'white' },
       { point: { x: 4, y: 3 }, color: 'black' },
       { point: { x: 3, y: 4 }, color: 'black' },
+      { point: { x: 3, y: 5 }, color: 'black' },
+      { point: { x: 4, y: 6 }, color: 'black' },
     ],
     solutionTree: [
       {
@@ -77,21 +79,32 @@ export const PROBLEMS: Problem[] = [
     hint: 'Sometimes you need to give a stone to take more.',
     playerColor: 'black',
     setupStones: [
-      { point: { x: 2, y: 2 }, color: 'white' },
+      { point: { x: 1, y: 1 }, color: 'white' },
+      { point: { x: 3, y: 1 }, color: 'white' },
+      { point: { x: 1, y: 2 }, color: 'white' },
       { point: { x: 3, y: 2 }, color: 'white' },
+      { point: { x: 1, y: 3 }, color: 'white' },
       { point: { x: 2, y: 3 }, color: 'white' },
-      { point: { x: 1, y: 2 }, color: 'black' },
-      { point: { x: 1, y: 3 }, color: 'black' },
-      { point: { x: 2, y: 4 }, color: 'black' },
-      { point: { x: 3, y: 3 }, color: 'black' },
+      { point: { x: 3, y: 3 }, color: 'white' },
+      { point: { x: 1, y: 0 }, color: 'black' },
+      { point: { x: 2, y: 0 }, color: 'black' },
+      { point: { x: 3, y: 0 }, color: 'black' },
+      { point: { x: 0, y: 1 }, color: 'black' },
+      { point: { x: 4, y: 1 }, color: 'black' },
+      { point: { x: 0, y: 2 }, color: 'black' },
       { point: { x: 4, y: 2 }, color: 'black' },
+      { point: { x: 0, y: 3 }, color: 'black' },
+      { point: { x: 1, y: 4 }, color: 'black' },
+      { point: { x: 2, y: 4 }, color: 'black' },
+      { point: { x: 3, y: 4 }, color: 'black' },
+      { point: { x: 4, y: 3 }, color: 'black' },
     ],
     solutionTree: [
       {
-        move: { x: 2, y: 1 }, isCorrect: true, label: 'Sacrifice!',
+        move: { x: 2, y: 2 }, isCorrect: true, label: 'Throw-in sacrifice!',
         responses: [
           {
-            move: { x: 3, y: 1 }, isCorrect: true, label: 'White captures',
+            move: { x: 2, y: 1 }, isCorrect: true, label: 'White captures',
             responses: [
               { move: { x: 2, y: 2 }, isCorrect: true, label: 'Snapback! White group captured.', responses: [] },
             ],
@@ -153,7 +166,6 @@ export const PROBLEMS: Problem[] = [
     ],
     solutionTree: [
       { move: { x: 1, y: 1 }, isCorrect: true, label: 'Dead — only one eye!', responses: [] },
-      { move: { x: 0, y: 1 }, isCorrect: false, label: 'Black can still divide the space.', responses: [] },
     ],
   },
   {
@@ -175,11 +187,9 @@ export const PROBLEMS: Problem[] = [
       { point: { x: 2, y: 1 }, color: 'white' },
       { point: { x: 2, y: 2 }, color: 'white' },
       { point: { x: 1, y: 3 }, color: 'white' },
-      { point: { x: 0, y: 3 }, color: 'white' },
     ],
     solutionTree: [
       { move: { x: 1, y: 1 }, isCorrect: true, label: 'Alive! Two eyes formed.', responses: [] },
-      { move: { x: 0, y: 1 }, isCorrect: false, label: 'Wrong shape — still only one eye.', responses: [] },
     ],
   },
   {
@@ -203,17 +213,7 @@ export const PROBLEMS: Problem[] = [
       { point: { x: 0, y: 3 }, color: 'white' },
     ],
     solutionTree: [
-      {
-        move: { x: 1, y: 0 }, isCorrect: true, label: 'Throw-in!',
-        responses: [
-          {
-            move: { x: 0, y: 0 }, isCorrect: true, label: 'Black captures',
-            responses: [
-              { move: { x: 1, y: 0 }, isCorrect: true, label: 'Ko — bent four is dead under Japanese rules!', responses: [] },
-            ],
-          },
-        ],
-      },
+      { move: { x: 1, y: 3 }, isCorrect: true, label: 'Vital point — black cannot make two eyes.', responses: [] },
     ],
   },
 
@@ -439,7 +439,6 @@ export const PROBLEMS: Problem[] = [
       { point: { x: 6, y: 4 }, color: 'white' },
       { point: { x: 7, y: 4 }, color: 'white' },
       { point: { x: 8, y: 4 }, color: 'white' },
-      { point: { x: 4, y: 5 }, color: 'white' },
     ],
     solutionTree: [
       { move: { x: 4, y: 5 }, isCorrect: true, label: 'Biggest move — worth 6 points!', responses: [] },
@@ -496,7 +495,6 @@ export const PROBLEMS: Problem[] = [
       { point: { x: 3, y: 0 }, color: 'black' },
     ],
     solutionTree: [
-      { move: { x: 5, y: 0 }, isCorrect: false, label: 'Too close — white blocks easily.', responses: [] },
       { move: { x: 4, y: 0 }, isCorrect: true, label: 'Monkey jump! Hard for white to block.', responses: [] },
     ],
   },

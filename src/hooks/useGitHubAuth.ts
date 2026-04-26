@@ -20,6 +20,40 @@ interface AuthState {
 const STORAGE_KEY = 'go-sensei-github-token';
 // Security: sessionStorage ensures tokens don't persist across browser sessions
 
+async function copyUserCodeToClipboard(userCode: string): Promise<boolean> {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return false;
+  }
+
+  try {
+    if (navigator.clipboard?.writeText && window.isSecureContext) {
+      await navigator.clipboard.writeText(userCode);
+      return true;
+    }
+  } catch {
+    // Fall through to the textarea fallback below.
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.value = userCode;
+  textarea.setAttribute('readonly', '');
+  textarea.style.position = 'fixed';
+  textarea.style.top = '-1000px';
+  textarea.style.left = '-1000px';
+
+  try {
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    textarea.setSelectionRange(0, userCode.length);
+    return document.execCommand('copy');
+  } catch {
+    return false;
+  } finally {
+    textarea.remove();
+  }
+}
+
 export function useGitHubAuth() {
   const [authState, setAuthState] = useState<AuthState>(() => {
     const saved = typeof window !== 'undefined' ? sessionStorage.getItem(STORAGE_KEY) : null;
@@ -92,7 +126,10 @@ export function useGitHubAuth() {
         verificationUri: deviceData.verification_uri,
       }));
 
-      // Open GitHub device auth page
+      // Copy the user-facing code before sending them to GitHub.
+      await copyUserCodeToClipboard(deviceData.user_code);
+
+      // Open GitHub device auth page.
       window.open(deviceData.verification_uri, '_blank');
 
       // Step 2: Start polling

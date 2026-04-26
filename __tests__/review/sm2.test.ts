@@ -1,4 +1,4 @@
-import { createCard, reviewCard, isDue, attemptToQuality, type SM2Card, type Quality } from '@/lib/review/sm2';
+import { createCard, reviewCard, isDue, attemptToQuality, type SM2Card } from '@/lib/review/sm2';
 
 describe('SM-2 scheduler', () => {
   it('createCard returns default values', () => {
