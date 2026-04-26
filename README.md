@@ -2,13 +2,15 @@
 
 An AI-powered Go teaching app that plays against you and teaches you the game in real-time. Built for complete beginners.
 
-![Go Sensei](https://img.shields.io/badge/Model-GPT--5.4-blue) ![Next.js](https://img.shields.io/badge/Next.js-16-black) ![Tests](https://img.shields.io/badge/Tests-118%20passing-green) ![License](https://img.shields.io/badge/License-MIT-yellow)
+![Go Sensei](https://img.shields.io/badge/Model-GPT--5.4-blue) ![Next.js](https://img.shields.io/badge/Next.js-16-black) ![Tests](https://img.shields.io/badge/Tests-230%20passing-green) ![License](https://img.shields.io/badge/License-MIT-yellow)
 
 ## What is this?
 
 Go Sensei is a web app where a strict AI Go master (powered by GPT-5.4 via GitHub Copilot) teaches you Go through real games. It genuinely praises good moves and harshly critiques mistakes. Designed for **complete beginners** through **advanced players** with adjustable teaching levels.
 
 The AI uses 8 tools to interact with the board — placing stones, highlighting positions with educational labels, showing liberty counts, suggesting moves, drawing move sequence arrows, displaying influence heatmaps, and visualizing group boundaries. Teaching is visual and spatial, not just text.
+
+The learning loop now starts complete beginners with a guided 9×9 game, then connects lessons, tsumego-style problems, spaced review, concept mastery, and guided games into a single recommended path.
 
 ### Features
 
@@ -22,9 +24,13 @@ The AI uses 8 tools to interact with the board — placing stones, highlighting 
 - 📝 **Educational annotations** — per-position labels explaining why positions matter
 - ✨ **Animated SVG board** — Framer Motion spring-based stone placement, capture dissolve effects, pulsing highlights
 - 💬 **Interactive chat** — ask Sensei questions, messages show in scrollable chat log
+- 🪨 **Guided 9×9 intro game** — first-time beginners get a smaller board, one visible objective, and target markers
+- 🧭 **Learning path hub** — recommends the next lesson, problem, review, or guided game from current progress
+- 🧩 **Engine-backed Go problems** — problem moves mutate real board state, validate variations, and show captures correctly
+- 🧠 **Concept mastery tracking** — lessons, problems, and review sessions update per-concept evidence
 - 📋 **Post-game review** — full game analysis at the end of each game
 - 🔐 **GitHub OAuth** — login with your GitHub account (Device Flow), no API keys needed
-- 🧪 **118 tests** — comprehensive engine test suite (captures, ko, scoring, serialization)
+- 🧪 **230 tests** — engine, lesson, problem, review, and state-management coverage
 
 ## Quick Start
 
@@ -81,7 +87,7 @@ npm run dev
 | AI Protocol | OpenAI Responses API | Agentic tool loop |
 | Auth | GitHub OAuth Device Flow | No secrets, no redirects |
 | Engine | Pure TypeScript | Zero dependencies, isomorphic |
-| Tests | Vitest | 118 tests |
+| Tests | Vitest | 230 tests |
 
 ### Go Engine
 
@@ -137,7 +143,7 @@ No client secrets, no redirect URLs, no separate API keys.
 
 ```bash
 npm test        # Watch mode
-npm run test:run # Single run (118 tests)
+npm run test:run # Single run (230 tests)
 ```
 
 ### Build
@@ -157,7 +163,9 @@ go-sensei/
 │   │   └── api/auth/           # OAuth device flow routes
 │   ├── lib/
 │   │   ├── go-engine/          # Pure TS game engine (10 files)
-│   │   └── ai/                 # AI tools, prompts, auth
+│   │   ├── ai/                 # AI tools, prompts, auth
+│   │   ├── learning-path/      # Recommendation engine
+│   │   └── problems/           # Problem data and runtime state
 │   ├── components/
 │   │   ├── board/              # SVG board + overlays (16 files)
 │   │   ├── chat/               # Chat log
@@ -167,14 +175,16 @@ go-sensei/
 │   ├── stores/                 # Zustand game store
 │   ├── hooks/                  # useGoMaster, useGitHubAuth, etc.
 │   └── utils/                  # Colors, coordinates, animation
-├── __tests__/go-engine/        # 118 engine tests
+├── __tests__/go-engine/        # Engine tests
+├── __tests__/problems/         # Problem data + runtime tests
+├── __tests__/learning-path/    # Recommendation tests
 └── package.json
 ```
 
 ## Roadmap
 
 - [ ] Streaming AI responses (currently waits for full response)
-- [ ] Interactive tutorials (planned component structure exists)
+- [x] ~~Interactive tutorials~~ (lessons, problems, review, and path hub implemented)
 - [ ] Sound effects (stone placement, captures)
 - [x] ~~Move review / replay mode~~ (post-game review implemented)
 - [ ] Responsive mobile layout

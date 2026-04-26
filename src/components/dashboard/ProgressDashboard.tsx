@@ -134,7 +134,7 @@ export function ProgressDashboard() {
         >
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-sm font-semibold" style={{ color: COLORS.text }}>🧩 Tsumego Problems</h2>
-            <button onClick={showProblems} className="text-xs" style={{ color: COLORS.accent }}>Solve more →</button>
+            <button onClick={() => showProblems()} className="text-xs" style={{ color: COLORS.accent }}>Solve more →</button>
           </div>
           <ProgressBar value={solvedProblems} max={PROBLEMS.length} color={COLORS.green} />
           <p className="text-xs mt-1" style={{ color: COLORS.textDim }}>

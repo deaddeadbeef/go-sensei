@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCopilotSession, AuthError } from '@/lib/ai/copilot-auth';
+import { getCopilotSession } from '@/lib/ai/copilot-auth';
 import { buildSystemPrompt } from '@/lib/ai/system-prompt';
 import type { TeachingLevel } from '@/lib/ai/system-prompt';
 import { reconstructGame } from '@/lib/ai/tools';
@@ -8,7 +8,7 @@ import {
   getGroup, getLibertiesOf, countLiberties, boardToText,
   coordToPoint, computeInfluence,
 } from '@/lib/go-engine';
-import type { GameState } from '@/lib/go-engine/types';
+import type { BoardSize, GameState } from '@/lib/go-engine/types';
 
 export const maxDuration = 60;
 
@@ -190,26 +190,112 @@ const TOOLS = [
   },
 ];
 
+type JsonRecord = Record<string, unknown>;
+
+interface ClientMove {
+  type: string;
+  x?: number;
+  y?: number;
+  color?: string;
+}
+
+interface FunctionCallItem {
+  id: string;
+  callId: string;
+  name: string;
+  arguments: string;
+}
+
+interface ChatHistoryItem {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+interface ToolResultItem {
+  toolName: string;
+  args: JsonRecord;
+  result: JsonRecord;
+}
+
+function isRecord(value: unknown): value is JsonRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function asString(value: unknown): string {
+  return typeof value === 'string' ? value : '';
+}
+
+function asObjectArray(value: unknown): JsonRecord[] {
+  return Array.isArray(value) ? value.filter(isRecord) : [];
+}
+
+function compact<T>(value: T | null): value is T {
+  return value !== null;
+}
+
+function parseBoardSize(value: unknown): BoardSize {
+  return value === 9 || value === 13 || value === 19 ? value : 9;
+}
+
+function parseTeachingLevel(value: unknown): TeachingLevel {
+  const validLevels: TeachingLevel[] = ['beginner', 'intermediate', 'advanced', 'guided'];
+  return typeof value === 'string' && validLevels.includes(value as TeachingLevel)
+    ? value as TeachingLevel
+    : 'beginner';
+}
+
+function parseMoveHistory(value: unknown): ClientMove[] {
+  return asObjectArray(value)
+    .map((move) => ({
+      type: asString(move.type),
+      x: typeof move.x === 'number' ? move.x : undefined,
+      y: typeof move.y === 'number' ? move.y : undefined,
+      color: typeof move.color === 'string' ? move.color : undefined,
+    }))
+    .filter((move) => move.type.length > 0);
+}
+
+function parseChatHistory(value: unknown): ChatHistoryItem[] {
+  return asObjectArray(value)
+    .filter((msg) =>
+      (msg.role === 'user' || msg.role === 'assistant') &&
+      typeof msg.content === 'string'
+    )
+    .map((msg) => ({
+      role: msg.role as 'user' | 'assistant',
+      content: asString(msg.content).slice(0, 10_000),
+    }));
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function errorName(error: unknown): string {
+  return error instanceof Error ? error.name : '';
+}
+
 function executeTool(
   name: string,
-  args: Record<string, any>,
+  args: JsonRecord,
   state: GameState,
-): { result: Record<string, any>; newState?: GameState } {
+): { result: JsonRecord; newState?: GameState } {
   switch (name) {
     case 'make_move': {
-      const pt = coordToPoint(args.position, state.board.size);
+      const position = asString(args.position);
+      const pt = coordToPoint(position, state.board.size);
       if (!pt) {
-        return { result: { success: false, error: `Invalid coordinate: "${args.position}". Use format like "D4" or "Q16".` } };
+        return { result: { success: false, error: `Invalid coordinate: "${position}". Use format like "D4" or "Q16".` } };
       }
       if (!isValidMove(state, pt)) {
-        return { result: { success: false, error: `Invalid move at ${args.position}. That position may be occupied, suicidal, or violate ko.`, currentBoard: boardToText(state) } };
+        return { result: { success: false, error: `Invalid move at ${position}. That position may be occupied, suicidal, or violate ko.`, currentBoard: boardToText(state) } };
       }
       const r = playMove(state, pt);
       if (!r.success) return { result: { success: false, error: r.reason } };
       return {
         result: {
           success: true,
-          move: args.position,
+          move: position,
           reasoning: args.reasoning,
           captured: r.captured,
           capturedCount: r.captured.length,
@@ -223,17 +309,18 @@ function executeTool(
       return { result: { success: true, reasoning: args.reasoning, phase: newState.phase }, newState };
     }
     case 'highlight_positions': {
-      const positions = (args.positions || []).map((p: any) => {
-        const pt = coordToPoint(p.position, state.board.size);
+      const positions = asObjectArray(args.positions).map((p) => {
+        const pt = coordToPoint(asString(p.position), state.board.size);
         return pt ? { x: pt.x, y: pt.y, label: p.label } : null;
-      }).filter(Boolean);
+      }).filter(compact);
       return { result: { positions, style: args.style } };
     }
     case 'show_liberty_count': {
-      const pt = coordToPoint(args.position, state.board.size);
-      if (!pt) return { result: { success: false, error: `Invalid coordinate: "${args.position}"` } };
+      const position = asString(args.position);
+      const pt = coordToPoint(position, state.board.size);
+      if (!pt) return { result: { success: false, error: `Invalid coordinate: "${position}"` } };
       const g = getGroup(state.board, pt);
-      if (!g) return { result: { success: false, error: `No stone at ${args.position}` } };
+      if (!g) return { result: { success: false, error: `No stone at ${position}` } };
       return {
         result: {
           success: true,
@@ -244,19 +331,19 @@ function executeTool(
       };
     }
     case 'suggest_moves': {
-      const suggestions = (args.suggestions || []).map((s: any) => {
-        const pt = coordToPoint(s.position, state.board.size);
+      const suggestions = asObjectArray(args.suggestions).map((s) => {
+        const pt = coordToPoint(asString(s.position), state.board.size);
         return pt ? { x: pt.x, y: pt.y, label: s.label, reason: s.reason } : null;
-      }).filter(Boolean);
+      }).filter(compact);
       return { result: { suggestions } };
     }
     case 'show_sequence': {
-      const moves = (args.moves || []).map((m: any, i: number) => {
-        const from = coordToPoint(m.from, state.board.size);
-        const to = coordToPoint(m.to, state.board.size);
+      const moves = asObjectArray(args.moves).map((m, i) => {
+        const from = coordToPoint(asString(m.from), state.board.size);
+        const to = coordToPoint(asString(m.to), state.board.size);
         if (!from || !to) return null;
         return { from, to, label: m.label, order: i + 1 };
-      }).filter(Boolean);
+      }).filter(compact);
       return { result: { moves } };
     }
     case 'show_influence': {
@@ -264,8 +351,8 @@ function executeTool(
       return { result: { influence } };
     }
     case 'show_groups': {
-      const groups = (args.positions || []).map((p: any, i: number) => {
-        const pt = coordToPoint(p.position, state.board.size);
+      const groups = asObjectArray(args.positions).map((p, i) => {
+        const pt = coordToPoint(asString(p.position), state.board.size);
         if (!pt) return null;
         const group = getGroup(state.board, pt);
         if (!group) return null;
@@ -276,7 +363,7 @@ function executeTool(
           liberties: group.liberties.length,
           label: p.label,
         };
-      }).filter(Boolean);
+      }).filter(compact);
       return { result: { groups } };
     }
     case 'evaluate_concepts': {
@@ -287,9 +374,9 @@ function executeTool(
         'invasion-vs-reduction', 'shape', 'direction-of-play', 'fighting',
         'corner-opening', 'joseki', 'fuseki', 'sente-gote', 'endgame-counting',
       ]);
-      const concepts = (args.concepts || [])
-        .filter((c: any) => validIds.has(c.conceptId))
-        .map((c: any) => ({ conceptId: c.conceptId, reason: c.reason }));
+      const concepts = asObjectArray(args.concepts)
+        .filter((c) => typeof c.conceptId === 'string' && validIds.has(c.conceptId))
+        .map((c) => ({ conceptId: c.conceptId, reason: c.reason }));
       return { result: { concepts, count: concepts.length } };
     }
     default:
@@ -320,7 +407,7 @@ async function fetchWithRetry(fn: () => Promise<Response>, retries = 1): Promise
   throw new Error('Unreachable');
 }
 
-async function callResponses(apiUrl: string, token: string, body: Record<string, any>) {
+async function callResponses(apiUrl: string, token: string, body: JsonRecord): Promise<JsonRecord> {
   console.log('[GoSensei] POST /responses, model:', body.model, 'input items:', Array.isArray(body.input) ? body.input.length : 1);
 
   const resp = await fetchWithRetry(() => fetch(`${apiUrl}/responses`, {
@@ -342,16 +429,20 @@ async function callResponses(apiUrl: string, token: string, body: Record<string,
     const txt = await resp.text();
     throw new Error(`Copilot API ${resp.status}: ${txt.slice(0, 500)}`);
   }
-  return resp.json();
+  const data = await resp.json() as unknown;
+  return isRecord(data) ? data : {};
 }
 
 /** Extract assistant text from a Responses API output array */
-function extractText(output: any[]): string {
+function extractText(output: unknown[]): string {
   const parts: string[] = [];
   for (const item of output) {
-    if (item.type === 'message' && item.content) {
+    if (!isRecord(item)) continue;
+    if (item.type === 'message' && Array.isArray(item.content)) {
       for (const c of item.content) {
-        if (c.type === 'output_text' && c.text) parts.push(c.text);
+        if (isRecord(c) && c.type === 'output_text' && typeof c.text === 'string') {
+          parts.push(c.text);
+        }
       }
     }
   }
@@ -359,49 +450,43 @@ function extractText(output: any[]): string {
 }
 
 /** Extract function_call items from a Responses API output array */
-function extractFunctionCalls(output: any[]): { id: string; callId: string; name: string; arguments: string }[] {
+function extractFunctionCalls(output: unknown[]): FunctionCallItem[] {
   return output
-    .filter((item: any) => item.type === 'function_call')
-    .map((item: any) => ({
-      id: item.id || '',
-      callId: item.call_id || item.id || '',
-      name: item.name,
-      arguments: item.arguments,
+    .filter((item): item is JsonRecord => isRecord(item) && item.type === 'function_call')
+    .map((item) => ({
+      id: asString(item.id),
+      callId: asString(item.call_id) || asString(item.id),
+      name: asString(item.name),
+      arguments: asString(item.arguments),
     }));
 }
 
 export async function POST(req: Request) {
   try {
-    const { message, gameState: gsData, chatHistory = [] } = await req.json();
+    const requestData = await req.json() as unknown;
+    const body = isRecord(requestData) ? requestData : {};
+    const message = asString(body.message);
+    const gsData = isRecord(body.gameState) ? body.gameState : {};
 
     // S3: Sanitize chat history — only allow user/assistant roles with string content
-    const sanitizedHistory = (chatHistory as any[])
-      .filter((msg: any) =>
-        msg && typeof msg === 'object' &&
-        (msg.role === 'user' || msg.role === 'assistant') &&
-        typeof msg.content === 'string'
-      )
-      .map((msg: any) => ({
-        role: msg.role as 'user' | 'assistant',
-        content: (msg.content as string).slice(0, 10_000),
-      }));
+    const sanitizedHistory = parseChatHistory(body.chatHistory);
 
     // A2: Validate boardSize and komi
-    const boardSize = [9, 13, 19].includes(gsData?.boardSize) ? gsData.boardSize : 9;
-    const komi = typeof gsData?.komi === 'number' ? Math.min(Math.max(gsData.komi, 0), 100) : 6.5;
+    const boardSize = parseBoardSize(gsData.boardSize);
+    const komi = typeof gsData.komi === 'number' ? Math.min(Math.max(gsData.komi, 0), 100) : 6.5;
 
-    const validLevels: TeachingLevel[] = ['beginner', 'intermediate', 'advanced', 'guided'];
-    const teachingLevel: TeachingLevel = validLevels.includes(gsData?.teachingLevel) ? gsData.teachingLevel : 'beginner';
+    const teachingLevel = parseTeachingLevel(gsData.teachingLevel);
+    const guidedContext = typeof gsData.guidedContext === 'string' ? gsData.guidedContext : undefined;
 
     // A3: Reconstruct game state, return 400 on invalid move history
     let state: GameState;
     try {
-      if (gsData?.moveHistory) {
-        state = reconstructGame(gsData.moveHistory, boardSize, komi);
+      if (Array.isArray(gsData.moveHistory)) {
+        state = reconstructGame(parseMoveHistory(gsData.moveHistory), boardSize, komi);
       } else {
         state = createGame(9, 6.5);
       }
-    } catch (err) {
+    } catch {
       return NextResponse.json(
         { error: 'Invalid game state: move history could not be replayed.' },
         { status: 400 },
@@ -417,28 +502,27 @@ export async function POST(req: Request) {
     console.log('[GoSensei] Session OK, API:', session.apiUrl, 'Model:', MODEL);
 
     // Build input array for Responses API (system prompt goes into `instructions`)
-    const input: any[] = [
+    const input: JsonRecord[] = [
       ...sanitizedHistory.slice(-20),
       { role: 'user', content: message },
     ];
 
-    const isReviewRequest = typeof message === 'string' && message.includes('GAME REVIEW REQUEST');
+    const isReviewRequest = message.includes('GAME REVIEW REQUEST');
 
     // Agentic loop — up to 5 tool-call rounds
-    const toolResults: any[] = [];
+    const toolResults: ToolResultItem[] = [];
     let finalText = '';
 
     for (let step = 0; step < 5; step++) {
       const data = await callResponses(session.apiUrl, session.token, {
         model: MODEL,
-        instructions: buildSystemPrompt(teachingLevel, gsData?.guidedContext),
+        instructions: buildSystemPrompt(teachingLevel, guidedContext),
         input,
         tools: TOOLS,
-        temperature: 0.7,
         max_output_tokens: isReviewRequest ? 4096 : 2048,
       });
 
-      const output: any[] = data.output || [];
+      const output = Array.isArray(data.output) ? data.output : [];
 
       // Collect text from this response
       const text = extractText(output);
@@ -450,15 +534,18 @@ export async function POST(req: Request) {
 
       // Add ALL output items to input for next round (preserves the conversation)
       for (const item of output) {
-        input.push(item);
+        if (isRecord(item)) {
+          input.push(item);
+        }
       }
 
       // Execute each function call and add results to input
       for (const fc of fnCalls) {
         // A1: Return parse error to model on JSON failure instead of empty args
-        let args: Record<string, any>;
+        let args: JsonRecord;
         try {
-          args = JSON.parse(fc.arguments);
+          const parsedArgs = JSON.parse(fc.arguments) as unknown;
+          args = isRecord(parsedArgs) ? parsedArgs : {};
         } catch {
           input.push({
             type: 'function_call_output',
@@ -487,11 +574,12 @@ export async function POST(req: Request) {
       toolResults,
       assistantMessage: { role: 'assistant', content: finalText },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('[GoSensei] API error:', err);
 
     // Auth errors → 401 so client knows to re-login
-    if (err?.name === 'AuthError' || err?.message?.includes('401') || err?.message?.includes('Bad credentials')) {
+    const message = errorMessage(err);
+    if (errorName(err) === 'AuthError' || message.includes('401') || message.includes('Bad credentials')) {
       return NextResponse.json(
         { error: 'Your session has expired. Please re-login with GitHub.', code: 'AUTH_EXPIRED' },
         { status: 401 },

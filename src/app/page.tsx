@@ -10,6 +10,7 @@ import { RulesPanel } from '@/components/ui/RulesPanel';
 import { TeachingPanel } from '@/components/sidebar/TeachingPanel';
 import { SenseiChatLog } from '@/components/chat/SenseiChatLog';
 import { GameControls } from '@/components/game/GameControls';
+import { BeginnerObjectiveCard } from '@/components/game/BeginnerObjectiveCard';
 import { ScoreCard } from '@/components/game/ScoreCard';
 import { LessonPicker } from '@/components/lessons/LessonPicker';
 import { LessonView } from '@/components/lessons/LessonView';
@@ -18,6 +19,7 @@ import { ProblemView } from '@/components/problems/ProblemView';
 import { SkillTree } from '@/components/concepts/SkillTree';
 import { DailyReview } from '@/components/review/DailyReview';
 import { ProgressDashboard } from '@/components/dashboard/ProgressDashboard';
+import { LearningPath } from '@/components/hub/LearningPath';
 import { useGameStore } from '@/stores/game-store';
 import { useGoMaster } from '@/hooks/useGoMaster';
 import { useGitHubAuth } from '@/hooks/useGitHubAuth';
@@ -125,6 +127,7 @@ export default function GamePage() {
       />
 
       {/* Main content: conditionally render based on appPhase */}
+      {appPhase === 'path' && <LearningPath />}
       {appPhase === 'lessons' && <LessonPicker />}
       {appPhase === 'lesson' && <LessonView />}
       {appPhase === 'problems' && <ProblemPicker />}
@@ -145,6 +148,7 @@ export default function GamePage() {
             <SenseiBubble />
             <BoardContainer />
             <div className="shrink-0">
+              <BeginnerObjectiveCard />
               <GameControls onNewGame={handleNewGame} onPass={handlePass} onUndo={handleUndo} />
             </div>
             <ScoreCard onPlayAgain={handleNewGame} onReviewGame={handleReviewGame} />

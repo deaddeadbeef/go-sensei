@@ -1,6 +1,5 @@
 import {
   createBoard,
-  setStone,
   calculateTerritory,
   countStones,
 } from '@/lib/go-engine';

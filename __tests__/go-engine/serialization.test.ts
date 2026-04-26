@@ -123,11 +123,12 @@ describe('boardToText', () => {
   });
 
   it('board with white stone shows marker on last move', () => {
-    let state = createGame(9);
-    let r: any;
-    r = playMove(state, p(0, 0)); state = r.newState;
-    r = playMove(state, p(4, 4)); state = r.newState;
-    const text = boardToText(state);
+    const state = createGame(9);
+    const first = playMove(state, p(0, 0));
+    if (!first.success) throw new Error('expected first move to succeed');
+    const second = playMove(first.newState, p(4, 4));
+    if (!second.success) throw new Error('expected second move to succeed');
+    const text = boardToText(second.newState);
     // Last move at (4,4) by white should show ☆
     expect(text).toContain('\u2606'); // ☆
     // First move at (0,0) by black should show ● (not ★ since it's not the last move)

@@ -7,7 +7,16 @@ import {
   getOpponent,
   getStone,
 } from '@/lib/go-engine';
-import { p, setupBoard, black, white } from './test-helpers';
+import type { GameState, Point } from '@/lib/go-engine/types';
+import { p } from './test-helpers';
+
+function playRequired(state: GameState, point: Point): GameState {
+  const result = playMove(state, point);
+  if (!result.success) {
+    throw new Error(`expected move at (${point.x},${point.y}) to succeed: ${result.reason}`);
+  }
+  return result.newState;
+}
 
 describe('createGame', () => {
   it('creates default game (9x9, komi 6.5, black first)', () => {
@@ -132,7 +141,7 @@ describe('resignGame', () => {
   });
 
   it('white resigns, black wins', () => {
-    let game = createGame(9);
+    const game = createGame(9);
     const r = playMove(game, p(4, 4));
     if (!r.success) throw new Error('expected success');
     const resigned = resignGame(r.newState);
@@ -162,10 +171,9 @@ describe('undoMove', () => {
 
   it('undoes multiple moves correctly', () => {
     let game = createGame(9);
-    let r: any;
-    r = playMove(game, p(0, 0)); game = r.newState; // B
-    r = playMove(game, p(1, 1)); game = r.newState; // W
-    r = playMove(game, p(2, 2)); game = r.newState; // B
+    game = playRequired(game, p(0, 0)); // B
+    game = playRequired(game, p(1, 1)); // W
+    game = playRequired(game, p(2, 2)); // B
 
     expect(game.moveHistory).toHaveLength(3);
 
@@ -203,13 +211,12 @@ describe('getOpponent', () => {
 describe('Full short game', () => {
   it('play a few moves, captures, pass pass -> scoring', () => {
     let state = createGame(9);
-    let r: any;
 
     // A few moves
-    r = playMove(state, p(2, 2)); state = r.newState;
-    r = playMove(state, p(6, 6)); state = r.newState;
-    r = playMove(state, p(3, 3)); state = r.newState;
-    r = playMove(state, p(5, 5)); state = r.newState;
+    state = playRequired(state, p(2, 2));
+    state = playRequired(state, p(6, 6));
+    state = playRequired(state, p(3, 3));
+    state = playRequired(state, p(5, 5));
 
     expect(state.moveHistory).toHaveLength(4);
     expect(state.phase).toBe('playing');
@@ -243,9 +250,8 @@ describe('superko', () => {
   it('rejects a move that recreates a previous board position', () => {
     let game = createGame(9);
 
-    let r: any;
-    r = playMove(game, p(0, 0)); game = r.newState; // B
-    r = playMove(game, p(8, 8)); game = r.newState; // W
+    game = playRequired(game, p(0, 0)); // B
+    game = playRequired(game, p(8, 8)); // W
 
     // Verify positionHistory is being tracked
     expect(game.positionHistory.size).toBeGreaterThan(0);
@@ -256,14 +262,13 @@ describe('undo restores captured stones', () => {
   it('undoing a capture restores the captured stones', () => {
     // Set up: surround a white stone and capture it
     let game = createGame(9);
-    let r: any;
 
     // Place white stone at (1,0)
-    r = playMove(game, p(0, 0)); game = r.newState; // B at (0,0)
-    r = playMove(game, p(1, 0)); game = r.newState; // W at (1,0)
-    r = playMove(game, p(2, 0)); game = r.newState; // B at (2,0)
-    r = playMove(game, p(8, 8)); game = r.newState; // W elsewhere
-    r = playMove(game, p(1, 1)); // B at (1,1) — captures W at (1,0)
+    game = playRequired(game, p(0, 0)); // B at (0,0)
+    game = playRequired(game, p(1, 0)); // W at (1,0)
+    game = playRequired(game, p(2, 0)); // B at (2,0)
+    game = playRequired(game, p(8, 8)); // W elsewhere
+    const r = playMove(game, p(1, 1)); // B at (1,1) — captures W at (1,0)
 
     if (r.success && r.captured.length > 0) {
       game = r.newState;

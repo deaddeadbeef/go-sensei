@@ -57,6 +57,14 @@ export function SenseiBar({ onSettingsClick, isLoggedIn }: SenseiBarProps) {
         {isLoggedIn && (
           <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: COLORS.overlay.positive }} title="Connected to GitHub" />
         )}
+        <button
+          onClick={() => useGameStore.getState().showLearningPath()}
+          className="text-sm opacity-60 hover:opacity-100 transition-opacity"
+          style={{ color: COLORS.ui.textSecondary }}
+          title="Learning Path"
+        >
+          Path
+        </button>
         {appPhase === 'game' && (
           <>
             <button
