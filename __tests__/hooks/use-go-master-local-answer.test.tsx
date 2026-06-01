@@ -120,7 +120,7 @@ describe('useGoMaster local answers', () => {
     expect(state.game.currentPlayer).toBe('black');
     expect(state.bubble.variant).toBe('teaching');
     expect(state.bubble.text).toContain('teach this beginner path locally');
-    expect(state.bubble.text).toContain('Your first stone at C7');
+    expect(state.bubble.text).toContain('Good: C7 hit the marked corner goal');
     expect(state.bubble.text).toContain('Make your stones work together');
     expect(state.bubble.text).not.toContain('GitHub login');
     expect(state.chatMessages.some((message) => message.text.includes('Cloud Sensei needs'))).toBe(false);
