@@ -6,7 +6,9 @@ import { useGameStore } from '@/stores/game-store';
 import { useConceptStore } from '@/stores/concept-store';
 import { useReviewStore } from '@/stores/review-store';
 import { useProgressStore } from '@/stores/progress-store';
+import { CONCEPTS } from '@/lib/concepts/concept-data';
 import { LESSONS } from '@/lib/lessons/lesson-data';
+import { getLearningRecommendation, type LearningRecommendation } from '@/lib/learning-path/recommendations';
 import { PROBLEMS } from '@/lib/problems/problem-data';
 
 const COLORS = {
@@ -22,6 +24,8 @@ const COLORS = {
   red: '#ef4444',
   border: '#333',
 };
+
+const CONCEPT_NAMES = new Map(CONCEPTS.map((concept) => [concept.id, concept.name]));
 
 interface StatCardProps {
   icon: string;
@@ -64,10 +68,101 @@ function ProgressBar({ value, max, color }: { value: number; max: number; color:
   );
 }
 
+function conceptLabel(conceptId: string): string {
+  return CONCEPT_NAMES.get(conceptId) ?? conceptId
+    .split('-')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function NextMovePanel({
+  recommendation,
+  onStart,
+  onLearningPath,
+}: {
+  recommendation: LearningRecommendation;
+  onStart: () => void;
+  onLearningPath: () => void;
+}) {
+  const focusConcepts = recommendation.focusConcepts.slice(0, 4);
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.25 }}
+      className="mb-6 rounded-xl p-4"
+      style={{ backgroundColor: COLORS.card, border: `1px solid ${COLORS.border}` }}
+    >
+      <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: COLORS.textDim }}>
+        Next best move
+      </p>
+      <div className="mt-2 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div>
+          <h2 className="text-lg font-bold leading-tight" style={{ color: COLORS.text }}>
+            {recommendation.title}
+          </h2>
+          <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.textDim }}>
+            {recommendation.reason}
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <button
+            onClick={onStart}
+            className="rounded-lg px-3 py-2 text-sm font-semibold transition-all hover:opacity-90"
+            style={{ backgroundColor: COLORS.accent, color: COLORS.bg }}
+          >
+            {recommendation.actionLabel}
+          </button>
+          <button
+            onClick={onLearningPath}
+            className="rounded-lg px-3 py-2 text-sm font-medium transition-all hover:opacity-90"
+            style={{ backgroundColor: COLORS.cardHover, color: COLORS.text }}
+          >
+            Learning path
+          </button>
+        </div>
+      </div>
+      {focusConcepts.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {focusConcepts.map((conceptId) => (
+            <span
+              key={conceptId}
+              className="rounded-full px-2.5 py-1 text-xs"
+              style={{ backgroundColor: `${COLORS.accent}22`, color: COLORS.accent }}
+            >
+              {conceptLabel(conceptId)}
+            </span>
+          ))}
+        </div>
+      )}
+      <ol className="mt-4 grid gap-3 md:grid-cols-3">
+        {recommendation.practicePlan.map((step, index) => (
+          <li
+            key={step}
+            className="flex gap-2 text-xs leading-relaxed"
+            style={{ color: COLORS.textDim }}
+          >
+            <span
+              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold"
+              style={{ backgroundColor: `${COLORS.accent}22`, color: COLORS.accent }}
+            >
+              {index + 1}
+            </span>
+            <span>{step}</span>
+          </li>
+        ))}
+      </ol>
+    </motion.section>
+  );
+}
+
 export function ProgressDashboard() {
   const completedLessons = useProgressStore((s) => s.completedLessons);
   const problemAttempts = useProgressStore((s) => s.problemAttempts);
+  const hasStartedIntroGame = useProgressStore((s) => s.hasStartedIntroGame);
   const conceptStats = useConceptStore((s) => s.getStats)();
+  const mastery = useConceptStore((s) => s.mastery);
   const reviewCards = useReviewStore((s) => s.cards);
   const reviewHistory = useReviewStore((s) => s.history);
   const getReviewStats = useReviewStore((s) => s.getReviewStats);
@@ -80,10 +175,13 @@ export function ProgressDashboard() {
     [getReviewStats, reviewCards, reviewHistory],
   );
   const returnToGame = useGameStore((s) => s.returnToGame);
+  const startGuidedIntroGame = useGameStore((s) => s.startGuidedIntroGame);
+  const startLesson = useGameStore((s) => s.startLesson);
   const showLessons = useGameStore((s) => s.showLessons);
   const showProblems = useGameStore((s) => s.showProblems);
   const showSkillTree = useGameStore((s) => s.showSkillTree);
   const showReview = useGameStore((s) => s.showReview);
+  const showLearningPath = useGameStore((s) => s.showLearningPath);
 
   const solvedProblems = new Set(
     problemAttempts.filter((a) => a.solved).map((a) => a.problemId),
@@ -92,6 +190,37 @@ export function ProgressDashboard() {
   const totalAccuracy = problemAttempts.length > 0
     ? Math.round((problemAttempts.filter((a) => a.solved).length / problemAttempts.length) * 100)
     : 0;
+
+  const recommendation = useMemo(
+    () => getLearningRecommendation({
+      completedLessons,
+      problemAttempts,
+      dueReviewCount: reviewStats.dueToday,
+      hasStartedIntroGame,
+      mastery: Object.values(mastery),
+    }),
+    [completedLessons, problemAttempts, reviewStats.dueToday, hasStartedIntroGame, mastery],
+  );
+
+  const startRecommended = () => {
+    switch (recommendation.kind) {
+      case 'guided_intro':
+        startGuidedIntroGame();
+        break;
+      case 'lesson':
+        startLesson(recommendation.targetId);
+        break;
+      case 'problem':
+        showProblems(recommendation.filter);
+        break;
+      case 'review':
+        showReview();
+        break;
+      case 'guided_game':
+        returnToGame();
+        break;
+    }
+  };
 
   return (
     <div className="flex-1 overflow-y-auto p-6" style={{ backgroundColor: COLORS.bg }}>
@@ -109,6 +238,12 @@ export function ProgressDashboard() {
             Your Go learning journey at a glance
           </p>
         </motion.div>
+
+        <NextMovePanel
+          recommendation={recommendation}
+          onStart={startRecommended}
+          onLearningPath={showLearningPath}
+        />
 
         {/* Stats grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
