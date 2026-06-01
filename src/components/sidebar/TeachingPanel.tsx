@@ -2,8 +2,10 @@
 
 import { CONCEPTS } from '@/lib/concepts/concept-data';
 import { getMoveInsight } from '@/lib/coaching/move-insight';
+import { useConceptStore } from '@/stores/concept-store';
 import { useGameStore } from '@/stores/game-store';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect } from 'react';
 
 const variantColors: Record<string, string> = {
   positive: '#4ade80',
@@ -14,6 +16,8 @@ const variantColors: Record<string, string> = {
 const ARROW_COLOR = '#fbbf24';
 const GROUP_COLORS: Record<string, string> = { black: '#3b82f6', white: '#f97316' };
 const GO_COLS = 'ABCDEFGHJKLMNOPQRST';
+const CONCEPT_NAME_BY_ID = new Map(CONCEPTS.map((concept) => [concept.id, concept.name]));
+const RECORDED_INSIGHT_KEYS = new Set<string>();
 
 function coordLabel(x: number, y: number, boardSize: number): string {
   return `${GO_COLS[x]}${boardSize - y}`;
@@ -26,12 +30,17 @@ export function TeachingPanel() {
   const game = useGameStore((s) => s.game);
   const teachingLevel = useGameStore((s) => s.teachingLevel);
   const boardSize = useGameStore((s) => s.game.board.size);
+  const lastInteractionTime = useGameStore((s) => s.lastInteractionTime);
+  const recordEvidence = useConceptStore((s) => s.recordEvidence);
   const insight = getMoveInsight(game, teachingLevel);
-  const conceptNames = insight
-    ? [...new Set(insight.conceptIds)]
-      .map((id) => CONCEPTS.find((concept) => concept.id === id)?.name ?? id)
-      .slice(0, 3)
-    : [];
+  const insightConceptIds = insight ? [...new Set(insight.conceptIds)] : [];
+  const insightConceptKey = insightConceptIds.join('|');
+  const insightRecordKey = insight
+    ? `${lastInteractionTime}:${game.moveHistory.length}:${game.currentPlayer}:${insight.title}:${insightConceptKey}`
+    : null;
+  const conceptNames = insightConceptIds
+    .map((id) => CONCEPT_NAME_BY_ID.get(id) ?? id)
+    .slice(0, 3);
 
   const labeledHighlights = highlights.filter((h) => h.label);
   const labeledArrows = arrows.filter((a) => a.label);
@@ -39,6 +48,16 @@ export function TeachingPanel() {
 
   const hasBoardAnalysis = labeledHighlights.length + labeledArrows.length + labeledGroups.length > 0;
   const hasContent = insight !== null || hasBoardAnalysis;
+
+  useEffect(() => {
+    if (!insightRecordKey || !insightConceptKey) return;
+    if (RECORDED_INSIGHT_KEYS.has(insightRecordKey)) return;
+
+    RECORDED_INSIGHT_KEYS.add(insightRecordKey);
+    for (const conceptId of insightConceptKey.split('|')) {
+      recordEvidence(conceptId, 'guided_insight');
+    }
+  }, [insightConceptKey, insightRecordKey, recordEvidence]);
 
   return (
     <AnimatePresence>
