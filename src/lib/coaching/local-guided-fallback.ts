@@ -1,4 +1,8 @@
-import { formatObjectiveTargetText, getBeginnerObjective } from '@/lib/coaching/beginner-objectives';
+import {
+  formatObjectiveTargetText,
+  getBeginnerObjective,
+  getBeginnerObjectiveProgress,
+} from '@/lib/coaching/beginner-objectives';
 import { pointToCoord } from '@/lib/go-engine';
 import type { GameState, Move } from '@/lib/go-engine/types';
 import type { TeachingLevel } from '@/lib/ai/system-prompt';
@@ -67,10 +71,11 @@ export function getLocalGuidedFallback(
     currentPlayer: 'black',
     teachingLevel,
   });
+  const progress = getBeginnerObjectiveProgress(game, teachingLevel);
   const shouldPassSensei = game.currentPlayer !== 'black';
   const lines = [
     introText(reason),
-    describeLastMove(game),
+    progress?.text ?? describeLastMove(game),
   ];
 
   if (objective) {
