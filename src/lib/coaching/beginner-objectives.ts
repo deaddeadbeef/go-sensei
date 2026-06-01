@@ -1,5 +1,5 @@
-import { getAllGroups, getAdjacentPoints, getStone, isOnBoard, pointKey, pointToCoord } from '@/lib/go-engine';
-import type { BoardSize, BoardState, Move, Point, StoneColor } from '@/lib/go-engine/types';
+import { getAllGroups, getAdjacentPoints, getStone, isOnBoard, pointEquals, pointKey, pointToCoord, undoMove } from '@/lib/go-engine';
+import type { BoardSize, BoardState, GameState, Move, Point, StoneColor } from '@/lib/go-engine/types';
 import type { TeachingLevel } from '@/lib/ai/system-prompt';
 
 export interface BeginnerObjectiveInput {
@@ -18,6 +18,13 @@ export interface BeginnerObjective {
   why: string;
   targetPoints: Point[];
   conceptIds: string[];
+}
+
+export interface BeginnerObjectiveProgress {
+  status: 'met' | 'missed';
+  text: string;
+  lastMove: Point;
+  objectiveId: BeginnerObjective['id'];
 }
 
 const CORNER_TARGETS_9X9: Point[] = [
@@ -226,4 +233,83 @@ export function getBeginnerObjective(input: BeginnerObjectiveInput): BeginnerObj
   }
 
   return weakGroupObjective();
+}
+
+function findStateBeforeLastBlackPlacement(game: GameState): {
+  beforeMove: GameState;
+  move: Extract<Move, { type: 'place' }>;
+} | null {
+  let current: GameState | null = game;
+
+  while (current.moveHistory.length > 0) {
+    const lastMove = current.moveHistory[current.moveHistory.length - 1];
+    const previous = undoMove(current);
+    if (!previous) return null;
+
+    if (lastMove.type === 'place' && lastMove.color === 'black') {
+      return { beforeMove: previous, move: lastMove };
+    }
+
+    current = previous;
+  }
+
+  return null;
+}
+
+function successText(objective: BeginnerObjective, coord: string): string {
+  switch (objective.id) {
+    case 'claim-corner':
+      return `Good: ${coord} hit the marked corner goal. Next, make that stone work with another one.`;
+    case 'extend-from-stone':
+      return `Good: ${coord} made a one-space jump from your stone. Next, check whether any group is short on liberties.`;
+    case 'look-for-weak-groups':
+      return `Good: ${coord} gave the weak group another liberty. Next, look for the biggest safe move.`;
+  }
+}
+
+function missedText(objective: BeginnerObjective, coord: string, boardSize: BoardSize): string {
+  const targets = formatObjectiveTargetText(objective, boardSize);
+
+  switch (objective.id) {
+    case 'claim-corner':
+      return `Progress check: ${coord} was not one of the marked corner points. ${targets ?? 'Play near an empty corner next.'}`;
+    case 'extend-from-stone':
+      return `Progress check: ${coord} was not one of the marked extension points. ${targets ?? 'Play a one-space jump from one of your stones.'}`;
+    case 'look-for-weak-groups':
+      return `Progress check: ${coord} did not help the short-on-liberties group. ${targets ?? 'Find the group with the least room before playing.'}`;
+  }
+}
+
+export function getBeginnerObjectiveProgress(
+  game: GameState,
+  teachingLevel: TeachingLevel,
+): BeginnerObjectiveProgress | null {
+  if (game.board.size !== 9) return null;
+  if (teachingLevel !== 'beginner' && teachingLevel !== 'guided') return null;
+
+  const lastBlackPlacement = findStateBeforeLastBlackPlacement(game);
+  if (!lastBlackPlacement) return null;
+
+  const priorObjective = getBeginnerObjective({
+    boardSize: lastBlackPlacement.beforeMove.board.size,
+    board: lastBlackPlacement.beforeMove.board,
+    moveHistory: lastBlackPlacement.beforeMove.moveHistory,
+    moveCount: lastBlackPlacement.beforeMove.moveHistory.length,
+    currentPlayer: 'black',
+    teachingLevel,
+  });
+
+  if (!priorObjective || priorObjective.targetPoints.length === 0) return null;
+
+  const coord = pointToCoord(lastBlackPlacement.move.point, game.board.size);
+  const metObjective = priorObjective.targetPoints.some((point) => pointEquals(point, lastBlackPlacement.move.point));
+
+  return {
+    status: metObjective ? 'met' : 'missed',
+    text: metObjective
+      ? successText(priorObjective, coord)
+      : missedText(priorObjective, coord, game.board.size),
+    lastMove: lastBlackPlacement.move.point,
+    objectiveId: priorObjective.id,
+  };
 }

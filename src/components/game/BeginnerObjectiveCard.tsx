@@ -1,6 +1,10 @@
 'use client';
 
-import { formatObjectiveTargetText, getBeginnerObjective } from '@/lib/coaching/beginner-objectives';
+import {
+  formatObjectiveTargetText,
+  getBeginnerObjective,
+  getBeginnerObjectiveProgress,
+} from '@/lib/coaching/beginner-objectives';
 import { useGameStore } from '@/stores/game-store';
 import { COLORS } from '@/utils/colors';
 
@@ -20,6 +24,8 @@ export function BeginnerObjectiveCard() {
   if (!objective) return null;
 
   const targetText = formatObjectiveTargetText(objective, game.board.size);
+  const progress = getBeginnerObjectiveProgress(game, teachingLevel);
+  const progressColor = progress?.status === 'met' ? COLORS.overlay.positive : COLORS.overlay.warning;
 
   return (
     <div
@@ -32,6 +38,11 @@ export function BeginnerObjectiveCard() {
       <div className="mt-1" style={{ color: COLORS.ui.textSecondary }}>
         {objective.instruction}
       </div>
+      {progress && (
+        <div className="mt-1 text-xs font-medium" style={{ color: progressColor }}>
+          {progress.text}
+        </div>
+      )}
       {targetText && (
         <div className="mt-1 text-xs font-semibold" style={{ color: COLORS.ui.textPrimary }}>
           {targetText}
