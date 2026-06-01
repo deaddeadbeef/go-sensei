@@ -11,9 +11,15 @@ interface SenseiBarProps {
 export function SenseiBar({ onSettingsClick, isLoggedIn }: SenseiBarProps) {
   const moveCount = useGameStore((s) => s.game.moveHistory.length);
   const captures = useGameStore((s) => s.game.captures);
+  const currentPlayer = useGameStore((s) => s.game.currentPlayer);
   const isAiThinking = useGameStore((s) => s.isAiThinking);
   const phase = useGameStore((s) => s.phase);
   const appPhase = useGameStore((s) => s.appPhase);
+  const turnLabel = isAiThinking
+    ? 'Sensei thinking...'
+    : currentPlayer === 'black'
+      ? 'Your turn'
+      : 'Sensei to play';
 
   return (
     <div
@@ -43,9 +49,11 @@ export function SenseiBar({ onSettingsClick, isLoggedIn }: SenseiBarProps) {
                   transition={{ duration: 0.6, repeat: Infinity }}
                 />
               ) : (
-                <span className="inline-block w-3 h-3 rounded-full bg-black border border-gray-600" />
+                <span
+                  className={`inline-block w-3 h-3 rounded-full border ${currentPlayer === 'black' ? 'bg-black border-gray-600' : 'bg-white border-gray-400'}`}
+                />
               )}
-              <span>{isAiThinking ? 'Sensei thinking...' : 'Your turn'}</span>
+              <span>{turnLabel}</span>
             </div>
           </>
         )}

@@ -1,0 +1,93 @@
+import { getBeginnerObjective } from '@/lib/coaching/beginner-objectives';
+import { pointToCoord } from '@/lib/go-engine';
+import type { GameState, Move } from '@/lib/go-engine/types';
+import type { TeachingLevel } from '@/lib/ai/system-prompt';
+
+type LocalFallbackReason = 'auth-expired' | 'auth-unavailable' | 'network-error' | 'server-error';
+
+export interface LocalGuidedFallback {
+  text: string;
+  conceptIds: string[];
+  shouldPassSensei: boolean;
+}
+
+function isLocalFallbackLevel(teachingLevel: TeachingLevel): boolean {
+  return teachingLevel === 'guided' || teachingLevel === 'beginner';
+}
+
+function lastBlackMove(game: GameState): Move | null {
+  for (let i = game.moveHistory.length - 1; i >= 0; i--) {
+    const move = game.moveHistory[i];
+    if (move.color === 'black') return move;
+  }
+
+  return null;
+}
+
+function describeLastMove(game: GameState): string {
+  const move = lastBlackMove(game);
+  if (!move) return 'No move has been played yet.';
+  if (move.type === 'pass') return 'You passed. That is fine near the end, but early on it usually gives away practice.';
+  if (move.type === 'resign') return 'You resigned, so this game is over.';
+
+  const coord = pointToCoord(move.point, game.board.size);
+  if (game.moveHistory.length === 1) {
+    return `Your first stone at ${coord} gives us a real board position to learn from.`;
+  }
+
+  return `Your last stone was at ${coord}. Use the next move to make that stone part of a plan.`;
+}
+
+function reasonText(reason: LocalFallbackReason): string {
+  if (reason === 'auth-expired') {
+    return 'The cloud Sensei session expired.';
+  }
+  if (reason === 'auth-unavailable') {
+    return 'Cloud Sensei needs a GitHub login.';
+  }
+  if (reason === 'network-error') {
+    return 'I could not reach cloud Sensei.';
+  }
+  return 'Cloud Sensei had trouble answering.';
+}
+
+export function getLocalGuidedFallback(
+  game: GameState,
+  teachingLevel: TeachingLevel,
+  reason: LocalFallbackReason,
+): LocalGuidedFallback | null {
+  if (!isLocalFallbackLevel(teachingLevel)) return null;
+  if (game.phase !== 'playing') return null;
+
+  const objective = getBeginnerObjective({
+    boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
+    moveCount: game.moveHistory.length,
+    currentPlayer: 'black',
+    teachingLevel,
+  });
+  const shouldPassSensei = game.currentPlayer !== 'black';
+  const lines = [
+    `${reasonText(reason)} I will keep the lesson moving locally for now.`,
+    describeLastMove(game),
+  ];
+
+  if (objective) {
+    lines.push(`Next focus: ${objective.title}. ${objective.instruction} ${objective.why}`);
+  } else {
+    lines.push('Next focus: play where your stones gain room, connect, or claim easier territory.');
+  }
+
+  if (shouldPassSensei) {
+    lines.push('I am passing for White so you can immediately try the next idea.');
+  } else {
+    lines.push('Use the marked board guidance while the full AI connection is unavailable.');
+  }
+
+  return {
+    text: lines.join('\n\n'),
+    conceptIds: objective?.conceptIds ?? [],
+    shouldPassSensei,
+  };
+}
