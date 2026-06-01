@@ -2,11 +2,31 @@
 import { useEffect, useRef } from 'react';
 import { useGameStore } from '@/stores/game-store';
 import { HESITATION_NUDGE_TIME, HESITATION_PROACTIVE_TIME } from '@/utils/animation';
+import type { StoneColor } from '@/lib/go-engine/types';
+import type { AppPhase } from '@/stores/game-store';
+
+export interface HesitationHintGateInput {
+  isAiThinking: boolean;
+  phase: 'welcome' | 'playing' | 'scoring' | 'finished' | 'lesson' | 'review';
+  appPhase: AppPhase;
+  bubbleVisible: boolean;
+  currentPlayer: StoneColor;
+}
+
+export function canOfferHesitationHint(input: HesitationHintGateInput): boolean {
+  return !input.isAiThinking
+    && input.phase === 'playing'
+    && input.appPhase === 'game'
+    && input.currentPlayer === 'black'
+    && !input.bubbleVisible;
+}
 
 export function useHesitationDetector(onHint: () => void) {
   const lastInteractionTime = useGameStore((s) => s.lastInteractionTime);
   const isAiThinking = useGameStore((s) => s.isAiThinking);
   const phase = useGameStore((s) => s.phase);
+  const appPhase = useGameStore((s) => s.appPhase);
+  const currentPlayer = useGameStore((s) => s.game.currentPlayer);
   const setHesitationLevel = useGameStore((s) => s.setHesitationLevel);
   const hintOffered = useGameStore((s) => s.hintOffered);
   const showBubble = useGameStore((s) => s.showBubble);
@@ -15,8 +35,7 @@ export function useHesitationDetector(onHint: () => void) {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    // Don't run hints while: AI is thinking, not playing, or bubble is showing
-    if (isAiThinking || phase !== 'playing' || bubbleVisible) {
+    if (!canOfferHesitationHint({ isAiThinking, phase, appPhase, currentPlayer, bubbleVisible })) {
       if (timerRef.current) clearInterval(timerRef.current);
       return;
     }
@@ -44,5 +63,5 @@ export function useHesitationDetector(onHint: () => void) {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [lastInteractionTime, isAiThinking, phase, bubbleVisible, hintOffered, setHesitationLevel, setHintOffered, showBubble, onHint]);
+  }, [lastInteractionTime, isAiThinking, phase, appPhase, currentPlayer, bubbleVisible, hintOffered, setHesitationLevel, setHintOffered, showBubble, onHint]);
 }
