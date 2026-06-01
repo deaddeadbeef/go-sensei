@@ -8,6 +8,7 @@ import { CONCEPTS } from '@/lib/concepts/concept-data';
 import { getLearningRecommendation } from '@/lib/learning-path/recommendations';
 import { formatObjectiveTargetText, getBeginnerObjective } from '@/lib/coaching/beginner-objectives';
 import { getLocalGuidedFallback } from '@/lib/coaching/local-guided-fallback';
+import { getLocalQuestionAnswer } from '@/lib/coaching/local-question-answer';
 import { coordToPoint } from '@/lib/go-engine';
 import {
   formatMoveMessage,
@@ -449,10 +450,26 @@ export function useGoMaster() {
   const sendMessage = useCallback(
     (text: string) => {
       addChatMessage(text, 'user');
-      const game = useGameStore.getState().game;
+      const state = useGameStore.getState();
+      const game = state.game;
+      const localAnswer = getLocalQuestionAnswer(text, game, state.teachingLevel);
+
+      if (localAnswer) {
+        for (const conceptId of localAnswer.conceptIds) {
+          recordEncounter(conceptId);
+        }
+        showBubble({
+          text: localAnswer.text,
+          variant: 'teaching',
+          anchorPoint: null,
+          streamingComplete: true,
+        });
+        return;
+      }
+
       send(formatFreeTextMessage(game, text));
     },
-    [send, addChatMessage],
+    [send, addChatMessage, recordEncounter, showBubble],
   );
 
   const requestHint = useCallback(() => {
