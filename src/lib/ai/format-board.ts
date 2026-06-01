@@ -50,7 +50,7 @@ export function formatFirstMoveMessage(game: GameState): string {
 
 ${formatGameStateForAI(game)}
 
-Comment on their opening choice — is it a standard opening point? If not, say so. Then make your responding move.`;
+Comment on what practical goal their opening move serves or misses: corner, side, center, territory, or influence. For beginners, explain the plain board reason before naming a Go term. Then make your responding move.`;
 }
 
 /**

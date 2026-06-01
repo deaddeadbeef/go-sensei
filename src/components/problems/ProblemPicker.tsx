@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { PROBLEMS } from '@/lib/problems/problem-data';
 import { useGameStore } from '@/stores/game-store';
+import { useProgressStore } from '@/stores/progress-store';
 import { COLORS } from '@/utils/colors';
 import type { ProblemCategory } from '@/lib/problems/types';
 
@@ -42,7 +43,7 @@ function difficultyStars(d: number) {
 }
 
 export function ProblemPicker() {
-  const problemAttempts = useGameStore((s) => s.problemAttempts);
+  const problemAttempts = useProgressStore((s) => s.problemAttempts);
   const preferredProblemFilter = useGameStore((s) => s.preferredProblemFilter);
   const startProblem = useGameStore((s) => s.startProblem);
   const returnToGame = useGameStore((s) => s.returnToGame);

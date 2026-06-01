@@ -191,6 +191,19 @@ describe('problem interaction store', () => {
     expect(useGameStore.getState().hasStartedIntroGame).toBe(true);
   });
 
+  it('startNewGame preserves solved problem progress', () => {
+    const problem = bundledProblem('capture-001');
+    act(() => useGameStore.getState().startProblem(problem));
+    act(() => { useGameStore.getState().submitProblemMove({ x: 0, y: 1 }); });
+    act(() => useGameStore.getState().startNewGame(9));
+
+    expect(useGameStore.getState().problemAttempts).toHaveLength(1);
+    expect(useGameStore.getState().problemAttempts[0]).toMatchObject({
+      problemId: 'capture-001',
+      solved: true,
+    });
+  });
+
   it('requestProblemHint sets showHint', () => {
     act(() => useGameStore.getState().startProblem(testProblem));
     act(() => useGameStore.getState().requestProblemHint());
