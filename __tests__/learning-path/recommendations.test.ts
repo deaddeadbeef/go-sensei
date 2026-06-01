@@ -79,11 +79,33 @@ describe('learning path recommendations', () => {
     expect(recommendation.practicePlan).toContain('If you miss three times, study the shown solution line.');
   });
 
-  it('enough lessons and practice recommends guided game with weak eyes focus', () => {
+  it('eyes lesson completion recommends life-and-death problems before more guided games', () => {
     const recommendation = getLearningRecommendation(
       input({
         completedLessons: ['groups', 'liberties', 'capture', 'territory', 'eyes'],
         problemAttempts: [solved('capture-001'), solved('capture-002'), solved('capture-003')],
+      }),
+    );
+
+    expect(recommendation).toMatchObject({
+      kind: 'problem',
+      filter: 'life-and-death',
+      actionLabel: 'Open life and death problems',
+    });
+    expect(recommendation.reason).toBe('Practice life and death until you solve 2 more life and death problems.');
+  });
+
+  it('enough lessons and practice recommends guided game with weak eyes focus', () => {
+    const recommendation = getLearningRecommendation(
+      input({
+        completedLessons: ['groups', 'liberties', 'capture', 'territory', 'eyes'],
+        problemAttempts: [
+          solved('capture-001'),
+          solved('capture-002'),
+          solved('capture-003'),
+          solved('life-001'),
+          solved('life-002'),
+        ],
         mastery: [
           conceptMastery('groups', 3),
           conceptMastery('liberties', 3),
