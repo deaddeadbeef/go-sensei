@@ -27,7 +27,15 @@ export interface LocalSuggestionFocus {
   reason: string;
 }
 
+export interface LocalHighlightFocus {
+  id: string;
+  point: Point;
+  variant: 'positive' | 'warning' | 'danger' | 'neutral';
+  label?: string;
+}
+
 export interface LocalBoardFocus {
+  highlights?: LocalHighlightFocus[];
   liberties?: LocalLibertyFocus[];
   groups?: LocalGroupFocus[];
   suggestions?: LocalSuggestionFocus[];
@@ -299,6 +307,30 @@ function uniqueConceptIds(conceptIds: string[]): string[] {
   return [...new Set(conceptIds)];
 }
 
+interface KoContext {
+  sentence: string;
+  boardFocus: LocalBoardFocus;
+}
+
+function buildKoContext(game: GameState): KoContext | null {
+  if (!game.koPoint) return null;
+
+  const koCoord = pointToCoord(game.koPoint, game.board.size);
+  const playerName = game.currentPlayer === 'black' ? 'Black' : 'White';
+
+  return {
+    sentence: ` The marked ko point is ${koCoord}. ${playerName} cannot immediately play there; play a ko threat elsewhere first, then come back if the opponent answers.`,
+    boardFocus: {
+      highlights: [{
+        id: `local-ko-point-${pointKey(game.koPoint)}`,
+        point: copyPoint(game.koPoint),
+        variant: 'danger',
+        label: `Ko: ${playerName} cannot immediately recapture at ${koCoord}.`,
+      }],
+    },
+  };
+}
+
 function normalizedQuestion(question: string): string {
   return question.toLowerCase().replace(/[^a-z0-9\s-]/g, ' ');
 }
@@ -372,10 +404,13 @@ export function getLocalQuestionAnswer(
   }
 
   if (/\bko\b/.test(q)) {
+    const koContext = buildKoContext(game);
+
     return {
-      text: 'Ko is the rule that stops both players from immediately repeating the same board position. If a capture would recreate the previous board, you must play somewhere else first.',
+      text: `Ko is the rule that stops both players from immediately repeating the same board position. If a capture would recreate the previous board, you must play somewhere else first.${koContext ? koContext.sentence : ''}`,
       conceptIds: ['ko'],
       actions: [{ id: 'lesson:ko', label: 'Review ko' }],
+      ...(koContext ? { boardFocus: koContext.boardFocus } : {}),
     };
   }
 

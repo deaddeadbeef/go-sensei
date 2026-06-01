@@ -226,6 +226,34 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([{ id: 'lesson:territory', label: 'Review territory' }]);
   });
 
+  it('answers ko questions with the current forbidden point when a ko is active', () => {
+    const game = playSequence([
+      { x: 1, y: 0 },
+      { x: 2, y: 0 },
+      { x: 0, y: 1 },
+      { x: 1, y: 1 },
+      { x: 1, y: 2 },
+      { x: 3, y: 1 },
+      { x: 8, y: 8 },
+      { x: 2, y: 2 },
+      { x: 2, y: 1 },
+    ]);
+
+    const answer = getLocalQuestionAnswer('What is ko?', game, 'guided');
+
+    expect(answer?.text).toContain('Ko is the rule');
+    expect(answer?.text).toContain('The marked ko point is B8');
+    expect(answer?.text).toContain('White cannot immediately play there');
+    expect(answer?.conceptIds).toEqual(['ko']);
+    expect(answer?.boardFocus?.highlights).toEqual([{
+      id: 'local-ko-point-1,1',
+      point: { x: 1, y: 1 },
+      variant: 'danger',
+      label: 'Ko: White cannot immediately recapture at B8.',
+    }]);
+    expect(answer?.actions).toEqual([{ id: 'lesson:ko', label: 'Review ko' }]);
+  });
+
   it('leaves unrecognized questions to cloud Sensei', () => {
     expect(getLocalQuestionAnswer('Should I invade now?', createGame(9), 'guided')).toBeNull();
   });

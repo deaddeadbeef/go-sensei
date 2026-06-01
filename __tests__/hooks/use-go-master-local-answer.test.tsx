@@ -215,4 +215,39 @@ describe('useGoMaster local answers', () => {
     expect(state.overlays.liberties).toEqual([]);
     expect(state.overlays.groups).toEqual([]);
   });
+
+  it('answers ko questions by highlighting the forbidden recapture point', () => {
+    act(() => {
+      useGameStore.getState().startGuidedIntroGame();
+      playStoreSequence([
+        { x: 1, y: 0 },
+        { x: 2, y: 0 },
+        { x: 0, y: 1 },
+        { x: 1, y: 1 },
+        { x: 1, y: 2 },
+        { x: 3, y: 1 },
+        { x: 8, y: 8 },
+        { x: 2, y: 2 },
+        { x: 2, y: 1 },
+      ]);
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('What is ko?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.text).toContain('The marked ko point is B8');
+    expect(state.overlays.highlights).toEqual([{
+      id: 'local-ko-point-1,1',
+      point: { x: 1, y: 1 },
+      variant: 'danger',
+      label: 'Ko: White cannot immediately recapture at B8.',
+    }]);
+    expect(useConceptStore.getState().getMastery('ko').encounterCount).toBeGreaterThan(0);
+  });
 });
