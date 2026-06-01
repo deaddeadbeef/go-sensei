@@ -89,7 +89,7 @@ export function formatHesitationMessage(game: GameState): string {
 
 ${formatGameStateForAI(game)}
 
-Use suggest_moves to show them 2-3 reasonable options. Don't coddle them — just show the moves and briefly explain why each is worth considering.`;
+Use suggest_moves to show them 2-3 reasonable options. Keep it concise and explain why each move is worth considering.`;
 }
 
 /**
@@ -119,12 +119,12 @@ Full move history (${moveCount} moves):
 ${moveLog}
 
 Review this game. I want:
-1. The student's 3-5 worst mistakes (with move numbers and what should have been played instead)
+1. The student's 3-5 most important mistakes (with move numbers and what should have been played instead)
 2. The student's 1-3 best moves (genuinely good ones, not just "okay")
 3. Overall assessment: what concepts the student needs to work on
 4. A letter grade for the game (A through F)
 
-Use highlight_positions to visually show the critical moments. Be brutally honest.`;
+Use highlight_positions to visually show the critical moments. Be honest, specific, and constructive.`;
 }
 
 /**
