@@ -137,6 +137,14 @@ export function LessonView() {
   const r = stoneRadius(boardSize);
   const isFirstStep = currentStep === 0;
   const isLastStep = currentStep >= totalSteps - 1;
+  const answerHighlight = lessonInteraction.answerRevealed && lessonInteraction.expectedMove
+    ? [{ point: lessonInteraction.expectedMove, color: 'blue' as const, label: 'Answer' }]
+    : [];
+  const nextButtonLabel = lessonInteraction.answerRevealed
+    ? 'Click highlighted answer...'
+    : lessonInteraction.awaitingClick
+      ? 'Click the board...'
+      : 'Next →';
 
   const handlePrev = useCallback(() => prevStep(), [prevStep]);
   const handleNext = useCallback(() => nextStep(totalSteps), [nextStep, totalSteps]);
@@ -271,7 +279,7 @@ export function LessonView() {
                       />
                     );
                   })}
-                  <LessonOverlay highlights={stepData.highlights} boardSize={boardSize} />
+                  <LessonOverlay highlights={[...stepData.highlights, ...answerHighlight]} boardSize={boardSize} />
                   {feedbackPoint && (() => {
                     const { cx, cy } = pointToSvg(feedbackPoint, boardSize);
                     const color = feedbackPoint.type === 'correct' ? '#4ade80' : '#ef4444';
@@ -362,6 +370,11 @@ export function LessonView() {
                       💡 {lessonInteraction.wrongMoveHint}
                     </p>
                   )}
+                  {lessonInteraction.answerRevealed && (
+                    <p className="mt-2 text-xs font-medium" style={{ color: COLORS.ui.textPrimary }}>
+                      Answer shown. Click the highlighted point to continue.
+                    </p>
+                  )}
                   {lessonInteraction.attempts > 0 && (
                     <p className="mt-1 text-xs" style={{ color: COLORS.ui.textSecondary }}>
                       Attempt {lessonInteraction.attempts}/3
@@ -399,7 +412,7 @@ export function LessonView() {
                 className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
               >
-                {lessonInteraction.awaitingClick ? 'Click the board...' : 'Next →'}
+                {nextButtonLabel}
               </button>
             )}
           </div>

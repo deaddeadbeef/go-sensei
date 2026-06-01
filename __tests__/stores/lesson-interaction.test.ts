@@ -19,6 +19,7 @@ describe('lesson interaction state', () => {
       acceptRadius: 0,
       attempts: 0,
       feedback: null,
+      answerRevealed: false,
     });
   });
 
@@ -74,6 +75,30 @@ describe('lesson interaction state', () => {
     expect(result).toBe('wrong');
     expect(useGameStore.getState().lessonInteraction.attempts).toBe(1);
     expect(useGameStore.getState().lessonInteraction.feedback).toBe('wrong');
+    expect(useGameStore.getState().lessonInteraction.answerRevealed).toBe(false);
+  });
+
+  it('reveals the answer after three wrong attempts', () => {
+    act(() => {
+      useGameStore.getState().setLessonPrompt({
+        prompt: 'Click here',
+        expectedMove: { x: 4, y: 4 },
+        wrongMoveHint: 'Nope',
+        branchOnFail: null,
+        acceptRadius: 0,
+      });
+    });
+
+    act(() => {
+      useGameStore.getState().checkLessonAnswer({ x: 0, y: 0 });
+      useGameStore.getState().checkLessonAnswer({ x: 1, y: 0 });
+      useGameStore.getState().checkLessonAnswer({ x: 2, y: 0 });
+    });
+
+    const state = useGameStore.getState().lessonInteraction;
+    expect(state.attempts).toBe(3);
+    expect(state.answerRevealed).toBe(true);
+    expect(state.awaitingClick).toBe(true);
   });
 
   it('acceptRadius allows nearby clicks', () => {
@@ -125,6 +150,7 @@ describe('lesson interaction state', () => {
     expect(s.lessonInteraction.awaitingClick).toBe(false);
     expect(s.lessonInteraction.prompt).toBeNull();
     expect(s.lessonInteraction.attempts).toBe(0);
+    expect(s.lessonInteraction.answerRevealed).toBe(false);
   });
 
   it('completeLesson records progress and returns to the learning path', () => {
