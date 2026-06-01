@@ -3,6 +3,11 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { CONCEPTS } from '@/lib/concepts/concept-data';
+import {
+  findLessonForConcept,
+  findProblemCategoryForConcept,
+  problemCategoryTitle,
+} from '@/lib/learning-path/concept-practice';
 import { useConceptStore } from '@/stores/concept-store';
 import { useGameStore } from '@/stores/game-store';
 import type { Concept, ConceptCategory, MasteryLevel } from '@/lib/concepts/types';
@@ -46,9 +51,16 @@ export function SkillTree() {
   const getStats = useConceptStore((s) => s.getStats);
   const getUnlockedConcepts = useConceptStore((s) => s.getUnlockedConcepts);
   const returnToGame = useGameStore((s) => s.returnToGame);
+  const showLearningPath = useGameStore((s) => s.showLearningPath);
+  const showProblems = useGameStore((s) => s.showProblems);
+  const startLesson = useGameStore((s) => s.startLesson);
 
   const stats = getStats();
   const unlocked = new Set(getUnlockedConcepts());
+  const selectedLesson = selectedConcept ? findLessonForConcept(selectedConcept.id) : null;
+  const selectedProblemCategory = selectedConcept
+    ? findProblemCategoryForConcept(selectedConcept.id)
+    : null;
 
   const conceptsByCategory = CATEGORY_ORDER.map((cat) => ({
     category: cat,
@@ -170,6 +182,38 @@ export function SkillTree() {
                 Encountered {getMastery(selectedConcept.id).encounterCount} times
               </p>
             )}
+            <div className="mt-4 border-t pt-3" style={{ borderColor: COLORS.border }}>
+              <p className="text-xs font-semibold uppercase" style={{ color: COLORS.textDim }}>
+                Practice this
+              </p>
+              <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                {selectedLesson && (
+                  <button
+                    onClick={() => startLesson(selectedLesson.id)}
+                    className="rounded-lg px-3 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
+                    style={{ backgroundColor: COLORS.accent, color: COLORS.bg }}
+                  >
+                    Start lesson: {selectedLesson.title}
+                  </button>
+                )}
+                {selectedProblemCategory && (
+                  <button
+                    onClick={() => showProblems(selectedProblemCategory)}
+                    className="rounded-lg px-3 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
+                    style={{ backgroundColor: COLORS.cardHover, color: COLORS.text, border: `1px solid ${COLORS.border}` }}
+                  >
+                    Practice {problemCategoryTitle(selectedProblemCategory).toLowerCase()} problems
+                  </button>
+                )}
+                <button
+                  onClick={showLearningPath}
+                  className="rounded-lg px-3 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: COLORS.cardHover, color: COLORS.text, border: `1px solid ${COLORS.border}` }}
+                >
+                  Learning path
+                </button>
+              </div>
+            </div>
           </motion.div>
         )}
 
