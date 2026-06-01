@@ -15,6 +15,8 @@ import {
 import { COLORS } from '@/utils/colors';
 import { useReviewStore } from '@/stores/review-store';
 import { useConceptStore } from '@/stores/concept-store';
+import { getPrimarySolutionLine } from '@/lib/problems/solution-review';
+import { ProblemSolutionOverlay, ProblemSolutionPanel } from './ProblemSolutionReview';
 import type { BoardSize } from '@/lib/go-engine/types';
 import type { ProblemCategory } from '@/lib/problems/types';
 
@@ -174,6 +176,8 @@ export function ProblemView() {
   if (!problem || !currentProblemId) return null;
 
   const playerColor = problem.playerColor;
+  const solutionSteps = getPrimarySolutionLine(problem);
+  const revealSolution = problemInteraction.status !== 'playing';
 
   return (
     <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
@@ -237,6 +241,10 @@ export function ProblemView() {
                     />
                   );
                 }),
+              )}
+
+              {revealSolution && (
+                <ProblemSolutionOverlay steps={solutionSteps} boardSize={boardSize} stoneRadius={r} />
               )}
 
               {/* Feedback animation */}
@@ -347,6 +355,10 @@ export function ProblemView() {
                 {problemInteraction.feedback}
               </p>
             </motion.div>
+          )}
+
+          {revealSolution && (
+            <ProblemSolutionPanel steps={solutionSteps} boardSize={boardSize} />
           )}
 
           {/* Attempts counter */}
