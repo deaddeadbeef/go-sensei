@@ -4,8 +4,10 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ProblemView } from '@/components/problems/ProblemView';
 import { PROBLEMS } from '@/lib/problems/problem-data';
+import { useConceptStore } from '@/stores/concept-store';
 import { useGameStore } from '@/stores/game-store';
 import { useProgressStore } from '@/stores/progress-store';
+import { useReviewStore } from '@/stores/review-store';
 
 class ResizeObserverMock {
   observe() {}
@@ -23,6 +25,8 @@ describe('ProblemView filtered practice flow', () => {
     vi.stubGlobal('ResizeObserver', ResizeObserverMock);
     act(() => {
       useProgressStore.getState().resetAll();
+      useReviewStore.getState().resetAll();
+      useConceptStore.getState().resetAll();
       useGameStore.getState().startNewGame(9);
       useGameStore.getState().showProblems('capture');
     });
@@ -82,5 +86,32 @@ describe('ProblemView filtered practice flow', () => {
 
     expect(useGameStore.getState().appPhase).toBe('problems');
     expect(useGameStore.getState().preferredProblemFilter).toBe('capture');
+  });
+
+  it('returns learners to the path when recommended filtered practice is satisfied', () => {
+    act(() => {
+      useProgressStore.setState({
+        completedLessons: ['groups', 'liberties', 'capture', 'territory', 'eyes'],
+        hasStartedIntroGame: true,
+        problemAttempts: [
+          { problemId: 'capture-001', solved: true, attempts: 1, moveSequence: [], timestamp: 1 },
+          { problemId: 'capture-002', solved: true, attempts: 1, moveSequence: [], timestamp: 1 },
+          { problemId: 'capture-003', solved: true, attempts: 1, moveSequence: [], timestamp: 1 },
+          { problemId: 'life-001', solved: true, attempts: 1, moveSequence: [], timestamp: 1 },
+        ],
+      });
+      useGameStore.getState().showProblems('life-and-death');
+      useGameStore.getState().startProblem(problemById('life-002'));
+      useGameStore.getState().submitProblemMove({ x: 1, y: 1 });
+    });
+
+    render(<ProblemView />);
+
+    expect(screen.getByText('Practice goal met')).toBeTruthy();
+    expect(screen.getByText(/Return to the path for:/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Continue learning path' }));
+
+    expect(useGameStore.getState().appPhase).toBe('path');
   });
 });

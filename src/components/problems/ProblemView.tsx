@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useRef, useEffect, useState } from 'react';
+import { useCallback, useRef, useEffect, useMemo, useState } from 'react';
 import { useGameStore } from '@/stores/game-store';
+import { useProgressStore } from '@/stores/progress-store';
 import { PROBLEMS } from '@/lib/problems/problem-data';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -16,11 +17,12 @@ import { COLORS } from '@/utils/colors';
 import { useReviewStore } from '@/stores/review-store';
 import { useConceptStore } from '@/stores/concept-store';
 import { problemCategoryTitle } from '@/lib/learning-path/concept-practice';
+import { getLearningRecommendation } from '@/lib/learning-path/recommendations';
 import { getPrimarySolutionLine } from '@/lib/problems/solution-review';
 import { ProblemReadingPlan } from './ProblemReadingPlan';
 import { ProblemSolutionOverlay, ProblemSolutionPanel } from './ProblemSolutionReview';
 import type { BoardSize } from '@/lib/go-engine/types';
-import type { ProblemCategory } from '@/lib/problems/types';
+import type { ProblemAttempt, ProblemCategory } from '@/lib/problems/types';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -35,6 +37,22 @@ const PROBLEM_CONCEPTS: Record<ProblemCategory, string[]> = {
   reading: ['reading', 'ladder', 'net', 'connect-and-cut'],
   endgame: ['sente-gote', 'endgame-counting'],
 };
+
+function withoutLatestAttemptForProblem(
+  problemAttempts: ProblemAttempt[],
+  problemId: string,
+): ProblemAttempt[] {
+  for (let index = problemAttempts.length - 1; index >= 0; index -= 1) {
+    if (problemAttempts[index].problemId === problemId) {
+      return [
+        ...problemAttempts.slice(0, index),
+        ...problemAttempts.slice(index + 1),
+      ];
+    }
+  }
+
+  return problemAttempts;
+}
 
 // ---------------------------------------------------------------------------
 // Board sub-components
@@ -101,8 +119,15 @@ export function ProblemView() {
   const resetProblem = useGameStore((s) => s.resetProblem);
   const requestProblemHint = useGameStore((s) => s.requestProblemHint);
   const showProblems = useGameStore((s) => s.showProblems);
+  const showLearningPath = useGameStore((s) => s.showLearningPath);
   const startProblem = useGameStore((s) => s.startProblem);
   const preferredProblemFilter = useGameStore((s) => s.preferredProblemFilter);
+  const completedLessons = useProgressStore((s) => s.completedLessons);
+  const problemAttempts = useProgressStore((s) => s.problemAttempts);
+  const hasStartedIntroGame = useProgressStore((s) => s.hasStartedIntroGame);
+  const reviewCards = useReviewStore((s) => s.cards);
+  const getDueCount = useReviewStore((s) => s.getDueCount);
+  const mastery = useConceptStore((s) => s.mastery);
   const recordAttempt = useReviewStore((s) => s.recordAttempt);
   const recordEvidence = useConceptStore((s) => s.recordEvidence);
 
@@ -145,6 +170,37 @@ export function ProblemView() {
   const scopedProblemLabel = scopedProblemFilter
     ? problemCategoryTitle(scopedProblemFilter).toLowerCase()
     : null;
+  const dueReviewCount = useMemo(() => {
+    void reviewCards;
+    return getDueCount();
+  }, [getDueCount, reviewCards]);
+  const learningRecommendation = useMemo(
+    () => getLearningRecommendation({
+      completedLessons,
+      problemAttempts,
+      dueReviewCount,
+      hasStartedIntroGame,
+      mastery: Object.values(mastery),
+    }),
+    [completedLessons, problemAttempts, dueReviewCount, hasStartedIntroGame, mastery],
+  );
+  const preSolveLearningRecommendation = useMemo(
+    () => getLearningRecommendation({
+      completedLessons,
+      problemAttempts: currentProblemId
+        ? withoutLatestAttemptForProblem(problemAttempts, currentProblemId)
+        : problemAttempts,
+      dueReviewCount,
+      hasStartedIntroGame,
+      mastery: Object.values(mastery),
+    }),
+    [completedLessons, problemAttempts, currentProblemId, dueReviewCount, hasStartedIntroGame, mastery],
+  );
+  const practiceTargetMet = problemInteraction.status === 'solved'
+    && scopedProblemFilter !== null
+    && preSolveLearningRecommendation.kind === 'problem'
+    && preSolveLearningRecommendation.filter === scopedProblemFilter
+    && (learningRecommendation.kind !== 'problem' || learningRecommendation.filter !== scopedProblemFilter);
 
   const handleBoardClick = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
     if (!problem || !problemInteraction.active || problemInteraction.status !== 'playing') return;
@@ -378,6 +434,22 @@ export function ProblemView() {
             <ProblemSolutionPanel steps={solutionSteps} boardSize={boardSize} />
           )}
 
+          {practiceTargetMet && (
+            <motion.div
+              className="mb-3 rounded-lg p-3"
+              style={{ backgroundColor: `${COLORS.ui.accent}15`, border: `1px solid ${COLORS.ui.accent}45` }}
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <h3 className="text-sm font-bold" style={{ color: COLORS.ui.accent }}>
+                Practice goal met
+              </h3>
+              <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+                Return to the path for: {learningRecommendation.title}.
+              </p>
+            </motion.div>
+          )}
+
           {/* Attempts counter */}
           {problemInteraction.status === 'playing' && problemInteraction.attempts > 0 && (
             <p className="mb-3 text-xs" style={{ color: COLORS.ui.textSecondary }}>
@@ -445,7 +517,16 @@ export function ProblemView() {
                 Try Again
               </button>
             )}
-            {problemInteraction.status === 'solved' && nextProblem && (
+            {practiceTargetMet && (
+              <button
+                onClick={showLearningPath}
+                className="flex-1 px-4 py-2.5 rounded-lg text-sm font-bold transition-transform hover:scale-[1.02] active:scale-95"
+                style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
+              >
+                Continue learning path
+              </button>
+            )}
+            {problemInteraction.status === 'solved' && !practiceTargetMet && nextProblem && (
               <button
                 onClick={() => startProblem(nextProblem)}
                 className="flex-1 px-4 py-2.5 rounded-lg text-sm font-bold transition-transform hover:scale-[1.02] active:scale-95"
