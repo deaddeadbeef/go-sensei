@@ -168,6 +168,7 @@ interface LessonInteraction {
   acceptRadius: number;
   attempts: number;
   feedback: 'correct' | 'wrong' | null;
+  answerRevealed: boolean;
 }
 
 interface ProblemInteraction {
@@ -412,6 +413,7 @@ const defaultLessonInteraction: LessonInteraction = {
   acceptRadius: 0,
   attempts: 0,
   feedback: null,
+  answerRevealed: false,
 };
 
 const defaultProblemInteraction: ProblemInteraction = {
@@ -765,6 +767,7 @@ export const useGameStore = create<GameStore>()(
         acceptRadius: config.acceptRadius,
         attempts: 0,
         feedback: null,
+        answerRevealed: false,
       },
     });
   },
@@ -783,11 +786,13 @@ export const useGameStore = create<GameStore>()(
       });
       return 'correct';
     } else {
+      const attempts = lessonInteraction.attempts + 1;
       set({
         lessonInteraction: {
           ...lessonInteraction,
           feedback: 'wrong',
-          attempts: lessonInteraction.attempts + 1,
+          attempts,
+          answerRevealed: attempts >= 3,
         },
       });
       return 'wrong';
