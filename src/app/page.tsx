@@ -45,12 +45,6 @@ export default function GamePage() {
   const { sendPlayerMove, sendMessage, requestHint, requestReview } = useGoMaster();
   const { authState, isLoggedIn, startLogin, logout } = useGitHubAuth();
 
-  useEffect(() => {
-    if (!isLoggedIn) {
-      setTimeout(() => setShowSettings(true), 1500);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
   useHesitationDetector(requestHint);
 
   const welcomeShown = useRef(false);
