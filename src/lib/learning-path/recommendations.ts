@@ -2,6 +2,12 @@ import type { ConceptMastery } from '@/lib/concepts/types';
 import { LESSONS } from '@/lib/lessons/lesson-data';
 import { PROBLEMS } from '@/lib/problems/problem-data';
 import type { ProblemAttempt, ProblemCategory } from '@/lib/problems/types';
+import {
+  LESSON_TO_CONCEPTS,
+  LESSON_TO_PROBLEM_CATEGORY,
+  PROBLEM_CATEGORY_TO_CONCEPTS,
+  problemCategoryTitle,
+} from '@/lib/learning-path/concept-practice';
 
 interface RecommendationGuidance {
   title: string;
@@ -44,36 +50,6 @@ const GUIDED_GAME_MIN_SOLVED_PROBLEMS = 2;
 const WEAK_MASTERY_LEVEL = 2;
 
 const KNOWN_LESSON_IDS = new Set(LESSONS.map((lesson) => lesson.id));
-
-const LESSON_TO_CONCEPTS: Record<string, string[]> = {
-  groups: ['groups'],
-  liberties: ['liberties'],
-  capture: ['capture', 'atari'],
-  territory: ['territory'],
-  eyes: ['eyes', 'life-and-death'],
-  ko: ['ko'],
-  ladder: ['ladder', 'reading'],
-  net: ['net'],
-  snapback: ['snapback', 'tesuji'],
-  'territory-vs-influence': ['territory', 'influence', 'thickness'],
-};
-
-const LESSON_TO_PROBLEM_CATEGORY: Partial<Record<string, ProblemCategory>> = {
-  capture: 'capture',
-  eyes: 'life-and-death',
-  ladder: 'reading',
-  net: 'reading',
-  snapback: 'tesuji',
-  'territory-vs-influence': 'endgame',
-};
-
-const PROBLEM_CATEGORY_TO_CONCEPTS: Record<ProblemCategory, string[]> = {
-  capture: ['capture', 'atari', 'liberties'],
-  'life-and-death': ['eyes', 'life-and-death'],
-  tesuji: ['tesuji', 'snapback', 'throw-in'],
-  reading: ['reading', 'ladder', 'net'],
-  endgame: ['sente-gote', 'endgame-counting', 'territory'],
-};
 
 export function getLearningRecommendation(input: RecommendationInput): LearningRecommendation {
   const completedLessonIds = new Set(
@@ -275,19 +251,4 @@ function getLatestPracticeCategory(completedLessonIds: Set<string>): ProblemCate
   }
 
   return null;
-}
-
-function problemCategoryTitle(category: ProblemCategory): string {
-  switch (category) {
-    case 'capture':
-      return 'Capture';
-    case 'life-and-death':
-      return 'Life and death';
-    case 'tesuji':
-      return 'Tesuji';
-    case 'reading':
-      return 'Reading';
-    case 'endgame':
-      return 'Endgame';
-  }
 }
