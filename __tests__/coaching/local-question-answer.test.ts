@@ -195,7 +195,34 @@ describe('local question answer', () => {
 
     expect(answer?.text).toContain('empty space your stones surround');
     expect(answer?.text).toContain('corners and edges');
+    expect(answer?.text).toContain('I marked the easiest territory starting points on this board');
     expect(answer?.conceptIds).toEqual(expect.arrayContaining(['territory', 'corner-opening']));
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-territory-move-2,2',
+        point: { x: 2, y: 2 },
+        rank: 1,
+        reason: 'Start at C7: the board edge helps this stone make territory.',
+      },
+      {
+        id: 'local-territory-move-6,2',
+        point: { x: 6, y: 2 },
+        rank: 2,
+        reason: 'Start at G7: the board edge helps this stone make territory.',
+      },
+      {
+        id: 'local-territory-move-2,6',
+        point: { x: 2, y: 6 },
+        rank: 3,
+        reason: 'Start at C3: the board edge helps this stone make territory.',
+      },
+      {
+        id: 'local-territory-move-6,6',
+        point: { x: 6, y: 6 },
+        rank: 4,
+        reason: 'Start at G3: the board edge helps this stone make territory.',
+      },
+    ]);
     expect(answer?.actions).toEqual([{ id: 'lesson:territory', label: 'Review territory' }]);
   });
 

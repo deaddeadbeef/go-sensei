@@ -224,6 +224,15 @@ function objectiveAction(objective: BeginnerObjective): SenseiAction | null {
   return null;
 }
 
+function objectiveSuggestions(objective: BeginnerObjective, boardSize: BoardSize, idPrefix: string): LocalSuggestionFocus[] {
+  return objective.targetPoints.slice(0, 4).map((point, index) => ({
+    id: `${idPrefix}-${pointKey(point)}`,
+    point: copyPoint(point),
+    rank: index + 1,
+    reason: suggestionReason(objective, point, boardSize),
+  }));
+}
+
 function buildObjectiveAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer | null {
   const objective = getBeginnerObjective({
     boardSize: game.board.size,
@@ -237,12 +246,7 @@ function buildObjectiveAnswer(game: GameState, teachingLevel: TeachingLevel): Lo
   if (!objective) return null;
 
   const targetText = formatObjectiveTargetText(objective, game.board.size);
-  const suggestions = objective.targetPoints.slice(0, 4).map((point, index) => ({
-    id: `local-objective-move-${pointKey(point)}`,
-    point: copyPoint(point),
-    rank: index + 1,
-    reason: suggestionReason(objective, point, game.board.size),
-  }));
+  const suggestions = objectiveSuggestions(objective, game.board.size, 'local-objective-move');
   const action = objectiveAction(objective);
 
   return {
@@ -257,6 +261,42 @@ function buildObjectiveAnswer(game: GameState, teachingLevel: TeachingLevel): Lo
     ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
     ...(action ? { actions: [action] } : {}),
   };
+}
+
+interface TerritoryContext {
+  sentence: string;
+  boardFocus: LocalBoardFocus;
+  conceptIds: string[];
+}
+
+function buildTerritoryContext(game: GameState, teachingLevel: TeachingLevel): TerritoryContext | null {
+  const objective = getBeginnerObjective({
+    boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
+    moveCount: game.moveHistory.length,
+    currentPlayer: game.currentPlayer,
+    teachingLevel,
+  });
+
+  if (!objective || objective.id === 'look-for-weak-groups') return null;
+
+  const suggestions = objectiveSuggestions(objective, game.board.size, 'local-territory-move');
+  if (!suggestions.length) return null;
+
+  const sentence = objective.id === 'claim-corner'
+    ? 'I marked the easiest territory starting points on this board: corners already have two edges helping you.'
+    : 'I marked extension points that help your stones sketch a loose border without touching too closely.';
+
+  return {
+    sentence,
+    boardFocus: { suggestions },
+    conceptIds: objective.conceptIds,
+  };
+}
+
+function uniqueConceptIds(conceptIds: string[]): string[] {
+  return [...new Set(conceptIds)];
 }
 
 function normalizedQuestion(question: string): string {
@@ -313,10 +353,13 @@ export function getLocalQuestionAnswer(
   }
 
   if (q.includes('territory')) {
+    const territoryContext = buildTerritoryContext(game, teachingLevel);
+
     return {
-      text: 'Territory is empty space your stones surround well enough that the opponent cannot safely live inside. Beginners should start with corners and edges because the board edge helps form the border.',
-      conceptIds: ['territory', 'corner-opening'],
+      text: `Territory is empty space your stones surround well enough that the opponent cannot safely live inside. Beginners should start with corners and edges because the board edge helps form the border.${territoryContext ? ` ${territoryContext.sentence}` : ''}`,
+      conceptIds: uniqueConceptIds(['territory', 'corner-opening', ...(territoryContext?.conceptIds ?? [])]),
       actions: [{ id: 'lesson:territory', label: 'Review territory' }],
+      ...(territoryContext ? { boardFocus: territoryContext.boardFocus } : {}),
     };
   }
 

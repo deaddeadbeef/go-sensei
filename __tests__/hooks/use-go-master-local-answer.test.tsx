@@ -203,14 +203,14 @@ describe('useGoMaster local answers', () => {
     expect(useGameStore.getState().overlays.groups).toHaveLength(1);
 
     act(() => {
-      result.current.sendMessage('How does territory work?');
+      result.current.sendMessage('What is ko?');
     });
 
     const state = useGameStore.getState();
 
     expect(fetchSpy).not.toHaveBeenCalled();
-    expect(state.bubble.text).toContain('Territory is empty space');
-    expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'lesson:territory', label: 'Review territory' }]);
+    expect(state.bubble.text).toContain('Ko is the rule');
+    expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'lesson:ko', label: 'Review ko' }]);
     expect(state.overlays.suggestions).toEqual([]);
     expect(state.overlays.liberties).toEqual([]);
     expect(state.overlays.groups).toEqual([]);
