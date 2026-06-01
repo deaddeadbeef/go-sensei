@@ -1,10 +1,11 @@
 "use client";
 import { useGameStore } from '@/stores/game-store';
 import { useTypewriter } from '@/hooks/useTypewriter';
+import { useGoMaster } from '@/hooks/useGoMaster';
 import { COLORS } from '@/utils/colors';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BUBBLE_SLIDE_IN, BUBBLE_AUTO_DISMISS } from '@/utils/animation';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 
 const variantStyles: Record<string, { borderColor: string; icon: string }> = {
   neutral: { borderColor: COLORS.ui.accent, icon: '🎓' },
@@ -17,6 +18,7 @@ const variantStyles: Record<string, { borderColor: string; icon: string }> = {
 export function SenseiBubble() {
   const bubble = useGameStore((s) => s.bubble);
   const dismissBubble = useGameStore((s) => s.dismissBubble);
+  const { requestHint } = useGoMaster();
   const { displayedText, isComplete } = useTypewriter(bubble.text);
 
   useEffect(() => {
@@ -26,6 +28,12 @@ export function SenseiBubble() {
   }, [bubble.visible, isComplete, bubble.actions.length, dismissBubble]);
 
   const style = variantStyles[bubble.variant] || variantStyles.neutral;
+  const handleAction = useCallback((actionId: string) => {
+    dismissBubble();
+    if (actionId === 'hint') {
+      requestHint();
+    }
+  }, [dismissBubble, requestHint]);
 
   return (
     <AnimatePresence>
@@ -75,7 +83,7 @@ export function SenseiBubble() {
                       backgroundColor: COLORS.ui.accent,
                       color: COLORS.ui.bgPrimary,
                     }}
-                    onClick={() => dismissBubble()}
+                    onClick={() => handleAction(action.id)}
                   >
                     {action.label}
                   </button>

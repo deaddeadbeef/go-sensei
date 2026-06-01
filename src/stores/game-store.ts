@@ -23,6 +23,7 @@ import type { MoveNode } from '@/lib/problems/types';
 import { PROBLEMS } from '@/lib/problems/problem-data';
 import { applyProblemMove, buildProblemGame } from '@/lib/problems/runtime';
 import type { ValidationResult } from '@/lib/problems/validator';
+import { useProgressStore } from './progress-store';
 
 // ---------------------------------------------------------------------------
 // Overlay types
@@ -373,7 +374,10 @@ const defaultOverlays = {
 
 export const useGameStore = create<GameStore>()(
   persist(
-    (set, get) => ({
+    (set, get) => {
+      const progress = useProgressStore.getState();
+
+      return ({
   // ---- Initial state ----
   game: createGame(19),
 
@@ -399,7 +403,7 @@ export const useGameStore = create<GameStore>()(
   currentProblemId: null,
   preferredProblemFilter: null,
   problemInteraction: { ...defaultProblemInteraction },
-  problemAttempts: [],
+  problemAttempts: progress.problemAttempts,
 
   territory: null,
   scorecard: null,
@@ -419,8 +423,8 @@ export const useGameStore = create<GameStore>()(
   appPhase: 'path' as const,
   currentLessonId: null,
   currentStep: 0,
-  completedLessons: [],
-  hasStartedIntroGame: false,
+  completedLessons: progress.completedLessons,
+  hasStartedIntroGame: progress.hasStartedIntroGame,
 
   // ---- Actions ----
 
@@ -667,14 +671,20 @@ export const useGameStore = create<GameStore>()(
 
   prevStep: () => set((state) => ({ currentStep: Math.max(0, state.currentStep - 1) })),
 
-  completeLesson: () => set((state) => ({
-    appPhase: 'lessons',
-    completedLessons: state.currentLessonId && !state.completedLessons.includes(state.currentLessonId)
-      ? [...state.completedLessons, state.currentLessonId]
-      : state.completedLessons,
-    currentLessonId: null,
-    currentStep: 0,
-  })),
+  completeLesson: () => {
+    const lessonId = get().currentLessonId;
+    if (lessonId) {
+      useProgressStore.getState().completeLesson(lessonId);
+    }
+    const nextProgress = useProgressStore.getState();
+
+    set({
+      appPhase: 'lessons',
+      completedLessons: nextProgress.completedLessons,
+      currentLessonId: null,
+      currentStep: 0,
+    });
+  },
 
   setLessonPrompt(config) {
     set({
@@ -780,17 +790,16 @@ export const useGameStore = create<GameStore>()(
         },
       });
       if (failed) {
+        const attempt = {
+          problemId: pi.problemId!,
+          solved: false,
+          attempts: newAttempts,
+          moveSequence: [...pi.playerMoves, point],
+          timestamp: Date.now(),
+        };
+        useProgressStore.getState().recordProblemAttempt(attempt);
         set((s) => ({
-          problemAttempts: [
-            ...s.problemAttempts,
-            {
-              problemId: pi.problemId!,
-              solved: false,
-              attempts: newAttempts,
-              moveSequence: [...pi.playerMoves, point],
-              timestamp: Date.now(),
-            },
-          ],
+          problemAttempts: [...s.problemAttempts, attempt],
         }));
       }
       return result;
@@ -811,17 +820,16 @@ export const useGameStore = create<GameStore>()(
           feedback: result.message ?? 'Solved!',
         },
       });
+      const attempt = {
+        problemId: pi.problemId!,
+        solved: true,
+        attempts: pi.attempts + 1,
+        moveSequence: newPlayerMoves,
+        timestamp: Date.now(),
+      };
+      useProgressStore.getState().recordProblemAttempt(attempt);
       set((s) => ({
-        problemAttempts: [
-          ...s.problemAttempts,
-          {
-            problemId: pi.problemId!,
-            solved: true,
-            attempts: pi.attempts + 1,
-            moveSequence: newPlayerMoves,
-            timestamp: Date.now(),
-          },
-        ],
+        problemAttempts: [...s.problemAttempts, attempt],
       }));
       return result;
     }
@@ -905,6 +913,7 @@ export const useGameStore = create<GameStore>()(
 
   // Meta
   startNewGame(size: BoardSize = 19) {
+    const nextProgress = useProgressStore.getState();
     set({
       game: createGame(size),
       hoveredPoint: null,
@@ -932,46 +941,55 @@ export const useGameStore = create<GameStore>()(
       currentStep: 0,
       currentProblemId: null,
       problemInteraction: { ...defaultProblemInteraction },
-      problemAttempts: [],
+      completedLessons: nextProgress.completedLessons,
+      hasStartedIntroGame: nextProgress.hasStartedIntroGame,
+      problemAttempts: nextProgress.problemAttempts,
     });
   },
 
-  startGuidedIntroGame: () => set({
-    game: createGame(9),
-    appPhase: 'game',
-    phase: 'playing',
-    teachingLevel: 'guided',
-    hoveredPoint: null,
-    hoveredGroup: null,
-    lastPlayerMove: null,
-    lastAiMove: null,
-    isAiThinking: false,
-    overlays: { ...defaultOverlays },
-    pendingCaptures: [],
-    chatMessages: [],
-    lesson: { ...defaultLesson },
-    lessonInteraction: { ...defaultLessonInteraction },
-    scorecard: null,
-    territory: null,
-    deadStones: [],
-    koRejection: null,
-    lastInteractionTime: Date.now(),
-    hesitationLevel: 'none',
-    hintOffered: false,
-    currentLessonId: null,
-    currentStep: 0,
-    currentProblemId: null,
-    preferredProblemFilter: null,
-    problemInteraction: { ...defaultProblemInteraction },
-    bubble: {
-      ...defaultBubble,
-      visible: true,
-      text: 'This is a 9x9 board. Your first goal is simple: play near a corner and learn why corners are easier to surround.',
-      variant: 'teaching',
-      streamingComplete: true,
-    },
-    hasStartedIntroGame: true,
-  }),
+  startGuidedIntroGame: () => {
+    useProgressStore.getState().markIntroGameStarted();
+    const nextProgress = useProgressStore.getState();
+
+    set({
+      game: createGame(9),
+      appPhase: 'game',
+      phase: 'playing',
+      teachingLevel: 'guided',
+      hoveredPoint: null,
+      hoveredGroup: null,
+      lastPlayerMove: null,
+      lastAiMove: null,
+      isAiThinking: false,
+      overlays: { ...defaultOverlays },
+      pendingCaptures: [],
+      chatMessages: [],
+      lesson: { ...defaultLesson },
+      lessonInteraction: { ...defaultLessonInteraction },
+      scorecard: null,
+      territory: null,
+      deadStones: [],
+      koRejection: null,
+      lastInteractionTime: Date.now(),
+      hesitationLevel: 'none',
+      hintOffered: false,
+      currentLessonId: null,
+      currentStep: 0,
+      currentProblemId: null,
+      preferredProblemFilter: null,
+      problemInteraction: { ...defaultProblemInteraction },
+      completedLessons: nextProgress.completedLessons,
+      problemAttempts: nextProgress.problemAttempts,
+      bubble: {
+        ...defaultBubble,
+        visible: true,
+        text: 'This is a 9x9 board. Your first goal is simple: play near a corner and learn why corners are easier to surround.',
+        variant: 'teaching',
+        streamingComplete: true,
+      },
+      hasStartedIntroGame: true,
+    });
+  },
 
   addLearnedConcept(concept: string) {
     set((s) => ({
@@ -988,7 +1006,8 @@ export const useGameStore = create<GameStore>()(
   setPhase(phase) {
     set({ phase });
   },
-    }),
+    });
+  },
     {
       name: 'go-sensei-game',
       storage: createJSONStorage(() => sessionStorage, {
@@ -1011,10 +1030,7 @@ export const useGameStore = create<GameStore>()(
         phase: state.phase,
         learnedConcepts: state.learnedConcepts,
         teachingLevel: state.teachingLevel,
-        completedLessons: state.completedLessons,
-        hasStartedIntroGame: state.hasStartedIntroGame,
         appPhase: state.appPhase,
-        problemAttempts: state.problemAttempts,
       }),
     },
   ),

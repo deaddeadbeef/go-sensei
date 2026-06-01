@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useGameStore } from '@/stores/game-store';
 import { useConceptStore } from '@/stores/concept-store';
 import { useReviewStore } from '@/stores/review-store';
+import { useProgressStore } from '@/stores/progress-store';
 import { LESSONS } from '@/lib/lessons/lesson-data';
 import { PROBLEMS } from '@/lib/problems/problem-data';
 
@@ -63,10 +64,14 @@ function ProgressBar({ value, max, color }: { value: number; max: number; color:
 }
 
 export function ProgressDashboard() {
-  const completedLessons = useGameStore((s) => s.completedLessons);
-  const problemAttempts = useGameStore((s) => s.problemAttempts);
+  const completedLessons = useProgressStore((s) => s.completedLessons);
+  const problemAttempts = useProgressStore((s) => s.problemAttempts);
   const conceptStats = useConceptStore((s) => s.getStats)();
-  const reviewStats = useReviewStore((s) => s.getReviewStats)();
+  const reviewStats = useReviewStore((s) => {
+    void s.cards;
+    void s.history;
+    return s.getReviewStats();
+  });
   const returnToGame = useGameStore((s) => s.returnToGame);
   const showLessons = useGameStore((s) => s.showLessons);
   const showProblems = useGameStore((s) => s.showProblems);

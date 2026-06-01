@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { LESSONS } from '@/lib/lessons/lesson-data';
 import { useGameStore } from '@/stores/game-store';
+import { useProgressStore } from '@/stores/progress-store';
 import { COLORS } from '@/utils/colors';
 
 const container = {
@@ -23,7 +24,7 @@ const card = {
 };
 
 export function LessonPicker() {
-  const completedLessons = useGameStore((s) => s.completedLessons);
+  const completedLessons = useProgressStore((s) => s.completedLessons);
   const startLesson = useGameStore((s) => s.startLesson);
   const returnToGame = useGameStore((s) => s.returnToGame);
 

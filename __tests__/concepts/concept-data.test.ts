@@ -57,4 +57,8 @@ describe('concept-data', () => {
     const roots = CONCEPTS.filter((c) => c.prerequisites.length === 0);
     expect(roots.length).toBeGreaterThan(0);
   });
+
+  it('includes reading as a trackable tactical concept', () => {
+    expect(CONCEPTS.some((c) => c.id === 'reading' && c.category === 'tactics')).toBe(true);
+  });
 });

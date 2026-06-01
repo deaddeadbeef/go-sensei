@@ -51,7 +51,7 @@ const PROBLEM_CONCEPTS: Record<ProblemCategory, string[]> = {
   capture: ['capture', 'atari'],
   'life-and-death': ['eyes', 'life-and-death'],
   tesuji: ['tesuji'],
-  reading: ['ladder', 'net', 'connect-and-cut'],
+  reading: ['reading', 'ladder', 'net', 'connect-and-cut'],
   endgame: ['sente-gote', 'endgame-counting'],
 };
 

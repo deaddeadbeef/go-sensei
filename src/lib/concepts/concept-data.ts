@@ -68,18 +68,25 @@ export const CONCEPTS: Concept[] = [
     prerequisites: ['liberties', 'capture'],
   },
   {
+    id: 'reading',
+    name: 'Reading (Yomi)',
+    category: 'tactics',
+    description: 'Looking ahead through forcing moves, replies, and follow-ups before choosing a move.',
+    prerequisites: ['atari'],
+  },
+  {
     id: 'ladder',
     name: 'Ladder (Shicho)',
     category: 'tactics',
     description: 'A zigzag chase that captures a stone if no ladder-breaker exists.',
-    prerequisites: ['atari'],
+    prerequisites: ['reading'],
   },
   {
     id: 'net',
     name: 'Net (Geta)',
     category: 'tactics',
     description: 'Surrounding a stone loosely so it cannot escape — alternative to ladder.',
-    prerequisites: ['atari'],
+    prerequisites: ['reading'],
   },
   {
     id: 'snapback',
@@ -179,7 +186,7 @@ export const CONCEPTS: Concept[] = [
     name: 'Fighting',
     category: 'strategy',
     description: 'Complex tactical exchanges — reading multiple variations.',
-    prerequisites: ['tesuji', 'life-and-death'],
+    prerequisites: ['reading', 'tesuji', 'life-and-death'],
   },
 
   // === OPENING (3) ===

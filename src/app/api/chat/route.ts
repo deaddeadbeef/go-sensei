@@ -171,7 +171,7 @@ const TOOLS = [
                 type: 'string',
                 description:
                   'Concept ID from the known set: stones-and-board, liberties, capture, groups, eyes, ko, territory, scoring, ' +
-                  'atari, ladder, net, snapback, double-atari, connect-and-cut, throw-in, life-and-death, seki, tesuji, ' +
+                  'atari, reading, ladder, net, snapback, double-atari, connect-and-cut, throw-in, life-and-death, seki, tesuji, ' +
                   'influence, thickness, moyō, invasion-vs-reduction, shape, direction-of-play, fighting, ' +
                   'corner-opening, joseki, fuseki, sente-gote, endgame-counting',
               },
@@ -369,7 +369,7 @@ function executeTool(
     case 'evaluate_concepts': {
       const validIds = new Set([
         'stones-and-board', 'liberties', 'capture', 'groups', 'eyes', 'ko', 'territory', 'scoring',
-        'atari', 'ladder', 'net', 'snapback', 'double-atari', 'connect-and-cut', 'throw-in',
+        'atari', 'reading', 'ladder', 'net', 'snapback', 'double-atari', 'connect-and-cut', 'throw-in',
         'life-and-death', 'seki', 'tesuji', 'influence', 'thickness', 'moyō',
         'invasion-vs-reduction', 'shape', 'direction-of-play', 'fighting',
         'corner-opening', 'joseki', 'fuseki', 'sente-gote', 'endgame-counting',

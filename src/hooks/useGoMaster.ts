@@ -3,6 +3,7 @@
 import { useGameStore } from '@/stores/game-store';
 import { useConceptStore } from '@/stores/concept-store';
 import { useReviewStore } from '@/stores/review-store';
+import { useProgressStore } from '@/stores/progress-store';
 import { CONCEPTS } from '@/lib/concepts/concept-data';
 import { getLearningRecommendation } from '@/lib/learning-path/recommendations';
 import { getBeginnerObjective } from '@/lib/coaching/beginner-objectives';
@@ -13,6 +14,7 @@ import {
   formatHesitationMessage,
   formatReviewRequest,
   formatFreeTextMessage,
+  formatPassMessage,
 } from '@/lib/ai/format-board';
 import { useCallback, useRef } from 'react';
 import type { ConceptMastery } from '@/lib/concepts/types';
@@ -183,7 +185,6 @@ export function useGoMaster() {
   const addChatMessage = useGameStore((s) => s.addChatMessage);
   const recordEncounter = useConceptStore((s) => s.recordEncounter);
   const conceptMastery = useConceptStore((s) => s.mastery);
-  const dueReviewCount = useReviewStore((s) => s.getDueCount)();
 
   const historyRef = useRef<ChatMsg[]>([]);
 
@@ -195,14 +196,16 @@ export function useGoMaster() {
   const gameBody = useCallback(() => {
     const s = useGameStore.getState();
     const g = s.game;
+    const progress = useProgressStore.getState();
+    const dueReviewCount = useReviewStore.getState().getDueCount();
     const beginnerObjective = getBeginnerObjectiveForAiContext(g, s.teachingLevel);
     const guidedContext = s.teachingLevel === 'guided' || beginnerObjective
       ? buildGuidedContext(
         conceptMastery,
-        s.completedLessons,
-        s.problemAttempts,
+        progress.completedLessons,
+        progress.problemAttempts,
         dueReviewCount,
-        s.hasStartedIntroGame,
+        progress.hasStartedIntroGame,
         beginnerObjective,
       )
       : undefined;
@@ -218,7 +221,7 @@ export function useGoMaster() {
       teachingLevel: s.teachingLevel,
       guidedContext,
     };
-  }, [conceptMastery, dueReviewCount]);
+  }, [conceptMastery]);
 
   const applyTools = useCallback((results: ToolResult[]) => {
     for (const { toolName, args, result } of results) {
@@ -364,6 +367,11 @@ export function useGoMaster() {
   const sendPlayerMove = useCallback(
     (wasCapture: boolean, capturedCount: number) => {
       const g = useGameStore.getState().game;
+      const lastMove = g.moveHistory[g.moveHistory.length - 1];
+      if (lastMove?.type === 'pass') {
+        send(formatPassMessage(g));
+        return;
+      }
       send(g.moveHistory.length === 1 ? formatFirstMoveMessage(g) : formatMoveMessage(g, wasCapture, capturedCount));
     },
     [send],

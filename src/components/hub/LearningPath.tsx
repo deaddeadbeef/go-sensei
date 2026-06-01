@@ -3,13 +3,14 @@
 import { getLearningRecommendation } from '@/lib/learning-path/recommendations';
 import { useConceptStore } from '@/stores/concept-store';
 import { useGameStore } from '@/stores/game-store';
+import { useProgressStore } from '@/stores/progress-store';
 import { useReviewStore } from '@/stores/review-store';
 import { COLORS } from '@/utils/colors';
 
 export function LearningPath() {
-  const completedLessons = useGameStore((s) => s.completedLessons);
-  const problemAttempts = useGameStore((s) => s.problemAttempts);
-  const hasStartedIntroGame = useGameStore((s) => s.hasStartedIntroGame);
+  const completedLessons = useProgressStore((s) => s.completedLessons);
+  const problemAttempts = useProgressStore((s) => s.problemAttempts);
+  const hasStartedIntroGame = useProgressStore((s) => s.hasStartedIntroGame);
   const startGuidedIntroGame = useGameStore((s) => s.startGuidedIntroGame);
   const startLesson = useGameStore((s) => s.startLesson);
   const showLessons = useGameStore((s) => s.showLessons);
@@ -19,7 +20,10 @@ export function LearningPath() {
   const showDashboard = useGameStore((s) => s.showDashboard);
   const returnToGame = useGameStore((s) => s.returnToGame);
   const mastery = useConceptStore((s) => s.mastery);
-  const dueReviewCount = useReviewStore((s) => s.getDueCount)();
+  const dueReviewCount = useReviewStore((s) => {
+    void s.cards;
+    return s.getDueCount();
+  });
 
   const recommendation = getLearningRecommendation({
     completedLessons,
