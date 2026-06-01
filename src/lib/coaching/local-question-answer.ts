@@ -17,9 +17,17 @@ export interface LocalGroupFocus {
   label?: string;
 }
 
+export interface LocalSuggestionFocus {
+  id: string;
+  point: Point;
+  rank: number;
+  reason: string;
+}
+
 export interface LocalBoardFocus {
   liberties?: LocalLibertyFocus[];
   groups?: LocalGroupFocus[];
+  suggestions?: LocalSuggestionFocus[];
 }
 
 export interface LocalQuestionAnswer {
@@ -100,6 +108,21 @@ function findCurrentAtariGroup(game: GameState, lastMove: Extract<Move, { type: 
   return getAllGroups(game.board).find((group) => group.liberties.length === 1) ?? null;
 }
 
+function compareGroupsByAnchor(a: Group, b: Group): number {
+  const anchorA = groupAnchor(a);
+  const anchorB = groupAnchor(b);
+
+  return a.stones.length - b.stones.length
+    || anchorA.y - anchorB.y
+    || anchorA.x - anchorB.x;
+}
+
+function findLearnerCaptureTarget(game: GameState): Group | null {
+  return getAllGroups(game.board)
+    .filter((group) => group.color === 'white' && group.liberties.length === 1)
+    .sort(compareGroupsByAnchor)[0] ?? null;
+}
+
 function buildAtariContext(game: GameState, group: Group): LibertyContext {
   const anchor = groupAnchor(group);
   const anchorCoord = pointToCoord(anchor, game.board.size);
@@ -121,6 +144,38 @@ function buildAtariContext(game: GameState, group: Group): LibertyContext {
         color: group.color,
         liberties: group.liberties.length,
         label: `${colorName} group in atari: only liberty at ${libertyCoord}.`,
+      }],
+    },
+  };
+}
+
+function buildCaptureContext(game: GameState, group: Group): LibertyContext {
+  const anchor = groupAnchor(group);
+  const anchorCoord = pointToCoord(anchor, game.board.size);
+  const capturePoint = group.liberties[0];
+  const captureCoord = pointToCoord(capturePoint, game.board.size);
+
+  return {
+    sentence: ` I marked the white group at ${anchorCoord}; Black can capture it now by playing ${captureCoord}, its final liberty.`,
+    boardFocus: {
+      liberties: [{
+        id: `local-capture-liberties-${pointKey(anchor)}`,
+        point: copyPoint(anchor),
+        count: 1,
+        libertyPoints: [copyPoint(capturePoint)],
+      }],
+      groups: [{
+        id: `local-capture-group-${pointKey(anchor)}`,
+        stones: group.stones.map(copyPoint),
+        color: group.color,
+        liberties: group.liberties.length,
+        label: `White group ready to capture: final liberty at ${captureCoord}.`,
+      }],
+      suggestions: [{
+        id: `local-capture-move-${pointKey(capturePoint)}`,
+        point: copyPoint(capturePoint),
+        rank: 1,
+        reason: `Capture White by filling its last liberty at ${captureCoord}.`,
       }],
     },
   };
@@ -161,9 +216,13 @@ export function getLocalQuestionAnswer(
   }
 
   if (q.includes('capture') || q.includes('capturing')) {
+    const target = findLearnerCaptureTarget(game);
+    const captureContext = target ? buildCaptureContext(game, target) : null;
+
     return {
-      text: 'To capture, fill every liberty of one connected enemy group. Count the empty points directly touching that group, then play the final one when it cannot escape.',
+      text: `To capture, fill every liberty of one connected enemy group. Count the empty points directly touching that group, then play the final one when it cannot escape.${captureContext ? captureContext.sentence : ' When an enemy group has one liberty, that last liberty is the capture point.'}`,
       conceptIds: ['capture', 'liberties', 'groups'],
+      ...(captureContext ? { boardFocus: captureContext.boardFocus } : {}),
     };
   }
 

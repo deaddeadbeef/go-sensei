@@ -27,6 +27,7 @@ export function TeachingPanel() {
   const highlights = useGameStore((s) => s.overlays.highlights);
   const arrows = useGameStore((s) => s.overlays.arrows);
   const groups = useGameStore((s) => s.overlays.groups);
+  const suggestions = useGameStore((s) => s.overlays.suggestions);
   const game = useGameStore((s) => s.game);
   const teachingLevel = useGameStore((s) => s.teachingLevel);
   const boardSize = useGameStore((s) => s.game.board.size);
@@ -45,8 +46,9 @@ export function TeachingPanel() {
   const labeledHighlights = highlights.filter((h) => h.label);
   const labeledArrows = arrows.filter((a) => a.label);
   const labeledGroups = groups.filter((g) => g.label);
+  const labeledSuggestions = suggestions.filter((s) => s.reason);
 
-  const hasBoardAnalysis = labeledHighlights.length + labeledArrows.length + labeledGroups.length > 0;
+  const hasBoardAnalysis = labeledHighlights.length + labeledArrows.length + labeledGroups.length + labeledSuggestions.length > 0;
   const hasContent = insight !== null || hasBoardAnalysis;
 
   useEffect(() => {
@@ -95,6 +97,17 @@ export function TeachingPanel() {
                   Board Analysis
                 </div>
                 <div className="space-y-1">
+                  {labeledSuggestions.map((s) => (
+                    <div key={s.id} className="flex items-start gap-1.5">
+                      <span
+                        className="shrink-0 rounded px-1 py-0.5 text-[10px] font-mono font-bold leading-none"
+                        style={{ backgroundColor: `${variantColors.neutral}33`, color: variantColors.neutral }}
+                      >
+                        {coordLabel(s.point.x, s.point.y, boardSize)} #{s.rank}
+                      </span>
+                      <span className="text-xs text-white/70 leading-tight">{s.reason}</span>
+                    </div>
+                  ))}
                   {labeledHighlights.map((h) => (
                     <div key={h.id} className="flex items-start gap-1.5">
                       <span

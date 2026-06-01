@@ -5,6 +5,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useGoMaster } from '@/hooks/useGoMaster';
 import { useConceptStore } from '@/stores/concept-store';
 import { useGameStore } from '@/stores/game-store';
+import type { Point } from '@/lib/go-engine';
+
+function playStoreSequence(points: Point[]) {
+  for (const point of points) {
+    const result = useGameStore.getState().placeStone(point);
+    if (!result.success) {
+      throw new Error(`test setup move failed at ${point.x},${point.y}`);
+    }
+  }
+}
 
 describe('useGoMaster local answers', () => {
   beforeEach(() => {
@@ -49,5 +59,49 @@ describe('useGoMaster local answers', () => {
     expect(state.overlays.groups[0].label).toContain('This connected group has 4 liberties');
     expect(state.chatMessages.some((message) => message.variant === 'user' && message.text === 'What is a liberty?')).toBe(true);
     expect(useConceptStore.getState().getMastery('liberties').encounterCount).toBeGreaterThan(0);
+  });
+
+  it('answers capture questions by suggesting the final liberty on the board', () => {
+    act(() => {
+      useGameStore.getState().startGuidedIntroGame();
+      playStoreSequence([
+        { x: 2, y: 1 },
+        { x: 2, y: 2 },
+        { x: 2, y: 3 },
+        { x: 0, y: 0 },
+        { x: 1, y: 2 },
+        { x: 0, y: 1 },
+      ]);
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('How do I capture?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.text).toContain('Black can capture it now by playing D7');
+    expect(state.overlays.liberties).toEqual([{
+      id: 'local-capture-liberties-2,2',
+      point: { x: 2, y: 2 },
+      count: 1,
+      libertyPoints: [{ x: 3, y: 2 }],
+    }]);
+    expect(state.overlays.groups[0]).toMatchObject({
+      id: 'local-capture-group-2,2',
+      color: 'white',
+      liberties: 1,
+      label: 'White group ready to capture: final liberty at D7.',
+    });
+    expect(state.overlays.suggestions).toEqual([{
+      id: 'local-capture-move-3,2',
+      point: { x: 3, y: 2 },
+      rank: 1,
+      reason: 'Capture White by filling its last liberty at D7.',
+    }]);
+    expect(useConceptStore.getState().getMastery('capture').encounterCount).toBeGreaterThan(0);
   });
 });
