@@ -179,4 +179,40 @@ describe('useGoMaster local answers', () => {
     }]);
     expect(useConceptStore.getState().getMastery('capture').encounterCount).toBeGreaterThan(0);
   });
+
+  it('clears stale board overlays when a follow-up local answer has no board focus', () => {
+    act(() => {
+      useGameStore.getState().startGuidedIntroGame();
+      playStoreSequence([
+        { x: 2, y: 1 },
+        { x: 2, y: 2 },
+        { x: 2, y: 3 },
+        { x: 0, y: 0 },
+        { x: 1, y: 2 },
+        { x: 0, y: 1 },
+      ]);
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('How do I capture?');
+    });
+    expect(useGameStore.getState().overlays.suggestions).toHaveLength(1);
+    expect(useGameStore.getState().overlays.liberties).toHaveLength(1);
+    expect(useGameStore.getState().overlays.groups).toHaveLength(1);
+
+    act(() => {
+      result.current.sendMessage('How does territory work?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.text).toContain('Territory is empty space');
+    expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'lesson:territory', label: 'Review territory' }]);
+    expect(state.overlays.suggestions).toEqual([]);
+    expect(state.overlays.liberties).toEqual([]);
+    expect(state.overlays.groups).toEqual([]);
+  });
 });
