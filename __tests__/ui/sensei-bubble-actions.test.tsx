@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SenseiBubble } from '@/components/ui/SenseiBubble';
 import { useGameStore } from '@/stores/game-store';
 
@@ -49,5 +49,32 @@ describe('SenseiBubble actions', () => {
     expect(useGameStore.getState().appPhase).toBe('lesson');
     expect(useGameStore.getState().currentLessonId).toBe('territory');
     expect(useGameStore.getState().bubble.visible).toBe(false);
+  });
+
+  it('routes hint actions to local board guidance in guided games', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+    act(() => {
+      useGameStore.getState().showBubble({
+        text: 'Need a move?',
+        variant: 'teaching',
+        actions: [{ id: 'hint', label: 'Show me' }],
+      });
+    });
+
+    render(<SenseiBubble />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Show me' }, { timeout: 3000 }));
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.text).toContain('Your next job is: Start with a corner.');
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 2, y: 2 },
+      { x: 6, y: 2 },
+      { x: 2, y: 6 },
+      { x: 6, y: 6 },
+    ]);
   });
 });
