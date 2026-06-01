@@ -128,6 +128,8 @@ function initProblemState(problem: Problem): ProblemState {
 
 export function DailyReview() {
   const returnToGame = useGameStore((s) => s.returnToGame);
+  const showLearningPath = useGameStore((s) => s.showLearningPath);
+  const showProblems = useGameStore((s) => s.showProblems);
   const getDueProblems = useReviewStore((s) => s.getDueProblems);
   const recordAttempt = useReviewStore((s) => s.recordAttempt);
   const getReviewStats = useReviewStore((s) => s.getReviewStats);
@@ -282,13 +284,34 @@ export function DailyReview() {
               )}
             </>
           )}
-          <button
-            onClick={returnToGame}
-            className="px-6 py-2 rounded-lg text-sm font-medium transition-transform hover:scale-[1.02] active:scale-95"
-            style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
-          >
-            Back to Game
-          </button>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            {review.results.length === 0 && (
+              <button
+                onClick={() => showProblems()}
+                className="px-6 py-2 rounded-lg text-sm font-medium transition-transform hover:scale-[1.02] active:scale-95"
+                style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
+              >
+                Solve a problem
+              </button>
+            )}
+            <button
+              onClick={showLearningPath}
+              className="px-6 py-2 rounded-lg text-sm font-medium transition-opacity hover:opacity-90"
+              style={{
+                backgroundColor: review.results.length > 0 ? COLORS.ui.accent : COLORS.ui.bgCard,
+                color: review.results.length > 0 ? COLORS.ui.bgPrimary : COLORS.ui.textPrimary,
+              }}
+            >
+              Learning path
+            </button>
+            <button
+              onClick={returnToGame}
+              className="px-6 py-2 rounded-lg text-sm font-medium transition-opacity hover:opacity-90"
+              style={{ backgroundColor: COLORS.ui.bgCard, color: COLORS.ui.textSecondary }}
+            >
+              Back to Game
+            </button>
+          </div>
         </motion.div>
       </div>
     );
