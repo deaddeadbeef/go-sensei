@@ -1,6 +1,8 @@
 import { getAllGroups, getGroup, pointKey, pointToCoord } from '@/lib/go-engine';
-import type { GameState, Group, Move, Point } from '@/lib/go-engine/types';
+import type { BoardSize, GameState, Group, Move, Point } from '@/lib/go-engine/types';
 import type { TeachingLevel } from '@/lib/ai/system-prompt';
+import { formatObjectiveTargetText, getBeginnerObjective } from '@/lib/coaching/beginner-objectives';
+import type { BeginnerObjective } from '@/lib/coaching/beginner-objectives';
 import type { SenseiAction } from '@/lib/coaching/sensei-actions';
 
 export interface LocalLibertyFocus {
@@ -183,6 +185,80 @@ function buildCaptureContext(game: GameState, group: Group): LibertyContext {
   };
 }
 
+function isNextMoveQuestion(q: string): boolean {
+  return q.trim() === 'help'
+    || q.trim() === 'help me'
+    || /\bwhat\s+(should|do)\s+i\s+(do|play)\b/.test(q)
+    || /\bwhere\s+(should|do)\s+i\s+play\b/.test(q)
+    || /\bwhat\s+move\b/.test(q)
+    || /\bwhat\s+now\b/.test(q)
+    || /\bnext\s+move\b/.test(q)
+    || /\bshow\s+me\s+(a\s+)?move\b/.test(q)
+    || /\bhelp\s+me\s+(move|play|choose)\b/.test(q)
+    || /\bhint\b/.test(q);
+}
+
+function suggestionReason(objective: BeginnerObjective, point: Point, boardSize: BoardSize): string {
+  const coord = pointToCoord(point, boardSize);
+
+  if (objective.id === 'claim-corner') {
+    return `Start at ${coord}: the board edge helps this stone make territory.`;
+  }
+
+  if (objective.id === 'extend-from-stone') {
+    return `Try ${coord} as a one-space jump that works with your stones.`;
+  }
+
+  return `Give your group room by playing its liberty at ${coord}.`;
+}
+
+function objectiveAction(objective: BeginnerObjective): SenseiAction | null {
+  if (objective.conceptIds.includes('liberties') || objective.conceptIds.includes('groups')) {
+    return { id: 'lesson:liberties', label: 'Review liberties' };
+  }
+
+  if (objective.conceptIds.includes('territory') || objective.conceptIds.includes('corner-opening')) {
+    return { id: 'lesson:territory', label: 'Review territory' };
+  }
+
+  return null;
+}
+
+function buildObjectiveAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer | null {
+  const objective = getBeginnerObjective({
+    boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
+    moveCount: game.moveHistory.length,
+    currentPlayer: game.currentPlayer,
+    teachingLevel,
+  });
+
+  if (!objective) return null;
+
+  const targetText = formatObjectiveTargetText(objective, game.board.size);
+  const suggestions = objective.targetPoints.slice(0, 4).map((point, index) => ({
+    id: `local-objective-move-${pointKey(point)}`,
+    point: copyPoint(point),
+    rank: index + 1,
+    reason: suggestionReason(objective, point, game.board.size),
+  }));
+  const action = objectiveAction(objective);
+
+  return {
+    text: [
+      `Your next job is: ${objective.title}.`,
+      objective.instruction,
+      targetText ?? '',
+      objective.why,
+      suggestions.length > 0 ? 'I marked the best beginner targets on the board.' : '',
+    ].filter(Boolean).join(' '),
+    conceptIds: objective.conceptIds,
+    ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
+    ...(action ? { actions: [action] } : {}),
+  };
+}
+
 function normalizedQuestion(question: string): string {
   return question.toLowerCase().replace(/[^a-z0-9\s-]/g, ' ');
 }
@@ -196,6 +272,11 @@ export function getLocalQuestionAnswer(
 
   const q = normalizedQuestion(question);
   const lastMove = lastPlacedMove(game);
+
+  if (isNextMoveQuestion(q)) {
+    const objectiveAnswer = buildObjectiveAnswer(game, teachingLevel);
+    if (objectiveAnswer) return objectiveAnswer;
+  }
 
   if (/\blibert(y|ies)\b/.test(q) || q.includes('breathing room')) {
     const context = lastMove ? buildLibertyContext(game, lastMove.point, 'This connected group') : null;
