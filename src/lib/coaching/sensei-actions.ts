@@ -19,7 +19,9 @@ const practiceActionToCategory: Record<string, ProblemCategory> = {
 const lessonActionToId: Record<string, string> = {
   'lesson:liberties': 'liberties',
   'lesson:territory': 'territory',
+  'lesson:eyes': 'eyes',
   'lesson:ko': 'ko',
+  'lesson:ladder': 'ladder',
 };
 
 export function getSenseiActionRoute(actionId: string): SenseiActionRoute | null {

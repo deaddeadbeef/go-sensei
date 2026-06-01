@@ -399,7 +399,10 @@ export function getLocalQuestionAnswer(
     return {
       text: 'An eye is internal empty space your group controls. A group with two real eyes cannot be captured, because the opponent cannot fill both without playing illegal self-capture.',
       conceptIds: ['eyes', 'life-and-death'],
-      actions: [{ id: 'practice:life-and-death', label: 'Practice life & death' }],
+      actions: [
+        { id: 'lesson:eyes', label: 'Review eyes' },
+        { id: 'practice:life-and-death', label: 'Practice life & death' },
+      ],
     };
   }
 
@@ -418,7 +421,10 @@ export function getLocalQuestionAnswer(
     return {
       text: 'A ladder is a forcing chase where every move puts the running stones back into atari. Before starting one, read the path to the edge and check whether another stone breaks the chase.',
       conceptIds: ['ladder', 'reading', 'atari'],
-      actions: [{ id: 'practice:reading', label: 'Practice reading' }],
+      actions: [
+        { id: 'lesson:ladder', label: 'Review ladders' },
+        { id: 'practice:reading', label: 'Practice reading' },
+      ],
     };
   }
 

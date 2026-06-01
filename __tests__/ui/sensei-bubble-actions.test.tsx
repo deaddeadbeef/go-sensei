@@ -51,6 +51,24 @@ describe('SenseiBubble actions', () => {
     expect(useGameStore.getState().bubble.visible).toBe(false);
   });
 
+  it('routes later concept lesson actions to the matching checkpoint', async () => {
+    act(() => {
+      useGameStore.getState().showBubble({
+        text: 'Review eyes before trying life and death.',
+        variant: 'teaching',
+        actions: [{ id: 'lesson:eyes', label: 'Review eyes' }],
+      });
+    });
+
+    render(<SenseiBubble />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Review eyes' }, { timeout: 3000 }));
+
+    expect(useGameStore.getState().appPhase).toBe('lesson');
+    expect(useGameStore.getState().currentLessonId).toBe('eyes');
+    expect(useGameStore.getState().bubble.visible).toBe(false);
+  });
+
   it('routes hint actions to local board guidance in guided games', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
