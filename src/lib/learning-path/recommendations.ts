@@ -3,39 +3,32 @@ import { LESSONS } from '@/lib/lessons/lesson-data';
 import { PROBLEMS } from '@/lib/problems/problem-data';
 import type { ProblemAttempt, ProblemCategory } from '@/lib/problems/types';
 
+interface RecommendationGuidance {
+  title: string;
+  reason: string;
+  focusConcepts: string[];
+  actionLabel: string;
+  practicePlan: string[];
+}
+
 export type LearningRecommendation =
-  | {
+  | ({
       kind: 'guided_intro';
-      title: string;
-      reason: string;
-      focusConcepts: string[];
-    }
-  | {
+    } & RecommendationGuidance)
+  | ({
       kind: 'lesson';
       targetId: string;
-      title: string;
-      reason: string;
-      focusConcepts: string[];
-    }
-  | {
+    } & RecommendationGuidance)
+  | ({
       kind: 'problem';
       filter: ProblemCategory;
-      title: string;
-      reason: string;
-      focusConcepts: string[];
-    }
-  | {
+    } & RecommendationGuidance)
+  | ({
       kind: 'review';
-      title: string;
-      reason: string;
-      focusConcepts: string[];
-    }
-  | {
+    } & RecommendationGuidance)
+  | ({
       kind: 'guided_game';
-      title: string;
-      reason: string;
-      focusConcepts: string[];
-    };
+    } & RecommendationGuidance);
 
 export interface RecommendationInput {
   completedLessons: string[];
@@ -95,6 +88,12 @@ export function getLearningRecommendation(input: RecommendationInput): LearningR
       title: 'Review due concepts',
       reason: `${input.dueReviewCount} review item${input.dueReviewCount === 1 ? ' is' : 's are'} due before new material.`,
       focusConcepts: weakIntroducedConcepts,
+      actionLabel: 'Review due cards',
+      practicePlan: [
+        'Solve the due positions before opening new material.',
+        'Replay any missed solution line until the first move feels obvious.',
+        'Return here when reviews are clear for the day.',
+      ],
     };
   }
 
@@ -104,6 +103,12 @@ export function getLearningRecommendation(input: RecommendationInput): LearningR
       title: 'First 9x9 guided game',
       reason: 'Start on a small board with one clear goal at a time.',
       focusConcepts: ['corner-opening', 'territory', 'liberties'],
+      actionLabel: 'Start guided 9x9',
+      practicePlan: [
+        'Place the first stone near a corner instead of the center.',
+        'Use the glowing target as the next board idea to test.',
+        'Read the move insight after each turn and connect it to the board.',
+      ],
     };
   }
 
@@ -154,6 +159,12 @@ function lessonRecommendation(targetId: string, lessonTitle: string): LearningRe
     title: lessonTitle,
     reason: 'This is the next lesson in the learning path.',
     focusConcepts: [...(LESSON_TO_CONCEPTS[targetId] ?? [])],
+    actionLabel: 'Start lesson',
+    practicePlan: [
+      'Read the idea, then prove it on the board checkpoint.',
+      'Use the hint only after choosing your first answer.',
+      'Finish the lesson to unlock the next recommendation.',
+    ],
   };
 }
 
@@ -172,6 +183,12 @@ function problemRecommendation(
         ? `Practice capture until you solve ${remaining} more capture problem${remaining === 1 ? '' : 's'}.`
         : 'Practice problems reinforce the lessons you have already completed.',
     focusConcepts: [...PROBLEM_CATEGORY_TO_CONCEPTS[filter]],
+    actionLabel: `Open ${problemCategoryTitle(filter).toLowerCase()} problems`,
+    practicePlan: [
+      'Look for the forcing move before tapping the board.',
+      'If you miss three times, study the shown solution line.',
+      'Solve the same idea again later through review.',
+    ],
   };
 }
 
@@ -181,6 +198,12 @@ function guidedGameRecommendation(focusConcepts: string[]): LearningRecommendati
     title: 'Play a guided game',
     reason: 'You have enough lesson and problem practice to connect these ideas in play.',
     focusConcepts: [...focusConcepts],
+    actionLabel: 'Continue guided game',
+    practicePlan: [
+      'Choose a move that matches the current objective.',
+      'After the tutor replies, compare the move insight with your plan.',
+      'Keep weak groups connected before expanding territory.',
+    ],
   };
 }
 

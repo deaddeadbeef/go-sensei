@@ -1,0 +1,41 @@
+// @vitest-environment jsdom
+
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { LearningPath } from '@/components/hub/LearningPath';
+import { useConceptStore } from '@/stores/concept-store';
+import { useGameStore } from '@/stores/game-store';
+import { useProgressStore } from '@/stores/progress-store';
+
+describe('LearningPath', () => {
+  beforeEach(() => {
+    useProgressStore.getState().resetAll();
+    useConceptStore.getState().resetAll();
+    useGameStore.getState().startNewGame(19);
+    useGameStore.getState().showLearningPath();
+  });
+
+  afterEach(() => cleanup());
+
+  it('renders learner-facing concept names instead of raw concept ids', () => {
+    render(<LearningPath />);
+
+    expect(screen.getAllByText('Corner Openings').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Territory').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Liberties').length).toBeGreaterThan(0);
+    expect(screen.getByText('Start guided 9x9')).toBeTruthy();
+    expect(screen.getByText('Place the first stone near a corner instead of the center.')).toBeTruthy();
+    expect(screen.queryByText('corner-opening')).toBeNull();
+  });
+
+  it('starts the first guided board from the guided game path card', () => {
+    render(<LearningPath />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Guided game: Start the first 9x9 board\./ }));
+
+    expect(useProgressStore.getState().hasStartedIntroGame).toBe(true);
+    expect(useGameStore.getState().appPhase).toBe('game');
+    expect(useGameStore.getState().teachingLevel).toBe('guided');
+    expect(useGameStore.getState().game.board.size).toBe(9);
+  });
+});

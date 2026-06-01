@@ -1,11 +1,36 @@
 'use client';
 
 import { getLearningRecommendation } from '@/lib/learning-path/recommendations';
+import { CONCEPTS } from '@/lib/concepts/concept-data';
+import type { Concept, ConceptCategory } from '@/lib/concepts/types';
 import { useConceptStore } from '@/stores/concept-store';
 import { useGameStore } from '@/stores/game-store';
 import { useProgressStore } from '@/stores/progress-store';
 import { useReviewStore } from '@/stores/review-store';
 import { COLORS } from '@/utils/colors';
+
+const CONCEPT_BY_ID = new Map(CONCEPTS.map((concept) => [concept.id, concept]));
+
+const CATEGORY_LABELS: Record<ConceptCategory, string> = {
+  fundamentals: 'Fundamental',
+  tactics: 'Tactic',
+  strategy: 'Strategy',
+  endgame: 'Endgame',
+  opening: 'Opening',
+};
+
+function conceptDisplay(conceptId: string): Concept {
+  return CONCEPT_BY_ID.get(conceptId) ?? {
+    id: conceptId,
+    name: conceptId
+      .split('-')
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' '),
+    category: 'strategy',
+    description: 'A board idea to notice during this recommendation.',
+    prerequisites: [],
+  };
+}
 
 export function LearningPath() {
   const completedLessons = useProgressStore((s) => s.completedLessons);
@@ -36,6 +61,7 @@ export function LearningPath() {
   const solvedProblems = new Set(
     problemAttempts.filter((attempt) => attempt.solved).map((attempt) => attempt.problemId),
   ).size;
+  const focusConcepts = recommendation.focusConcepts.map(conceptDisplay).slice(0, 4);
 
   const startRecommended = () => {
     switch (recommendation.kind) {
@@ -56,6 +82,7 @@ export function LearningPath() {
         break;
     }
   };
+  const openGuidedGame = hasStartedIntroGame ? returnToGame : startGuidedIntroGame;
 
   return (
     <main className="flex-1 overflow-y-auto" style={{ backgroundColor: COLORS.ui.bgPrimary }}>
@@ -76,23 +103,64 @@ export function LearningPath() {
             </p>
             {recommendation.focusConcepts.length > 0 && (
               <div className="mt-4 flex flex-wrap gap-2">
-                {recommendation.focusConcepts.map((conceptId) => (
+                {focusConcepts.map((concept) => (
                   <span
-                    key={conceptId}
+                    key={concept.id}
                     className="rounded-full px-2.5 py-1 text-xs"
                     style={{ backgroundColor: `${COLORS.ui.accent}22`, color: COLORS.ui.accent }}
                   >
-                    {conceptId}
+                    {concept.name}
                   </span>
                 ))}
               </div>
             )}
+            <div className="mt-5 grid gap-5 md:grid-cols-[1fr_1fr]">
+              {focusConcepts.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold uppercase" style={{ color: COLORS.ui.textSecondary }}>
+                    Focus
+                  </p>
+                  <div className="mt-2 space-y-2">
+                    {focusConcepts.map((concept) => (
+                      <div key={concept.id} className="text-sm">
+                        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                          <span className="font-semibold" style={{ color: COLORS.ui.textPrimary }}>
+                            {concept.name}
+                          </span>
+                          <span className="text-xs" style={{ color: COLORS.ui.textSecondary }}>
+                            {CATEGORY_LABELS[concept.category]}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+                          {concept.description}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div>
+                <p className="text-xs font-semibold uppercase" style={{ color: COLORS.ui.textSecondary }}>
+                  Plan
+                </p>
+                <ol className="mt-2 space-y-2 text-sm">
+                  {recommendation.practicePlan.map((step, index) => (
+                    <li key={step} className="flex gap-2 leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+                      <span className="font-semibold" style={{ color: COLORS.ui.accent }}>
+                        {index + 1}.
+                      </span>
+                      <span>{step}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </div>
             <button
               onClick={startRecommended}
               className="mt-5 rounded-lg px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
               style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
             >
-              Start recommended action
+              {recommendation.actionLabel}
             </button>
           </div>
 
@@ -132,7 +200,11 @@ export function LearningPath() {
           <PathCard title="Problems" text="Practice reading and tactics." onClick={showProblems} />
           <PathCard title="Review" text="Repeat weak patterns." onClick={showReview} />
           <PathCard title="Skills" text="Inspect concept mastery." onClick={showSkillTree} />
-          <PathCard title="Guided game" text="Use ideas in play." onClick={returnToGame} />
+          <PathCard
+            title="Guided game"
+            text={hasStartedIntroGame ? 'Use ideas in play.' : 'Start the first 9x9 board.'}
+            onClick={openGuidedGame}
+          />
         </section>
       </div>
     </main>
@@ -143,6 +215,7 @@ function PathCard({ title, text, onClick }: { title: string; text: string; onCli
   return (
     <button
       onClick={onClick}
+      aria-label={`${title}: ${text}`}
       className="rounded-lg border p-4 text-left transition-colors hover:bg-white/[0.03]"
       style={{ backgroundColor: COLORS.ui.bgCard, borderColor: 'rgba(255,255,255,0.08)' }}
     >
