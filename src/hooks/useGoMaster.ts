@@ -152,6 +152,8 @@ function getBeginnerObjectiveForAiContext(
 ): BeginnerObjective | null {
   const visibleObjective = getBeginnerObjective({
     boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
     moveCount: game.moveHistory.length,
     currentPlayer: game.currentPlayer,
     teachingLevel,
@@ -164,6 +166,8 @@ function getBeginnerObjectiveForAiContext(
 
   return getBeginnerObjective({
     boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
     moveCount: Math.max(game.moveHistory.length - 1, 0),
     currentPlayer: 'black',
     teachingLevel,

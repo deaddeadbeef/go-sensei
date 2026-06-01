@@ -10,6 +10,8 @@ export function BeginnerObjectiveCard() {
 
   const objective = getBeginnerObjective({
     boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
     moveCount: game.moveHistory.length,
     currentPlayer: game.currentPlayer,
     teachingLevel,

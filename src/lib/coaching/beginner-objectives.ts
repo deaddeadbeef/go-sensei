@@ -1,8 +1,11 @@
-import type { BoardSize, Point, StoneColor } from '@/lib/go-engine/types';
+import { getAllGroups, getAdjacentPoints, getStone, isOnBoard, pointKey } from '@/lib/go-engine';
+import type { BoardSize, BoardState, Move, Point, StoneColor } from '@/lib/go-engine/types';
 import type { TeachingLevel } from '@/lib/ai/system-prompt';
 
 export interface BeginnerObjectiveInput {
   boardSize: BoardSize;
+  board?: BoardState;
+  moveHistory?: Move[];
   moveCount: number;
   currentPlayer: StoneColor;
   teachingLevel: TeachingLevel;
@@ -31,39 +34,173 @@ const SIDE_TARGETS_9X9: Point[] = [
   { x: 4, y: 6 },
 ];
 
+const ONE_SPACE_JUMP_DELTAS: Point[] = [
+  { x: 2, y: 0 },
+  { x: 0, y: 2 },
+  { x: -2, y: 0 },
+  { x: 0, y: -2 },
+];
+
+function uniquePoints(points: Point[]): Point[] {
+  const seen = new Set<string>();
+  const result: Point[] = [];
+
+  for (const point of points) {
+    const key = pointKey(point);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(point);
+  }
+
+  return result;
+}
+
+function getStones(board: BoardState, color: StoneColor): Point[] {
+  const stones: Point[] = [];
+
+  for (let y = 0; y < board.size; y++) {
+    for (let x = 0; x < board.size; x++) {
+      if (board.grid[y][x] === color) stones.push({ x, y });
+    }
+  }
+
+  return stones;
+}
+
+function isNearCorner(point: Point, boardSize: BoardSize): boolean {
+  const low = 3;
+  const high = boardSize - 4;
+  return (point.x <= low || point.x >= high) && (point.y <= low || point.y >= high);
+}
+
+function getOpenTargets(board: BoardState | undefined, targets: Point[]): Point[] {
+  if (!board) return targets;
+  return targets.filter((point) => getStone(board, point) === null);
+}
+
+function hasCornerStone(board: BoardState, color: StoneColor): boolean {
+  return getStones(board, color).some((stone) => isNearCorner(stone, board.size));
+}
+
+function isAdjacentToColor(board: BoardState, point: Point, color: StoneColor): boolean {
+  return getAdjacentPoints(board, point).some((adjacent) => getStone(board, adjacent) === color);
+}
+
+function isTeachingExtensionTarget(board: BoardState, point: Point): boolean {
+  return point.x > 0 && point.x < board.size - 1 && point.y > 0 && point.y < board.size - 1;
+}
+
+function getRecentPlacedPoints(moveHistory: Move[] | undefined, color: StoneColor): Point[] {
+  if (!moveHistory) return [];
+
+  return moveHistory
+    .filter((move): move is Extract<Move, { type: 'place' }> => move.type === 'place' && move.color === color)
+    .map((move) => move.point)
+    .reverse();
+}
+
+function getExtensionTargets(board: BoardState, color: StoneColor, moveHistory?: Move[]): Point[] {
+  const stones = getStones(board, color);
+  const recent = getRecentPlacedPoints(moveHistory, color);
+  const anchors = uniquePoints([...recent, ...stones]);
+  const targets: Point[] = [];
+
+  for (const stone of anchors) {
+    for (const delta of ONE_SPACE_JUMP_DELTAS) {
+      const target = { x: stone.x + delta.x, y: stone.y + delta.y };
+      if (!isOnBoard(board, target)) continue;
+      if (!isTeachingExtensionTarget(board, target)) continue;
+      if (getStone(board, target) !== null) continue;
+      if (isAdjacentToColor(board, target, color)) continue;
+      targets.push(target);
+    }
+  }
+
+  return uniquePoints(targets).slice(0, 6);
+}
+
+function getWeakGroupLiberties(board: BoardState, color: StoneColor): Point[] {
+  const weakGroups = getAllGroups(board)
+    .filter((group) => group.color === color && group.liberties.length > 0 && group.liberties.length <= 2)
+    .sort((a, b) => a.liberties.length - b.liberties.length || a.stones.length - b.stones.length);
+
+  return weakGroups[0]?.liberties ?? [];
+}
+
+function openingObjective(targetPoints: Point[] = CORNER_TARGETS_9X9): BeginnerObjective {
+  return {
+    id: 'claim-corner',
+    title: 'Start with a corner',
+    instruction: 'Place your next stone near an empty corner.',
+    why: 'Corners are easier to surround because the board edge helps you.',
+    targetPoints,
+    conceptIds: ['corner-opening', 'territory'],
+  };
+}
+
+function extensionObjective(targetPoints: Point[] = SIDE_TARGETS_9X9): BeginnerObjective {
+  return {
+    id: 'extend-from-stone',
+    title: 'Make your stones work together',
+    instruction: 'Play a one-space jump from one of your stones.',
+    why: 'A small gap keeps your stones connected in spirit while sketching future territory.',
+    targetPoints,
+    conceptIds: ['shape', 'direction-of-play'],
+  };
+}
+
+function weakGroupObjective(targetPoints: Point[] = []): BeginnerObjective {
+  return {
+    id: 'look-for-weak-groups',
+    title: 'Give weak groups room',
+    instruction: targetPoints.length
+      ? 'Play on a marked liberty to help your group breathe.'
+      : 'Before playing, ask which stones have little room to escape.',
+    why: 'Groups with few liberties need help or can become targets.',
+    targetPoints,
+    conceptIds: ['liberties', 'groups'],
+  };
+}
+
 export function getBeginnerObjective(input: BeginnerObjectiveInput): BeginnerObjective | null {
   if (input.boardSize !== 9) return null;
   if (input.currentPlayer !== 'black') return null;
   if (input.teachingLevel !== 'beginner' && input.teachingLevel !== 'guided') return null;
 
+  const board = input.board?.size === 9 ? input.board : undefined;
+
+  if (board) {
+    const openCornerTargets = getOpenTargets(board, CORNER_TARGETS_9X9);
+    const hasCorner = hasCornerStone(board, 'black');
+
+    if (!hasCorner && openCornerTargets.length > 0) {
+      return openingObjective(openCornerTargets);
+    }
+
+    const weakGroupLiberties = getWeakGroupLiberties(board, 'black');
+    if (weakGroupLiberties.length > 0 && input.moveCount >= 4) {
+      return weakGroupObjective(weakGroupLiberties);
+    }
+
+    const extensionTargets = getExtensionTargets(board, 'black', input.moveHistory);
+    if (extensionTargets.length > 0) {
+      return extensionObjective(extensionTargets);
+    }
+
+    if (openCornerTargets.length > 0 && !CORNER_TARGETS_9X9.some((target) => getStone(board, target) === 'black')) {
+      return openingObjective(openCornerTargets);
+    }
+
+    return weakGroupObjective();
+  }
+
   if (input.moveCount <= 2) {
-    return {
-      id: 'claim-corner',
-      title: 'Start with a corner',
-      instruction: 'Place your next stone near an empty corner.',
-      why: 'Corners are easier to surround because the board edge helps you.',
-      targetPoints: CORNER_TARGETS_9X9,
-      conceptIds: ['corner-opening', 'territory'],
-    };
+    return openingObjective();
   }
 
   if (input.moveCount <= 8) {
-    return {
-      id: 'extend-from-stone',
-      title: 'Make your stones work together',
-      instruction: 'Play near one of your stones without touching it directly.',
-      why: 'Nearby stones support each other and sketch out future territory.',
-      targetPoints: SIDE_TARGETS_9X9,
-      conceptIds: ['shape', 'direction-of-play'],
-    };
+    return extensionObjective();
   }
 
-  return {
-    id: 'look-for-weak-groups',
-    title: 'Check weak groups',
-    instruction: 'Before playing, ask which stones have little room to escape.',
-    why: 'Groups with few liberties need help or can become targets.',
-    targetPoints: [],
-    conceptIds: ['liberties', 'groups'],
-  };
+  return weakGroupObjective();
 }
