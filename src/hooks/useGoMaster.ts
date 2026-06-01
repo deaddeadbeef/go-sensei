@@ -242,6 +242,7 @@ export function useGoMaster() {
         text: fallback.text,
         variant: reason === 'auth-unavailable' ? 'teaching' : 'warning',
         anchorPoint: null,
+        actions: fallback.actions,
         streamingComplete: true,
       });
 

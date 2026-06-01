@@ -122,6 +122,8 @@ describe('useGoMaster local answers', () => {
     expect(state.bubble.text).toContain('teach this beginner path locally');
     expect(state.bubble.text).toContain('Good: C7 hit the marked corner goal');
     expect(state.bubble.text).toContain('Make your stones work together');
+    expect(state.bubble.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+    expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
     expect(state.bubble.text).not.toContain('GitHub login');
     expect(state.chatMessages.some((message) => message.text.includes('Cloud Sensei needs'))).toBe(false);
     expect(state.chatMessages.some((message) => message.text === 'White passes so you can try the next idea.')).toBe(true);
