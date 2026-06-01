@@ -26,7 +26,11 @@ const card = {
 export function LessonPicker() {
   const completedLessons = useProgressStore((s) => s.completedLessons);
   const startLesson = useGameStore((s) => s.startLesson);
+  const showLearningPath = useGameStore((s) => s.showLearningPath);
   const returnToGame = useGameStore((s) => s.returnToGame);
+  const nextLesson = LESSONS.find((lesson) => !completedLessons.includes(lesson.id));
+  const completedCount = completedLessons.length;
+  const remainingCount = Math.max(LESSONS.length - completedCount, 0);
 
   return (
     <div
@@ -51,8 +55,33 @@ export function LessonPicker() {
             className="mt-2 text-base sm:text-lg"
             style={{ color: COLORS.ui.textSecondary }}
           >
-            Master the basics before playing
+            Learn one board idea, then return to the path for the next step.
           </p>
+          <div
+            className="mx-auto mt-5 max-w-md rounded-xl border p-4 text-left"
+            style={{ backgroundColor: COLORS.ui.bgCard, borderColor: 'rgba(255,255,255,0.08)' }}
+          >
+            <div className="flex items-center justify-between gap-4 text-sm">
+              <span style={{ color: COLORS.ui.textSecondary }}>Lesson progress</span>
+              <span className="font-semibold" style={{ color: COLORS.ui.textPrimary }}>
+                {completedCount}/{LESSONS.length} complete
+              </span>
+            </div>
+            <div className="mt-3 h-2 overflow-hidden rounded-full" style={{ backgroundColor: COLORS.ui.bgPrimary }}>
+              <div
+                className="h-full rounded-full transition-all"
+                style={{
+                  width: `${(completedCount / LESSONS.length) * 100}%`,
+                  backgroundColor: COLORS.ui.accent,
+                }}
+              />
+            </div>
+            <p className="mt-3 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+              {nextLesson
+                ? `Next lesson: ${nextLesson.title}. ${remainingCount} lesson${remainingCount === 1 ? '' : 's'} left.`
+                : 'All lessons complete. Use the path to choose review, problems, or a guided game.'}
+            </p>
+          </div>
         </motion.div>
 
         {/* Lesson grid */}
@@ -121,22 +150,32 @@ export function LessonPicker() {
           })}
         </motion.div>
 
-        {/* Play button */}
+        {/* Navigation buttons */}
         <motion.div
-          className="mt-10 text-center"
+          className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.4 }}
         >
           <button
-            onClick={returnToGame}
+            onClick={showLearningPath}
             className="rounded-xl px-8 py-3 text-base font-semibold transition-opacity hover:opacity-90"
             style={{
               backgroundColor: COLORS.ui.accent,
               color: COLORS.ui.bgPrimary,
             }}
           >
-            Start Playing →
+            Learning path
+          </button>
+          <button
+            onClick={returnToGame}
+            className="rounded-xl px-8 py-3 text-base font-semibold transition-opacity hover:opacity-90"
+            style={{
+              backgroundColor: COLORS.ui.bgCard,
+              color: COLORS.ui.textPrimary,
+            }}
+          >
+            Back to Game
           </button>
         </motion.div>
       </div>
