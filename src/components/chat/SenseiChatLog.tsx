@@ -2,6 +2,7 @@
 import { useRef, useEffect } from 'react';
 import { useGameStore } from '@/stores/game-store';
 import { COLORS } from '@/utils/colors';
+import { useSenseiAction } from '@/hooks/useSenseiAction';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const variantIcons: Record<string, string> = {
@@ -16,6 +17,7 @@ const variantIcons: Record<string, string> = {
 
 export function SenseiChatLog() {
   const chatMessages = useGameStore((s) => s.chatMessages);
+  const handleAction = useSenseiAction();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom on new messages
@@ -60,6 +62,24 @@ export function SenseiChatLog() {
             <p className="text-xs leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
               {msg.text}
             </p>
+            {msg.variant !== 'user' && msg.actions && msg.actions.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {msg.actions.map((action) => (
+                  <button
+                    key={action.id}
+                    type="button"
+                    onClick={() => handleAction(action.id)}
+                    className="rounded border px-2 py-1 text-[11px] font-medium transition-colors hover:bg-white/10"
+                    style={{
+                      borderColor: COLORS.ui.accent,
+                      color: COLORS.ui.accent,
+                    }}
+                  >
+                    {action.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </motion.div>
         ))}
       </AnimatePresence>

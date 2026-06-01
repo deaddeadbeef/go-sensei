@@ -23,6 +23,7 @@ import type { MoveNode } from '@/lib/problems/types';
 import { PROBLEMS } from '@/lib/problems/problem-data';
 import { applyProblemMove, buildProblemGame } from '@/lib/problems/runtime';
 import type { ValidationResult } from '@/lib/problems/validator';
+import type { SenseiAction } from '@/lib/coaching/sensei-actions';
 import { useProgressStore } from './progress-store';
 
 // ---------------------------------------------------------------------------
@@ -80,7 +81,7 @@ interface SenseiBubbleState {
   text: string;
   anchorPoint: Point | null;
   variant: 'neutral' | 'celebrate' | 'warning' | 'teaching' | 'thinking';
-  actions: { id: string; label: string }[];
+  actions: SenseiAction[];
   streamingComplete: boolean;
 }
 
@@ -89,12 +90,14 @@ export interface ChatMessage {
   text: string;
   variant: string;
   timestamp: number;
+  actions?: SenseiAction[];
 }
 
 const MAX_CHAT_MESSAGES = 80;
 
 function chatMessageKey(message: ChatMessage): string {
-  return `${message.variant}:${message.text.trim()}`;
+  const actionKey = message.actions?.map((action) => `${action.id}:${action.label}`).join('|') ?? '';
+  return `${message.variant}:${message.text.trim()}:${actionKey}`;
 }
 
 function isDedupableChatMessage(message: ChatMessage): boolean {
@@ -301,7 +304,7 @@ interface GameStore {
   dismissBubble: () => void;
 
   // Chat
-  addChatMessage: (text: string, variant: string) => void;
+  addChatMessage: (text: string, variant: string, actions?: SenseiAction[]) => void;
 
   // Overlays
   clearOverlays: () => void;
@@ -669,6 +672,7 @@ export const useGameStore = create<GameStore>()(
         text,
         variant,
         timestamp: Date.now(),
+        ...(config.actions?.length ? { actions: config.actions } : {}),
       };
       return {
         bubble: { ...s.bubble, streamingComplete: false, ...config, visible: true },
@@ -686,12 +690,13 @@ export const useGameStore = create<GameStore>()(
   },
 
   // Chat
-  addChatMessage(text: string, variant: string) {
+  addChatMessage(text: string, variant: string, actions?: SenseiAction[]) {
     const nextMessage: ChatMessage = {
       id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       text,
       variant,
       timestamp: Date.now(),
+      ...(actions?.length ? { actions } : {}),
     };
 
     set((s) => ({
