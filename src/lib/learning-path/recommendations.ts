@@ -44,7 +44,13 @@ export interface RecommendationInput {
   mastery: ConceptMastery[];
 }
 
-const CAPTURE_PRACTICE_TARGET = 3;
+const PRACTICE_TARGET_BY_CATEGORY: Record<ProblemCategory, number> = {
+  capture: 3,
+  'life-and-death': 2,
+  reading: 2,
+  tesuji: 2,
+  endgame: 2,
+};
 const GUIDED_GAME_MIN_COMPLETED_LESSONS = 4;
 const GUIDED_GAME_MIN_SOLVED_PROBLEMS = 2;
 const WEAK_MASTERY_LEVEL = 2;
@@ -94,12 +100,13 @@ export function getLearningRecommendation(input: RecommendationInput): LearningR
     return lessonRecommendation(firstIncompleteLesson.id, firstIncompleteLesson.title);
   }
 
-  const captureCategory = LESSON_TO_PROBLEM_CATEGORY.capture;
-  if (completedLessonIds.has('capture') && captureCategory) {
-    const solvedCaptureProblems = countSolvedProblemsForCategory(solvedProblemIds, captureCategory);
-    if (solvedCaptureProblems < CAPTURE_PRACTICE_TARGET) {
-      return problemRecommendation(captureCategory, solvedCaptureProblems);
-    }
+  const pendingPractice = getPendingLessonPractice(completedLessonIds, solvedProblemIds);
+  if (pendingPractice) {
+    return problemRecommendation(
+      pendingPractice.category,
+      pendingPractice.solvedCount,
+      pendingPractice.targetCount,
+    );
   }
 
   if (
@@ -147,16 +154,18 @@ function lessonRecommendation(targetId: string, lessonTitle: string): LearningRe
 function problemRecommendation(
   filter: ProblemCategory,
   solvedCount: number,
+  targetCount = PRACTICE_TARGET_BY_CATEGORY[filter],
 ): LearningRecommendation {
-  const remaining = Math.max(CAPTURE_PRACTICE_TARGET - solvedCount, 0);
+  const remaining = Math.max(targetCount - solvedCount, 0);
+  const practiceCategoryTitle = problemCategoryTitle(filter).toLowerCase();
 
   return {
     kind: 'problem',
     filter,
     title: `${problemCategoryTitle(filter)} problems`,
     reason:
-      filter === 'capture' && remaining > 0
-        ? `Practice capture until you solve ${remaining} more capture problem${remaining === 1 ? '' : 's'}.`
+      remaining > 0
+        ? `Practice ${practiceCategoryTitle} until you solve ${remaining} more ${practiceCategoryTitle} problem${remaining === 1 ? '' : 's'}.`
         : 'Practice problems reinforce the lessons you have already completed.',
     focusConcepts: [...PROBLEM_CATEGORY_TO_CONCEPTS[filter]],
     actionLabel: `Open ${problemCategoryTitle(filter).toLowerCase()} problems`,
@@ -166,6 +175,30 @@ function problemRecommendation(
       'Solve the same idea again later through review.',
     ],
   };
+}
+
+function getPendingLessonPractice(
+  completedLessonIds: Set<string>,
+  solvedProblemIds: Set<string>,
+): { category: ProblemCategory; solvedCount: number; targetCount: number } | null {
+  for (const lesson of LESSONS) {
+    if (!completedLessonIds.has(lesson.id)) {
+      continue;
+    }
+
+    const category = LESSON_TO_PROBLEM_CATEGORY[lesson.id];
+    if (!category) {
+      continue;
+    }
+
+    const targetCount = PRACTICE_TARGET_BY_CATEGORY[category];
+    const solvedCount = countSolvedProblemsForCategory(solvedProblemIds, category);
+    if (solvedCount < targetCount) {
+      return { category, solvedCount, targetCount };
+    }
+  }
+
+  return null;
 }
 
 function guidedGameRecommendation(focusConcepts: string[]): LearningRecommendation {
