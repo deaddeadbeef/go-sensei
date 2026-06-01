@@ -3,8 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { PROBLEMS } from '@/lib/problems/problem-data';
+import { getLearningRecommendation } from '@/lib/learning-path/recommendations';
+import { useConceptStore } from '@/stores/concept-store';
 import { useGameStore } from '@/stores/game-store';
 import { useProgressStore } from '@/stores/progress-store';
+import { useReviewStore } from '@/stores/review-store';
 import { COLORS } from '@/utils/colors';
 import type { Problem, ProblemAttempt, ProblemCategory } from '@/lib/problems/types';
 
@@ -90,6 +93,7 @@ function ProblemRecommendation({
   solvedCount,
   totalCount,
   solved,
+  pathGoalReason,
   onStart,
 }: {
   filter: FilterKey;
@@ -97,6 +101,7 @@ function ProblemRecommendation({
   solvedCount: number;
   totalCount: number;
   solved: boolean;
+  pathGoalReason: string | null;
   onStart: () => void;
 }) {
   return (
@@ -118,6 +123,19 @@ function ProblemRecommendation({
           <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
             {recommendationReason({ filter, solvedCount, totalCount })}
           </p>
+          {pathGoalReason && (
+            <div
+              className="mt-3 rounded-lg p-3"
+              style={{ backgroundColor: `${COLORS.ui.accent}12`, border: `1px solid ${COLORS.ui.accent}35` }}
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: COLORS.ui.accent }}>
+                Path goal
+              </p>
+              <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+                {pathGoalReason}
+              </p>
+            </div>
+          )}
           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs" style={{ color: COLORS.ui.textSecondary }}>
             <span
               className="rounded-full px-2 py-0.5 font-medium"
@@ -142,10 +160,15 @@ function ProblemRecommendation({
 }
 
 export function ProblemPicker() {
+  const completedLessons = useProgressStore((s) => s.completedLessons);
   const problemAttempts = useProgressStore((s) => s.problemAttempts);
+  const hasStartedIntroGame = useProgressStore((s) => s.hasStartedIntroGame);
   const preferredProblemFilter = useGameStore((s) => s.preferredProblemFilter);
   const startProblem = useGameStore((s) => s.startProblem);
   const returnToGame = useGameStore((s) => s.returnToGame);
+  const reviewCards = useReviewStore((s) => s.cards);
+  const getDueCount = useReviewStore((s) => s.getDueCount);
+  const mastery = useConceptStore((s) => s.mastery);
   const topRef = useRef<HTMLDivElement>(null);
   const [filter, setFilter] = useState<FilterKey>(preferredProblemFilter ?? 'all');
 
@@ -159,6 +182,25 @@ export function ProblemPicker() {
   const solvedIds = useMemo(() => solvedProblemIds(problemAttempts), [problemAttempts]);
   const solvedVisibleCount = filtered.filter((problem) => solvedIds.has(problem.id)).length;
   const recommendedProblem = filtered.find((problem) => !solvedIds.has(problem.id)) ?? filtered[0] ?? null;
+  const dueReviewCount = useMemo(() => {
+    void reviewCards;
+    return getDueCount();
+  }, [getDueCount, reviewCards]);
+  const learningRecommendation = useMemo(
+    () => getLearningRecommendation({
+      completedLessons,
+      problemAttempts,
+      dueReviewCount,
+      hasStartedIntroGame,
+      mastery: Object.values(mastery),
+    }),
+    [completedLessons, problemAttempts, dueReviewCount, hasStartedIntroGame, mastery],
+  );
+  const pathGoalReason = filter !== 'all'
+    && learningRecommendation.kind === 'problem'
+    && learningRecommendation.filter === filter
+    ? learningRecommendation.reason
+    : null;
 
   const isSolved = (id: string) =>
     solvedIds.has(id);
@@ -224,6 +266,7 @@ export function ProblemPicker() {
             solvedCount={solvedVisibleCount}
             totalCount={filtered.length}
             solved={isSolved(recommendedProblem.id)}
+            pathGoalReason={pathGoalReason}
             onStart={() => startProblem(recommendedProblem)}
           />
         )}
