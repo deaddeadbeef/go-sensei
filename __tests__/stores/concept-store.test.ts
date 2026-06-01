@@ -63,6 +63,19 @@ describe('concept store', () => {
     expect(m.encounterCount).toBe(20);
   });
 
+  it('recordEvidence guided insights reinforce concepts like AI mentions', () => {
+    act(() => {
+      useConceptStore.getState().recordEvidence('territory', 'guided_insight');
+      useConceptStore.getState().recordEvidence('territory', 'guided_insight');
+      useConceptStore.getState().recordEvidence('territory', 'guided_insight');
+    });
+
+    const m = useConceptStore.getState().getMastery('territory');
+    expect(m.level).toBe(2);
+    expect(m.encounterCount).toBe(3);
+    expect(m.evidenceScore).toBe(3);
+  });
+
   it('setMasteryLevel directly sets the level', () => {
     act(() => useConceptStore.getState().setMasteryLevel('ko', 3));
     const m = useConceptStore.getState().getMastery('ko');

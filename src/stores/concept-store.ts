@@ -9,6 +9,7 @@ export type ConceptEvidence =
   | 'problem_failed'
   | 'review_solved'
   | 'review_failed'
+  | 'guided_insight'
   | 'ai_tag_success'
   | 'ai_tag_mistake';
 
@@ -22,6 +23,7 @@ const EVIDENCE_WEIGHTS: Record<ConceptEvidence, number> = {
   problem_failed: 0,
   review_solved: 3,
   review_failed: 0,
+  guided_insight: 1,
   ai_tag_success: 1,
   ai_tag_mistake: 0,
 };
