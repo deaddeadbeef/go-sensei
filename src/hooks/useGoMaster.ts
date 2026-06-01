@@ -7,6 +7,7 @@ import { useProgressStore } from '@/stores/progress-store';
 import { CONCEPTS } from '@/lib/concepts/concept-data';
 import { getLearningRecommendation } from '@/lib/learning-path/recommendations';
 import { getBeginnerObjective } from '@/lib/coaching/beginner-objectives';
+import { getLocalGuidedFallback } from '@/lib/coaching/local-guided-fallback';
 import { coordToPoint } from '@/lib/go-engine';
 import {
   formatMoveMessage,
@@ -197,6 +198,45 @@ export function useGoMaster() {
     return { 'Content-Type': 'application/json', ...(t ? { 'x-github-token': t } : {}) };
   }, []);
 
+  const passSenseiIfNeeded = useCallback((message: string) => {
+    const state = useGameStore.getState();
+
+    if (state.phase !== 'playing' || state.game.currentPlayer === 'black') {
+      return false;
+    }
+
+    state.pass();
+    useGameStore.getState().addChatMessage(message, 'system');
+    return true;
+  }, []);
+
+  const applyLocalFallback = useCallback(
+    (reason: 'auth-expired' | 'auth-unavailable' | 'network-error' | 'server-error') => {
+      const state = useGameStore.getState();
+      const fallback = getLocalGuidedFallback(state.game, state.teachingLevel, reason);
+
+      if (!fallback) return false;
+
+      for (const conceptId of fallback.conceptIds) {
+        recordEncounter(conceptId);
+      }
+
+      if (fallback.shouldPassSensei && state.game.currentPlayer !== 'black') {
+        passSenseiIfNeeded('Sensei used local guidance and passed for White.');
+      }
+
+      showBubble({
+        text: fallback.text,
+        variant: 'warning',
+        anchorPoint: null,
+        streamingComplete: true,
+      });
+
+      return true;
+    },
+    [passSenseiIfNeeded, recordEncounter, showBubble],
+  );
+
   const gameBody = useCallback(() => {
     const s = useGameStore.getState();
     const g = s.game;
@@ -329,9 +369,24 @@ export function useGoMaster() {
 
           if (r.status === 401 || errData.code === 'AUTH_EXPIRED') {
             // Clear expired token and notify user
-            sessionStorage.removeItem('go-sensei-github-token');
-            showBubble({ text: 'Your session has expired. Please open Settings and re-login with GitHub.', variant: 'warning', anchorPoint: null });
-            addChatMessage('⚠️ Session expired. Please re-login via Settings (⚙).', 'system');
+            const authReason = errData.code === 'AUTH_EXPIRED' ? 'auth-expired' : 'auth-unavailable';
+            if (authReason === 'auth-expired') {
+              sessionStorage.removeItem('go-sensei-github-token');
+            }
+            if (!applyLocalFallback(authReason)) {
+              const returnedTurn = passSenseiIfNeeded('Sensei needs login and passed for White to keep the board playable.');
+              const authText = authReason === 'auth-expired'
+                ? 'Your session has expired. Please open Settings and re-login with GitHub.'
+                : 'Please open Settings and login with GitHub to use cloud Sensei.';
+              showBubble({
+                text: returnedTurn
+                  ? `${authText} I passed for White so the board is not stuck.`
+                  : authText,
+                variant: 'warning',
+                anchorPoint: null,
+              });
+              addChatMessage('⚠️ Cloud Sensei needs GitHub auth. Open Settings (⚙).', 'system');
+            }
             setAiThinking(false);
             return;
           }
@@ -355,8 +410,14 @@ export function useGoMaster() {
         if (d.text) historyRef.current.push({ role: 'assistant', content: d.text });
         if (historyRef.current.length > 20) historyRef.current = historyRef.current.slice(-20);
       } catch (err) {
+        if (applyLocalFallback(err instanceof TypeError ? 'network-error' : 'server-error')) {
+          console.warn('AI fallback used:', err);
+          return;
+        }
+
+        const returnedTurn = passSenseiIfNeeded('Sensei could not answer and passed for White to keep the board playable.');
         showBubble({
-          text: `Hmm, I had trouble thinking. ${(err as Error).message}`,
+          text: `Hmm, I had trouble thinking. ${(err as Error).message}${returnedTurn ? ' I passed for White so the board is not stuck.' : ''}`,
           variant: 'warning',
           anchorPoint: null,
         });
@@ -365,7 +426,7 @@ export function useGoMaster() {
         setAiThinking(false);
       }
     },
-    [clearOverlays, dismissBubble, setAiThinking, headers, gameBody, applyTools, showBubble, addChatMessage],
+    [clearOverlays, dismissBubble, setAiThinking, headers, gameBody, applyTools, showBubble, addChatMessage, applyLocalFallback, passSenseiIfNeeded],
   );
 
   const sendPlayerMove = useCallback(

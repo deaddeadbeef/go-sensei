@@ -11,8 +11,9 @@ interface GameControlsProps {
 export function GameControls({ onNewGame, onPass, onUndo }: GameControlsProps) {
   const isAiThinking = useGameStore((s) => s.isAiThinking);
   const phase = useGameStore((s) => s.phase);
+  const currentPlayer = useGameStore((s) => s.game.currentPlayer);
   const moveCount = useGameStore((s) => s.game.moveHistory.length);
-  const disabled = isAiThinking || phase !== 'playing';
+  const disabled = isAiThinking || phase !== 'playing' || currentPlayer !== 'black';
 
   return (
     <div className="flex items-center justify-center gap-2 py-2">
