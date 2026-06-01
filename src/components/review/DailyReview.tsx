@@ -11,6 +11,8 @@ import type { MoveNode } from '@/lib/problems/types';
 import type { Point, BoardSize, GameState } from '@/lib/go-engine/types';
 import type { ProblemCategory } from '@/lib/problems/types';
 import { applyProblemMove, buildProblemGame } from '@/lib/problems/runtime';
+import { getPrimarySolutionLine } from '@/lib/problems/solution-review';
+import { ProblemSolutionOverlay, ProblemSolutionPanel } from '@/components/problems/ProblemSolutionReview';
 import {
   SVG_SIZE,
   BOARD_PADDING,
@@ -300,6 +302,8 @@ export function DailyReview() {
   const boardSize = currentProblem.boardSize as BoardSize;
   const r = stoneRadius(boardSize);
   const playerColor = currentProblem.playerColor;
+  const solutionSteps = getPrimarySolutionLine(currentProblem);
+  const revealSolution = problemState.status !== 'playing';
 
   return (
     <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
@@ -358,6 +362,10 @@ export function DailyReview() {
                 />
               );
             }),
+          )}
+
+          {revealSolution && (
+            <ProblemSolutionOverlay steps={solutionSteps} boardSize={boardSize} stoneRadius={r} />
           )}
 
           {/* Feedback animation */}
@@ -482,6 +490,10 @@ export function DailyReview() {
                 {problemState.feedback}
               </p>
             </motion.div>
+          )}
+
+          {revealSolution && (
+            <ProblemSolutionPanel steps={solutionSteps} boardSize={boardSize} />
           )}
 
           {/* Attempts counter */}
