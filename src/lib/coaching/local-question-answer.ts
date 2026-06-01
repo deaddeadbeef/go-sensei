@@ -1,6 +1,7 @@
 import { getAllGroups, getGroup, pointKey, pointToCoord } from '@/lib/go-engine';
 import type { GameState, Group, Move, Point } from '@/lib/go-engine/types';
 import type { TeachingLevel } from '@/lib/ai/system-prompt';
+import type { SenseiAction } from '@/lib/coaching/sensei-actions';
 
 export interface LocalLibertyFocus {
   id: string;
@@ -30,16 +31,11 @@ export interface LocalBoardFocus {
   suggestions?: LocalSuggestionFocus[];
 }
 
-export interface LocalAnswerAction {
-  id: string;
-  label: string;
-}
-
 export interface LocalQuestionAnswer {
   text: string;
   conceptIds: string[];
   boardFocus?: LocalBoardFocus;
-  actions?: LocalAnswerAction[];
+  actions?: SenseiAction[];
 }
 
 function isLocalAnswerLevel(teachingLevel: TeachingLevel): boolean {

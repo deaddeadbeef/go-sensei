@@ -43,4 +43,18 @@ describe('chat hygiene', () => {
 
     expect(compactChatMessages(oldLog).map((message) => message.id)).toEqual(['m2', 'm3', 'm4', 'm6']);
   });
+
+  it('keeps action metadata on assistant messages', () => {
+    act(() => {
+      useGameStore.getState().showBubble({
+        text: 'A liberty is an adjacent empty point.',
+        variant: 'teaching',
+        actions: [{ id: 'lesson:liberties', label: 'Review liberties' }],
+      });
+    });
+
+    expect(useGameStore.getState().chatMessages.at(-1)?.actions).toEqual([
+      { id: 'lesson:liberties', label: 'Review liberties' },
+    ]);
+  });
 });
