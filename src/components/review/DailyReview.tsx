@@ -12,6 +12,7 @@ import type { Point, BoardSize, GameState } from '@/lib/go-engine/types';
 import type { ProblemCategory } from '@/lib/problems/types';
 import { applyProblemMove, buildProblemGame } from '@/lib/problems/runtime';
 import { getPrimarySolutionLine } from '@/lib/problems/solution-review';
+import { buildReviewSessionSummary } from '@/lib/review/session-summary';
 import { ProblemReadingPlan } from '@/components/problems/ProblemReadingPlan';
 import { ProblemSolutionOverlay, ProblemSolutionPanel } from '@/components/problems/ProblemSolutionReview';
 import {
@@ -242,50 +243,87 @@ export function DailyReview() {
   // =======================================================================
   if (review.problemIds.length === 0 || review.phase === 'complete') {
     const stats = getReviewStats();
-    const accuracy =
-      review.results.length > 0
-        ? Math.round((review.results.filter((r) => r.solved).length / review.results.length) * 100)
-        : 0;
+    const summary = buildReviewSessionSummary(review.results);
 
     return (
       <div className="flex-1 flex items-center justify-center p-6" style={{ backgroundColor: COLORS.ui.bgPrimary }}>
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="text-center max-w-md p-8 rounded-2xl"
+          className="max-w-lg p-8 rounded-2xl"
           style={{ backgroundColor: COLORS.ui.bgCard }}
         >
           {review.results.length > 0 ? (
             <>
-              <h2 className="text-2xl font-bold mb-2" style={{ color: COLORS.ui.accent }}>
+              <h2 className="text-center text-2xl font-bold mb-2" style={{ color: COLORS.ui.accent }}>
                 ✅ Review Complete!
               </h2>
-              <p className="text-4xl font-bold mb-4" style={{ color: COLORS.overlay.positive }}>
-                {review.results.filter((r) => r.solved).length}/{review.results.length}
+              <p className="text-center text-4xl font-bold mb-4" style={{ color: COLORS.overlay.positive }}>
+                {summary.solvedCount}/{summary.totalCount}
               </p>
-              <p className="text-sm mb-1" style={{ color: COLORS.ui.textPrimary }}>
-                Accuracy: {accuracy}%
+              <p className="text-center text-sm mb-1" style={{ color: COLORS.ui.textPrimary }}>
+                Accuracy: {summary.accuracy}%
               </p>
-              <p className="text-sm mb-4" style={{ color: COLORS.ui.textSecondary }}>
+              <p className="text-center text-sm mb-4" style={{ color: COLORS.ui.textSecondary }}>
                 🔥 {stats.streak} day streak
               </p>
+              <div
+                className="mt-5 border-t pt-5 text-left"
+                style={{ borderColor: 'rgba(255,255,255,0.08)' }}
+              >
+                <p className="text-xs font-semibold uppercase" style={{ color: COLORS.ui.textSecondary }}>
+                  Next step
+                </p>
+                <h3 className="mt-2 text-lg font-bold" style={{ color: COLORS.ui.textPrimary }}>
+                  {summary.headline}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+                  {summary.nextStep}
+                </p>
+                {summary.attentionProblems.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-xs font-semibold uppercase" style={{ color: COLORS.ui.textSecondary }}>
+                      Needs attention
+                    </p>
+                    <ul className="mt-2 space-y-2">
+                      {summary.attentionProblems.slice(0, 3).map(({ problem, solved, attempts }) => (
+                        <li key={problem.id} className="text-sm" style={{ color: COLORS.ui.textPrimary }}>
+                          <span className="font-semibold">{problem.title}</span>
+                          <span className="ml-2" style={{ color: COLORS.ui.textSecondary }}>
+                            {solved ? `${attempts} attempts` : 'missed'}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
             </>
           ) : (
             <>
-              <h2 className="text-2xl font-bold mb-2" style={{ color: COLORS.ui.accent }}>
+              <h2 className="text-center text-2xl font-bold mb-2" style={{ color: COLORS.ui.accent }}>
                 🎉 All caught up!
               </h2>
-              <p className="text-sm mb-4" style={{ color: COLORS.ui.textSecondary }}>
+              <p className="text-center text-sm mb-4" style={{ color: COLORS.ui.textSecondary }}>
                 No problems due for review. Solve more problems to build your review queue.
               </p>
               {stats.streak > 0 && (
-                <p className="text-sm mb-4" style={{ color: COLORS.overlay.positive }}>
+                <p className="text-center text-sm mb-4" style={{ color: COLORS.overlay.positive }}>
                   🔥 {stats.streak} day streak — keep it going!
                 </p>
               )}
             </>
           )}
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            {review.results.length > 0 && summary.practiceCategory && summary.practiceLabel && (
+              <button
+                onClick={() => showProblems(summary.practiceCategory ?? undefined)}
+                className="px-6 py-2 rounded-lg text-sm font-medium transition-transform hover:scale-[1.02] active:scale-95"
+                style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
+              >
+                {summary.practiceLabel}
+              </button>
+            )}
             {review.results.length === 0 && (
               <button
                 onClick={() => showProblems()}
@@ -299,8 +337,8 @@ export function DailyReview() {
               onClick={showLearningPath}
               className="px-6 py-2 rounded-lg text-sm font-medium transition-opacity hover:opacity-90"
               style={{
-                backgroundColor: review.results.length > 0 ? COLORS.ui.accent : COLORS.ui.bgCard,
-                color: review.results.length > 0 ? COLORS.ui.bgPrimary : COLORS.ui.textPrimary,
+                backgroundColor: review.results.length > 0 && !summary.practiceCategory ? COLORS.ui.accent : COLORS.ui.bgCard,
+                color: review.results.length > 0 && !summary.practiceCategory ? COLORS.ui.bgPrimary : COLORS.ui.textPrimary,
               }}
             >
               Learning path
