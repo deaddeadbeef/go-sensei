@@ -17,6 +17,7 @@ import { useReviewStore } from '@/stores/review-store';
 import { useConceptStore } from '@/stores/concept-store';
 import { problemCategoryTitle } from '@/lib/learning-path/concept-practice';
 import { getPrimarySolutionLine } from '@/lib/problems/solution-review';
+import { ProblemReadingPlan } from './ProblemReadingPlan';
 import { ProblemSolutionOverlay, ProblemSolutionPanel } from './ProblemSolutionReview';
 import type { BoardSize } from '@/lib/go-engine/types';
 import type { ProblemCategory } from '@/lib/problems/types';
@@ -323,6 +324,10 @@ export function ProblemView() {
 
         {/* Status area */}
         <div className="flex-1 overflow-y-auto px-4 py-3">
+          {problemInteraction.status === 'playing' && (
+            <ProblemReadingPlan category={problem.category} />
+          )}
+
           {/* Status banner */}
           <AnimatePresence mode="wait">
             {problemInteraction.status === 'solved' && (

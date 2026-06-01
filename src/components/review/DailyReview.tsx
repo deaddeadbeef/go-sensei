@@ -12,6 +12,7 @@ import type { Point, BoardSize, GameState } from '@/lib/go-engine/types';
 import type { ProblemCategory } from '@/lib/problems/types';
 import { applyProblemMove, buildProblemGame } from '@/lib/problems/runtime';
 import { getPrimarySolutionLine } from '@/lib/problems/solution-review';
+import { ProblemReadingPlan } from '@/components/problems/ProblemReadingPlan';
 import { ProblemSolutionOverlay, ProblemSolutionPanel } from '@/components/problems/ProblemSolutionReview';
 import {
   SVG_SIZE,
@@ -469,6 +470,10 @@ export function DailyReview() {
 
         {/* Status area */}
         <div className="flex-1 overflow-y-auto px-4 py-3">
+          {problemState.status === 'playing' && (
+            <ProblemReadingPlan category={currentProblem.category} />
+          )}
+
           {/* Status banner */}
           <AnimatePresence mode="wait">
             {problemState.status === 'solved' && (

@@ -33,4 +33,23 @@ describe('DailyReview', () => {
 
     expect(useGameStore.getState().appPhase).toBe('path');
   });
+
+  it('shows a reading routine for due review problems', () => {
+    useReviewStore.getState().recordReview('capture-001', 5);
+    useReviewStore.setState((state) => ({
+      cards: {
+        ...state.cards,
+        'capture-001': {
+          ...state.cards['capture-001'],
+          nextReviewDate: Date.now() - 1000,
+        },
+      },
+    }));
+
+    render(<DailyReview />);
+
+    expect(screen.getByText('Read before you click')).toBeTruthy();
+    expect(screen.getByText('Target group')).toBeTruthy();
+    expect(screen.getByText('Captures are about the final liberty, not just contact.')).toBeTruthy();
+  });
 });
