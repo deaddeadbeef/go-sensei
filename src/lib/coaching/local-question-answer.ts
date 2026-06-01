@@ -1,10 +1,31 @@
-import { getGroup, pointToCoord } from '@/lib/go-engine';
-import type { GameState, Move, Point } from '@/lib/go-engine/types';
+import { getAllGroups, getGroup, pointKey, pointToCoord } from '@/lib/go-engine';
+import type { GameState, Group, Move, Point } from '@/lib/go-engine/types';
 import type { TeachingLevel } from '@/lib/ai/system-prompt';
+
+export interface LocalLibertyFocus {
+  id: string;
+  point: Point;
+  count: number;
+  libertyPoints: Point[];
+}
+
+export interface LocalGroupFocus {
+  id: string;
+  stones: Point[];
+  color: 'black' | 'white';
+  liberties: number;
+  label?: string;
+}
+
+export interface LocalBoardFocus {
+  liberties?: LocalLibertyFocus[];
+  groups?: LocalGroupFocus[];
+}
 
 export interface LocalQuestionAnswer {
   text: string;
   conceptIds: string[];
+  boardFocus?: LocalBoardFocus;
 }
 
 function isLocalAnswerLevel(teachingLevel: TeachingLevel): boolean {
@@ -28,15 +49,81 @@ function joinList(items: string[]): string {
   return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`;
 }
 
-function describeCurrentLiberties(game: GameState, point: Point): string | null {
+function copyPoint(point: Point): Point {
+  return { x: point.x, y: point.y };
+}
+
+interface LibertyContext {
+  sentence: string;
+  boardFocus: LocalBoardFocus;
+}
+
+function buildLibertyContext(game: GameState, point: Point, groupLabelPrefix: string): LibertyContext | null {
   const group = getGroup(game.board, point);
   if (!group) return null;
 
   const anchor = pointToCoord(point, game.board.size);
   const libertyCoords = group.liberties.map((liberty) => pointToCoord(liberty, game.board.size));
   const libertyWord = group.liberties.length === 1 ? 'liberty' : 'liberties';
+  const libertyList = joinList(libertyCoords);
 
-  return `Your group at ${anchor} currently has ${group.liberties.length} ${libertyWord}: ${joinList(libertyCoords)}.`;
+  return {
+    sentence: `Your group at ${anchor} currently has ${group.liberties.length} ${libertyWord}: ${libertyList}.`,
+    boardFocus: {
+      liberties: [{
+        id: `local-liberties-${pointKey(point)}`,
+        point: copyPoint(point),
+        count: group.liberties.length,
+        libertyPoints: group.liberties.map(copyPoint),
+      }],
+      groups: [{
+        id: `local-group-${pointKey(point)}`,
+        stones: group.stones.map(copyPoint),
+        color: group.color,
+        liberties: group.liberties.length,
+        label: `${groupLabelPrefix} has ${group.liberties.length} ${libertyWord}: ${libertyList}.`,
+      }],
+    },
+  };
+}
+
+function groupAnchor(group: Group): Point {
+  return [...group.stones].sort((a, b) => a.y - b.y || a.x - b.x)[0];
+}
+
+function findCurrentAtariGroup(game: GameState, lastMove: Extract<Move, { type: 'place' }> | null): Group | null {
+  if (lastMove) {
+    const lastGroup = getGroup(game.board, lastMove.point);
+    if (lastGroup?.liberties.length === 1) return lastGroup;
+  }
+
+  return getAllGroups(game.board).find((group) => group.liberties.length === 1) ?? null;
+}
+
+function buildAtariContext(game: GameState, group: Group): LibertyContext {
+  const anchor = groupAnchor(group);
+  const anchorCoord = pointToCoord(anchor, game.board.size);
+  const libertyCoord = pointToCoord(group.liberties[0], game.board.size);
+  const colorName = group.color === 'black' ? 'Black' : 'White';
+
+  return {
+    sentence: ` I marked the ${group.color} group at ${anchorCoord}; its only liberty is ${libertyCoord}.`,
+    boardFocus: {
+      liberties: [{
+        id: `local-atari-liberties-${pointKey(anchor)}`,
+        point: copyPoint(anchor),
+        count: 1,
+        libertyPoints: group.liberties.map(copyPoint),
+      }],
+      groups: [{
+        id: `local-atari-group-${pointKey(anchor)}`,
+        stones: group.stones.map(copyPoint),
+        color: group.color,
+        liberties: group.liberties.length,
+        label: `${colorName} group in atari: only liberty at ${libertyCoord}.`,
+      }],
+    },
+  };
 }
 
 function normalizedQuestion(question: string): string {
@@ -54,17 +141,22 @@ export function getLocalQuestionAnswer(
   const lastMove = lastPlacedMove(game);
 
   if (/\blibert(y|ies)\b/.test(q) || q.includes('breathing room')) {
-    const context = lastMove ? ` ${describeCurrentLiberties(game, lastMove.point) ?? ''}` : '';
+    const context = lastMove ? buildLibertyContext(game, lastMove.point, 'This connected group') : null;
     return {
-      text: `A liberty is an empty point directly next to a stone or connected group. Diagonals do not count.${context} When all liberties are filled by the opponent, that group is captured.`,
+      text: `A liberty is an empty point directly next to a stone or connected group. Diagonals do not count.${context ? ` ${context.sentence}` : ''} When all liberties are filled by the opponent, that group is captured.`,
       conceptIds: ['liberties', 'groups', 'capture'],
+      ...(context ? { boardFocus: context.boardFocus } : {}),
     };
   }
 
   if (q.includes('atari')) {
+    const context = findCurrentAtariGroup(game, lastMove);
+    const atariContext = context ? buildAtariContext(game, context) : null;
+
     return {
-      text: 'Atari means a stone or group has exactly one liberty left. Treat it like an alarm: either save your group by adding a liberty or capture the attacking stones first.',
+      text: `Atari means a stone or group has exactly one liberty left.${atariContext ? atariContext.sentence : ''} Treat it like an alarm: either save your group by adding a liberty or capture the attacking stones first.`,
       conceptIds: ['atari', 'liberties', 'capture'],
+      ...(atariContext ? { boardFocus: atariContext.boardFocus } : {}),
     };
   }
 
