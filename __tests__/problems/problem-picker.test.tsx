@@ -3,8 +3,10 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ProblemPicker } from '@/components/problems/ProblemPicker';
+import { useConceptStore } from '@/stores/concept-store';
 import { useGameStore } from '@/stores/game-store';
 import { useProgressStore } from '@/stores/progress-store';
+import { useReviewStore } from '@/stores/review-store';
 
 const scrollIntoViewMock = vi.fn();
 
@@ -17,6 +19,8 @@ describe('ProblemPicker', () => {
     });
     act(() => {
       useProgressStore.getState().resetAll();
+      useReviewStore.getState().resetAll();
+      useConceptStore.getState().resetAll();
       useGameStore.getState().startNewGame(9);
       useGameStore.getState().showProblems();
     });
@@ -86,5 +90,25 @@ describe('ProblemPicker', () => {
 
     expect(useGameStore.getState().currentProblemId).toBe('capture-002');
     expect(useGameStore.getState().preferredProblemFilter).toBe('capture');
+  });
+
+  it('keeps the learning path practice target visible in recommended filtered practice', () => {
+    act(() => {
+      useProgressStore.setState({
+        completedLessons: ['groups', 'liberties', 'capture', 'territory', 'eyes'],
+        hasStartedIntroGame: true,
+        problemAttempts: [
+          { problemId: 'capture-001', solved: true, attempts: 1, moveSequence: [], timestamp: 1 },
+          { problemId: 'capture-002', solved: true, attempts: 1, moveSequence: [], timestamp: 1 },
+          { problemId: 'capture-003', solved: true, attempts: 1, moveSequence: [], timestamp: 1 },
+        ],
+      });
+      useGameStore.getState().showProblems('life-and-death');
+    });
+
+    render(<ProblemPicker />);
+
+    expect(screen.getByText('Path goal')).toBeTruthy();
+    expect(screen.getByText('Practice life and death until you solve 2 more life and death problems.')).toBeTruthy();
   });
 });
