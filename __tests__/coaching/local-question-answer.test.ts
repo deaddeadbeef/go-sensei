@@ -49,6 +49,7 @@ describe('local question answer', () => {
       liberties: 4,
     });
     expect(answer?.boardFocus?.groups?.[0].label).toContain('C8');
+    expect(answer?.actions).toEqual([{ id: 'lesson:liberties', label: 'Review liberties' }]);
   });
 
   it('answers atari questions with a concrete warning', () => {
@@ -57,6 +58,7 @@ describe('local question answer', () => {
     expect(answer?.text).toContain('exactly one liberty left');
     expect(answer?.conceptIds).toEqual(expect.arrayContaining(['atari', 'liberties']));
     expect(answer?.boardFocus).toBeUndefined();
+    expect(answer?.actions).toEqual([{ id: 'practice:capture', label: 'Practice capture' }]);
   });
 
   it('marks the current atari group when the board has one', () => {
@@ -120,6 +122,7 @@ describe('local question answer', () => {
       rank: 1,
       reason: 'Capture White by filling its last liberty at D7.',
     }]);
+    expect(answer?.actions).toEqual([{ id: 'practice:capture', label: 'Practice capture' }]);
   });
 
   it('answers territory questions with corner guidance', () => {
@@ -128,6 +131,7 @@ describe('local question answer', () => {
     expect(answer?.text).toContain('empty space your stones surround');
     expect(answer?.text).toContain('corners and edges');
     expect(answer?.conceptIds).toEqual(expect.arrayContaining(['territory', 'corner-opening']));
+    expect(answer?.actions).toEqual([{ id: 'lesson:territory', label: 'Review territory' }]);
   });
 
   it('leaves unrecognized questions to cloud Sensei', () => {

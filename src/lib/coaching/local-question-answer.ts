@@ -30,10 +30,16 @@ export interface LocalBoardFocus {
   suggestions?: LocalSuggestionFocus[];
 }
 
+export interface LocalAnswerAction {
+  id: string;
+  label: string;
+}
+
 export interface LocalQuestionAnswer {
   text: string;
   conceptIds: string[];
   boardFocus?: LocalBoardFocus;
+  actions?: LocalAnswerAction[];
 }
 
 function isLocalAnswerLevel(teachingLevel: TeachingLevel): boolean {
@@ -200,6 +206,7 @@ export function getLocalQuestionAnswer(
     return {
       text: `A liberty is an empty point directly next to a stone or connected group. Diagonals do not count.${context ? ` ${context.sentence}` : ''} When all liberties are filled by the opponent, that group is captured.`,
       conceptIds: ['liberties', 'groups', 'capture'],
+      actions: [{ id: 'lesson:liberties', label: 'Review liberties' }],
       ...(context ? { boardFocus: context.boardFocus } : {}),
     };
   }
@@ -211,6 +218,7 @@ export function getLocalQuestionAnswer(
     return {
       text: `Atari means a stone or group has exactly one liberty left.${atariContext ? atariContext.sentence : ''} Treat it like an alarm: either save your group by adding a liberty or capture the attacking stones first.`,
       conceptIds: ['atari', 'liberties', 'capture'],
+      actions: [{ id: 'practice:capture', label: 'Practice capture' }],
       ...(atariContext ? { boardFocus: atariContext.boardFocus } : {}),
     };
   }
@@ -222,6 +230,7 @@ export function getLocalQuestionAnswer(
     return {
       text: `To capture, fill every liberty of one connected enemy group. Count the empty points directly touching that group, then play the final one when it cannot escape.${captureContext ? captureContext.sentence : ' When an enemy group has one liberty, that last liberty is the capture point.'}`,
       conceptIds: ['capture', 'liberties', 'groups'],
+      actions: [{ id: 'practice:capture', label: 'Practice capture' }],
       ...(captureContext ? { boardFocus: captureContext.boardFocus } : {}),
     };
   }
@@ -230,6 +239,7 @@ export function getLocalQuestionAnswer(
     return {
       text: 'Territory is empty space your stones surround well enough that the opponent cannot safely live inside. Beginners should start with corners and edges because the board edge helps form the border.',
       conceptIds: ['territory', 'corner-opening'],
+      actions: [{ id: 'lesson:territory', label: 'Review territory' }],
     };
   }
 
@@ -237,6 +247,7 @@ export function getLocalQuestionAnswer(
     return {
       text: 'An eye is internal empty space your group controls. A group with two real eyes cannot be captured, because the opponent cannot fill both without playing illegal self-capture.',
       conceptIds: ['eyes', 'life-and-death'],
+      actions: [{ id: 'practice:life-and-death', label: 'Practice life & death' }],
     };
   }
 
@@ -244,6 +255,7 @@ export function getLocalQuestionAnswer(
     return {
       text: 'Ko is the rule that stops both players from immediately repeating the same board position. If a capture would recreate the previous board, you must play somewhere else first.',
       conceptIds: ['ko'],
+      actions: [{ id: 'lesson:ko', label: 'Review ko' }],
     };
   }
 
@@ -251,6 +263,7 @@ export function getLocalQuestionAnswer(
     return {
       text: 'A ladder is a forcing chase where every move puts the running stones back into atari. Before starting one, read the path to the edge and check whether another stone breaks the chase.',
       conceptIds: ['ladder', 'reading', 'atari'],
+      actions: [{ id: 'practice:reading', label: 'Practice reading' }],
     };
   }
 

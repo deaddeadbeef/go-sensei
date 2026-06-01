@@ -6,6 +6,7 @@ import { COLORS } from '@/utils/colors';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BUBBLE_SLIDE_IN, BUBBLE_AUTO_DISMISS } from '@/utils/animation';
 import { useCallback, useEffect } from 'react';
+import type { ProblemCategory } from '@/lib/problems/types';
 
 const variantStyles: Record<string, { borderColor: string; icon: string }> = {
   neutral: { borderColor: COLORS.ui.accent, icon: '🎓' },
@@ -15,9 +16,23 @@ const variantStyles: Record<string, { borderColor: string; icon: string }> = {
   thinking: { borderColor: COLORS.ui.textSecondary, icon: '🤔' },
 };
 
+const practiceActionToCategory: Record<string, ProblemCategory> = {
+  'practice:capture': 'capture',
+  'practice:life-and-death': 'life-and-death',
+  'practice:reading': 'reading',
+};
+
+const lessonActionToId: Record<string, string> = {
+  'lesson:liberties': 'liberties',
+  'lesson:territory': 'territory',
+  'lesson:ko': 'ko',
+};
+
 export function SenseiBubble() {
   const bubble = useGameStore((s) => s.bubble);
   const dismissBubble = useGameStore((s) => s.dismissBubble);
+  const showProblems = useGameStore((s) => s.showProblems);
+  const startLesson = useGameStore((s) => s.startLesson);
   const { requestHint } = useGoMaster();
   const { displayedText, isComplete } = useTypewriter(bubble.text);
 
@@ -32,8 +47,20 @@ export function SenseiBubble() {
     dismissBubble();
     if (actionId === 'hint') {
       requestHint();
+      return;
     }
-  }, [dismissBubble, requestHint]);
+
+    const problemCategory = practiceActionToCategory[actionId];
+    if (problemCategory) {
+      showProblems(problemCategory);
+      return;
+    }
+
+    const lessonId = lessonActionToId[actionId];
+    if (lessonId) {
+      startLesson(lessonId);
+    }
+  }, [dismissBubble, requestHint, showProblems, startLesson]);
 
   return (
     <AnimatePresence>

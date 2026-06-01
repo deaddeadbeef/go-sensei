@@ -44,6 +44,7 @@ describe('useGoMaster local answers', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(state.bubble.variant).toBe('teaching');
     expect(state.bubble.text).toContain('Your group at C7 currently has 4 liberties');
+    expect(state.bubble.actions).toEqual([{ id: 'lesson:liberties', label: 'Review liberties' }]);
     expect(state.overlays.liberties).toEqual([{
       id: 'local-liberties-2,2',
       point: { x: 2, y: 2 },
@@ -84,6 +85,7 @@ describe('useGoMaster local answers', () => {
 
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(state.bubble.text).toContain('Black can capture it now by playing D7');
+    expect(state.bubble.actions).toEqual([{ id: 'practice:capture', label: 'Practice capture' }]);
     expect(state.overlays.liberties).toEqual([{
       id: 'local-capture-liberties-2,2',
       point: { x: 2, y: 2 },

@@ -478,6 +478,7 @@ export function useGoMaster() {
           text: localAnswer.text,
           variant: 'teaching',
           anchorPoint: null,
+          actions: localAnswer.actions ?? [],
           streamingComplete: true,
         });
         return;
