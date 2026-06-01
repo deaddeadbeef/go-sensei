@@ -84,6 +84,62 @@ interface SenseiBubbleState {
   streamingComplete: boolean;
 }
 
+export interface ChatMessage {
+  id: string;
+  text: string;
+  variant: string;
+  timestamp: number;
+}
+
+const MAX_CHAT_MESSAGES = 80;
+
+function chatMessageKey(message: ChatMessage): string {
+  return `${message.variant}:${message.text.trim()}`;
+}
+
+function isDedupableChatMessage(message: ChatMessage): boolean {
+  return message.variant !== 'user' && message.text.trim().length > 0;
+}
+
+export function compactChatMessages(messages: ChatMessage[]): ChatMessage[] {
+  const seen = new Set<string>();
+  const compacted: ChatMessage[] = [];
+
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+
+    if (isDedupableChatMessage(message)) {
+      const key = chatMessageKey(message);
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+    }
+
+    compacted.unshift(message);
+    if (compacted.length >= MAX_CHAT_MESSAGES) {
+      break;
+    }
+  }
+
+  return compacted;
+}
+
+function appendChatMessage(messages: ChatMessage[], message: ChatMessage): ChatMessage[] {
+  if (isDedupableChatMessage(message)) {
+    const nextKey = chatMessageKey(message);
+    const alreadyExists = messages.some(
+      (existing) => isDedupableChatMessage(existing) && chatMessageKey(existing) === nextKey,
+    );
+
+    if (alreadyExists) {
+      return compactChatMessages(messages);
+    }
+  }
+
+  return compactChatMessages([...messages, message]);
+}
+
 // ---------------------------------------------------------------------------
 // Lesson mode
 // ---------------------------------------------------------------------------
@@ -172,7 +228,7 @@ interface GameStore {
   bubble: SenseiBubbleState;
 
   // Chat messages (accumulated log)
-  chatMessages: { id: string; text: string; variant: string; timestamp: number }[];
+  chatMessages: ChatMessage[];
 
   // Lesson mode
   lesson: LessonState;
@@ -606,18 +662,15 @@ export const useGameStore = create<GameStore>()(
     set((s) => {
       const text = config.text || '';
       const variant = config.variant || 'neutral';
-      const lastMsg = s.chatMessages[s.chatMessages.length - 1];
-      const isDuplicate = lastMsg && lastMsg.text === text;
+      const nextMessage: ChatMessage = {
+        id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        text,
+        variant,
+        timestamp: Date.now(),
+      };
       return {
         bubble: { ...s.bubble, streamingComplete: false, ...config, visible: true },
-        ...(text && !isDuplicate ? {
-          chatMessages: [...s.chatMessages, {
-            id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-            text,
-            variant,
-            timestamp: Date.now(),
-          }],
-        } : {}),
+        ...(text ? { chatMessages: appendChatMessage(s.chatMessages, nextMessage) } : {}),
       };
     });
   },
@@ -632,13 +685,15 @@ export const useGameStore = create<GameStore>()(
 
   // Chat
   addChatMessage(text: string, variant: string) {
+    const nextMessage: ChatMessage = {
+      id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      text,
+      variant,
+      timestamp: Date.now(),
+    };
+
     set((s) => ({
-      chatMessages: [...s.chatMessages, {
-        id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        text,
-        variant,
-        timestamp: Date.now(),
-      }],
+      chatMessages: appendChatMessage(s.chatMessages, nextMessage),
     }));
   },
 
@@ -1039,7 +1094,7 @@ export const useGameStore = create<GameStore>()(
       }),
       partialize: (state) => ({
         game: state.game,
-        chatMessages: state.chatMessages,
+        chatMessages: compactChatMessages(state.chatMessages),
         phase: state.phase,
         learnedConcepts: state.learnedConcepts,
         teachingLevel: state.teachingLevel,
@@ -1050,6 +1105,9 @@ export const useGameStore = create<GameStore>()(
         return {
           ...current,
           ...persistedState,
+          chatMessages: Array.isArray(persistedState.chatMessages)
+            ? compactChatMessages(persistedState.chatMessages)
+            : current.chatMessages,
           appPhase: getRestorableAppPhase(persistedState.appPhase),
         };
       },
