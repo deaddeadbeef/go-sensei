@@ -679,7 +679,7 @@ export const useGameStore = create<GameStore>()(
     const nextProgress = useProgressStore.getState();
 
     set({
-      appPhase: 'lessons',
+      appPhase: 'path',
       completedLessons: nextProgress.completedLessons,
       currentLessonId: null,
       currentStep: 0,

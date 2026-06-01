@@ -126,4 +126,18 @@ describe('lesson interaction state', () => {
     expect(s.lessonInteraction.prompt).toBeNull();
     expect(s.lessonInteraction.attempts).toBe(0);
   });
+
+  it('completeLesson records progress and returns to the learning path', () => {
+    act(() => {
+      useGameStore.getState().startLesson('groups');
+      useGameStore.setState({ currentStep: 4 });
+      useGameStore.getState().completeLesson();
+    });
+
+    const state = useGameStore.getState();
+    expect(state.appPhase).toBe('path');
+    expect(state.currentLessonId).toBeNull();
+    expect(state.currentStep).toBe(0);
+    expect(state.completedLessons).toContain('groups');
+  });
 });
