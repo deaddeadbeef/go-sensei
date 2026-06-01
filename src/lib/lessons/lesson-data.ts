@@ -22,6 +22,9 @@ export const LESSONS: Lesson[] = [
           { point: { x: 5, y: 4 }, color: 'green', label: 'Connected' },
         ],
         text: 'When two stones are next to each other (horizontally or vertically), they form one group. These two black stones are connected.',
+        prompt: 'Click the right-hand stone in this connected group.',
+        expectedMove: { x: 5, y: 4 },
+        wrongMoveHint: 'Connected stones touch along a board line. Choose the black stone directly to the right of the first one.',
       },
       {
         stones: [
@@ -106,6 +109,9 @@ export const LESSONS: Lesson[] = [
           { point: { x: 4, y: 5 }, color: 'red', label: 'Last liberty!' },
         ],
         text: 'Three white stones surround black. Only ONE liberty remains! This is called "atari" — the stone is in danger of being captured.',
+        prompt: 'Click black\'s last liberty.',
+        expectedMove: { x: 4, y: 5 },
+        wrongMoveHint: 'A liberty is an empty point directly next to the stone. Look for the only empty neighbor left.',
       },
       {
         stones: [
@@ -141,6 +147,9 @@ export const LESSONS: Lesson[] = [
           { point: { x: 4, y: 5 }, color: 'red', label: 'Last liberty!' },
         ],
         text: 'Remember atari? This black stone has only one liberty left. If white plays on that last liberty...',
+        prompt: 'Where should white play to capture the black stone?',
+        expectedMove: { x: 4, y: 5 },
+        wrongMoveHint: 'To capture, fill the final liberty. The red point is the whole target.',
       },
       {
         stones: [
@@ -213,6 +222,9 @@ export const LESSONS: Lesson[] = [
           { point: { x: 1, y: 2 }, color: 'green', label: 'Territory' },
         ],
         text: 'Territory is empty space surrounded by your stones. Black has walled off a corner — those 4 green points are black\'s territory. Each point = 1 point at the end!',
+        prompt: 'Click an empty point that belongs to black territory.',
+        expectedMove: { x: 1, y: 1 },
+        wrongMoveHint: 'Territory is empty space inside the wall, not the stones making the wall.',
       },
       {
         stones: [
