@@ -180,6 +180,14 @@ function getBeginnerObjectiveForAiContext(
   });
 }
 
+function hasGitHubToken(): boolean {
+  return typeof window !== 'undefined' && !!sessionStorage.getItem('go-sensei-github-token');
+}
+
+function canUseLocalGuidedTurn(teachingLevel: TeachingLevel): boolean {
+  return teachingLevel === 'guided' || teachingLevel === 'beginner';
+}
+
 export function useGoMaster() {
   const showBubble = useGameStore((s) => s.showBubble);
   const dismissBubble = useGameStore((s) => s.dismissBubble);
@@ -227,12 +235,12 @@ export function useGoMaster() {
       }
 
       if (fallback.shouldPassSensei && state.game.currentPlayer !== 'black') {
-        passSenseiIfNeeded('Sensei used local guidance and passed for White.');
+        passSenseiIfNeeded('White passes so you can try the next idea.');
       }
 
       showBubble({
         text: fallback.text,
-        variant: 'warning',
+        variant: reason === 'auth-unavailable' ? 'teaching' : 'warning',
         anchorPoint: null,
         streamingComplete: true,
       });
@@ -468,7 +476,17 @@ export function useGoMaster() {
 
   const sendPlayerMove = useCallback(
     (wasCapture: boolean, capturedCount: number) => {
-      const g = useGameStore.getState().game;
+      const state = useGameStore.getState();
+      const g = state.game;
+
+      if (!hasGitHubToken() && canUseLocalGuidedTurn(state.teachingLevel)) {
+        clearOverlays();
+        dismissBubble();
+        setAiThinking(false);
+        applyLocalFallback('auth-unavailable');
+        return;
+      }
+
       const lastMove = g.moveHistory[g.moveHistory.length - 1];
       if (lastMove?.type === 'pass') {
         send(formatPassMessage(g));
@@ -476,7 +494,7 @@ export function useGoMaster() {
       }
       send(g.moveHistory.length === 1 ? formatFirstMoveMessage(g) : formatMoveMessage(g, wasCapture, capturedCount));
     },
-    [send],
+    [applyLocalFallback, clearOverlays, dismissBubble, send, setAiThinking],
   );
 
   const sendMessage = useCallback(

@@ -26,7 +26,8 @@ describe('local guided fallback', () => {
       shouldPassSensei: false,
       conceptIds: expect.arrayContaining(['corner-opening', 'territory']),
     });
-    expect(fallback?.text).toContain('needs a GitHub login');
+    expect(fallback?.text).toContain('teach this beginner path locally');
+    expect(fallback?.text).not.toContain('GitHub login');
     expect(fallback?.text).toContain('Start with a corner');
     expect(fallback?.text).toContain('marked board guidance');
   });
