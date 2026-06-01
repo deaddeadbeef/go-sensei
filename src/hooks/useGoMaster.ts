@@ -246,12 +246,12 @@ export function useGoMaster() {
       recordEncounter(conceptId);
     }
 
+    clearOverlays();
     if (
       localAnswer.boardFocus?.liberties?.length
       || localAnswer.boardFocus?.groups?.length
       || localAnswer.boardFocus?.suggestions?.length
     ) {
-      clearOverlays();
       for (const liberty of localAnswer.boardFocus.liberties ?? []) {
         applyLibertyOverlay(liberty);
       }
