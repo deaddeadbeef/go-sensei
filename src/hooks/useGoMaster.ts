@@ -9,6 +9,7 @@ import { getLearningRecommendation } from '@/lib/learning-path/recommendations';
 import { formatObjectiveTargetText, getBeginnerObjective } from '@/lib/coaching/beginner-objectives';
 import { getLocalGuidedFallback } from '@/lib/coaching/local-guided-fallback';
 import { getLocalQuestionAnswer, type LocalQuestionAnswer } from '@/lib/coaching/local-question-answer';
+import { getLocalStudyPlanAnswer } from '@/lib/coaching/local-study-plan-answer';
 import { coordToPoint } from '@/lib/go-engine';
 import {
   formatMoveMessage,
@@ -487,6 +488,20 @@ export function useGoMaster() {
 
       if (localAnswer) {
         applyLocalAnswer(localAnswer);
+        return;
+      }
+
+      const progress = useProgressStore.getState();
+      const studyPlanAnswer = getLocalStudyPlanAnswer(text, {
+        completedLessons: progress.completedLessons,
+        problemAttempts: progress.problemAttempts,
+        dueReviewCount: useReviewStore.getState().getDueCount(),
+        hasStartedIntroGame: progress.hasStartedIntroGame,
+        mastery: Object.values(useConceptStore.getState().mastery),
+      });
+
+      if (studyPlanAnswer) {
+        applyLocalAnswer(studyPlanAnswer);
         return;
       }
 

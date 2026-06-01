@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useGoMaster } from '@/hooks/useGoMaster';
 import { useConceptStore } from '@/stores/concept-store';
 import { useGameStore } from '@/stores/game-store';
+import { useProgressStore } from '@/stores/progress-store';
+import { useReviewStore } from '@/stores/review-store';
 import type { Point } from '@/lib/go-engine';
 
 function playStoreSequence(points: Point[]) {
@@ -20,6 +22,8 @@ describe('useGoMaster local answers', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     act(() => {
+      useProgressStore.getState().resetAll();
+      useReviewStore.getState().resetAll();
       useConceptStore.getState().resetAll();
       useGameStore.getState().startGuidedIntroGame();
       useGameStore.getState().placeStone({ x: 2, y: 2 });
@@ -249,5 +253,39 @@ describe('useGoMaster local answers', () => {
       label: 'Ko: White cannot immediately recapture at B8.',
     }]);
     expect(useConceptStore.getState().getMastery('ko').encounterCount).toBeGreaterThan(0);
+  });
+
+  it('answers study-plan questions from the learning recommendation without fetching', () => {
+    act(() => {
+      useProgressStore.setState({
+        completedLessons: ['groups', 'liberties', 'capture', 'territory', 'eyes'],
+        hasStartedIntroGame: true,
+        problemAttempts: [
+          { problemId: 'capture-001', solved: true, attempts: 1, moveSequence: [], timestamp: 1 },
+          { problemId: 'capture-002', solved: true, attempts: 1, moveSequence: [], timestamp: 1 },
+          { problemId: 'capture-003', solved: true, attempts: 1, moveSequence: [], timestamp: 1 },
+        ],
+      });
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('What should I study next?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.text).toContain('Study plan: Life and death problems.');
+    expect(state.bubble.text).toContain('Practice life and death until you solve 2 more life and death problems.');
+    expect(state.bubble.text).toContain('Focus on Eyes and Life & Death.');
+    expect(state.bubble.actions).toEqual([
+      { id: 'practice:life-and-death', label: 'Open life and death problems' },
+    ]);
+    expect(state.chatMessages.at(-1)?.actions).toEqual([
+      { id: 'practice:life-and-death', label: 'Open life and death problems' },
+    ]);
+    expect(useConceptStore.getState().getMastery('life-and-death').encounterCount).toBeGreaterThan(0);
   });
 });

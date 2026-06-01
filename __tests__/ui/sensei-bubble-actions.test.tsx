@@ -69,6 +69,41 @@ describe('SenseiBubble actions', () => {
     expect(useGameStore.getState().bubble.visible).toBe(false);
   });
 
+  it('routes recommendation review actions to daily review', async () => {
+    act(() => {
+      useGameStore.getState().showBubble({
+        text: 'Reviews are due before new material.',
+        variant: 'teaching',
+        actions: [{ id: 'review', label: 'Review due cards' }],
+      });
+    });
+
+    render(<SenseiBubble />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Review due cards' }, { timeout: 3000 }));
+
+    expect(useGameStore.getState().appPhase).toBe('review');
+    expect(useGameStore.getState().bubble.visible).toBe(false);
+  });
+
+  it('routes generic practice actions to every problem category', async () => {
+    act(() => {
+      useGameStore.getState().showBubble({
+        text: 'Practice the endgame next.',
+        variant: 'teaching',
+        actions: [{ id: 'practice:endgame', label: 'Open endgame problems' }],
+      });
+    });
+
+    render(<SenseiBubble />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Open endgame problems' }, { timeout: 3000 }));
+
+    expect(useGameStore.getState().appPhase).toBe('problems');
+    expect(useGameStore.getState().preferredProblemFilter).toBe('endgame');
+    expect(useGameStore.getState().bubble.visible).toBe(false);
+  });
+
   it('routes hint actions to local board guidance in guided games', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
