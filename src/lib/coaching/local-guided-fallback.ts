@@ -38,17 +38,17 @@ function describeLastMove(game: GameState): string {
   return `Your last stone was at ${coord}. Use the next move to make that stone part of a plan.`;
 }
 
-function reasonText(reason: LocalFallbackReason): string {
+function introText(reason: LocalFallbackReason): string {
   if (reason === 'auth-expired') {
-    return 'The cloud Sensei session expired.';
+    return 'The cloud Sensei session expired, so I will keep the lesson moving locally for now.';
   }
   if (reason === 'auth-unavailable') {
-    return 'Cloud Sensei needs a GitHub login.';
+    return 'I can teach this beginner path locally, so keep playing on the board.';
   }
   if (reason === 'network-error') {
-    return 'I could not reach cloud Sensei.';
+    return 'I could not reach cloud Sensei, so I will keep the lesson moving locally for now.';
   }
-  return 'Cloud Sensei had trouble answering.';
+  return 'Cloud Sensei had trouble answering, so I will keep the lesson moving locally for now.';
 }
 
 export function getLocalGuidedFallback(
@@ -69,7 +69,7 @@ export function getLocalGuidedFallback(
   });
   const shouldPassSensei = game.currentPlayer !== 'black';
   const lines = [
-    `${reasonText(reason)} I will keep the lesson moving locally for now.`,
+    introText(reason),
     describeLastMove(game),
   ];
 

@@ -106,6 +106,28 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('corner-opening').encounterCount).toBeGreaterThan(0);
   });
 
+  it('keeps logged-out guided player moves local instead of fetching and warning about auth', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendPlayerMove(false, 0);
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.game.currentPlayer).toBe('black');
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('teach this beginner path locally');
+    expect(state.bubble.text).toContain('Your first stone at C7');
+    expect(state.bubble.text).toContain('Make your stones work together');
+    expect(state.bubble.text).not.toContain('GitHub login');
+    expect(state.chatMessages.some((message) => message.text.includes('Cloud Sensei needs'))).toBe(false);
+    expect(state.chatMessages.some((message) => message.text === 'White passes so you can try the next idea.')).toBe(true);
+    expect(useConceptStore.getState().getMastery('shape').encounterCount).toBeGreaterThan(0);
+  });
+
   it('answers beginner liberty questions with visible board overlays without fetching', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());
