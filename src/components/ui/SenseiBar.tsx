@@ -1,5 +1,6 @@
 "use client";
 import { useGameStore } from '@/stores/game-store';
+import type { AppPhase } from '@/stores/game-store';
 import { COLORS } from '@/utils/colors';
 import { motion } from 'framer-motion';
 
@@ -8,6 +9,17 @@ interface SenseiBarProps {
   isLoggedIn: boolean;
 }
 
+const SURFACE_STATUS: Record<Exclude<AppPhase, 'game'>, string> = {
+  path: 'Learning path',
+  lessons: 'Lesson library',
+  lesson: 'Lesson checkpoint',
+  problems: 'Problem practice',
+  problem: 'Solving problem',
+  skills: 'Skill tree',
+  review: 'Daily review',
+  dashboard: 'Progress dashboard',
+};
+
 export function SenseiBar({ onSettingsClick, isLoggedIn }: SenseiBarProps) {
   const moveCount = useGameStore((s) => s.game.moveHistory.length);
   const captures = useGameStore((s) => s.game.captures);
@@ -15,6 +27,7 @@ export function SenseiBar({ onSettingsClick, isLoggedIn }: SenseiBarProps) {
   const isAiThinking = useGameStore((s) => s.isAiThinking);
   const phase = useGameStore((s) => s.phase);
   const appPhase = useGameStore((s) => s.appPhase);
+  const surfaceStatus = appPhase === 'game' ? null : SURFACE_STATUS[appPhase];
   const turnLabel = isAiThinking
     ? 'Sensei thinking...'
     : currentPlayer === 'black'
@@ -30,7 +43,12 @@ export function SenseiBar({ onSettingsClick, isLoggedIn }: SenseiBarProps) {
         <span className="text-lg font-bold" style={{ color: COLORS.ui.accent }}>碁 Go Sensei</span>
       </div>
       <div className="flex items-center gap-4 text-xs" style={{ color: COLORS.ui.textSecondary }}>
-        {phase === 'playing' && (
+        {surfaceStatus && (
+          <span className="font-medium" style={{ color: COLORS.ui.textPrimary }}>
+            {surfaceStatus}
+          </span>
+        )}
+        {!surfaceStatus && phase === 'playing' && (
           <>
             <span>Move {moveCount}</span>
             <span className="flex items-center gap-1">
@@ -57,9 +75,9 @@ export function SenseiBar({ onSettingsClick, isLoggedIn }: SenseiBarProps) {
             </div>
           </>
         )}
-        {phase === 'welcome' && <span>Welcome to Go!</span>}
-        {phase === 'scoring' && <span>Scoring</span>}
-        {phase === 'finished' && <span>Game Over</span>}
+        {!surfaceStatus && phase === 'welcome' && <span>Welcome to Go!</span>}
+        {!surfaceStatus && phase === 'scoring' && <span>Scoring</span>}
+        {!surfaceStatus && phase === 'finished' && <span>Game Over</span>}
       </div>
       <div className="flex items-center gap-2">
         {isLoggedIn && (
