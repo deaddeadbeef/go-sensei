@@ -1,6 +1,6 @@
 'use client';
 
-import { getBeginnerObjective } from '@/lib/coaching/beginner-objectives';
+import { formatObjectiveTargetText, getBeginnerObjective } from '@/lib/coaching/beginner-objectives';
 import { useGameStore } from '@/stores/game-store';
 import { COLORS } from '@/utils/colors';
 
@@ -19,6 +19,8 @@ export function BeginnerObjectiveCard() {
 
   if (!objective) return null;
 
+  const targetText = formatObjectiveTargetText(objective, game.board.size);
+
   return (
     <div
       className="mx-auto mb-3 w-full max-w-2xl rounded-lg border px-4 py-3 text-sm"
@@ -30,6 +32,11 @@ export function BeginnerObjectiveCard() {
       <div className="mt-1" style={{ color: COLORS.ui.textSecondary }}>
         {objective.instruction}
       </div>
+      {targetText && (
+        <div className="mt-1 text-xs font-semibold" style={{ color: COLORS.ui.textPrimary }}>
+          {targetText}
+        </div>
+      )}
       <div className="mt-1 text-xs" style={{ color: COLORS.ui.accent }}>
         {objective.why}
       </div>

@@ -1,4 +1,4 @@
-import { getAllGroups, getAdjacentPoints, getStone, isOnBoard, pointKey } from '@/lib/go-engine';
+import { getAllGroups, getAdjacentPoints, getStone, isOnBoard, pointKey, pointToCoord } from '@/lib/go-engine';
 import type { BoardSize, BoardState, Move, Point, StoneColor } from '@/lib/go-engine/types';
 import type { TeachingLevel } from '@/lib/ai/system-prompt';
 
@@ -53,6 +53,29 @@ function uniquePoints(points: Point[]): Point[] {
   }
 
   return result;
+}
+
+function joinCoordinateList(coords: string[]): string {
+  if (coords.length === 0) return '';
+  if (coords.length === 1) return coords[0];
+  if (coords.length === 2) return `${coords[0]} or ${coords[1]}`;
+
+  return `${coords.slice(0, -1).join(', ')}, or ${coords[coords.length - 1]}`;
+}
+
+export function formatObjectiveTargetText(
+  objective: BeginnerObjective,
+  boardSize: BoardSize,
+  limit = 4,
+): string | null {
+  if (objective.targetPoints.length === 0) return null;
+
+  const shownCoords = objective.targetPoints
+    .slice(0, limit)
+    .map((point) => pointToCoord(point, boardSize));
+  const suffix = objective.targetPoints.length > shownCoords.length ? ' first' : '';
+
+  return `Try ${joinCoordinateList(shownCoords)}${suffix}.`;
 }
 
 function getStones(board: BoardState, color: StoneColor): Point[] {

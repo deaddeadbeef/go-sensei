@@ -45,6 +45,7 @@ describe('move insight', () => {
     });
     expect(insight?.observation).toContain('C7');
     expect(insight?.nextStep).toContain('one-space jump');
+    expect(insight?.nextStep).toContain('Try E7 or C5');
   });
 
   it('coaches center openings toward corners', () => {

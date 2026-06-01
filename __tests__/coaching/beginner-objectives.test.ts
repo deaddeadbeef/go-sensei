@@ -1,4 +1,4 @@
-import { getBeginnerObjective } from '@/lib/coaching/beginner-objectives';
+import { formatObjectiveTargetText, getBeginnerObjective } from '@/lib/coaching/beginner-objectives';
 import { createBoard, setStone } from '@/lib/go-engine';
 import type { BoardState, Point, StoneColor } from '@/lib/go-engine/types';
 
@@ -23,6 +23,8 @@ describe('beginner objectives', () => {
       title: 'Start with a corner',
     });
     expect(objective?.targetPoints).toContainEqual({ x: 2, y: 2 });
+    if (!objective) throw new Error('Expected opening objective');
+    expect(formatObjectiveTargetText(objective, 9)).toBe('Try C7, G7, C3, or G3.');
   });
 
   it('does not show beginner objectives while Sensei is to move', () => {
@@ -82,6 +84,8 @@ describe('beginner objectives', () => {
     expect(objective?.targetPoints).not.toContainEqual({ x: 0, y: 2 });
     expect(objective?.targetPoints).not.toContainEqual({ x: 2, y: 0 });
     expect(objective?.targetPoints).not.toContainEqual({ x: 2, y: 2 });
+    if (!objective) throw new Error('Expected extension objective');
+    expect(formatObjectiveTargetText(objective, 9)).toBe('Try E7 or C5.');
   });
 
   it('keeps pointing at open corners when the learner starts in the center', () => {

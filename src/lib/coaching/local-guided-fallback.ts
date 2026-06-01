@@ -1,4 +1,4 @@
-import { getBeginnerObjective } from '@/lib/coaching/beginner-objectives';
+import { formatObjectiveTargetText, getBeginnerObjective } from '@/lib/coaching/beginner-objectives';
 import { pointToCoord } from '@/lib/go-engine';
 import type { GameState, Move } from '@/lib/go-engine/types';
 import type { TeachingLevel } from '@/lib/ai/system-prompt';
@@ -74,7 +74,9 @@ export function getLocalGuidedFallback(
   ];
 
   if (objective) {
-    lines.push(`Next focus: ${objective.title}. ${objective.instruction} ${objective.why}`);
+    const targetText = formatObjectiveTargetText(objective, game.board.size);
+    const targetSentence = targetText ? `${targetText} ` : '';
+    lines.push(`Next focus: ${objective.title}. ${objective.instruction} ${targetSentence}${objective.why}`);
   } else {
     lines.push('Next focus: play where your stones gain room, connect, or claim easier territory.');
   }

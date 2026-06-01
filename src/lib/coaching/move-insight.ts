@@ -1,4 +1,4 @@
-import { getBeginnerObjective } from '@/lib/coaching/beginner-objectives';
+import { formatObjectiveTargetText, getBeginnerObjective } from '@/lib/coaching/beginner-objectives';
 import { getAllGroups, pointToCoord } from '@/lib/go-engine';
 import type { GameState, Move, Point } from '@/lib/go-engine/types';
 import type { TeachingLevel } from '@/lib/ai/system-prompt';
@@ -44,9 +44,18 @@ function objectiveNextStep(game: GameState, teachingLevel: TeachingLevel): { tex
     teachingLevel,
   });
 
+  if (!objective) {
+    return {
+      text: 'Look for the move that gives your stones more room or easier territory.',
+      concepts: [],
+    };
+  }
+
+  const targetText = formatObjectiveTargetText(objective, game.board.size);
+
   return {
-    text: objective?.instruction ?? 'Look for the move that gives your stones more room or easier territory.',
-    concepts: objective?.conceptIds ?? [],
+    text: targetText ? `${objective.instruction} ${targetText}` : objective.instruction,
+    concepts: objective.conceptIds,
   };
 }
 
