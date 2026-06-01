@@ -458,6 +458,15 @@ export function useGoMaster() {
         for (const conceptId of localAnswer.conceptIds) {
           recordEncounter(conceptId);
         }
+        if (localAnswer.boardFocus?.liberties?.length || localAnswer.boardFocus?.groups?.length) {
+          clearOverlays();
+          for (const liberty of localAnswer.boardFocus.liberties ?? []) {
+            applyLibertyOverlay(liberty);
+          }
+          if (localAnswer.boardFocus.groups?.length) {
+            applyGroups(localAnswer.boardFocus.groups);
+          }
+        }
         showBubble({
           text: localAnswer.text,
           variant: 'teaching',
@@ -469,7 +478,7 @@ export function useGoMaster() {
 
       send(formatFreeTextMessage(game, text));
     },
-    [send, addChatMessage, recordEncounter, showBubble],
+    [send, addChatMessage, recordEncounter, clearOverlays, applyLibertyOverlay, applyGroups, showBubble],
   );
 
   const requestHint = useCallback(() => {
