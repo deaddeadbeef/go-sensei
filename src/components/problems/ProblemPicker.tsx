@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { PROBLEMS } from '@/lib/problems/problem-data';
 import { useGameStore } from '@/stores/game-store';
 import { useProgressStore } from '@/stores/progress-store';
 import { COLORS } from '@/utils/colors';
-import type { ProblemCategory } from '@/lib/problems/types';
+import type { Problem, ProblemAttempt, ProblemCategory } from '@/lib/problems/types';
 
 const container = {
   hidden: { opacity: 0 },
@@ -42,26 +42,138 @@ function difficultyStars(d: number) {
   return '★'.repeat(d) + '☆'.repeat(5 - d);
 }
 
+function solvedProblemIds(problemAttempts: ProblemAttempt[]): Set<string> {
+  return new Set(
+    problemAttempts
+      .filter((attempt) => attempt.solved)
+      .map((attempt) => attempt.problemId),
+  );
+}
+
+function visibleProgressLabel(filter: FilterKey): string {
+  return filter === 'all' ? 'problems' : `${CATEGORY_LABELS[filter].toLowerCase()} problems`;
+}
+
+function recommendationReason({
+  filter,
+  solvedCount,
+  totalCount,
+}: {
+  filter: FilterKey;
+  solvedCount: number;
+  totalCount: number;
+}): string {
+  const problemKind = filter === 'all'
+    ? 'problem'
+    : `${CATEGORY_LABELS[filter].toLowerCase()} problem`;
+
+  if (totalCount > 0 && solvedCount === totalCount) {
+    return filter === 'all'
+      ? 'You have solved every problem in the library. Replay this one until the first move feels automatic.'
+      : `You have solved every ${problemKind}. Replay this one until the first move feels automatic.`;
+  }
+
+  if (solvedCount === 0) {
+    return filter === 'all'
+      ? 'Start here: it is the gentlest unsolved problem in the library.'
+      : `Start here: it is the gentlest unsolved ${problemKind}.`;
+  }
+
+  return filter === 'all'
+    ? 'Continue with the next unsolved problem in the library.'
+    : `Continue with the next unsolved ${problemKind}.`;
+}
+
+function ProblemRecommendation({
+  filter,
+  problem,
+  solvedCount,
+  totalCount,
+  solved,
+  onStart,
+}: {
+  filter: FilterKey;
+  problem: Problem;
+  solvedCount: number;
+  totalCount: number;
+  solved: boolean;
+  onStart: () => void;
+}) {
+  return (
+    <motion.section
+      className="mb-6 border-y py-4"
+      style={{ borderColor: 'rgba(255,255,255,0.08)' }}
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.25, duration: 0.35 }}
+    >
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: COLORS.ui.textSecondary }}>
+            Recommended next
+          </p>
+          <h2 className="mt-1 text-xl font-bold leading-tight" style={{ color: COLORS.ui.textPrimary }}>
+            {problem.title}
+          </h2>
+          <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+            {recommendationReason({ filter, solvedCount, totalCount })}
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs" style={{ color: COLORS.ui.textSecondary }}>
+            <span
+              className="rounded-full px-2 py-0.5 font-medium"
+              style={{ backgroundColor: `${COLORS.ui.accent}25`, color: COLORS.ui.accent }}
+            >
+              {CATEGORY_LABELS[problem.category]}
+            </span>
+            <span style={{ color: COLORS.ui.accent }}>{difficultyStars(problem.difficulty)}</span>
+            <span>{solvedCount}/{totalCount} {visibleProgressLabel(filter)} solved</span>
+          </div>
+        </div>
+        <button
+          onClick={onStart}
+          className="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-transform hover:scale-[1.02] active:scale-95"
+          style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
+        >
+          {solved ? `Review ${problem.title}` : `Start ${problem.title}`}
+        </button>
+      </div>
+    </motion.section>
+  );
+}
+
 export function ProblemPicker() {
   const problemAttempts = useProgressStore((s) => s.problemAttempts);
   const preferredProblemFilter = useGameStore((s) => s.preferredProblemFilter);
   const startProblem = useGameStore((s) => s.startProblem);
   const returnToGame = useGameStore((s) => s.returnToGame);
+  const topRef = useRef<HTMLDivElement>(null);
   const [filter, setFilter] = useState<FilterKey>(preferredProblemFilter ?? 'all');
 
-  const filtered = filter === 'all'
-    ? PROBLEMS
-    : PROBLEMS.filter((p) => p.category === filter);
+  const filtered = useMemo(
+    () => filter === 'all'
+      ? PROBLEMS
+      : PROBLEMS.filter((p) => p.category === filter),
+    [filter],
+  );
+
+  const solvedIds = useMemo(() => solvedProblemIds(problemAttempts), [problemAttempts]);
+  const solvedVisibleCount = filtered.filter((problem) => solvedIds.has(problem.id)).length;
+  const recommendedProblem = filtered.find((problem) => !solvedIds.has(problem.id)) ?? filtered[0] ?? null;
 
   const isSolved = (id: string) =>
-    problemAttempts.some((a) => a.problemId === id && a.solved);
+    solvedIds.has(id);
+
+  useEffect(() => {
+    topRef.current?.scrollIntoView?.({ block: 'start' });
+  }, [filter]);
 
   return (
     <div
-      className="flex min-h-screen items-center justify-center px-4 py-12"
+      ref={topRef}
+      className="min-h-screen overflow-y-auto px-4 py-6 sm:py-10"
       style={{ backgroundColor: COLORS.ui.bgPrimary }}
     >
-      <div className="w-full max-w-3xl">
+      <div className="mx-auto w-full max-w-3xl">
         {/* Header */}
         <motion.div
           className="mb-8 text-center"
@@ -104,6 +216,17 @@ export function ProblemPicker() {
             </button>
           ))}
         </motion.div>
+
+        {recommendedProblem && (
+          <ProblemRecommendation
+            filter={filter}
+            problem={recommendedProblem}
+            solvedCount={solvedVisibleCount}
+            totalCount={filtered.length}
+            solved={isSolved(recommendedProblem.id)}
+            onStart={() => startProblem(recommendedProblem)}
+          />
+        )}
 
         {/* Problem grid */}
         <motion.div
