@@ -41,6 +41,14 @@ const CATEGORY_LABELS: Record<FilterKey, string> = {
 
 const FILTERS: FilterKey[] = ['all', 'capture', 'life-and-death', 'tesuji', 'reading', 'endgame'];
 
+const FOCUS_PRACTICE_REASON: Record<ProblemCategory, string> = {
+  capture: 'Capture problems train you to count liberties and take stones only when the final point is ready.',
+  'life-and-death': 'Life and death problems train you to find vital points before a group lives or dies.',
+  tesuji: 'Tesuji problems train you to spot the sharp move that changes the shape immediately.',
+  reading: 'Reading problems train you to follow forcing moves before touching the board.',
+  endgame: 'Endgame problems train you to count value and play sente before smaller gote moves.',
+};
+
 function difficultyStars(d: number) {
   return '★'.repeat(d) + '☆'.repeat(5 - d);
 }
@@ -94,6 +102,7 @@ function ProblemRecommendation({
   totalCount,
   solved,
   pathGoalReason,
+  focusedPracticeReason,
   onStart,
 }: {
   filter: FilterKey;
@@ -102,6 +111,7 @@ function ProblemRecommendation({
   totalCount: number;
   solved: boolean;
   pathGoalReason: string | null;
+  focusedPracticeReason: string | null;
   onStart: () => void;
 }) {
   return (
@@ -133,6 +143,19 @@ function ProblemRecommendation({
               </p>
               <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
                 {pathGoalReason}
+              </p>
+            </div>
+          )}
+          {!pathGoalReason && focusedPracticeReason && (
+            <div
+              className="mt-3 rounded-lg p-3"
+              style={{ backgroundColor: `${COLORS.ui.bgCard}`, border: '1px solid rgba(255,255,255,0.08)' }}
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: COLORS.ui.textSecondary }}>
+                Focused practice
+              </p>
+              <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+                {focusedPracticeReason}
               </p>
             </div>
           )}
@@ -201,6 +224,7 @@ export function ProblemPicker() {
     && learningRecommendation.filter === filter
     ? learningRecommendation.reason
     : null;
+  const focusedPracticeReason = filter !== 'all' ? FOCUS_PRACTICE_REASON[filter] : null;
 
   const isSolved = (id: string) =>
     solvedIds.has(id);
@@ -267,6 +291,7 @@ export function ProblemPicker() {
             totalCount={filtered.length}
             solved={isSolved(recommendedProblem.id)}
             pathGoalReason={pathGoalReason}
+            focusedPracticeReason={focusedPracticeReason}
             onStart={() => startProblem(recommendedProblem)}
           />
         )}

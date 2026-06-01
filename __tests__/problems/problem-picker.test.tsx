@@ -111,4 +111,15 @@ describe('ProblemPicker', () => {
     expect(screen.getByText('Path goal')).toBeTruthy();
     expect(screen.getByText('Practice life and death until you solve 2 more life and death problems.')).toBeTruthy();
   });
+
+  it('explains why a manually filtered problem set is worth practicing', () => {
+    act(() => {
+      useGameStore.getState().showProblems('reading');
+    });
+
+    render(<ProblemPicker />);
+
+    expect(screen.getByText('Focused practice')).toBeTruthy();
+    expect(screen.getByText('Reading problems train you to follow forcing moves before touching the board.')).toBeTruthy();
+  });
 });
