@@ -1,19 +1,60 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DailyReview } from '@/components/review/DailyReview';
 import { useGameStore } from '@/stores/game-store';
 import { useReviewStore } from '@/stores/review-store';
+import { BOARD_PADDING, SVG_SIZE, cellSize } from '@/utils/coordinates';
+
+function makeProblemDue(problemId: string) {
+  useReviewStore.getState().recordReview(problemId, 5);
+  useReviewStore.setState((state) => ({
+    cards: {
+      ...state.cards,
+      [problemId]: {
+        ...state.cards[problemId],
+        nextReviewDate: Date.now() - 1000,
+      },
+    },
+  }));
+}
+
+function clickReviewPoint(container: HTMLElement, x: number, y: number, boardSize = 9) {
+  const board = container.querySelector('svg');
+  if (!board) throw new Error('Review board not found');
+
+  const cell = cellSize(boardSize);
+  fireEvent.click(board, {
+    clientX: BOARD_PADDING + x * cell,
+    clientY: BOARD_PADDING + y * cell,
+  });
+}
 
 describe('DailyReview', () => {
+  let boardRectSpy: ReturnType<typeof vi.spyOn>;
+
   beforeEach(() => {
     useReviewStore.getState().resetAll();
     useGameStore.getState().startNewGame(19);
     useGameStore.getState().showReview();
+    boardRectSpy = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: SVG_SIZE,
+      bottom: SVG_SIZE,
+      width: SVG_SIZE,
+      height: SVG_SIZE,
+      toJSON: () => ({}),
+    });
   });
 
-  afterEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    boardRectSpy.mockRestore();
+  });
 
   it('sends all-caught-up learners to problem practice', () => {
     render(<DailyReview />);
@@ -35,21 +76,55 @@ describe('DailyReview', () => {
   });
 
   it('shows a reading routine for due review problems', () => {
-    useReviewStore.getState().recordReview('capture-001', 5);
-    useReviewStore.setState((state) => ({
-      cards: {
-        ...state.cards,
-        'capture-001': {
-          ...state.cards['capture-001'],
-          nextReviewDate: Date.now() - 1000,
-        },
-      },
-    }));
+    makeProblemDue('capture-001');
 
     render(<DailyReview />);
 
     expect(screen.getByText('Read before you click')).toBeTruthy();
     expect(screen.getByText('Target group')).toBeTruthy();
     expect(screen.getByText('Captures are about the final liberty, not just contact.')).toBeTruthy();
+  });
+
+  it('turns missed reviews into targeted practice', () => {
+    makeProblemDue('life-001');
+
+    const { container } = render(<DailyReview />);
+
+    clickReviewPoint(container, 1, 1);
+    clickReviewPoint(container, 1, 1);
+    clickReviewPoint(container, 1, 1);
+
+    expect(screen.getByText('✕ Failed')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Finish Review' }));
+
+    expect(screen.getByText('Next step')).toBeTruthy();
+    expect(screen.getByText('Rebuild Life and death')).toBeTruthy();
+    expect(screen.getByText('Make Two Eyes')).toBeTruthy();
+    expect(screen.getByText('missed')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Practice Life and death' }));
+
+    expect(useGameStore.getState().appPhase).toBe('problems');
+    expect(useGameStore.getState().preferredProblemFilter).toBe('life-and-death');
+  });
+
+  it('sends clean reviews back to the path recommendation', () => {
+    makeProblemDue('capture-001');
+
+    const { container } = render(<DailyReview />);
+
+    clickReviewPoint(container, 0, 1);
+
+    expect(screen.getByText('🎉 Solved!')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Finish Review' }));
+
+    expect(screen.getByText('Ready for the next idea')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Practice Capture' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Learning path' }));
+
+    expect(useGameStore.getState().appPhase).toBe('path');
   });
 });
