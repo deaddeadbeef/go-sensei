@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useGameStore } from '@/stores/game-store';
 import { useConceptStore } from '@/stores/concept-store';
@@ -67,11 +68,17 @@ export function ProgressDashboard() {
   const completedLessons = useProgressStore((s) => s.completedLessons);
   const problemAttempts = useProgressStore((s) => s.problemAttempts);
   const conceptStats = useConceptStore((s) => s.getStats)();
-  const reviewStats = useReviewStore((s) => {
-    void s.cards;
-    void s.history;
-    return s.getReviewStats();
-  });
+  const reviewCards = useReviewStore((s) => s.cards);
+  const reviewHistory = useReviewStore((s) => s.history);
+  const getReviewStats = useReviewStore((s) => s.getReviewStats);
+  const reviewStats = useMemo(
+    () => {
+      void reviewCards;
+      void reviewHistory;
+      return getReviewStats();
+    },
+    [getReviewStats, reviewCards, reviewHistory],
+  );
   const returnToGame = useGameStore((s) => s.returnToGame);
   const showLessons = useGameStore((s) => s.showLessons);
   const showProblems = useGameStore((s) => s.showProblems);
