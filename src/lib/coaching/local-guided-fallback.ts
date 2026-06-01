@@ -3,15 +3,18 @@ import {
   getBeginnerObjective,
   getBeginnerObjectiveProgress,
 } from '@/lib/coaching/beginner-objectives';
+import { getBeginnerObjectiveActions } from '@/lib/coaching/beginner-objective-actions';
 import { pointToCoord } from '@/lib/go-engine';
 import type { GameState, Move } from '@/lib/go-engine/types';
 import type { TeachingLevel } from '@/lib/ai/system-prompt';
+import type { SenseiAction } from '@/lib/coaching/sensei-actions';
 
 type LocalFallbackReason = 'auth-expired' | 'auth-unavailable' | 'network-error' | 'server-error';
 
 export interface LocalGuidedFallback {
   text: string;
   conceptIds: string[];
+  actions: SenseiAction[];
   shouldPassSensei: boolean;
 }
 
@@ -95,6 +98,7 @@ export function getLocalGuidedFallback(
   return {
     text: lines.join('\n\n'),
     conceptIds: objective?.conceptIds ?? [],
+    actions: objective ? getBeginnerObjectiveActions(objective) : [],
     shouldPassSensei,
   };
 }

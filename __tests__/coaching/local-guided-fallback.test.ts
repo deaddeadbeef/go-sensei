@@ -11,6 +11,7 @@ describe('local guided fallback', () => {
     expect(fallback).toMatchObject({
       shouldPassSensei: true,
       conceptIds: expect.arrayContaining(['shape', 'direction-of-play']),
+      actions: [{ id: 'hint', label: 'Show targets' }],
     });
     expect(fallback?.text).toContain('cloud Sensei session expired');
     expect(fallback?.text).toContain('Good: C7 hit the marked corner goal');
@@ -28,6 +29,10 @@ describe('local guided fallback', () => {
     expect(fallback).toMatchObject({
       shouldPassSensei: true,
       conceptIds: expect.arrayContaining(['corner-opening', 'territory']),
+      actions: [
+        { id: 'hint', label: 'Show targets' },
+        { id: 'lesson:territory', label: 'Review territory' },
+      ],
     });
     expect(fallback?.text).toContain('Progress check: E5 was not one of the marked corner points.');
     expect(fallback?.text).toContain('Try C7, G7, C3, or G3.');
@@ -41,6 +46,10 @@ describe('local guided fallback', () => {
     expect(fallback).toMatchObject({
       shouldPassSensei: false,
       conceptIds: expect.arrayContaining(['corner-opening', 'territory']),
+      actions: [
+        { id: 'hint', label: 'Show targets' },
+        { id: 'lesson:territory', label: 'Review territory' },
+      ],
     });
     expect(fallback?.text).toContain('teach this beginner path locally');
     expect(fallback?.text).not.toContain('GitHub login');

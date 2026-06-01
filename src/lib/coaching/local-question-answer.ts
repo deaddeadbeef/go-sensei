@@ -2,6 +2,7 @@ import { getAllGroups, getGroup, pointKey, pointToCoord } from '@/lib/go-engine'
 import type { BoardSize, GameState, Group, Move, Point } from '@/lib/go-engine/types';
 import type { TeachingLevel } from '@/lib/ai/system-prompt';
 import { formatObjectiveTargetText, getBeginnerObjective } from '@/lib/coaching/beginner-objectives';
+import { getBeginnerObjectiveLessonAction } from '@/lib/coaching/beginner-objective-actions';
 import type { BeginnerObjective } from '@/lib/coaching/beginner-objectives';
 import type { SenseiAction } from '@/lib/coaching/sensei-actions';
 
@@ -220,18 +221,6 @@ function suggestionReason(objective: BeginnerObjective, point: Point, boardSize:
   return `Give your group room by playing its liberty at ${coord}.`;
 }
 
-function objectiveAction(objective: BeginnerObjective): SenseiAction | null {
-  if (objective.conceptIds.includes('liberties') || objective.conceptIds.includes('groups')) {
-    return { id: 'lesson:liberties', label: 'Review liberties' };
-  }
-
-  if (objective.conceptIds.includes('territory') || objective.conceptIds.includes('corner-opening')) {
-    return { id: 'lesson:territory', label: 'Review territory' };
-  }
-
-  return null;
-}
-
 function objectiveSuggestions(objective: BeginnerObjective, boardSize: BoardSize, idPrefix: string): LocalSuggestionFocus[] {
   return objective.targetPoints.slice(0, 4).map((point, index) => ({
     id: `${idPrefix}-${pointKey(point)}`,
@@ -255,7 +244,7 @@ function buildObjectiveAnswer(game: GameState, teachingLevel: TeachingLevel): Lo
 
   const targetText = formatObjectiveTargetText(objective, game.board.size);
   const suggestions = objectiveSuggestions(objective, game.board.size, 'local-objective-move');
-  const action = objectiveAction(objective);
+  const action = getBeginnerObjectiveLessonAction(objective);
 
   return {
     text: [
