@@ -247,19 +247,19 @@ export function useGoMaster() {
     }
 
     clearOverlays();
-    if (
-      localAnswer.boardFocus?.liberties?.length
-      || localAnswer.boardFocus?.groups?.length
-      || localAnswer.boardFocus?.suggestions?.length
-    ) {
-      for (const liberty of localAnswer.boardFocus.liberties ?? []) {
+    const focus = localAnswer.boardFocus;
+    if (focus) {
+      if (focus.highlights?.length) {
+        applyHighlights(focus.highlights);
+      }
+      for (const liberty of focus.liberties ?? []) {
         applyLibertyOverlay(liberty);
       }
-      if (localAnswer.boardFocus.groups?.length) {
-        applyGroups(localAnswer.boardFocus.groups);
+      if (focus.groups?.length) {
+        applyGroups(focus.groups);
       }
-      if (localAnswer.boardFocus.suggestions?.length) {
-        applySuggestions(localAnswer.boardFocus.suggestions);
+      if (focus.suggestions?.length) {
+        applySuggestions(focus.suggestions);
       }
     }
 
@@ -270,7 +270,7 @@ export function useGoMaster() {
       actions: localAnswer.actions ?? [],
       streamingComplete: true,
     });
-  }, [recordEncounter, clearOverlays, applyLibertyOverlay, applyGroups, applySuggestions, showBubble]);
+  }, [recordEncounter, clearOverlays, applyHighlights, applyLibertyOverlay, applyGroups, applySuggestions, showBubble]);
 
   const gameBody = useCallback(() => {
     const s = useGameStore.getState();
