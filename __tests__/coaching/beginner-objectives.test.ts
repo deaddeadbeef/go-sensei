@@ -1,5 +1,9 @@
-import { formatObjectiveTargetText, getBeginnerObjective } from '@/lib/coaching/beginner-objectives';
-import { createBoard, setStone } from '@/lib/go-engine';
+import {
+  formatObjectiveTargetText,
+  getBeginnerObjective,
+  getBeginnerObjectiveProgress,
+} from '@/lib/coaching/beginner-objectives';
+import { createBoard, createGame, passMove, playMove, setStone } from '@/lib/go-engine';
 import type { BoardState, Point, StoneColor } from '@/lib/go-engine/types';
 
 function boardWith(stones: Array<{ point: Point; color: StoneColor }>): BoardState {
@@ -132,5 +136,35 @@ describe('beginner objectives', () => {
       { x: 3, y: 2 },
       { x: 2, y: 3 },
     ]));
+  });
+
+  it('reports when the learner completed the marked opening objective', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+    const afterSenseiPass = passMove(firstMove.newState);
+
+    const progress = getBeginnerObjectiveProgress(afterSenseiPass, 'guided');
+
+    expect(progress).toMatchObject({
+      status: 'met',
+      objectiveId: 'claim-corner',
+      lastMove: { x: 2, y: 2 },
+    });
+    expect(progress?.text).toBe('Good: C7 hit the marked corner goal. Next, make that stone work with another one.');
+  });
+
+  it('reports when the learner missed the marked opening objective', () => {
+    const firstMove = playMove(createGame(9), { x: 4, y: 4 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+    const afterSenseiPass = passMove(firstMove.newState);
+
+    const progress = getBeginnerObjectiveProgress(afterSenseiPass, 'guided');
+
+    expect(progress).toMatchObject({
+      status: 'missed',
+      objectiveId: 'claim-corner',
+      lastMove: { x: 4, y: 4 },
+    });
+    expect(progress?.text).toBe('Progress check: E5 was not one of the marked corner points. Try C7, G7, C3, or G3.');
   });
 });
