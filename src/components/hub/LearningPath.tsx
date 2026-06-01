@@ -83,6 +83,7 @@ export function LearningPath() {
     }
   };
   const openGuidedGame = hasStartedIntroGame ? returnToGame : startGuidedIntroGame;
+  const openProblems = () => showProblems();
 
   return (
     <main className="flex-1 overflow-y-auto" style={{ backgroundColor: COLORS.ui.bgPrimary }}>
@@ -197,7 +198,7 @@ export function LearningPath() {
 
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <PathCard title="Lessons" text="Learn one idea at a time." onClick={showLessons} />
-          <PathCard title="Problems" text="Practice reading and tactics." onClick={showProblems} />
+          <PathCard title="Problems" text="Practice reading and tactics." onClick={openProblems} />
           <PathCard title="Review" text="Repeat weak patterns." onClick={showReview} />
           <PathCard title="Skills" text="Inspect concept mastery." onClick={showSkillTree} />
           <PathCard

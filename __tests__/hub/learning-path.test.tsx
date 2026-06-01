@@ -38,4 +38,13 @@ describe('LearningPath', () => {
     expect(useGameStore.getState().teachingLevel).toBe('guided');
     expect(useGameStore.getState().game.board.size).toBe(9);
   });
+
+  it('opens the full problem picker from the problems path card', () => {
+    render(<LearningPath />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Problems: Practice reading and tactics\./ }));
+
+    expect(useGameStore.getState().appPhase).toBe('problems');
+    expect(useGameStore.getState().preferredProblemFilter).toBeNull();
+  });
 });

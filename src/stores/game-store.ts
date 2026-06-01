@@ -310,6 +310,19 @@ interface GameStore {
   setPhase: (phase: GameStore['phase']) => void;
 }
 
+export type AppPhase = GameStore['appPhase'];
+
+export function getRestorableAppPhase(appPhase: AppPhase | undefined): AppPhase {
+  switch (appPhase) {
+    case 'lesson':
+      return 'path';
+    case 'problem':
+      return 'problems';
+    default:
+      return appPhase ?? 'path';
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Default slices
 // ---------------------------------------------------------------------------
@@ -1030,8 +1043,16 @@ export const useGameStore = create<GameStore>()(
         phase: state.phase,
         learnedConcepts: state.learnedConcepts,
         teachingLevel: state.teachingLevel,
-        appPhase: state.appPhase,
+        appPhase: getRestorableAppPhase(state.appPhase),
       }),
+      merge: (persisted, current) => {
+        const persistedState = persisted as Partial<GameStore>;
+        return {
+          ...current,
+          ...persistedState,
+          appPhase: getRestorableAppPhase(persistedState.appPhase),
+        };
+      },
     },
   ),
 );

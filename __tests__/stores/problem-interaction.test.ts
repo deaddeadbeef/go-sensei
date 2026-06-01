@@ -1,5 +1,5 @@
 import { act } from '@testing-library/react';
-import { useGameStore } from '@/stores/game-store';
+import { getRestorableAppPhase, useGameStore } from '@/stores/game-store';
 import { PROBLEMS } from '@/lib/problems/problem-data';
 import type { Problem } from '@/lib/problems/types';
 import type { ValidationResult } from '@/lib/problems/validator';
@@ -168,6 +168,13 @@ describe('problem interaction store', () => {
   it('showLearningPath navigates to learning path', () => {
     act(() => useGameStore.getState().showLearningPath());
     expect(useGameStore.getState().appPhase).toBe('path');
+  });
+
+  it('maps unsafe persisted detail phases to recoverable surfaces', () => {
+    expect(getRestorableAppPhase('lesson')).toBe('path');
+    expect(getRestorableAppPhase('problem')).toBe('problems');
+    expect(getRestorableAppPhase('review')).toBe('review');
+    expect(getRestorableAppPhase(undefined)).toBe('path');
   });
 
   it('startGuidedIntroGame starts a playable 9x9 guided beginner game', () => {
