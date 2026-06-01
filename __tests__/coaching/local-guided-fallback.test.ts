@@ -15,6 +15,7 @@ describe('local guided fallback', () => {
     expect(fallback?.text).toContain('cloud Sensei session expired');
     expect(fallback?.text).toContain('Your first stone at C7');
     expect(fallback?.text).toContain('Make your stones work together');
+    expect(fallback?.text).toContain('Try E7 or C5');
     expect(fallback?.text).toContain('passing for White');
   });
 
