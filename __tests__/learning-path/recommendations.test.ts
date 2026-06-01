@@ -42,7 +42,9 @@ describe('learning path recommendations', () => {
     expect(recommendation).toMatchObject({
       kind: 'guided_intro',
       title: 'First 9x9 guided game',
+      actionLabel: 'Start guided 9x9',
     });
+    expect(recommendation.practicePlan).toContain('Place the first stone near a corner instead of the center.');
   });
 
   it('student who started intro gets the first lesson next', () => {
@@ -51,13 +53,17 @@ describe('learning path recommendations', () => {
     expect(recommendation).toMatchObject({
       kind: 'lesson',
       targetId: 'groups',
+      actionLabel: 'Start lesson',
     });
+    expect(recommendation.practicePlan.length).toBeGreaterThan(0);
   });
 
   it('due review beats new material', () => {
     const recommendation = getLearningRecommendation(input({ dueReviewCount: 2 }));
 
     expect(recommendation.kind).toBe('review');
+    expect(recommendation.actionLabel).toBe('Review due cards');
+    expect(recommendation.practicePlan).toContain('Solve the due positions before opening new material.');
   });
 
   it('capture lesson completion recommends capture problems', () => {
@@ -68,7 +74,9 @@ describe('learning path recommendations', () => {
     expect(recommendation).toMatchObject({
       kind: 'problem',
       filter: 'capture',
+      actionLabel: 'Open capture problems',
     });
+    expect(recommendation.practicePlan).toContain('If you miss three times, study the shown solution line.');
   });
 
   it('enough lessons and practice recommends guided game with weak eyes focus', () => {
@@ -87,7 +95,9 @@ describe('learning path recommendations', () => {
     );
 
     expect(recommendation.kind).toBe('guided_game');
+    expect(recommendation.actionLabel).toBe('Continue guided game');
     expect(recommendation.focusConcepts).toContain('eyes');
+    expect(recommendation.practicePlan).toContain('After the tutor replies, compare the move insight with your plan.');
   });
 
   it('ignores stale completed lesson ids when checking guided game readiness', () => {
