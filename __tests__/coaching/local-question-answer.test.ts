@@ -254,6 +254,28 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([{ id: 'lesson:ko', label: 'Review ko' }]);
   });
 
+  it('answers eye questions with lesson review before life-and-death practice', () => {
+    const answer = getLocalQuestionAnswer('What is an eye?', createGame(9), 'guided');
+
+    expect(answer?.text).toContain('An eye is internal empty space');
+    expect(answer?.conceptIds).toEqual(['eyes', 'life-and-death']);
+    expect(answer?.actions).toEqual([
+      { id: 'lesson:eyes', label: 'Review eyes' },
+      { id: 'practice:life-and-death', label: 'Practice life & death' },
+    ]);
+  });
+
+  it('answers ladder questions with lesson review before reading practice', () => {
+    const answer = getLocalQuestionAnswer('How does a ladder work?', createGame(9), 'guided');
+
+    expect(answer?.text).toContain('A ladder is a forcing chase');
+    expect(answer?.conceptIds).toEqual(['ladder', 'reading', 'atari']);
+    expect(answer?.actions).toEqual([
+      { id: 'lesson:ladder', label: 'Review ladders' },
+      { id: 'practice:reading', label: 'Practice reading' },
+    ]);
+  });
+
   it('leaves unrecognized questions to cloud Sensei', () => {
     expect(getLocalQuestionAnswer('Should I invade now?', createGame(9), 'guided')).toBeNull();
   });
