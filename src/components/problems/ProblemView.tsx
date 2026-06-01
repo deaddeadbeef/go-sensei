@@ -15,6 +15,7 @@ import {
 import { COLORS } from '@/utils/colors';
 import { useReviewStore } from '@/stores/review-store';
 import { useConceptStore } from '@/stores/concept-store';
+import { problemCategoryTitle } from '@/lib/learning-path/concept-practice';
 import { getPrimarySolutionLine } from '@/lib/problems/solution-review';
 import { ProblemSolutionOverlay, ProblemSolutionPanel } from './ProblemSolutionReview';
 import type { BoardSize } from '@/lib/go-engine/types';
@@ -100,6 +101,7 @@ export function ProblemView() {
   const requestProblemHint = useGameStore((s) => s.requestProblemHint);
   const showProblems = useGameStore((s) => s.showProblems);
   const startProblem = useGameStore((s) => s.startProblem);
+  const preferredProblemFilter = useGameStore((s) => s.preferredProblemFilter);
   const recordAttempt = useReviewStore((s) => s.recordAttempt);
   const recordEvidence = useConceptStore((s) => s.recordEvidence);
 
@@ -127,11 +129,21 @@ export function ProblemView() {
   const boardSize = (problem?.boardSize ?? 9) as BoardSize;
   const r = stoneRadius(boardSize);
 
+  const scopedProblemFilter = problem && preferredProblemFilter === problem.category
+    ? preferredProblemFilter
+    : null;
   const nextProblem = (() => {
     if (!problem) return null;
-    const idx = PROBLEMS.findIndex((p) => p.id === problem.id);
-    return idx >= 0 && idx < PROBLEMS.length - 1 ? PROBLEMS[idx + 1] : null;
+    const candidates = scopedProblemFilter
+      ? PROBLEMS.filter((candidate) => candidate.category === scopedProblemFilter)
+      : PROBLEMS;
+    const idx = candidates.findIndex((candidate) => candidate.id === problem.id);
+    return idx >= 0 && idx < candidates.length - 1 ? candidates[idx + 1] : null;
   })();
+  const returnToProblems = () => showProblems(scopedProblemFilter ?? undefined);
+  const scopedProblemLabel = scopedProblemFilter
+    ? problemCategoryTitle(scopedProblemFilter).toLowerCase()
+    : null;
 
   const handleBoardClick = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
     if (!problem || !problemInteraction.active || problemInteraction.status !== 'playing') return;
@@ -434,16 +446,16 @@ export function ProblemView() {
                 className="flex-1 px-4 py-2.5 rounded-lg text-sm font-bold transition-transform hover:scale-[1.02] active:scale-95"
                 style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
               >
-                Next Problem →
+                {scopedProblemLabel ? `Next ${scopedProblemLabel} problem →` : 'Next Problem →'}
               </button>
             )}
           </div>
           <button
-            onClick={() => showProblems()}
+            onClick={returnToProblems}
             className="text-sm text-center transition-opacity hover:opacity-100"
             style={{ color: COLORS.ui.textSecondary, opacity: 0.7 }}
           >
-            ✕ Back to Problems
+            {scopedProblemLabel ? `✕ Back to ${scopedProblemLabel} problems` : '✕ Back to Problems'}
           </button>
         </div>
       </div>
