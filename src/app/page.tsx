@@ -41,11 +41,23 @@ export default function GamePage() {
   const isAiThinking = useGameStore((s) => s.isAiThinking);
   const teachingLevel = useGameStore((s) => s.teachingLevel);
   const setTeachingLevel = useGameStore((s) => s.setTeachingLevel);
+  const currentLessonId = useGameStore((s) => s.currentLessonId);
+  const currentProblemId = useGameStore((s) => s.currentProblemId);
+  const showLearningPath = useGameStore((s) => s.showLearningPath);
+  const showProblems = useGameStore((s) => s.showProblems);
 
   const { sendPlayerMove, sendMessage, requestHint, requestReview } = useGoMaster();
   const { authState, isLoggedIn, startLogin, logout } = useGitHubAuth();
 
   useHesitationDetector(requestHint);
+
+  useEffect(() => {
+    if (appPhase === 'lesson' && !currentLessonId) {
+      showLearningPath();
+    } else if (appPhase === 'problem' && !currentProblemId) {
+      showProblems();
+    }
+  }, [appPhase, currentLessonId, currentProblemId, showLearningPath, showProblems]);
 
   const welcomeShown = useRef(false);
   useEffect(() => {
