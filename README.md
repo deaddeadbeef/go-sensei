@@ -2,11 +2,11 @@
 
 An AI-powered Go teaching app that plays against you and teaches you the game in real-time. Built for complete beginners.
 
-![Go Sensei](https://img.shields.io/badge/Model-GPT--5.4-blue) ![Next.js](https://img.shields.io/badge/Next.js-16-black) ![Tests](https://img.shields.io/badge/Tests-230%20passing-green) ![License](https://img.shields.io/badge/License-MIT-yellow)
+![Go Sensei](https://img.shields.io/badge/Model-GPT--5.4-blue) ![Next.js](https://img.shields.io/badge/Next.js-16-black) ![Tests](https://img.shields.io/badge/Tests-335%20passing-green) ![License](https://img.shields.io/badge/License-MIT-yellow)
 
 ## What is this?
 
-Go Sensei is a web app where a strict AI Go master (powered by GPT-5.4 via GitHub Copilot) teaches you Go through real games. It genuinely praises good moves and harshly critiques mistakes. Designed for **complete beginners** through **advanced players** with adjustable teaching levels.
+Go Sensei is a web app where a firm, encouraging AI Go teacher (powered by GPT-5.4 via GitHub Copilot) teaches you Go through real games. It gives earned praise, direct corrections, and concrete next steps so mistakes become useful practice. Designed for **complete beginners** through **advanced players** with adjustable teaching levels.
 
 The AI uses 8 tools to interact with the board — placing stones, highlighting positions with educational labels, showing liberty counts, suggesting moves, drawing move sequence arrows, displaying influence heatmaps, and visualizing group boundaries. Teaching is visual and spatial, not just text.
 
@@ -15,7 +15,7 @@ The learning loop now starts complete beginners with a guided 9×9 game, then co
 ### Features
 
 - 🎮 **Full Go game engine** — captures, ko, suicide detection, Chinese scoring, all board sizes (9×9, 13×13, 19×19)
-- 🤖 **Strict AI Go Master** with 8 teaching tools — genuinely praises good moves, critiques mistakes
+- 🤖 **Firm AI Go teacher** with 8 teaching tools — gives earned praise, precise corrections, and practical next steps
 - 🎚️ **Adjustable teaching levels** — Beginner (🌱), Intermediate (⚔️), Advanced (🔥)
 - 🎯 **Agentic tool loop** — the AI calls multiple tools per turn (highlight → explain → move) via OpenAI Responses API
 - 🏹 **Move sequence arrows** — numbered arrows showing reading/joseki/tactical variations
@@ -30,7 +30,7 @@ The learning loop now starts complete beginners with a guided 9×9 game, then co
 - 🧠 **Concept mastery tracking** — lessons, problems, and review sessions update per-concept evidence
 - 📋 **Post-game review** — full game analysis at the end of each game
 - 🔐 **GitHub OAuth** — login with your GitHub account (Device Flow), no API keys needed
-- 🧪 **230 tests** — engine, lesson, problem, review, and state-management coverage
+- 🧪 **335 tests** — engine, lesson, problem, review, prompt, and state-management coverage
 
 ## Quick Start
 
@@ -87,7 +87,7 @@ npm run dev
 | AI Protocol | OpenAI Responses API | Agentic tool loop |
 | Auth | GitHub OAuth Device Flow | No secrets, no redirects |
 | Engine | Pure TypeScript | Zero dependencies, isomorphic |
-| Tests | Vitest | 230 tests |
+| Tests | Vitest | 335 tests |
 
 ### Go Engine
 
@@ -143,7 +143,7 @@ No client secrets, no redirect URLs, no separate API keys.
 
 ```bash
 npm test        # Watch mode
-npm run test:run # Single run (230 tests)
+npm run test:run # Single run
 ```
 
 ### Build

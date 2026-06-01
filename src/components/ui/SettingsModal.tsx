@@ -151,7 +151,7 @@ export function SettingsModal({
             {/* Teaching Level */}
             <div className="mb-6">
               <label className="block text-xs mb-2" style={{ color: COLORS.ui.textSecondary }}>
-                Sensei Strictness
+                Teaching Style
               </label>
               <div className="flex gap-2">
                 {(['beginner', 'intermediate', 'advanced', 'guided'] as const).map((level) => (
@@ -170,10 +170,10 @@ export function SettingsModal({
                 ))}
               </div>
               <p className="text-xs mt-1 opacity-50" style={{ color: COLORS.ui.textSecondary }}>
-                {teachingLevel === 'beginner' && 'Firm but fair — teaches fundamentals with real critique'}
-                {teachingLevel === 'intermediate' && 'No mercy on mistakes — expects you to know basics'}
-                {teachingLevel === 'advanced' && 'Plays full strength — only speaks when you blunder or impress'}
-                {teachingLevel === 'guided' && 'Step-by-step teaching — names every concept, tracks your progress'}
+                {teachingLevel === 'beginner' && 'Firm and encouraging — teaches fundamentals with specific corrections'}
+                {teachingLevel === 'intermediate' && 'Sharper coaching — expects basics and explains priority mistakes'}
+                {teachingLevel === 'advanced' && 'Full strength — concise, precise, and focused on serious mistakes'}
+                {teachingLevel === 'guided' && 'Step-by-step teaching — names concepts and tracks your progress'}
               </p>
             </div>
 
