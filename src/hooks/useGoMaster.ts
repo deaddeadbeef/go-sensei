@@ -458,13 +458,20 @@ export function useGoMaster() {
         for (const conceptId of localAnswer.conceptIds) {
           recordEncounter(conceptId);
         }
-        if (localAnswer.boardFocus?.liberties?.length || localAnswer.boardFocus?.groups?.length) {
+        if (
+          localAnswer.boardFocus?.liberties?.length
+          || localAnswer.boardFocus?.groups?.length
+          || localAnswer.boardFocus?.suggestions?.length
+        ) {
           clearOverlays();
           for (const liberty of localAnswer.boardFocus.liberties ?? []) {
             applyLibertyOverlay(liberty);
           }
           if (localAnswer.boardFocus.groups?.length) {
             applyGroups(localAnswer.boardFocus.groups);
+          }
+          if (localAnswer.boardFocus.suggestions?.length) {
+            applySuggestions(localAnswer.boardFocus.suggestions);
           }
         }
         showBubble({
@@ -478,7 +485,7 @@ export function useGoMaster() {
 
       send(formatFreeTextMessage(game, text));
     },
-    [send, addChatMessage, recordEncounter, clearOverlays, applyLibertyOverlay, applyGroups, showBubble],
+    [send, addChatMessage, recordEncounter, clearOverlays, applyLibertyOverlay, applyGroups, applySuggestions, showBubble],
   );
 
   const requestHint = useCallback(() => {
