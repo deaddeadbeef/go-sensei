@@ -8,7 +8,7 @@ import { CONCEPTS } from '@/lib/concepts/concept-data';
 import { getLearningRecommendation } from '@/lib/learning-path/recommendations';
 import { formatObjectiveTargetText, getBeginnerObjective } from '@/lib/coaching/beginner-objectives';
 import { getLocalGuidedFallback } from '@/lib/coaching/local-guided-fallback';
-import { getLocalQuestionAnswer } from '@/lib/coaching/local-question-answer';
+import { getLocalQuestionAnswer, type LocalQuestionAnswer } from '@/lib/coaching/local-question-answer';
 import { coordToPoint } from '@/lib/go-engine';
 import {
   formatMoveMessage,
@@ -241,6 +241,37 @@ export function useGoMaster() {
     [passSenseiIfNeeded, recordEncounter, showBubble],
   );
 
+  const applyLocalAnswer = useCallback((localAnswer: LocalQuestionAnswer) => {
+    for (const conceptId of localAnswer.conceptIds) {
+      recordEncounter(conceptId);
+    }
+
+    if (
+      localAnswer.boardFocus?.liberties?.length
+      || localAnswer.boardFocus?.groups?.length
+      || localAnswer.boardFocus?.suggestions?.length
+    ) {
+      clearOverlays();
+      for (const liberty of localAnswer.boardFocus.liberties ?? []) {
+        applyLibertyOverlay(liberty);
+      }
+      if (localAnswer.boardFocus.groups?.length) {
+        applyGroups(localAnswer.boardFocus.groups);
+      }
+      if (localAnswer.boardFocus.suggestions?.length) {
+        applySuggestions(localAnswer.boardFocus.suggestions);
+      }
+    }
+
+    showBubble({
+      text: localAnswer.text,
+      variant: 'teaching',
+      anchorPoint: null,
+      actions: localAnswer.actions ?? [],
+      streamingComplete: true,
+    });
+  }, [recordEncounter, clearOverlays, applyLibertyOverlay, applyGroups, applySuggestions, showBubble]);
+
   const gameBody = useCallback(() => {
     const s = useGameStore.getState();
     const g = s.game;
@@ -455,43 +486,26 @@ export function useGoMaster() {
       const localAnswer = getLocalQuestionAnswer(text, game, state.teachingLevel);
 
       if (localAnswer) {
-        for (const conceptId of localAnswer.conceptIds) {
-          recordEncounter(conceptId);
-        }
-        if (
-          localAnswer.boardFocus?.liberties?.length
-          || localAnswer.boardFocus?.groups?.length
-          || localAnswer.boardFocus?.suggestions?.length
-        ) {
-          clearOverlays();
-          for (const liberty of localAnswer.boardFocus.liberties ?? []) {
-            applyLibertyOverlay(liberty);
-          }
-          if (localAnswer.boardFocus.groups?.length) {
-            applyGroups(localAnswer.boardFocus.groups);
-          }
-          if (localAnswer.boardFocus.suggestions?.length) {
-            applySuggestions(localAnswer.boardFocus.suggestions);
-          }
-        }
-        showBubble({
-          text: localAnswer.text,
-          variant: 'teaching',
-          anchorPoint: null,
-          actions: localAnswer.actions ?? [],
-          streamingComplete: true,
-        });
+        applyLocalAnswer(localAnswer);
         return;
       }
 
       send(formatFreeTextMessage(game, text));
     },
-    [send, addChatMessage, recordEncounter, clearOverlays, applyLibertyOverlay, applyGroups, applySuggestions, showBubble],
+    [send, addChatMessage, applyLocalAnswer],
   );
 
   const requestHint = useCallback(() => {
-    send(formatHesitationMessage(useGameStore.getState().game));
-  }, [send]);
+    const state = useGameStore.getState();
+    const localAnswer = getLocalQuestionAnswer('hint', state.game, state.teachingLevel);
+
+    if (localAnswer) {
+      applyLocalAnswer(localAnswer);
+      return;
+    }
+
+    send(formatHesitationMessage(state.game));
+  }, [applyLocalAnswer, send]);
 
   const requestReview = useCallback(() => {
     const g = useGameStore.getState().game;

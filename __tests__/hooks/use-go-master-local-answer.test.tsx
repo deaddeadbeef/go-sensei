@@ -77,6 +77,31 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('territory').encounterCount).toBeGreaterThan(0);
   });
 
+  it('answers direct hint requests with local objective suggestions before fetching', () => {
+    act(() => {
+      useGameStore.getState().startGuidedIntroGame();
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.requestHint();
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.text).toContain('Your next job is: Start with a corner.');
+    expect(state.chatMessages.at(-1)?.text).toContain('Your next job is: Start with a corner.');
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 2, y: 2 },
+      { x: 6, y: 2 },
+      { x: 2, y: 6 },
+      { x: 6, y: 6 },
+    ]);
+    expect(useConceptStore.getState().getMastery('corner-opening').encounterCount).toBeGreaterThan(0);
+  });
+
   it('answers beginner liberty questions with visible board overlays without fetching', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());
