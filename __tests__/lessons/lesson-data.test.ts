@@ -28,6 +28,26 @@ describe('lesson data integrity', () => {
     }
   });
 
+  it('interactive steps include wrong-answer coaching', () => {
+    for (const lesson of LESSONS) {
+      for (const step of lesson.steps) {
+        if (step.prompt) {
+          expect(step.wrongMoveHint).toBeTruthy();
+        }
+      }
+    }
+  });
+
+  it('foundation lessons each have at least one interactive checkpoint', () => {
+    const foundationIds = ['groups', 'liberties', 'capture', 'territory'];
+    for (const id of foundationIds) {
+      const lesson = LESSONS.find(l => l.id === id);
+      expect(lesson).toBeDefined();
+      const hasInteractive = lesson!.steps.some(s => s.prompt);
+      expect(hasInteractive).toBe(true);
+    }
+  });
+
   it('new lessons each have at least one interactive step', () => {
     const newIds = ['ko', 'ladder', 'net', 'snapback', 'territory-vs-influence'];
     for (const id of newIds) {
