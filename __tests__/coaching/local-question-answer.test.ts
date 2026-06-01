@@ -15,6 +15,71 @@ function playSequence(points: Point[]): GameState {
 }
 
 describe('local question answer', () => {
+  it('answers next-move questions with the current beginner objective', () => {
+    const answer = getLocalQuestionAnswer('What should I do?', createGame(9), 'guided');
+
+    expect(answer?.text).toContain('Your next job is: Start with a corner.');
+    expect(answer?.text).toContain('Try C7, G7, C3, or G3.');
+    expect(answer?.text).toContain('I marked the best beginner targets on the board.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['corner-opening', 'territory']));
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-objective-move-2,2',
+        point: { x: 2, y: 2 },
+        rank: 1,
+        reason: 'Start at C7: the board edge helps this stone make territory.',
+      },
+      {
+        id: 'local-objective-move-6,2',
+        point: { x: 6, y: 2 },
+        rank: 2,
+        reason: 'Start at G7: the board edge helps this stone make territory.',
+      },
+      {
+        id: 'local-objective-move-2,6',
+        point: { x: 2, y: 6 },
+        rank: 3,
+        reason: 'Start at C3: the board edge helps this stone make territory.',
+      },
+      {
+        id: 'local-objective-move-6,6',
+        point: { x: 6, y: 6 },
+        rank: 4,
+        reason: 'Start at G3: the board edge helps this stone make territory.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([{ id: 'lesson:territory', label: 'Review territory' }]);
+  });
+
+  it('answers next-move questions by pointing weak groups at liberties', () => {
+    const game = playSequence([
+      { x: 2, y: 2 },
+      { x: 2, y: 1 },
+      { x: 6, y: 2 },
+      { x: 1, y: 2 },
+    ]);
+
+    const answer = getLocalQuestionAnswer('hint', game, 'guided');
+
+    expect(answer?.text).toContain('Your next job is: Give weak groups room.');
+    expect(answer?.text).toContain('Try C6 or D7.');
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-objective-move-2,3',
+        point: { x: 2, y: 3 },
+        rank: 1,
+        reason: 'Give your group room by playing its liberty at C6.',
+      },
+      {
+        id: 'local-objective-move-3,2',
+        point: { x: 3, y: 2 },
+        rank: 2,
+        reason: 'Give your group room by playing its liberty at D7.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([{ id: 'lesson:liberties', label: 'Review liberties' }]);
+  });
+
   it('answers liberty questions with current board context', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');

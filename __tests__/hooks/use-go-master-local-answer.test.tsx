@@ -31,6 +31,52 @@ describe('useGoMaster local answers', () => {
     vi.restoreAllMocks();
   });
 
+  it('answers next-move questions with objective suggestions without fetching', () => {
+    act(() => {
+      useGameStore.getState().startGuidedIntroGame();
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('What should I do?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.text).toContain('Your next job is: Start with a corner.');
+    expect(state.bubble.actions).toEqual([{ id: 'lesson:territory', label: 'Review territory' }]);
+    expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'lesson:territory', label: 'Review territory' }]);
+    expect(state.overlays.suggestions).toEqual([
+      {
+        id: 'local-objective-move-2,2',
+        point: { x: 2, y: 2 },
+        rank: 1,
+        reason: 'Start at C7: the board edge helps this stone make territory.',
+      },
+      {
+        id: 'local-objective-move-6,2',
+        point: { x: 6, y: 2 },
+        rank: 2,
+        reason: 'Start at G7: the board edge helps this stone make territory.',
+      },
+      {
+        id: 'local-objective-move-2,6',
+        point: { x: 2, y: 6 },
+        rank: 3,
+        reason: 'Start at C3: the board edge helps this stone make territory.',
+      },
+      {
+        id: 'local-objective-move-6,6',
+        point: { x: 6, y: 6 },
+        rank: 4,
+        reason: 'Start at G3: the board edge helps this stone make territory.',
+      },
+    ]);
+    expect(useConceptStore.getState().getMastery('territory').encounterCount).toBeGreaterThan(0);
+  });
+
   it('answers beginner liberty questions with visible board overlays without fetching', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());
