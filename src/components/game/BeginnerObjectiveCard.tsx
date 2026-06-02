@@ -2016,6 +2016,20 @@ export function BeginnerObjectiveCard() {
       prompt: readPrompt,
     }
     : null;
+  const replayedPressureSequenceDefensesFromHere = activePressureReplayRequestId !== null
+    && pinnedPressureSequenceRow
+    && readPrompt
+    && selectedReadRecount
+    && comparedReadReply
+    && pressureDefenseRecommendation
+    && pinnedPressureSequenceRow.replayKey === `compare-${targetKey(selectedReadRecount.reply)}`
+    ? {
+      comparedReply: comparedReadReply,
+      defense: pressureDefenseRecommendation,
+      prompt: readPrompt,
+      recount: selectedReadRecount,
+    }
+    : null;
   const replayedPressureSequenceFollowUpDefensesFromHere = activePressureReplayRequestId !== null
     && pinnedPressureSequenceRow
     && readPrompt
@@ -2487,6 +2501,39 @@ export function BeginnerObjectiveCard() {
                             >
                               Compare {replayedPressureSequenceCompareFromHere.comparisonCoord} from here
                             </button>
+                          )}
+                          {replayedPressureSequenceDefensesFromHere && (
+                            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                              <span className="text-[11px] font-semibold" style={{ color: COLORS.ui.textSecondary }}>
+                                Defend from here:
+                              </span>
+                              {replayedPressureSequenceDefensesFromHere.defense.liberties.map((point) => {
+                                const coord = pointToCoord(point, game.board.size);
+
+                                return (
+                                  <button
+                                    key={`read-pressure-replayed-defense-${targetKey(point)}`}
+                                    type="button"
+                                    className="rounded border px-2 py-0.5 font-mono text-[11px] font-bold transition hover:bg-white/[0.07]"
+                                    style={{
+                                      borderColor: COLORS.overlay.warning,
+                                      color: COLORS.ui.textPrimary,
+                                      backgroundColor: `${COLORS.overlay.warning}1f`,
+                                    }}
+                                    aria-label={`Try ${coord} defense from here`}
+                                    onClick={() => tryReadPressureDefense(
+                                      replayedPressureSequenceDefensesFromHere.prompt,
+                                      replayedPressureSequenceDefensesFromHere.recount,
+                                      replayedPressureSequenceDefensesFromHere.comparedReply,
+                                      replayedPressureSequenceDefensesFromHere.defense,
+                                      point,
+                                    )}
+                                  >
+                                    Try {coord} from here
+                                  </button>
+                                );
+                              })}
+                            </div>
                           )}
                           {replayedPressureSequenceFollowUpDefensesFromHere && (
                             <div className="mt-2 flex flex-wrap items-center gap-1.5">

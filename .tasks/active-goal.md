@@ -59,6 +59,7 @@ Latest completed slice:
 - Added a one-click "Compare from here" continuation under restored baseline sequence rows, so learners can return from a saved D8 step to the live D6 comparison without hunting for the older branch control.
 - Added a one-click "Play from here" continuation under restored handoff sequence rows, so a saved real-game handoff step can immediately become the actual extension move.
 - Added one-click continuation controls under restored defense and follow-up sequence rows, so saved defensive reads can keep reading the new short side or hand off to the real extension without hunting through the full panel.
+- Added direct "defense from here" controls under restored comparison sequence rows that reveal a short side, so a saved comparison can immediately become the defensive read it asks for.
 
 Next investigation candidates:
-- Whether restored comparison rows that reveal a short side should offer direct "Try a defense from here" controls instead of only asking which side changed.
+- Whether the replay continuation buttons should share one compact row component to reduce repeated styling and keep future read actions easier to add.
