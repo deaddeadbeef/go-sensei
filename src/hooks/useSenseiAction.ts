@@ -10,6 +10,7 @@ export function useSenseiAction() {
   const startGuidedIntroGame = useGameStore((s) => s.startGuidedIntroGame);
   const openGuidedGame = useGameStore((s) => s.openGuidedGame);
   const startLesson = useGameStore((s) => s.startLesson);
+  const requestGuidedReadReplay = useGameStore((s) => s.requestGuidedReadReplay);
   const { requestHint } = useGoMaster();
 
   return useCallback((actionId: string) => {
@@ -38,11 +39,31 @@ export function useSenseiAction() {
       return;
     }
 
+    if (route.type === 'guided_read_pressure') {
+      openGuidedGame();
+      requestGuidedReadReplay({
+        type: 'read-pressure',
+        mode: route.mode,
+        promptKey: route.promptKey,
+        replyKey: route.replyKey,
+      });
+      return;
+    }
+
     if (route.type === 'practice') {
       showProblems(route.category);
       return;
     }
 
     startLesson(route.lessonId);
-  }, [dismissBubble, requestHint, openGuidedGame, showProblems, showReview, startGuidedIntroGame, startLesson]);
+  }, [
+    dismissBubble,
+    requestGuidedReadReplay,
+    requestHint,
+    openGuidedGame,
+    showProblems,
+    showReview,
+    startGuidedIntroGame,
+    startLesson,
+  ]);
 }

@@ -2,6 +2,7 @@
 
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { SenseiChatLog } from '@/components/chat/SenseiChatLog';
 import { BeginnerObjectiveCard } from '@/components/game/BeginnerObjectiveCard';
 import { useGameStore } from '@/stores/game-store';
 
@@ -348,6 +349,71 @@ describe('BeginnerObjectiveCard', () => {
 
     expect(useGameStore.getState().chatMessages.filter((message) => message.text === recountText)).toHaveLength(1);
     expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
+  });
+
+  it('reopens a pressure recount from its chat transcript action', () => {
+    act(() => {
+      useGameStore.getState().placeStone({ x: 2, y: 2 });
+      useGameStore.getState().pass();
+      useGameStore.getState().placeStone({ x: 4, y: 2 });
+      useGameStore.getState().pass();
+    });
+
+    render(
+      <>
+        <BeginnerObjectiveCard />
+        <SenseiChatLog />
+      </>,
+    );
+
+    const d8RecountText = 'After D8, recount the two Black sides: C7 has 3 liberties at C8, C6, and B7. E7 has 3 liberties at E8, E6, and F7. Neither side is short yet, so keep building while staying ready to answer D7.';
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Recount C7 and E7 after D8' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Choose D6 as the first reply to D7' }));
+
+    expect(screen.queryByText(d8RecountText)).toBeNull();
+    expect(useGameStore.getState().chatMessages.at(-2)?.actions).toEqual([
+      { id: 'guided:read-pressure:recount:read-pressure-2,2-4,2-3,2:3,1', label: 'Show recount' },
+    ]);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show recount' }));
+
+    expect(screen.getByText(d8RecountText)).toBeTruthy();
+    expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
+    expect(useGameStore.getState().overlays.targetHints).toEqual([
+      {
+        id: 'read-pressure-anchor-2,2',
+        point: { x: 2, y: 2 },
+        variant: 'positive',
+        label: 'C7: 3 liberties after D8: C8, C6, and B7.',
+      },
+      {
+        id: 'read-pressure-stone-4,2',
+        point: { x: 4, y: 2 },
+        variant: 'positive',
+        label: 'E7: 3 liberties after D8: E8, E6, and F7.',
+      },
+      {
+        id: 'read-pressure-gap-3,2',
+        point: { x: 3, y: 2 },
+        variant: 'warning',
+        label: 'D7: imagined White pressure point to keep watching.',
+      },
+      {
+        id: 'read-pressure-reply-3,1',
+        point: { x: 3, y: 1 },
+        variant: 'positive',
+        label: 'D8: selected reply used for this recount.',
+      },
+      {
+        id: 'read-pressure-reply-3,3',
+        point: { x: 3, y: 3 },
+        variant: 'neutral',
+        label: 'D6: alternate reply to compare later.',
+      },
+    ]);
   });
 
   it('keeps the last missed objective visible without blocking the next try', () => {
