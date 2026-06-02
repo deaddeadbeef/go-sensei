@@ -48,6 +48,7 @@ Latest completed slice:
 - Switched defense-trial board markers to the post-defense recount, so the board shows the stabilized side's actual liberties and flags the newly shorter side instead of stale pre-defense warnings.
 - Added a replayable follow-up defense continuation when a successful defense makes the other side shorter, so learners can keep reading the new weak side without mutating the real game.
 - Added a follow-up defense comparison summary that contrasts E8, E6, and F7 and explicitly names E6 as the move that connects both Black sides into one group.
+- Added a stable-read handoff that turns equal pressure comparisons and resolved follow-up defenses into a concrete real-game extension button.
 
 Next investigation candidates:
-- Whether a stable pressure read should hand learners back to a concrete real-game extension choice, so the simulated branch closes with an actionable next move.
+- Whether the real-game extension played after a pressure handoff should get a short recap tying the actual move back to the simulated read.
