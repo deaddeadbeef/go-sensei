@@ -37,15 +37,32 @@ function conceptLabel(conceptId: string): string {
     .join(' ');
 }
 
-export function isStudyPlanQuestion(question: string): boolean {
-  const q = normalizedQuestion(question);
+function uniqueConceptIds(conceptIds: string[]): string[] {
+  return [...new Set(conceptIds)];
+}
 
+function isProgressReflectionQuestionText(q: string): boolean {
+  return /\bhow\s+(am|m)\s+i\s+doing\b/.test(q)
+    || /\bam\s+i\s+(doing\s+)?(well|ok|okay|improving|getting\s+better)\b/.test(q)
+    || /\bhow\s+is\s+my\s+progress\b/.test(q)
+    || /\bwhat\s+progress\s+have\s+i\s+made\b/.test(q)
+    || /\bwhat\s+(have|did)\s+i\s+learn(ed)?\b/.test(q)
+    || /\bwhat\s+am\s+i\s+learning\b/.test(q)
+    || /\bwhat\s+do\s+i\s+know\b/.test(q);
+}
+
+function isStudyPlanQuestionText(q: string): boolean {
   return /\bwhat\s+should\s+i\s+(study|learn|practice)\b/.test(q)
-    || /\bwhat\s+am\s+i\s+(learning|practicing)\b/.test(q)
     || /\b(study|learn|practice)\s+next\b/.test(q)
     || /\bnext\s+(lesson|study|practice|focus)\b/.test(q)
     || /\brecommended\s+(next|focus|lesson|practice)\b/.test(q)
     || /\blearning\s+path\b/.test(q);
+}
+
+export function isStudyPlanQuestion(question: string): boolean {
+  const q = normalizedQuestion(question);
+
+  return isProgressReflectionQuestionText(q) || isStudyPlanQuestionText(q);
 }
 
 function actionForRecommendation(recommendation: LearningRecommendation): SenseiAction {
@@ -63,6 +80,90 @@ function actionForRecommendation(recommendation: LearningRecommendation): Sensei
   }
 }
 
+function plural(count: number, singular: string, pluralWord = `${singular}s`): string {
+  return `${count} ${count === 1 ? singular : pluralWord}`;
+}
+
+function solvedProblemCount(problemAttempts: ProblemAttempt[]): number {
+  return new Set(problemAttempts
+    .filter((attempt) => attempt.solved)
+    .map((attempt) => attempt.problemId)).size;
+}
+
+function progressSummary(input: LocalStudyPlanInput): string {
+  const lessonText = input.completedLessons.length === 0
+    ? 'completed no lessons'
+    : `completed ${plural(input.completedLessons.length, 'lesson')}`;
+  const solvedCount = solvedProblemCount(input.problemAttempts);
+  const problemText = solvedCount === 0
+    ? 'solved no problems'
+    : `solved ${plural(solvedCount, 'problem')}`;
+  const guidedText = input.hasStartedIntroGame
+    ? 'started a guided 9x9 game'
+    : 'not started a guided 9x9 game yet';
+
+  return `${lessonText}, ${problemText}, and ${guidedText}`;
+}
+
+function strongestConcepts(mastery: ConceptMastery[]): ConceptMastery[] {
+  return mastery
+    .filter((item) => item.level >= 2)
+    .sort((a, b) => b.level - a.level
+      || b.encounterCount - a.encounterCount
+      || b.lastSeen - a.lastSeen
+      || a.conceptId.localeCompare(b.conceptId))
+    .slice(0, 3);
+}
+
+function introducedConcepts(mastery: ConceptMastery[]): ConceptMastery[] {
+  return mastery
+    .filter((item) => item.level === 1)
+    .sort((a, b) => b.encounterCount - a.encounterCount
+      || b.lastSeen - a.lastSeen
+      || a.conceptId.localeCompare(b.conceptId))
+    .slice(0, 3);
+}
+
+function buildProgressReflectionAnswer(
+  input: LocalStudyPlanInput,
+  recommendation: LearningRecommendation,
+): LocalQuestionAnswer {
+  const strongConcepts = strongestConcepts(input.mastery);
+  const introduced = introducedConcepts(input.mastery);
+  const strongLabels = strongConcepts.map((item) => conceptLabel(item.conceptId));
+  const introducedLabels = introduced.map((item) => conceptLabel(item.conceptId));
+  const focusLabels = recommendation.focusConcepts.map(conceptLabel).slice(0, 4);
+  const firstStep = recommendation.practicePlan[0];
+  const hasEvidence = input.completedLessons.length > 0
+    || input.problemAttempts.length > 0
+    || input.hasStartedIntroGame
+    || input.mastery.length > 0;
+
+  return {
+    text: [
+      `Progress check: you have ${progressSummary(input)}.`,
+      hasEvidence
+        ? 'That is real evidence: lessons build vocabulary, problems test reading, and guided games connect both to live moves.'
+        : 'That is not a failure; it means the tutor needs one visible move or lesson before it can judge your Go.',
+      strongLabels.length > 0
+        ? `Strongest evidence: ${joinList(strongLabels)} ${strongLabels.length === 1 ? 'is' : 'are'} moving from vocabulary into practice.`
+        : '',
+      introducedLabels.length > 0
+        ? `Still fragile: ${joinList(introducedLabels)} ${introducedLabels.length === 1 ? 'needs' : 'need'} more proof.`
+        : '',
+      `Next honest step: ${recommendation.title}. ${recommendation.reason}`,
+      focusLabels.length ? `Keep attention on ${joinList(focusLabels)}.` : '',
+      firstStep ? `First: ${firstStep}` : '',
+    ].filter(Boolean).join(' '),
+    conceptIds: uniqueConceptIds([
+      ...recommendation.focusConcepts,
+      ...strongConcepts.map((item) => item.conceptId),
+      ...introduced.map((item) => item.conceptId),
+    ]),
+    actions: [actionForRecommendation(recommendation)],
+  };
+}
+
 export function getLocalStudyPlanAnswer(
   question: string,
   input: LocalStudyPlanInput,
@@ -70,6 +171,12 @@ export function getLocalStudyPlanAnswer(
   if (!isStudyPlanQuestion(question)) return null;
 
   const recommendation = getLearningRecommendation(input);
+  const q = normalizedQuestion(question);
+
+  if (isProgressReflectionQuestionText(q)) {
+    return buildProgressReflectionAnswer(input, recommendation);
+  }
+
   const focusLabels = recommendation.focusConcepts.map(conceptLabel).slice(0, 4);
   const firstStep = recommendation.practicePlan[0];
   const secondStep = recommendation.practicePlan[1];
