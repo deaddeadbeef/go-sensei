@@ -441,6 +441,9 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText('D8: C7 3 liberties, E7 3 liberties.')).toBeTruthy();
     expect(screen.getByText('D6: C7 3 liberties, E7 3 liberties.')).toBeTruthy();
     expect(screen.getByText(comparisonSummary)).toBeTruthy();
+    expect(screen.getByText('Real-game handoff')).toBeTruthy();
+    expect(screen.getByText('The read is stable, so turn it into a real move: play G7 for Make your stones work together.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Play G7 in the real game after the stable pressure read' })).toBeTruthy();
     expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
     expect(useGameStore.getState().chatMessages.at(-1)).toMatchObject({
       text: `Comparison read: ${d6RecountText} ${comparisonSummary}`,
@@ -886,6 +889,40 @@ describe('BeginnerObjectiveCard', () => {
         label: 'E6: follow-up defense; C7 and E7 connect with 8 liberties.',
       },
     ]));
+  });
+
+  it('hands a stable follow-up defense back to a concrete real-game extension', () => {
+    act(() => {
+      useGameStore.getState().placeStone({ x: 2, y: 2 });
+      useGameStore.getState().placeStone({ x: 2, y: 1 });
+      useGameStore.getState().placeStone({ x: 4, y: 2 });
+      useGameStore.getState().pass();
+    });
+
+    render(<BeginnerObjectiveCard />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Recount C7 and E7 after D8' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Compare D6 against D8' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Try C6 defense for C7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Try E6 follow-up defense for E7' }));
+
+    expect(screen.getByText('Real-game handoff')).toBeTruthy();
+    expect(screen.getByText('The read is stable, so turn it into a real move: play G7 for Make your stones work together.')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Play G7 in the real game after the stable pressure read' }));
+
+    const state = useGameStore.getState();
+    expect(state.game.moveHistory).toHaveLength(5);
+    expect(state.game.moveHistory.at(-1)).toMatchObject({
+      type: 'place',
+      color: 'black',
+      point: { x: 6, y: 2 },
+    });
+    expect(state.lastPlayerMove).toEqual({ x: 6, y: 2 });
+    expect(state.game.currentPlayer).toBe('white');
+    expect(screen.queryByText('Follow-up defense')).toBeNull();
   });
 
   it('reopens a pressure defense from chat with the selected short-side marker', () => {

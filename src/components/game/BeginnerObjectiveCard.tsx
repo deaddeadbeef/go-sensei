@@ -79,6 +79,13 @@ interface PressureFollowUpComparisonSummary {
   text: string;
 }
 
+interface PressureExtensionHandoff {
+  point: Point;
+  coord: string;
+  text: string;
+  ariaLabel: string;
+}
+
 function targetKey(point: Point): string {
   return `${point.x},${point.y}`;
 }
@@ -688,6 +695,31 @@ function getPressureDefenseContinuationComparisonSummary(
   return { rows, text };
 }
 
+function isStablePressureDefenseOutcome(outcome: PressureDefenseOutcome): boolean {
+  return outcome.connectedSides || outcome.defendedLiberties.length === outcome.otherLiberties.length;
+}
+
+function getStablePressureExtensionHandoff(
+  objective: BeginnerObjective,
+  targets: Point[],
+  board: BoardState,
+  isStable: boolean,
+): PressureExtensionHandoff | null {
+  if (!isStable || objective.id !== 'extend-from-stone') return null;
+
+  const point = targets.find((target) => getStone(board, target) === null);
+  if (!point) return null;
+
+  const coord = pointToCoord(point, board.size);
+
+  return {
+    point: copyPoint(point),
+    coord,
+    text: `The read is stable, so turn it into a real move: play ${coord} for ${objective.title}.`,
+    ariaLabel: `Play ${coord} in the real game after the stable pressure read`,
+  };
+}
+
 function getReplayPressureDefensePoint(
   prompt: OneSpaceJumpReadPrompt,
   recount: PressureRecount,
@@ -1039,6 +1071,43 @@ function buildTargetHintHighlights(objective: BeginnerObjective, point: Point, b
       return hints;
     }
   }
+}
+
+interface StablePressureExtensionHandoffProps {
+  handoff: PressureExtensionHandoff;
+  canPlayTarget: boolean;
+  onPlay: (point: Point) => void;
+}
+
+function StablePressureExtensionHandoff({
+  handoff,
+  canPlayTarget,
+  onPlay,
+}: StablePressureExtensionHandoffProps) {
+  return (
+    <div className="mt-2">
+      <div className="text-xs font-semibold" style={{ color: COLORS.ui.textPrimary }}>
+        Real-game handoff
+      </div>
+      <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+        {handoff.text}
+      </p>
+      <button
+        type="button"
+        className="mt-1.5 rounded border px-2 py-0.5 font-mono text-[11px] font-bold transition hover:bg-white/[0.07] disabled:cursor-default disabled:opacity-70 disabled:hover:bg-transparent"
+        style={{
+          borderColor: COLORS.ui.accent,
+          color: COLORS.ui.textPrimary,
+          backgroundColor: `${COLORS.ui.accent}1f`,
+        }}
+        disabled={!canPlayTarget}
+        aria-label={handoff.ariaLabel}
+        onClick={() => onPlay(handoff.point)}
+      >
+        {handoff.coord}
+      </button>
+    </div>
+  );
 }
 
 export function BeginnerObjectiveCard() {
@@ -1489,6 +1558,31 @@ export function BeginnerObjectiveCard() {
       pressureDefenseContinuationRecommendation,
     )
     : null;
+  const pressureComparisonExtensionHandoff = getStablePressureExtensionHandoff(
+    objective,
+    playableTargets,
+    game.board,
+    Boolean(pressureComparisonSummary && !pressureDefenseRecommendation),
+  );
+  const selectedDefenseExtensionHandoff = getStablePressureExtensionHandoff(
+    objective,
+    playableTargets,
+    game.board,
+    Boolean(
+      selectedDefenseReadOutcome
+      && !pressureDefenseContinuationRecommendation
+      && isStablePressureDefenseOutcome(selectedDefenseReadOutcome),
+    ),
+  );
+  const selectedFollowUpExtensionHandoff = getStablePressureExtensionHandoff(
+    objective,
+    playableTargets,
+    game.board,
+    Boolean(
+      selectedFollowUpDefenseReadOutcome
+      && isStablePressureDefenseOutcome(selectedFollowUpDefenseReadOutcome),
+    ),
+  );
   const readPromptAnchorCoord = readPrompt ? pointToCoord(readPrompt.anchor, game.board.size) : null;
   const readPromptStoneCoord = readPrompt ? pointToCoord(readPrompt.stone, game.board.size) : null;
   const selectedReadReplyCoord = selectedReadReply ? pointToCoord(selectedReadReply, game.board.size) : null;
@@ -1648,6 +1742,13 @@ export function BeginnerObjectiveCard() {
                           <p className="mt-1 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
                             {pressureComparisonSummary.text}
                           </p>
+                          {pressureComparisonExtensionHandoff && (
+                            <StablePressureExtensionHandoff
+                              handoff={pressureComparisonExtensionHandoff}
+                              canPlayTarget={canPlayTarget}
+                              onPlay={handleTargetClick}
+                            />
+                          )}
                           {pressureComparisonSummary.recommendationText && (
                             <>
                               <p className="mt-1 text-xs font-semibold leading-relaxed" style={{ color: COLORS.overlay.warning }}>
@@ -1699,6 +1800,13 @@ export function BeginnerObjectiveCard() {
                                     <p className="mt-1 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
                                       {selectedDefenseReadOutcome.text}
                                     </p>
+                                  )}
+                                  {selectedDefenseExtensionHandoff && (
+                                    <StablePressureExtensionHandoff
+                                      handoff={selectedDefenseExtensionHandoff}
+                                      canPlayTarget={canPlayTarget}
+                                      onPlay={handleTargetClick}
+                                    />
                                   )}
                                   {pressureDefenseContinuationRecommendation
                                     && pressureDefenseRecommendation
@@ -1773,6 +1881,13 @@ export function BeginnerObjectiveCard() {
                                             {selectedFollowUpDefenseComparisonSummary.text}
                                           </p>
                                         </div>
+                                      )}
+                                      {selectedFollowUpExtensionHandoff && (
+                                        <StablePressureExtensionHandoff
+                                          handoff={selectedFollowUpExtensionHandoff}
+                                          canPlayTarget={canPlayTarget}
+                                          onPlay={handleTargetClick}
+                                        />
                                       )}
                                     </div>
                                   )}
