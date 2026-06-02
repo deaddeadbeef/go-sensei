@@ -1523,6 +1523,67 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([{ id: 'lesson:territory', label: 'Review territory' }]);
   });
 
+  it('explains a one-space jump framework when asking if territory is mine', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup first move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+    const extensionMove = playMove(afterWhitePass, { x: 4, y: 2 });
+    if (!extensionMove.success) throw new Error('test setup extension move failed');
+    const game = passMove(extensionMove.newState);
+
+    const answer = getLocalQuestionAnswer('Is this territory mine?', game, 'guided');
+
+    expect(answer?.text).toContain('C7 and E7 are starting to sketch a top-side framework');
+    expect(answer?.text).toContain('D7 is only a gap in that framework, not safe territory yet');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining([
+      'territory',
+      'corner-opening',
+      'shape',
+      'direction-of-play',
+    ]));
+    expect(answer?.boardFocus?.highlights).toEqual([
+      {
+        id: 'local-territory-framework-anchor-2,2',
+        point: { x: 2, y: 2 },
+        variant: 'positive',
+        label: 'C7: framework stone helping sketch territory.',
+      },
+      {
+        id: 'local-territory-framework-stone-4,2',
+        point: { x: 4, y: 2 },
+        variant: 'positive',
+        label: 'E7: one-space jump stone extending the framework.',
+      },
+      {
+        id: 'local-territory-gap-3,2',
+        point: { x: 3, y: 2 },
+        variant: 'neutral',
+        label: 'D7: open gap; useful shape, not settled territory.',
+      },
+    ]);
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-territory-move-6,2',
+        point: { x: 6, y: 2 },
+        rank: 1,
+        reason: 'Try G7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-territory-move-4,4',
+        point: { x: 4, y: 4 },
+        rank: 2,
+        reason: 'Try E5 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-territory-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 3,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([{ id: 'lesson:territory', label: 'Review territory' }]);
+  });
+
   it('answers ko questions with the current forbidden point when a ko is active', () => {
     const game = playSequence([
       { x: 1, y: 0 },
