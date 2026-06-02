@@ -688,6 +688,62 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('explains the learner threat honestly when there is no capture yet', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+
+    const answer = getLocalQuestionAnswer('What am I threatening?', firstMove.newState, 'guided');
+
+    expect(answer?.text).toContain('Not a capture threat yet.');
+    expect(answer?.text).toContain('C7 threatens future shape: it gives you an anchor to extend from, not an immediate kill.');
+    expect(answer?.text).toContain('That Black group has 4 liberties: C8, C6, B7, and D7, so it has room to build.');
+    expect(answer?.text).toContain('A useful beginner threat is a move White should respect because it builds territory, connection, safety, or pressure.');
+    expect(answer?.text).toContain('On this board, turn the threat into: Make your stones work together. Play a one-space jump from one of your stones. Try E7 or C5.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['direction-of-play', 'reading', 'liberties', 'shape']));
+    expect(answer?.boardFocus?.highlights).toEqual([{
+      id: 'local-threat-anchor-2,2',
+      point: { x: 2, y: 2 },
+      variant: 'neutral',
+      label: 'C7: current Black stone creating a future threat.',
+    }]);
+    expect(answer?.boardFocus?.liberties).toEqual([{
+      id: 'local-threat-liberties-2,2',
+      point: { x: 2, y: 2 },
+      count: 4,
+      libertyPoints: [
+        { x: 2, y: 1 },
+        { x: 2, y: 3 },
+        { x: 1, y: 2 },
+        { x: 3, y: 2 },
+      ],
+    }]);
+    expect(answer?.boardFocus?.groups?.[0]).toMatchObject({
+      id: 'local-threat-group-2,2',
+      stones: [{ x: 2, y: 2 }],
+      color: 'black',
+      liberties: 4,
+      label: 'Black group creating a future threat: 4 liberties at C8, C6, B7, and D7.',
+    });
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-threat-move-4,2',
+        point: { x: 4, y: 2 },
+        rank: 1,
+        reason: 'Try E7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-threat-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 2,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'practice:reading', label: 'Practice reading' },
+    ]);
+  });
+
   it('explains solid connection versus one-space jump shape', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
@@ -1351,6 +1407,44 @@ describe('local question answer', () => {
     });
     expect(answer?.boardFocus?.suggestions).toEqual([{
       id: 'local-capture-move-3,2',
+      point: { x: 3, y: 2 },
+      rank: 1,
+      reason: 'Capture White by filling its last liberty at D7.',
+    }]);
+    expect(answer?.actions).toEqual([{ id: 'practice:capture', label: 'Practice capture' }]);
+  });
+
+  it('answers threat questions with an actual capture when White is in atari', () => {
+    const game = playSequence([
+      { x: 2, y: 1 },
+      { x: 2, y: 2 },
+      { x: 2, y: 3 },
+      { x: 0, y: 0 },
+      { x: 1, y: 2 },
+      { x: 0, y: 1 },
+    ]);
+
+    const answer = getLocalQuestionAnswer('Can I capture anything?', game, 'guided');
+
+    expect(answer?.text).toContain('Yes: White has a group at C7 in atari.');
+    expect(answer?.text).toContain("Your threat is capture: Black can play D7, the group's final liberty.");
+    expect(answer?.text).toContain('I marked the White group, its last liberty, and the capture move.');
+    expect(answer?.conceptIds).toEqual(['capture', 'atari', 'liberties', 'reading']);
+    expect(answer?.boardFocus?.liberties).toEqual([{
+      id: 'local-threat-liberties-2,2',
+      point: { x: 2, y: 2 },
+      count: 1,
+      libertyPoints: [{ x: 3, y: 2 }],
+    }]);
+    expect(answer?.boardFocus?.groups?.[0]).toMatchObject({
+      id: 'local-threat-group-2,2',
+      stones: [{ x: 2, y: 2 }],
+      color: 'white',
+      liberties: 1,
+      label: 'White group in atari: capture by playing D7.',
+    });
+    expect(answer?.boardFocus?.suggestions).toEqual([{
+      id: 'local-threat-capture-move-3,2',
       point: { x: 3, y: 2 },
       rank: 1,
       reason: 'Capture White by filling its last liberty at D7.',
