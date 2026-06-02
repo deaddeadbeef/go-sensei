@@ -446,7 +446,7 @@ describe('BeginnerObjectiveCard', () => {
       text: `Comparison read: ${d6RecountText} ${comparisonSummary}`,
       variant: 'teaching',
       actions: [
-        { id: 'guided:read-pressure:recount:read-pressure-2,2-4,2-3,2:3,3', label: 'Show recount' },
+        { id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1', label: 'Show comparison' },
       ],
     });
     expect(useGameStore.getState().overlays.targetHints).toEqual([
@@ -511,9 +511,97 @@ describe('BeginnerObjectiveCard', () => {
       text: `Comparison read: After D6, recount the two Black sides: C7 has 2 liberties at C6 and B7. E7 has 3 liberties at E8, E6, and F7. C7 is the short side now, so defend it before extending again. ${comparisonSummary} ${recommendation}`,
       variant: 'teaching',
       actions: [
-        { id: 'guided:read-pressure:recount:read-pressure-2,2-4,2-3,2:3,3', label: 'Show recount' },
+        { id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1', label: 'Show comparison' },
       ],
     });
+    expect(useGameStore.getState().overlays.targetHints).toEqual([
+      {
+        id: 'read-pressure-anchor-2,2',
+        point: { x: 2, y: 2 },
+        variant: 'warning',
+        label: 'C7: short side with 2 liberties after D6: C6 and B7.',
+      },
+      {
+        id: 'read-pressure-stone-4,2',
+        point: { x: 4, y: 2 },
+        variant: 'positive',
+        label: 'E7: 3 liberties after D6: E8, E6, and F7.',
+      },
+      {
+        id: 'read-pressure-gap-3,2',
+        point: { x: 3, y: 2 },
+        variant: 'warning',
+        label: 'D7: imagined White pressure point to keep watching.',
+      },
+      {
+        id: 'read-pressure-reply-3,1',
+        point: { x: 3, y: 1 },
+        variant: 'neutral',
+        label: 'D8: alternate reply to compare later.',
+      },
+      {
+        id: 'read-pressure-reply-3,3',
+        point: { x: 3, y: 3 },
+        variant: 'positive',
+        label: 'D6: selected reply used for this recount.',
+      },
+      {
+        id: 'read-pressure-short-liberty-2,3',
+        point: { x: 2, y: 3 },
+        variant: 'warning',
+        label: 'C6: defend this C7 liberty before extending.',
+      },
+      {
+        id: 'read-pressure-short-liberty-1,2',
+        point: { x: 1, y: 2 },
+        variant: 'warning',
+        label: 'B7: defend this C7 liberty before extending.',
+      },
+    ]);
+  });
+
+  it('reopens an asymmetric pressure comparison from chat with short-side liberty markers', () => {
+    act(() => {
+      useGameStore.getState().placeStone({ x: 2, y: 2 });
+      useGameStore.getState().placeStone({ x: 2, y: 1 });
+      useGameStore.getState().placeStone({ x: 4, y: 2 });
+      useGameStore.getState().pass();
+    });
+
+    render(
+      <>
+        <BeginnerObjectiveCard />
+        <SenseiChatLog />
+      </>,
+    );
+
+    const d6RecountText = 'After D6, recount the two Black sides: C7 has 2 liberties at C6 and B7. E7 has 3 liberties at E8, E6, and F7. C7 is the short side now, so defend it before extending again.';
+    const comparisonSummary = 'D8 and D6 leave the same liberty counts: C7 has 2 liberties and E7 has 3 liberties either way. The difference is direction: D8 attacks D7 from above, while D6 attacks it from below.';
+    const recommendation = 'Recommendation: C7 is the short side with 2 liberties at C6 and B7. Defend C7 before extending again.';
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Recount C7 and E7 after D8' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Compare D6 against D8' }));
+
+    expect(useGameStore.getState().chatMessages.at(-1)?.actions).toEqual([
+      { id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1', label: 'Show comparison' },
+    ]);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
+
+    expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).not.toContain('read-pressure-short-liberty-2,3');
+
+    const comparisonActions = screen.getAllByRole('button', { name: 'Show comparison' });
+    fireEvent.click(comparisonActions[comparisonActions.length - 1]);
+
+    expect(screen.getByText(d6RecountText)).toBeTruthy();
+    expect(screen.getByText('Comparison summary')).toBeTruthy();
+    expect(screen.getByText('D8: C7 2 liberties, E7 3 liberties.')).toBeTruthy();
+    expect(screen.getByText('D6: C7 2 liberties, E7 3 liberties.')).toBeTruthy();
+    expect(screen.getByText(comparisonSummary)).toBeTruthy();
+    expect(screen.getByText(recommendation)).toBeTruthy();
+    expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
     expect(useGameStore.getState().overlays.targetHints).toEqual([
       {
         id: 'read-pressure-anchor-2,2',
