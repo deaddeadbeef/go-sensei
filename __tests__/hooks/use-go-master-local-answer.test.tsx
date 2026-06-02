@@ -1436,6 +1436,62 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('liberties').encounterCount).toBeGreaterThan(0);
   });
 
+  it('answers capture-race plan follow-ups locally from the guided chat', () => {
+    act(() => {
+      useGameStore.getState().startGuidedIntroGame();
+      playStoreSequence([
+        { x: 2, y: 2 },
+        { x: 2, y: 1 },
+        { x: 4, y: 4 },
+        { x: 1, y: 2 },
+      ]);
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('What should I read next in this race?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.text).toContain('Read this capture race as count, save, recount.');
+    expect(state.bubble.text).toContain('Step 1: Black is behind, so first add a liberty at C6 or D7.');
+    expect(state.bubble.text).toContain('Step 2: after White answers, count again: Black started with 2 liberties and White started with 3.');
+    expect(state.bubble.text).toContain('Step 3: if Black is still behind, add another liberty; when Black catches up, start filling White liberties at C9, B8, or D8.');
+    expect(state.bubble.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'practice:reading', label: 'Practice reading' },
+    ]);
+    expect(state.chatMessages.at(-1)?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'practice:reading', label: 'Practice reading' },
+    ]);
+    expect(state.overlays.groups).toEqual([
+      {
+        id: 'local-capture-race-plan-black-group-2,2',
+        stones: [{ x: 2, y: 2 }],
+        color: 'black',
+        liberties: 2,
+        label: 'Black group to save first: 2 liberties at C6 and D7.',
+      },
+      {
+        id: 'local-capture-race-plan-white-group-2,1',
+        stones: [{ x: 2, y: 1 }],
+        color: 'white',
+        liberties: 3,
+        label: 'White group to chase after Black catches up: 3 liberties at C9, B8, and D8.',
+      },
+    ]);
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 2, y: 3 },
+      { x: 3, y: 2 },
+    ]);
+    expect(useConceptStore.getState().getMastery('reading').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('liberties').encounterCount).toBeGreaterThan(0);
+  });
+
   it('keeps even capture-race questions grounded in the current guided objective', () => {
     act(() => {
       useGameStore.getState().startGuidedIntroGame();

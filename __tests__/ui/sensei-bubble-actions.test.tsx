@@ -7,15 +7,26 @@ import { useGameStore } from '@/stores/game-store';
 
 describe('SenseiBubble actions', () => {
   beforeEach(() => {
+    vi.useFakeTimers();
     act(() => {
       useGameStore.getState().startGuidedIntroGame();
       useGameStore.getState().dismissBubble();
     });
   });
 
-  afterEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
 
-  it('routes practice actions to the matching problem category', async () => {
+  function finishTypewriter() {
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+  }
+
+  it('routes practice actions to the matching problem category', () => {
     act(() => {
       useGameStore.getState().showBubble({
         text: 'Try a capture problem next.',
@@ -25,15 +36,16 @@ describe('SenseiBubble actions', () => {
     });
 
     render(<SenseiBubble />);
+    finishTypewriter();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Practice capture' }, { timeout: 3000 }));
+    fireEvent.click(screen.getByRole('button', { name: 'Practice capture' }));
 
     expect(useGameStore.getState().appPhase).toBe('problems');
     expect(useGameStore.getState().preferredProblemFilter).toBe('capture');
     expect(useGameStore.getState().bubble.visible).toBe(false);
   });
 
-  it('routes lesson actions to the matching lesson checkpoint', async () => {
+  it('routes lesson actions to the matching lesson checkpoint', () => {
     act(() => {
       useGameStore.getState().showBubble({
         text: 'Review territory next.',
@@ -43,15 +55,16 @@ describe('SenseiBubble actions', () => {
     });
 
     render(<SenseiBubble />);
+    finishTypewriter();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Review territory' }, { timeout: 3000 }));
+    fireEvent.click(screen.getByRole('button', { name: 'Review territory' }));
 
     expect(useGameStore.getState().appPhase).toBe('lesson');
     expect(useGameStore.getState().currentLessonId).toBe('territory');
     expect(useGameStore.getState().bubble.visible).toBe(false);
   });
 
-  it('routes later concept lesson actions to the matching checkpoint', async () => {
+  it('routes later concept lesson actions to the matching checkpoint', () => {
     act(() => {
       useGameStore.getState().showBubble({
         text: 'Review eyes before trying life and death.',
@@ -61,15 +74,16 @@ describe('SenseiBubble actions', () => {
     });
 
     render(<SenseiBubble />);
+    finishTypewriter();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Review eyes' }, { timeout: 3000 }));
+    fireEvent.click(screen.getByRole('button', { name: 'Review eyes' }));
 
     expect(useGameStore.getState().appPhase).toBe('lesson');
     expect(useGameStore.getState().currentLessonId).toBe('eyes');
     expect(useGameStore.getState().bubble.visible).toBe(false);
   });
 
-  it('routes recommendation review actions to daily review', async () => {
+  it('routes recommendation review actions to daily review', () => {
     act(() => {
       useGameStore.getState().showBubble({
         text: 'Reviews are due before new material.',
@@ -79,14 +93,15 @@ describe('SenseiBubble actions', () => {
     });
 
     render(<SenseiBubble />);
+    finishTypewriter();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Review due cards' }, { timeout: 3000 }));
+    fireEvent.click(screen.getByRole('button', { name: 'Review due cards' }));
 
     expect(useGameStore.getState().appPhase).toBe('review');
     expect(useGameStore.getState().bubble.visible).toBe(false);
   });
 
-  it('routes generic practice actions to every problem category', async () => {
+  it('routes generic practice actions to every problem category', () => {
     act(() => {
       useGameStore.getState().showBubble({
         text: 'Practice the endgame next.',
@@ -96,15 +111,16 @@ describe('SenseiBubble actions', () => {
     });
 
     render(<SenseiBubble />);
+    finishTypewriter();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Open endgame problems' }, { timeout: 3000 }));
+    fireEvent.click(screen.getByRole('button', { name: 'Open endgame problems' }));
 
     expect(useGameStore.getState().appPhase).toBe('problems');
     expect(useGameStore.getState().preferredProblemFilter).toBe('endgame');
     expect(useGameStore.getState().bubble.visible).toBe(false);
   });
 
-  it('routes hint actions to local board guidance in guided games', async () => {
+  it('routes hint actions to local board guidance in guided games', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
     act(() => {
@@ -116,8 +132,9 @@ describe('SenseiBubble actions', () => {
     });
 
     render(<SenseiBubble />);
+    finishTypewriter();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Show me' }, { timeout: 3000 }));
+    fireEvent.click(screen.getByRole('button', { name: 'Show me' }));
 
     const state = useGameStore.getState();
 

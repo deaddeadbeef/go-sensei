@@ -23,7 +23,9 @@ Latest completed slice:
 - Added local snapback guidance so the tutor explains the concept without cloud fallback and marks the immediate recapture point after White captures into a cramped shape.
 - Added local late-fight follow-up routing so natural "what if White answers?" questions reuse the current snapback, occupied-cut, capture-race, or attack/defense board guidance instead of falling back to generic reply text.
 - Added a plan-style occupied-cut follow-up so "what should I read next after this cut?" becomes a three-step beginner sequence: attack the cutting stone, recount both Black groups, then defend or keep filling White liberties.
+- Added a plan-style capture-race follow-up so "what should I read next in this race?" teaches a count-save-recount routine when Black is behind on liberties.
+- Hardened the action-routing UI tests so typewriter timing and Skill Tree animation scheduling no longer make the full suite retry-dependent.
 
 Next investigation candidates:
-- More late guided positions where capture-race or snapback follow-up language should connect two or three tactical answers into a short plan rather than repeating the same first clue.
+- Snapback follow-up language that connects the immediate recapture to the next forcing move instead of repeating the first snapback clue.
 - Whether the guided 9x9 entry should preserve a paused guided board across app reloads more explicitly than the current session store does.
