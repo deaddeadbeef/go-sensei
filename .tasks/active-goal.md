@@ -29,6 +29,7 @@ Latest completed slice:
 - Added durable guided-board snapshots so the learning path can restore a paused guided 9x9 after session storage is lost, with learner-facing resume coaching.
 - Made restored guided boards immediately playable and actionable by locally passing an interrupted White turn, restoring ranked board-analysis suggestions, and highlighting the last learner move.
 - Added a compact board-side "What changed" recap after guided learner moves so the last-move lesson stays visible near the stones instead of only in the sidebar or chat.
+- Added hover/focus explanations for guided objective target buttons so learners can see why a specific coordinate is suggested before playing it.
 
 Next investigation candidates:
-- Whether the guided objective card should surface a tiny "why this target" explanation when a learner hovers or focuses a specific suggested coordinate.
+- Whether target-level hints should also highlight the anchor, gap, or weak-group liberty on the board while the learner hovers or focuses a suggested coordinate.

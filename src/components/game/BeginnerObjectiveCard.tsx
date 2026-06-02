@@ -5,12 +5,98 @@ import {
   getBeginnerObjective,
   getBeginnerObjectiveProgress,
 } from '@/lib/coaching/beginner-objectives';
+import type { BeginnerObjective } from '@/lib/coaching/beginner-objectives';
 import { getMoveInsight } from '@/lib/coaching/move-insight';
-import { pointToCoord } from '@/lib/go-engine';
-import type { Point } from '@/lib/go-engine';
+import {
+  getAdjacentPoints,
+  getGroup,
+  getStone,
+  isOnBoard,
+  pointToCoord,
+} from '@/lib/go-engine';
+import type { BoardState, Group, Point } from '@/lib/go-engine';
 import { useGameStore } from '@/stores/game-store';
 import { COLORS } from '@/utils/colors';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
+
+const ONE_SPACE_JUMP_DELTAS: Point[] = [
+  { x: 2, y: 0 },
+  { x: 0, y: 2 },
+  { x: -2, y: 0 },
+  { x: 0, y: -2 },
+];
+
+function targetKey(point: Point): string {
+  return `${point.x},${point.y}`;
+}
+
+function getCornerTargetExplanation(point: Point, board: BoardState): string {
+  const coord = pointToCoord(point, board.size);
+  const verticalEdge = point.y < board.size / 2 ? 'top' : 'bottom';
+  const horizontalEdge = point.x < board.size / 2 ? 'left' : 'right';
+
+  return `${coord} leans on the ${verticalEdge} and ${horizontalEdge} edges, so Black needs fewer stones to sketch territory there.`;
+}
+
+function getExtensionAnchor(board: BoardState, target: Point): { anchor: Point; gap: Point } | null {
+  for (const delta of ONE_SPACE_JUMP_DELTAS) {
+    const anchor = { x: target.x + delta.x, y: target.y + delta.y };
+    const gap = { x: target.x + delta.x / 2, y: target.y + delta.y / 2 };
+
+    if (!isOnBoard(board, anchor) || !isOnBoard(board, gap)) continue;
+    if (getStone(board, anchor) !== 'black') continue;
+    if (getStone(board, gap) !== null) continue;
+
+    return { anchor, gap };
+  }
+
+  return null;
+}
+
+function getExtensionTargetExplanation(point: Point, board: BoardState): string {
+  const coord = pointToCoord(point, board.size);
+  const anchor = getExtensionAnchor(board, point);
+  if (!anchor) {
+    return `${coord} keeps a one-point gap from another stone, so the stones can work together without clumping.`;
+  }
+
+  const anchorCoord = pointToCoord(anchor.anchor, board.size);
+  const gapCoord = pointToCoord(anchor.gap, board.size);
+
+  return `${coord} is a one-space jump from ${anchorCoord}; ${gapCoord} stays open so the two stones can work together without clumping.`;
+}
+
+function findWeakGroupTouchingLiberty(board: BoardState, point: Point): Group | null {
+  const groups = getAdjacentPoints(board, point)
+    .filter((adjacent) => getStone(board, adjacent) === 'black')
+    .map((adjacent) => getGroup(board, adjacent))
+    .filter((group): group is Group => group !== null)
+    .sort((a, b) => a.liberties.length - b.liberties.length || a.stones.length - b.stones.length);
+
+  return groups[0] ?? null;
+}
+
+function getWeakGroupTargetExplanation(point: Point, board: BoardState): string {
+  const coord = pointToCoord(point, board.size);
+  const group = findWeakGroupTouchingLiberty(board, point);
+  if (!group) {
+    return `${coord} gives a short-on-liberties group more breathing room.`;
+  }
+
+  const stoneText = group.stones.length === 1 ? 'stone' : `${group.stones.length}-stone group`;
+  return `${coord} is a liberty for your ${stoneText}; playing there gives it one more breathing point before White can squeeze it.`;
+}
+
+function getTargetExplanation(objective: BeginnerObjective, point: Point, board: BoardState): string {
+  switch (objective.id) {
+    case 'claim-corner':
+      return getCornerTargetExplanation(point, board);
+    case 'extend-from-stone':
+      return getExtensionTargetExplanation(point, board);
+    case 'look-for-weak-groups':
+      return getWeakGroupTargetExplanation(point, board);
+  }
+}
 
 export function BeginnerObjectiveCard() {
   const game = useGameStore((s) => s.game);
@@ -20,6 +106,7 @@ export function BeginnerObjectiveCard() {
   const placeStone = useGameStore((s) => s.placeStone);
   const recordInteraction = useGameStore((s) => s.recordInteraction);
   const canPlayTarget = phase === 'playing' && game.currentPlayer === 'black' && !isAiThinking;
+  const [activeTargetKey, setActiveTargetKey] = useState<string | null>(null);
 
   const handleTargetClick = useCallback((point: Point) => {
     if (!canPlayTarget) return;
@@ -45,6 +132,12 @@ export function BeginnerObjectiveCard() {
   const playableTargets = objective.targetPoints.slice(0, 4);
   const hasLearnerMove = game.moveHistory.some((move) => move.color === 'black');
   const insight = hasLearnerMove ? getMoveInsight(game, teachingLevel) : null;
+  const activeTarget = activeTargetKey
+    ? playableTargets.find((point) => targetKey(point) === activeTargetKey) ?? null
+    : null;
+  const activeTargetCoord = activeTarget ? pointToCoord(activeTarget, game.board.size) : null;
+  const activeTargetExplanation = activeTarget ? getTargetExplanation(objective, activeTarget, game.board) : null;
+  const targetHelpId = 'beginner-objective-target-help';
 
   return (
     <div
@@ -93,12 +186,28 @@ export function BeginnerObjectiveCard() {
                 }}
                 disabled={!canPlayTarget}
                 aria-label={`Play ${coord} target for ${objective.title}`}
+                aria-describedby={activeTargetKey === targetKey(point) ? targetHelpId : undefined}
+                onPointerEnter={() => setActiveTargetKey(targetKey(point))}
+                onPointerMove={() => setActiveTargetKey(targetKey(point))}
+                onMouseEnter={() => setActiveTargetKey(targetKey(point))}
+                onMouseLeave={() => setActiveTargetKey(null)}
+                onFocus={() => setActiveTargetKey(targetKey(point))}
+                onBlur={() => setActiveTargetKey(null)}
+                onKeyDown={() => setActiveTargetKey(targetKey(point))}
                 onClick={() => handleTargetClick(point)}
               >
                 {coord}
               </button>
             );
           })}
+        </div>
+      )}
+      {activeTargetCoord && activeTargetExplanation && (
+        <div id={targetHelpId} className="mt-1.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+          <div className="font-semibold" style={{ color: COLORS.ui.textPrimary }}>
+            Why {activeTargetCoord}
+          </div>
+          <p>{activeTargetExplanation}</p>
         </div>
       )}
       <div className="mt-1 text-xs" style={{ color: COLORS.ui.accent }}>
