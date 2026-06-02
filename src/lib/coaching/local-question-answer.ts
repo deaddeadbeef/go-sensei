@@ -272,6 +272,14 @@ function isNextMoveQuestion(q: string): boolean {
     || q.trim() === 'help me'
     || /\bwhat\s+(should|do)\s+i\s+(do|play)\b/.test(q)
     || /\bwhere\s+(should|do)\s+i\s+play\b/.test(q)
+    || /\bwhere\s+(should|do|can)\s+i\s+(start|begin)\b/.test(q)
+    || /\bwhere\s+do\s+i\s+begin\b/.test(q)
+    || /\bwhat\s+(is|s)\s+the\s+best\s+(first\s+)?move\b/.test(q)
+    || /\bbest\s+first\s+move\b/.test(q)
+    || /\bwhich\s+corner\s+(should|do|can)\s+i\s+(choose|start|play)\b/.test(q)
+    || /\bwhat\s+(is|s)\s+my\s+plan\s+(now|next)?\b/.test(q)
+    || /\bwhat\s+(is|s)\s+the\s+plan\s+(now|next)?\b/.test(q)
+    || /\bwhere\s+(should|do|can)\s+i\s+start\s+building\b/.test(q)
     || /\bwhat\s+move\b/.test(q)
     || /\bwhat\s+now\b/.test(q)
     || /\bnext\s+move\b/.test(q)
@@ -425,6 +433,41 @@ function mentionedCoordinate(q: string, boardSize: BoardSize): Point | null {
   return mentionedCoordinates(q, boardSize)[0] ?? null;
 }
 
+function mentionedCoordinateTokens(q: string): string[] {
+  const tokens: string[] = [];
+  const seen = new Set<string>();
+
+  for (const token of q.split(/\s+/)) {
+    if (!/^[a-t]\d{1,2}$/i.test(token)) continue;
+
+    const normalizedToken = token.toUpperCase();
+    if (seen.has(normalizedToken)) continue;
+    seen.add(normalizedToken);
+    tokens.push(normalizedToken);
+  }
+
+  return tokens;
+}
+
+function mentionedInvalidCoordinate(q: string, boardSize: BoardSize): string | null {
+  return mentionedCoordinateTokens(q).find((token) => coordToPoint(token, boardSize) === null) ?? null;
+}
+
+function formatBoardColumnRange(boardSize: BoardSize): string {
+  const goColumns = 'ABCDEFGHJKLMNOPQRST'.slice(0, boardSize).split('');
+  const lastColumn = goColumns[goColumns.length - 1];
+
+  return `A through ${lastColumn}, skipping I`;
+}
+
+function isInvalidCoordinateQuestion(q: string, boardSize: BoardSize): boolean {
+  if (!mentionedInvalidCoordinate(q, boardSize)) return false;
+
+  return /\b(can|could|should|would|do)\s+i\s+(play|try|move)\b/.test(q)
+    || /\b(where|what|show|find|locate|play)\b/.test(q)
+    || /\boutside\b/.test(q);
+}
+
 function isTargetReasonQuestion(q: string, boardSize: BoardSize): boolean {
   if (!/\bwhy\b/.test(q)) return false;
   if (mentionedCoordinate(q, boardSize)) return true;
@@ -436,6 +479,7 @@ function isCandidateMoveQuestion(q: string, boardSize: BoardSize): boolean {
   if (!mentionedCoordinate(q, boardSize)) return false;
 
   return /\b(should|can|could|would)\s+i\s+(play|try|move)\b/.test(q)
+    || /\b(should|can|could|would|do)\s+i\s+connect\s+(at\s+)?[a-hj-t]\d{1,2}\b/.test(q)
     || /\bwhat\s+about\b/.test(q)
     || /\bhow\s+about\b/.test(q)
     || /\bwhat\s+(is|s)\s+wrong\s+with\s+[a-hj-t]\d{1,2}\b/.test(q)
@@ -1544,6 +1588,42 @@ function buildRulesAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQ
     actions: [
       ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
       { id: 'lesson:liberties', label: 'Review liberties' },
+    ],
+  };
+}
+
+function buildInvalidCoordinateAnswer(game: GameState, teachingLevel: TeachingLevel, q: string): LocalQuestionAnswer | null {
+  const invalidCoord = mentionedInvalidCoordinate(q, game.board.size);
+  if (!invalidCoord) return null;
+
+  const objective = game.phase === 'playing'
+    ? getBeginnerObjective({
+      boardSize: game.board.size,
+      board: game.board,
+      moveHistory: game.moveHistory,
+      moveCount: game.moveHistory.length,
+      currentPlayer: 'black',
+      teachingLevel,
+    })
+    : null;
+  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-invalid-coordinate-move') : [];
+  const targetCoordText = objective ? objectiveTargetCoordList(objective, game.board.size) : null;
+  const action = objective ? getBeginnerObjectiveLessonAction(objective) : null;
+
+  return {
+    text: [
+      `${invalidCoord} is outside this ${game.board.size}x${game.board.size} board.`,
+      `On this board, valid columns are ${formatBoardColumnRange(game.board.size)}, and valid rows are 1 through ${game.board.size}.`,
+      objective && targetCoordText
+        ? `For this guided position, start with one of the marked ${game.board.size}x${game.board.size} targets: ${targetCoordText}.`
+        : 'Choose an empty intersection that actually appears on the current board.',
+      suggestions.length > 0 ? 'I marked the legal beginner targets so the board size is visible.' : '',
+    ].filter(Boolean).join(' '),
+    conceptIds: uniqueConceptIds(['stones-and-board', ...(objective?.conceptIds ?? [])]),
+    ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
+    actions: [
+      ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+      ...(action ? [action] : []),
     ],
   };
 }
@@ -3251,6 +3331,11 @@ export function getLocalQuestionAnswer(
   if (isOneSpaceJumpGapQuestion(q)) {
     const gapAnswer = buildOneSpaceJumpGapAnswer(game, teachingLevel, q);
     if (gapAnswer) return gapAnswer;
+  }
+
+  if (isInvalidCoordinateQuestion(q, game.board.size)) {
+    const invalidCoordinateAnswer = buildInvalidCoordinateAnswer(game, teachingLevel, q);
+    if (invalidCoordinateAnswer) return invalidCoordinateAnswer;
   }
 
   if (isCoordinateQuestion(q, game.board.size)) {
