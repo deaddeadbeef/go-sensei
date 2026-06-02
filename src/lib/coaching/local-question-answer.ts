@@ -1,4 +1,4 @@
-import { coordToPoint, getAllGroups, getGroup, pointEquals, pointKey, pointToCoord } from '@/lib/go-engine';
+import { coordToPoint, getAllGroups, getGroup, getStone, pointEquals, pointKey, pointToCoord } from '@/lib/go-engine';
 import type { BoardSize, GameState, Group, Move, Point } from '@/lib/go-engine/types';
 import type { TeachingLevel } from '@/lib/ai/system-prompt';
 import {
@@ -73,6 +73,14 @@ function joinList(items: string[]): string {
   if (items.length === 2) return `${items[0]} and ${items[1]}`;
 
   return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`;
+}
+
+function joinOrList(items: string[]): string {
+  if (items.length === 0) return '';
+  if (items.length === 1) return items[0];
+  if (items.length === 2) return `${items[0]} or ${items[1]}`;
+
+  return `${items.slice(0, -1).join(', ')}, or ${items[items.length - 1]}`;
 }
 
 function copyPoint(point: Point): Point {
@@ -247,6 +255,16 @@ function isTargetReasonQuestion(q: string, boardSize: BoardSize): boolean {
   return /\b(there|that\s+point|this\s+point|that\s+move|this\s+move|marked\s+(move|point|target))\b/.test(q);
 }
 
+function isCandidateMoveQuestion(q: string, boardSize: BoardSize): boolean {
+  if (!mentionedCoordinate(q, boardSize)) return false;
+
+  return /\b(should|can|could|would)\s+i\s+(play|try|move)\b/.test(q)
+    || /\bwhat\s+about\b/.test(q)
+    || /\bhow\s+about\b/.test(q)
+    || /\bis\s+[a-hj-t]\d{1,2}\s+(good|bad|ok|okay|right|wrong|playable|safe)\b/.test(q)
+    || /\bplay\s+(at\s+)?[a-hj-t]\d{1,2}\b/.test(q);
+}
+
 function suggestionReason(objective: BeginnerObjective, point: Point, boardSize: BoardSize): string {
   const coord = pointToCoord(point, boardSize);
 
@@ -268,6 +286,13 @@ function objectiveSuggestions(objective: BeginnerObjective, boardSize: BoardSize
     rank: index + 1,
     reason: suggestionReason(objective, point, boardSize),
   }));
+}
+
+function objectiveTargetCoordList(objective: BeginnerObjective, boardSize: BoardSize): string | null {
+  const coords = objective.targetPoints.slice(0, 4).map((point) => pointToCoord(point, boardSize));
+  if (coords.length === 0) return null;
+
+  return joinOrList(coords);
 }
 
 function targetReason(
@@ -334,6 +359,108 @@ function buildTargetReasonAnswer(game: GameState, teachingLevel: TeachingLevel, 
     text: lines.join(' '),
     conceptIds: objective.conceptIds,
     boardFocus: { suggestions },
+    actions: [
+      { id: 'hint', label: 'Show targets' },
+      ...(action ? [action] : []),
+    ],
+  };
+}
+
+function candidateMissReason(
+  objective: BeginnerObjective,
+  point: Point,
+  boardSize: BoardSize,
+  anchor: Point | null,
+): string {
+  const coord = pointToCoord(point, boardSize);
+
+  if (objective.id === 'claim-corner') {
+    return `${coord} is open, but this beginner goal is about starting near a corner where the board edge helps you make territory.`;
+  }
+
+  if (objective.id === 'extend-from-stone') {
+    if (anchor) {
+      const anchorCoord = pointToCoord(anchor, boardSize);
+      const distance = Math.abs(point.x - anchor.x) + Math.abs(point.y - anchor.y);
+      if (distance === 1) {
+        return `${coord} touches ${anchorCoord} directly. That can be useful in a fight, but this beginner goal is practicing a one-space jump that reaches farther without losing teamwork.`;
+      }
+
+      return `${coord} is open, but it is not one of the marked one-space jumps from ${anchorCoord}.`;
+    }
+
+    return `${coord} is open, but it is not one of the marked one-space jumps from your anchor stone.`;
+  }
+
+  return `${coord} is open, but it is not one of the marked liberties for the group that needs breathing room right now.`;
+}
+
+function buildCandidateMoveAnswer(game: GameState, teachingLevel: TeachingLevel, q: string): LocalQuestionAnswer | null {
+  const requestedPoint = mentionedCoordinate(q, game.board.size);
+  if (!requestedPoint) return null;
+
+  const objective = getBeginnerObjective({
+    boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
+    moveCount: game.moveHistory.length,
+    currentPlayer: 'black',
+    teachingLevel,
+  });
+
+  if (!objective) return null;
+
+  const coord = pointToCoord(requestedPoint, game.board.size);
+  const suggestions = objectiveSuggestions(objective, game.board.size, 'local-candidate-move');
+  const action = getBeginnerObjectiveLessonAction(objective);
+  const targetCoordText = objectiveTargetCoordList(objective, game.board.size);
+  const isMarkedTarget = objective.targetPoints.some((point) => pointEquals(point, requestedPoint));
+  const lastMove = lastPlacedMove(game);
+
+  if (getStone(game.board, requestedPoint) !== null) {
+    return {
+      text: `${coord} is already occupied, so you cannot play there. ${targetCoordText ? `Look for an open marked target instead: ${targetCoordText}.` : objective.instruction} I marked the current beginner targets again.`,
+      conceptIds: objective.conceptIds,
+      boardFocus: { suggestions },
+      actions: [
+        { id: 'hint', label: 'Show targets' },
+        ...(action ? [action] : []),
+      ],
+    };
+  }
+
+  if (isMarkedTarget) {
+    return {
+      text: [
+        `Yes. ${coord} fits the current goal: ${objective.title}.`,
+        targetReason(objective, requestedPoint, game.board.size, lastMove?.point ?? null),
+        'I marked the current targets again so you can compare the options before playing.',
+      ].join(' '),
+      conceptIds: objective.conceptIds,
+      boardFocus: { suggestions },
+      actions: [
+        { id: 'hint', label: 'Show targets' },
+        ...(action ? [action] : []),
+      ],
+    };
+  }
+
+  return {
+    text: [
+      candidateMissReason(objective, requestedPoint, game.board.size, lastMove?.point ?? null),
+      targetCoordText ? `For this board, I would prefer ${targetCoordText}.` : objective.instruction,
+      `I highlighted ${coord} and re-marked the better beginner targets.`,
+    ].join(' '),
+    conceptIds: objective.conceptIds,
+    boardFocus: {
+      highlights: [{
+        id: `local-candidate-question-${pointKey(requestedPoint)}`,
+        point: copyPoint(requestedPoint),
+        variant: 'warning',
+        label: `${coord}: open, but not the current beginner target.`,
+      }],
+      suggestions,
+    },
     actions: [
       { id: 'hint', label: 'Show targets' },
       ...(action ? [action] : []),
@@ -548,6 +675,11 @@ export function getLocalQuestionAnswer(
   if (isTargetReasonQuestion(q, game.board.size)) {
     const targetAnswer = buildTargetReasonAnswer(game, teachingLevel, q);
     if (targetAnswer) return targetAnswer;
+  }
+
+  if (isCandidateMoveQuestion(q, game.board.size)) {
+    const candidateAnswer = buildCandidateMoveAnswer(game, teachingLevel, q);
+    if (candidateAnswer) return candidateAnswer;
   }
 
   if (isShapeQuestion(q)) {

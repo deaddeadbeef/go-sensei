@@ -182,6 +182,55 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
   });
 
+  it('affirms a marked candidate move before the learner plays it', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+
+    const answer = getLocalQuestionAnswer('Should I play E7?', firstMove.newState, 'guided');
+
+    expect(answer?.text).toContain('Yes. E7 fits the current goal: Make your stones work together.');
+    expect(answer?.text).toContain('E7 is marked because it is a one-space jump from C7');
+    expect(answer?.text).toContain('I marked the current targets again so you can compare the options before playing.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['shape', 'direction-of-play']));
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-candidate-move-4,2',
+        point: { x: 4, y: 2 },
+        rank: 1,
+        reason: 'Try E7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-candidate-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 2,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+  });
+
+  it('redirects an unmarked candidate move to the current beginner target', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+
+    const answer = getLocalQuestionAnswer('What about D7?', firstMove.newState, 'guided');
+
+    expect(answer?.text).toContain('D7 touches C7 directly.');
+    expect(answer?.text).toContain('this beginner goal is practicing a one-space jump');
+    expect(answer?.text).toContain('For this board, I would prefer E7 or C5.');
+    expect(answer?.text).toContain('I highlighted D7 and re-marked the better beginner targets.');
+    expect(answer?.boardFocus?.highlights).toEqual([{
+      id: 'local-candidate-question-3,2',
+      point: { x: 3, y: 2 },
+      variant: 'warning',
+      label: 'D7: open, but not the current beginner target.',
+    }]);
+    expect(answer?.boardFocus?.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+    ]);
+  });
+
   it('answers liberty questions with current board context', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
