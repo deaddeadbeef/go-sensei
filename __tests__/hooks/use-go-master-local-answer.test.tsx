@@ -489,6 +489,60 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('shape').encounterCount).toBeGreaterThan(0);
   });
 
+  it('explains open one-space jump gaps without fetching', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendPlayerMove(false, 0);
+      const move = useGameStore.getState().placeStone({ x: 4, y: 2 });
+      if (!move.success) throw new Error('test setup extension move failed');
+      result.current.sendPlayerMove(false, 0);
+    });
+
+    act(() => {
+      result.current.sendMessage('Should I fill the gap at D7?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('D7 is the one-point gap between C7 and E7.');
+    expect(state.bubble.text).toContain('Do not fill D7 just because it is empty.');
+    expect(state.bubble.text).toContain('For this board, I would prefer G7, E5, or C5.');
+    expect(state.chatMessages.at(-1)?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'lesson:groups', label: 'Review groups' },
+    ]);
+    expect(state.overlays.highlights).toEqual([
+      {
+        id: 'local-gap-anchor-2,2',
+        point: { x: 2, y: 2 },
+        variant: 'positive',
+        label: 'C7: one side of the one-space jump.',
+      },
+      {
+        id: 'local-gap-stone-4,2',
+        point: { x: 4, y: 2 },
+        variant: 'positive',
+        label: 'E7: one side of the one-space jump.',
+      },
+      {
+        id: 'local-gap-open-3,2',
+        point: { x: 3, y: 2 },
+        variant: 'neutral',
+        label: 'D7: intentional gap; answer it if White attacks.',
+      },
+    ]);
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 6, y: 2 },
+      { x: 4, y: 4 },
+      { x: 2, y: 4 },
+    ]);
+    expect(useConceptStore.getState().getMastery('shape').encounterCount).toBeGreaterThan(0);
+  });
+
   it('explains the local White pass without fetching', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());

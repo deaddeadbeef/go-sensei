@@ -1831,6 +1831,52 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([{ id: 'lesson:territory', label: 'Review territory' }]);
   });
 
+  it('explains whether to fill the open one-space jump gap', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup first move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+    const extensionMove = playMove(afterWhitePass, { x: 4, y: 2 });
+    if (!extensionMove.success) throw new Error('test setup extension move failed');
+    const game = passMove(extensionMove.newState);
+
+    const answer = getLocalQuestionAnswer('Should I fill the gap at D7?', game, 'guided');
+
+    expect(answer?.text).toContain('D7 is the one-point gap between C7 and E7.');
+    expect(answer?.text).toContain('That gap is not automatically wrong; it is what makes the one-space jump reach farther than a solid connection.');
+    expect(answer?.text).toContain('Do not fill D7 just because it is empty. Keep extending unless White attacks that gap or your stones become short on liberties.');
+    expect(answer?.text).toContain('For this board, I would prefer G7, E5, or C5.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['shape', 'direction-of-play', 'liberties']));
+    expect(answer?.boardFocus?.highlights).toEqual([
+      {
+        id: 'local-gap-anchor-2,2',
+        point: { x: 2, y: 2 },
+        variant: 'positive',
+        label: 'C7: one side of the one-space jump.',
+      },
+      {
+        id: 'local-gap-stone-4,2',
+        point: { x: 4, y: 2 },
+        variant: 'positive',
+        label: 'E7: one side of the one-space jump.',
+      },
+      {
+        id: 'local-gap-open-3,2',
+        point: { x: 3, y: 2 },
+        variant: 'neutral',
+        label: 'D7: intentional gap; answer it if White attacks.',
+      },
+    ]);
+    expect(answer?.boardFocus?.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 6, y: 2 },
+      { x: 4, y: 4 },
+      { x: 2, y: 4 },
+    ]);
+    expect(answer?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'lesson:groups', label: 'Review groups' },
+    ]);
+  });
+
   it('answers ko questions with the current forbidden point when a ko is active', () => {
     const game = playSequence([
       { x: 1, y: 0 },
