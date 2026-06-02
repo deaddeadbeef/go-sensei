@@ -49,6 +49,7 @@ export function useSenseiAction() {
         comparedReplyKey: route.comparedReplyKey,
         defensePointKey: route.defensePointKey,
         followUpDefensePointKey: route.followUpDefensePointKey,
+        pinnedSequenceStepKey: route.pinnedSequenceStepKey,
       });
       return;
     }
