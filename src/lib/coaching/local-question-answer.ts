@@ -368,6 +368,15 @@ function isAttackDefenseDecisionQuestion(q: string): boolean {
     || /\bdo\s+i\s+(attack|fight|chase)\s+or\s+(defend|save|protect)\b/.test(q);
 }
 
+function isCaptureRaceQuestion(q: string): boolean {
+  return /\bcapture[\s-]+race\b/.test(q)
+    || /\bsemeai\b/.test(q)
+    || /\bwho\s+(gets|will\s+get)\s+captured\s+first\b/.test(q)
+    || /\bwho\s+(wins|is\s+winning)\s+(this\s+)?(fight|race)\b/.test(q)
+    || /\bam\s+i\s+(winning|losing)\s+(this\s+)?(fight|race)\b/.test(q)
+    || /\bwho\s+has\s+more\s+liberties\b/.test(q);
+}
+
 function isGameReviewQuestion(q: string): boolean {
   return /\bgame\s+review\b/.test(q)
     || /\breview\s+(this|the|my)\s+(game|board|position)\b/.test(q)
@@ -2361,6 +2370,198 @@ function buildWhiteReplyAnswer(game: GameState, teachingLevel: TeachingLevel): L
   };
 }
 
+interface CaptureRacePair {
+  black: Group;
+  white: Group;
+}
+
+function groupsAreAdjacent(game: GameState, left: Group, right: Group): boolean {
+  return left.stones.some((stone) => (
+    getAdjacentPoints(game.board, stone).some((adjacent) => (
+      right.stones.some((other) => pointEquals(other, adjacent))
+    ))
+  ));
+}
+
+function findCaptureRacePair(game: GameState): CaptureRacePair | null {
+  const blackGroups = getAllGroups(game.board).filter((group) => group.color === 'black');
+  const whiteGroups = getAllGroups(game.board).filter((group) => group.color === 'white');
+  const pairs: CaptureRacePair[] = [];
+
+  for (const black of blackGroups) {
+    for (const white of whiteGroups) {
+      if (groupsAreAdjacent(game, black, white)) pairs.push({ black, white });
+    }
+  }
+
+  return pairs
+    .sort((a, b) => (
+      Math.min(a.black.liberties.length, a.white.liberties.length)
+      - Math.min(b.black.liberties.length, b.white.liberties.length)
+      || Math.abs(a.black.liberties.length - a.white.liberties.length)
+      - Math.abs(b.black.liberties.length - b.white.liberties.length)
+      || compareGroupsByAnchor(a.black, b.black)
+      || compareGroupsByAnchor(a.white, b.white)
+    ))[0] ?? null;
+}
+
+function buildCaptureRaceAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
+  const race = findCaptureRacePair(game);
+  const objective = getBeginnerObjective({
+    boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
+    moveCount: game.moveHistory.length,
+    currentPlayer: 'black',
+    teachingLevel,
+  });
+  const objectiveTargetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
+  const lessonAction = objective ? getBeginnerObjectiveLessonAction(objective) : null;
+
+  if (!race) {
+    const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-capture-race-move') : [];
+
+    return {
+      text: [
+        'I do not see an adjacent capture race yet.',
+        'A capture race starts when Black and White groups are touching or nearly touching, and both sides must count liberties to see who runs out first.',
+        objective ? `Use the current guided job as the priority: ${objective.title}. ${objective.instruction}${objectiveTargetText ? ` ${objectiveTargetText}` : ''}` : 'For now, pick a move that gives your stones more room before starting a fight.',
+        suggestions.length > 0 ? 'I marked the practical targets so you can build before chasing.' : '',
+      ].filter(Boolean).join(' '),
+      conceptIds: uniqueConceptIds(['reading', 'liberties', 'groups', ...(objective?.conceptIds ?? [])]),
+      ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
+      actions: [
+        ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+        { id: 'practice:reading', label: 'Practice reading' },
+        ...(lessonAction ? [lessonAction] : []),
+      ],
+    };
+  }
+
+  const blackAnchor = groupAnchor(race.black);
+  const whiteAnchor = groupAnchor(race.white);
+  const blackCoord = pointToCoord(blackAnchor, game.board.size);
+  const whiteCoord = pointToCoord(whiteAnchor, game.board.size);
+  const blackLibertyCoords = race.black.liberties.map((liberty) => pointToCoord(liberty, game.board.size));
+  const whiteLibertyCoords = race.white.liberties.map((liberty) => pointToCoord(liberty, game.board.size));
+  const blackLibertyList = joinList(blackLibertyCoords);
+  const whiteLibertyList = joinList(whiteLibertyCoords);
+  const blackLibertyWord = race.black.liberties.length === 1 ? 'liberty' : 'liberties';
+  const whiteLibertyWord = race.white.liberties.length === 1 ? 'liberty' : 'liberties';
+  const blackLiberties = race.black.liberties.length;
+  const whiteLiberties = race.white.liberties.length;
+  const groups: LocalGroupFocus[] = [
+    {
+      id: `local-capture-race-black-group-${pointKey(blackAnchor)}`,
+      stones: race.black.stones.map(copyPoint),
+      color: race.black.color,
+      liberties: blackLiberties,
+      label: `Black group in the race: ${blackLiberties} ${blackLibertyWord} at ${blackLibertyList}.`,
+    },
+    {
+      id: `local-capture-race-white-group-${pointKey(whiteAnchor)}`,
+      stones: race.white.stones.map(copyPoint),
+      color: race.white.color,
+      liberties: whiteLiberties,
+      label: `White group in the race: ${whiteLiberties} ${whiteLibertyWord} at ${whiteLibertyList}.`,
+    },
+  ];
+  const liberties: LocalLibertyFocus[] = [
+    {
+      id: `local-capture-race-black-liberties-${pointKey(blackAnchor)}`,
+      point: copyPoint(blackAnchor),
+      count: blackLiberties,
+      libertyPoints: race.black.liberties.map(copyPoint),
+    },
+    {
+      id: `local-capture-race-white-liberties-${pointKey(whiteAnchor)}`,
+      point: copyPoint(whiteAnchor),
+      count: whiteLiberties,
+      libertyPoints: race.white.liberties.map(copyPoint),
+    },
+  ];
+  const lines: string[] = [];
+  let suggestions: LocalSuggestionFocus[] = [];
+  let actions: SenseiAction[] = [];
+
+  if (blackLiberties < whiteLiberties) {
+    suggestions = race.black.liberties.slice(0, 4).map((liberty, index) => {
+      const coord = pointToCoord(liberty, game.board.size);
+
+      return {
+        id: `local-capture-race-defend-move-${pointKey(liberty)}`,
+        point: copyPoint(liberty),
+        rank: index + 1,
+        reason: `Give Black more room by playing ${coord}.`,
+      };
+    });
+    lines.push('This is a capture race, and Black is behind on liberties.');
+    lines.push(`Your Black group at ${blackCoord} has ${blackLiberties} ${blackLibertyWord}: ${blackLibertyList}.`);
+    lines.push(`White group at ${whiteCoord} has ${whiteLiberties} ${whiteLibertyWord}: ${whiteLibertyList}.`);
+    lines.push('Defend first by playing one of the marked Black liberties.');
+    lines.push('After Black has more room, come back and count whether the White group can be attacked.');
+    actions = [
+      { id: 'hint', label: 'Show targets' },
+      { id: 'lesson:liberties', label: 'Review liberties' },
+    ];
+  } else if (whiteLiberties < blackLiberties) {
+    suggestions = race.white.liberties.slice(0, 4).map((liberty, index) => {
+      const coord = pointToCoord(liberty, game.board.size);
+
+      return {
+        id: `local-capture-race-attack-move-${pointKey(liberty)}`,
+        point: copyPoint(liberty),
+        rank: index + 1,
+        reason: `Pressure White by playing its liberty at ${coord}.`,
+      };
+    });
+    lines.push('This is a capture race, and Black is ahead on liberties.');
+    lines.push(`Your Black group at ${blackCoord} has ${blackLiberties} ${blackLibertyWord}: ${blackLibertyList}.`);
+    lines.push(`White group at ${whiteCoord} has only ${whiteLiberties} ${whiteLibertyWord}: ${whiteLibertyList}.`);
+    lines.push('Attack by filling one marked White liberty, but keep counting after White answers.');
+    actions = [
+      { id: 'hint', label: 'Show targets' },
+      { id: 'practice:capture', label: 'Practice capture' },
+    ];
+  } else {
+    suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-capture-race-move') : [];
+    lines.push('This is a capture race, but it is even on liberties right now.');
+    lines.push(`Both groups have ${blackLiberties} ${blackLibertyWord}.`);
+    lines.push(`Black at ${blackCoord}: ${blackLibertyList}. White at ${whiteCoord}: ${whiteLibertyList}.`);
+    lines.push('No one gets captured immediately.');
+    if (objective) {
+      lines.push(`Use the current guided job as the priority: ${objective.title}. ${objective.instruction}${objectiveTargetText ? ` ${objectiveTargetText}` : ''}`);
+    } else {
+      lines.push('Choose a move that gives your stones more room before chasing the race.');
+    }
+    actions = [
+      ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+      { id: 'practice:reading', label: 'Practice reading' },
+    ];
+  }
+
+  lines.push(suggestions.length > 0
+    ? 'I marked both groups, their liberties, and the practical move to read next.'
+    : 'I marked both groups and their liberties so the race is visible.');
+
+  return {
+    text: lines.join(' '),
+    conceptIds: uniqueConceptIds([
+      'reading',
+      'liberties',
+      'groups',
+      'capture',
+      ...(objective?.conceptIds ?? []),
+    ]),
+    boardFocus: {
+      liberties,
+      groups,
+      ...(suggestions.length > 0 ? { suggestions } : {}),
+    },
+    actions,
+  };
+}
+
 function buildAttackDefenseDecisionAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
   const weakGroup = findLearnerWeakGroup(game);
 
@@ -3757,6 +3958,10 @@ export function getLocalQuestionAnswer(
 
   if (isWhiteReplyQuestion(q)) {
     return buildWhiteReplyAnswer(game, teachingLevel);
+  }
+
+  if (isCaptureRaceQuestion(q)) {
+    return buildCaptureRaceAnswer(game, teachingLevel);
   }
 
   if (isAttackDefenseDecisionQuestion(q)) {
