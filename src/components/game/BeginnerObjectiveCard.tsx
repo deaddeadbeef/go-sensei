@@ -2016,11 +2016,41 @@ export function BeginnerObjectiveCard() {
       prompt: readPrompt,
     }
     : null;
+  const replayedPressureSequenceFollowUpDefensesFromHere = activePressureReplayRequestId !== null
+    && pinnedPressureSequenceRow
+    && readPrompt
+    && selectedReadRecount
+    && comparedReadReply
+    && pressureDefenseRecommendation
+    && selectedDefenseReadPoint
+    && selectedDefenseReadOutcome
+    && pressureDefenseContinuationRecommendation
+    && pinnedPressureSequenceRow.replayKey === `defense-${targetKey(selectedDefenseReadPoint)}`
+    ? {
+      comparedReply: comparedReadReply,
+      firstDefense: pressureDefenseRecommendation,
+      firstDefensePoint: selectedDefenseReadPoint,
+      followUpDefense: pressureDefenseContinuationRecommendation,
+      prompt: readPrompt,
+      recount: selectedReadRecount,
+    }
+    : null;
   const replayedPressureSequenceHandoffFromHere = activePressureReplayRequestId !== null
     && pinnedPressureSequenceRow
-    && activePressureExtensionHandoff
-    && pinnedPressureSequenceRow.replayKey === `handoff-${targetKey(activePressureExtensionHandoff.point)}`
-    ? activePressureExtensionHandoff
+    ? (
+      activePressureExtensionHandoff
+        && pinnedPressureSequenceRow.replayKey === `handoff-${targetKey(activePressureExtensionHandoff.point)}`
+        ? activePressureExtensionHandoff
+        : selectedFollowUpExtensionHandoff
+          && selectedFollowUpDefenseReadOutcome
+          && pinnedPressureSequenceRow.replayKey === `follow-up-${targetKey(selectedFollowUpDefenseReadOutcome.defense)}`
+          ? selectedFollowUpExtensionHandoff
+          : selectedDefenseExtensionHandoff
+            && selectedDefenseReadOutcome
+            && pinnedPressureSequenceRow.replayKey === `defense-${targetKey(selectedDefenseReadOutcome.defense)}`
+            ? selectedDefenseExtensionHandoff
+            : null
+    )
     : null;
   const readPromptAnchorCoord = readPrompt ? pointToCoord(readPrompt.anchor, game.board.size) : null;
   const readPromptStoneCoord = readPrompt ? pointToCoord(readPrompt.stone, game.board.size) : null;
@@ -2457,6 +2487,41 @@ export function BeginnerObjectiveCard() {
                             >
                               Compare {replayedPressureSequenceCompareFromHere.comparisonCoord} from here
                             </button>
+                          )}
+                          {replayedPressureSequenceFollowUpDefensesFromHere && (
+                            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                              <span className="text-[11px] font-semibold" style={{ color: COLORS.ui.textSecondary }}>
+                                Continue from here:
+                              </span>
+                              {replayedPressureSequenceFollowUpDefensesFromHere.followUpDefense.liberties.map((point) => {
+                                const coord = pointToCoord(point, game.board.size);
+
+                                return (
+                                  <button
+                                    key={`read-pressure-replayed-follow-up-${targetKey(point)}`}
+                                    type="button"
+                                    className="rounded border px-2 py-0.5 font-mono text-[11px] font-bold transition hover:bg-white/[0.07]"
+                                    style={{
+                                      borderColor: COLORS.ui.accent,
+                                      color: COLORS.ui.textPrimary,
+                                      backgroundColor: `${COLORS.ui.accent}1f`,
+                                    }}
+                                    aria-label={`Try ${coord} follow-up defense from here`}
+                                    onClick={() => tryReadPressureFollowUpDefense(
+                                      replayedPressureSequenceFollowUpDefensesFromHere.prompt,
+                                      replayedPressureSequenceFollowUpDefensesFromHere.recount,
+                                      replayedPressureSequenceFollowUpDefensesFromHere.comparedReply,
+                                      replayedPressureSequenceFollowUpDefensesFromHere.firstDefense,
+                                      replayedPressureSequenceFollowUpDefensesFromHere.firstDefensePoint,
+                                      replayedPressureSequenceFollowUpDefensesFromHere.followUpDefense,
+                                      point,
+                                    )}
+                                  >
+                                    Try {coord} from here
+                                  </button>
+                                );
+                              })}
+                            </div>
                           )}
                           {replayedPressureSequenceHandoffFromHere && (
                             <button
