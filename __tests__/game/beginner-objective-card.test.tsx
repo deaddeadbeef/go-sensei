@@ -676,7 +676,7 @@ describe('BeginnerObjectiveCard', () => {
       text: `Defense read: ${defenseText}`,
       variant: 'teaching',
       actions: [
-        { id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1', label: 'Show comparison' },
+        { id: 'guided:read-pressure:defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3', label: 'Show defense' },
       ],
     });
     expect(useGameStore.getState().overlays.targetHints).toEqual([
@@ -723,6 +723,61 @@ describe('BeginnerObjectiveCard', () => {
         label: 'B7: defend this C7 liberty before extending.',
       },
     ]);
+  });
+
+  it('reopens a pressure defense from chat with the selected short-side marker', () => {
+    act(() => {
+      useGameStore.getState().placeStone({ x: 2, y: 2 });
+      useGameStore.getState().placeStone({ x: 2, y: 1 });
+      useGameStore.getState().placeStone({ x: 4, y: 2 });
+      useGameStore.getState().pass();
+    });
+
+    render(
+      <>
+        <BeginnerObjectiveCard />
+        <SenseiChatLog />
+      </>,
+    );
+
+    const defenseText = 'C6 directly defends C7, the short side in this pressure line. Keep C7 breathing first; then recount before extending again.';
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Recount C7 and E7 after D8' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Compare D6 against D8' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Try C6 defense for C7' }));
+
+    expect(useGameStore.getState().chatMessages.at(-1)?.actions).toEqual([
+      { id: 'guided:read-pressure:defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3', label: 'Show defense' },
+    ]);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
+
+    expect(screen.queryByText(defenseText)).toBeNull();
+    expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).not.toContain('read-pressure-selected-defense-2,3');
+
+    const defenseActions = screen.getAllByRole('button', { name: 'Show defense' });
+    fireEvent.click(defenseActions[defenseActions.length - 1]);
+
+    expect(screen.getByText('Defense read')).toBeTruthy();
+    expect(screen.getByText(defenseText)).toBeTruthy();
+    expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
+    expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
+      {
+        id: 'read-pressure-selected-defense-2,3',
+        point: { x: 2, y: 3 },
+        variant: 'positive',
+        label: 'C6: selected defense for C7; keep the short side breathing before extending.',
+      },
+      {
+        id: 'read-pressure-short-liberty-1,2',
+        point: { x: 1, y: 2 },
+        variant: 'warning',
+        label: 'B7: defend this C7 liberty before extending.',
+      },
+    ]));
+    expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).not.toContain('read-pressure-short-liberty-2,3');
   });
 
   it('keeps the last missed objective visible without blocking the next try', () => {

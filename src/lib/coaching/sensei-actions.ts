@@ -13,10 +13,11 @@ export type SenseiActionRoute =
   | { type: 'guided_game' }
   | {
       type: 'guided_read_pressure';
-      mode: 'branch' | 'recount' | 'comparison';
+      mode: 'branch' | 'recount' | 'comparison' | 'defense';
       promptKey: string;
       replyKey: string;
       comparedReplyKey?: string;
+      defensePointKey?: string;
     }
   | { type: 'practice'; category: ProblemCategory }
   | { type: 'lesson'; lessonId: string };
@@ -52,10 +53,26 @@ export function getSenseiActionRoute(actionId: string): SenseiActionRoute | null
   }
 
   if (actionId.startsWith('guided:read-pressure:')) {
-    const [, , mode, promptKey, replyKey, comparedReplyKey] = actionId.split(':');
-    if ((mode !== 'branch' && mode !== 'recount' && mode !== 'comparison') || !promptKey || !replyKey) return null;
-    if (mode === 'comparison') {
+    const [, , mode, promptKey, replyKey, comparedReplyKey, defensePointKey] = actionId.split(':');
+    if (
+      (mode !== 'branch' && mode !== 'recount' && mode !== 'comparison' && mode !== 'defense')
+      || !promptKey
+      || !replyKey
+    ) return null;
+    if (mode === 'comparison' || mode === 'defense') {
       if (!comparedReplyKey || comparedReplyKey === replyKey) return null;
+      if (mode === 'defense') {
+        if (!defensePointKey) return null;
+
+        return {
+          type: 'guided_read_pressure',
+          mode,
+          promptKey,
+          replyKey,
+          comparedReplyKey,
+          defensePointKey,
+        };
+      }
 
       return { type: 'guided_read_pressure', mode, promptKey, replyKey, comparedReplyKey };
     }
