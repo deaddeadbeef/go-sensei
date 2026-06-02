@@ -350,6 +350,17 @@ function isBoardMarkerQuestion(q: string): boolean {
     || /\bwhy\s+are\s+(there\s+)?(numbers|targets|suggestions|markers|dots|circles)\s+on\s+(the\s+)?board\b/.test(q);
 }
 
+function isCornerOpeningQuestion(q: string): boolean {
+  return /\bwhy\s+(start|play|begin|open)\s+(in|near|with)\s+(a\s+)?corner\b/.test(q)
+    || /\bwhy\s+(the\s+)?corners?\b/.test(q)
+    || /\bwhy\s+not\s+(the\s+)?cent(er|re)\b/.test(q)
+    || /\bshould\s+i\s+(start|play|begin|open)\s+(in|near|with)\s+(the\s+)?cent(er|re)\b/.test(q)
+    || /\bis\s+(the\s+)?cent(er|re)\s+(good|bad|ok|okay)\s+(to\s+start|for\s+my\s+first\s+move|in\s+the\s+opening)?\b/.test(q)
+    || /\bshould\s+i\s+(start|play|begin|open)\s+(in|near|with)\s+(a\s+)?corner\b/.test(q)
+    || /\bwhere\s+should\s+i\s+start\s+(the\s+)?opening\b/.test(q)
+    || /\bhow\s+do\s+i\s+start\s+(the\s+)?opening\b/.test(q);
+}
+
 function suggestionReason(objective: BeginnerObjective, point: Point, boardSize: BoardSize): string {
   const coord = pointToCoord(point, boardSize);
 
@@ -968,6 +979,43 @@ function buildBoardMarkerAnswer(game: GameState, teachingLevel: TeachingLevel): 
   };
 }
 
+function buildCornerOpeningAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
+  const objective = game.phase === 'playing'
+    ? getBeginnerObjective({
+      boardSize: game.board.size,
+      board: game.board,
+      moveHistory: game.moveHistory,
+      moveCount: game.moveHistory.length,
+      currentPlayer: 'black',
+      teachingLevel,
+    })
+    : null;
+  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-corner-opening-move') : [];
+  const action = objective ? getBeginnerObjectiveLessonAction(objective) : null;
+  const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
+  const lines = [
+    'Corners are the easiest place for beginners to make territory because two board edges already act like walls.',
+    'A center stone reaches in every direction, but it has to build all four sides itself before it becomes points.',
+    'That is why the first guided goal starts near a corner instead of the open center.',
+  ];
+
+  if (objective?.id === 'claim-corner') {
+    lines.push(`${targetText ?? 'Try one of the marked corner starts.'} I marked the corner starts again.`);
+  } else if (objective) {
+    lines.push(`For the current board, keep following: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}`);
+  }
+
+  return {
+    text: lines.join(' '),
+    conceptIds: uniqueConceptIds(['corner-opening', 'territory', 'influence', ...(objective?.conceptIds ?? [])]),
+    ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
+    actions: [
+      ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+      ...(action ? [action] : []),
+    ],
+  };
+}
+
 function buildShapeAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
   const objective = getBeginnerObjective({
     boardSize: game.board.size,
@@ -1205,6 +1253,10 @@ export function getLocalQuestionAnswer(
   if (isBoardMarkerQuestion(q)) {
     const markerAnswer = buildBoardMarkerAnswer(game, teachingLevel);
     if (markerAnswer) return markerAnswer;
+  }
+
+  if (isCornerOpeningQuestion(q)) {
+    return buildCornerOpeningAnswer(game, teachingLevel);
   }
 
   if (isCandidateMoveQuestion(q, game.board.size)) {
