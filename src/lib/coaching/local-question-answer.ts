@@ -2078,6 +2078,11 @@ function buildWeakGroupAnswer(game: GameState, teachingLevel: TeachingLevel, q: 
       const coord = pointToCoord(requestedPoint, game.board.size);
       const occupant = getStone(game.board, requestedPoint);
 
+      if (occupant === null && isCandidateMoveQuestion(q, game.board.size)) {
+        const candidateAnswer = buildCandidateMoveAnswer(game, teachingLevel, q);
+        if (candidateAnswer) return candidateAnswer;
+      }
+
       return {
         text: [
           `${coord} is not one of your Black groups${occupant === 'white' ? '; White has a stone there' : '; it is empty'}.`,
