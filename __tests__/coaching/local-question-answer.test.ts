@@ -92,6 +92,48 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('explains the goal of Go with current board targets', () => {
+    const answer = getLocalQuestionAnswer('How do I win?', createGame(9), 'guided');
+
+    expect(answer?.text).toContain('To win Go, finish with more points than your opponent.');
+    expect(answer?.text).toContain("Points come from empty territory you surround, captured stones, and White's 6.5 komi bonus.");
+    expect(answer?.text).toContain('Stones are the tools: they claim space, keep liberties, connect into strong groups');
+    expect(answer?.text).toContain('For this beginner board, translate that big goal into one job: Start with a corner.');
+    expect(answer?.text).toContain('Try C7, G7, C3, or G3.');
+    expect(answer?.text).toContain('I marked moves that turn the win condition into your next board decision.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['scoring', 'territory', 'capture', 'liberties', 'corner-opening']));
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-game-goal-move-2,2',
+        point: { x: 2, y: 2 },
+        rank: 1,
+        reason: 'Start at C7: the board edge helps this stone make territory.',
+      },
+      {
+        id: 'local-game-goal-move-6,2',
+        point: { x: 6, y: 2 },
+        rank: 2,
+        reason: 'Start at G7: the board edge helps this stone make territory.',
+      },
+      {
+        id: 'local-game-goal-move-2,6',
+        point: { x: 2, y: 6 },
+        rank: 3,
+        reason: 'Start at C3: the board edge helps this stone make territory.',
+      },
+      {
+        id: 'local-game-goal-move-6,6',
+        point: { x: 6, y: 6 },
+        rank: 4,
+        reason: 'Start at G3: the board edge helps this stone make territory.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'lesson:territory', label: 'Review territory' },
+    ]);
+  });
+
   it('answers next-move questions by pointing weak groups at liberties', () => {
     const game = playSequence([
       { x: 2, y: 2 },
