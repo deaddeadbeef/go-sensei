@@ -51,6 +51,7 @@ interface PressureRecount {
 interface PressureComparisonSummary {
   rows: string[];
   text: string;
+  recommendationText: string | null;
 }
 
 function targetKey(point: Point): string {
@@ -276,6 +277,28 @@ function getPressureReplayAction(
   };
 }
 
+function getPressureRecountFollowUp(
+  prompt: OneSpaceJumpReadPrompt,
+  anchorCoord: string,
+  stoneCoord: string,
+  anchorLibertyCount: number,
+  stoneLibertyCount: number,
+): string {
+  if (anchorLibertyCount < stoneLibertyCount) {
+    return `${anchorCoord} is the short side now, so defend it before extending again.`;
+  }
+
+  if (stoneLibertyCount < anchorLibertyCount) {
+    return `${stoneCoord} is the short side now, so defend it before extending again.`;
+  }
+
+  if (anchorLibertyCount <= 2) {
+    return `Both Black sides are short now, so finish answering ${prompt.gapCoord} before extending again.`;
+  }
+
+  return `Neither side is short yet, so keep building while staying ready to answer ${prompt.gapCoord}.`;
+}
+
 function getPressureRecount(game: GameState, prompt: OneSpaceJumpReadPrompt, reply: Point): PressureRecount | null {
   const whitePressure = playMove({
     ...game,
@@ -298,9 +321,16 @@ function getPressureRecount(game: GameState, prompt: OneSpaceJumpReadPrompt, rep
   const stoneCoord = pointToCoord(prompt.stone, boardSize);
   const anchorLibertyText = joinAndCoordinateList(anchorGroup.liberties.map((point) => pointToCoord(point, boardSize)));
   const stoneLibertyText = joinAndCoordinateList(stoneGroup.liberties.map((point) => pointToCoord(point, boardSize)));
+  const followUpText = getPressureRecountFollowUp(
+    prompt,
+    anchorCoord,
+    stoneCoord,
+    anchorGroup.liberties.length,
+    stoneGroup.liberties.length,
+  );
 
   return {
-    text: `After ${replyCoord}, recount the two Black sides: ${anchorCoord} has ${formatLibertyCount(anchorGroup.liberties.length)} at ${anchorLibertyText}. ${stoneCoord} has ${formatLibertyCount(stoneGroup.liberties.length)} at ${stoneLibertyText}. Neither side is short yet, so keep building while staying ready to answer ${prompt.gapCoord}.`,
+    text: `After ${replyCoord}, recount the two Black sides: ${anchorCoord} has ${formatLibertyCount(anchorGroup.liberties.length)} at ${anchorLibertyText}. ${stoneCoord} has ${formatLibertyCount(stoneGroup.liberties.length)} at ${stoneLibertyText}. ${followUpText}`,
     reply: copyPoint(reply),
     anchorLiberties: anchorGroup.liberties.map(copyPoint),
     stoneLiberties: stoneGroup.liberties.map(copyPoint),
@@ -328,6 +358,29 @@ function formatLibertyChange(coord: string, beforeCount: number, afterCount: num
   return `${coord} ${direction} ${formatLibertyCount(Math.abs(afterCount - beforeCount))}`;
 }
 
+function getPressureComparisonRecommendation(
+  prompt: OneSpaceJumpReadPrompt,
+  recount: PressureRecount,
+  board: BoardState,
+): string | null {
+  const sides = [
+    {
+      coord: pointToCoord(prompt.anchor, board.size),
+      liberties: recount.anchorLiberties,
+    },
+    {
+      coord: pointToCoord(prompt.stone, board.size),
+      liberties: recount.stoneLiberties,
+    },
+  ].sort((a, b) => a.liberties.length - b.liberties.length);
+
+  const [shortSide, roomySide] = sides;
+  if (!shortSide || !roomySide || shortSide.liberties.length >= roomySide.liberties.length) return null;
+
+  const libertyText = joinAndCoordinateList(shortSide.liberties.map((point) => pointToCoord(point, board.size)));
+  return `Recommendation: ${shortSide.coord} is the short side with ${formatLibertyCount(shortSide.liberties.length)} at ${libertyText}. Defend ${shortSide.coord} before extending again.`;
+}
+
 function getPressureComparisonSummary(
   prompt: OneSpaceJumpReadPrompt,
   firstRecount: PressureRecount,
@@ -350,6 +403,7 @@ function getPressureComparisonSummary(
     text: hasSameCounts
       ? `${firstCoord} and ${secondCoord} leave the same liberty counts: ${anchorCoord} has ${formatLibertyCount(secondRecount.anchorLiberties.length)} and ${stoneCoord} has ${formatLibertyCount(secondRecount.stoneLiberties.length)} either way. The difference is direction: ${directionText}`
       : `Compared with ${firstCoord}, ${secondCoord} changes the count: ${formatLibertyChange(anchorCoord, firstRecount.anchorLiberties.length, secondRecount.anchorLiberties.length)} and ${formatLibertyChange(stoneCoord, firstRecount.stoneLiberties.length, secondRecount.stoneLiberties.length)}. The direction also changes: ${directionText}`,
+    recommendationText: getPressureComparisonRecommendation(prompt, secondRecount, board),
   };
 }
 
@@ -580,8 +634,14 @@ export function BeginnerObjectiveCard() {
     setRecountReadReplyKey(targetKey(reply));
     setComparisonReadReplyKey(targetKey(comparedReply));
     applyTargetHints(buildOneSpaceJumpRecountHighlights(prompt, recount, game.board));
+    const comparisonText = [
+      recount.text,
+      comparisonSummary?.text,
+      comparisonSummary?.recommendationText,
+    ].filter((text): text is string => Boolean(text)).join(' ');
+
     addChatMessage(
-      `Comparison read: ${recount.text}${comparisonSummary ? ` ${comparisonSummary.text}` : ''}`,
+      `Comparison read: ${comparisonText}`,
       'teaching',
       [getPressureReplayAction('recount', prompt, reply)],
     );
@@ -834,6 +894,11 @@ export function BeginnerObjectiveCard() {
                           <p className="mt-1 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
                             {pressureComparisonSummary.text}
                           </p>
+                          {pressureComparisonSummary.recommendationText && (
+                            <p className="mt-1 text-xs font-semibold leading-relaxed" style={{ color: COLORS.overlay.warning }}>
+                              {pressureComparisonSummary.recommendationText}
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
