@@ -10,6 +10,7 @@ import type { TeachingLevel } from '@/lib/ai/system-prompt';
 import type { SenseiAction } from '@/lib/coaching/sensei-actions';
 import type { LocalBoardFocus, LocalSuggestionFocus } from '@/lib/coaching/local-question-answer';
 import type { BeginnerObjective } from '@/lib/coaching/beginner-objectives';
+import { getMoveInsight } from '@/lib/coaching/move-insight';
 
 type LocalFallbackReason = 'auth-expired' | 'auth-unavailable' | 'network-error' | 'server-error';
 
@@ -53,7 +54,7 @@ function introText(reason: LocalFallbackReason): string {
     return 'The cloud Sensei session expired, so I will keep the lesson moving locally for now.';
   }
   if (reason === 'auth-unavailable') {
-    return 'I can teach this beginner path locally, so keep playing on the board.';
+    return 'I can coach this guided game from the board in front of us.';
   }
   if (reason === 'network-error') {
     return 'I could not reach cloud Sensei, so I will keep the lesson moving locally for now.';
@@ -79,15 +80,37 @@ function suggestionReason(objective: BeginnerObjective, point: Point, boardSize:
   return `Give your group room by playing its liberty at ${coord}.`;
 }
 
-function buildObjectiveBoardFocus(objective: BeginnerObjective, boardSize: BoardSize): LocalBoardFocus | undefined {
+function uniqueConceptIds(conceptIds: string[]): string[] {
+  return [...new Set(conceptIds)];
+}
+
+function buildObjectiveBoardFocus(
+  objective: BeginnerObjective,
+  boardSize: BoardSize,
+  move: Move | null,
+  progressStatus: 'met' | 'missed' | null,
+): LocalBoardFocus | undefined {
   const suggestions: LocalSuggestionFocus[] = objective.targetPoints.slice(0, 4).map((point, index) => ({
     id: `local-fallback-move-${pointKey(point)}`,
     point: copyPoint(point),
     rank: index + 1,
     reason: suggestionReason(objective, point, boardSize),
   }));
+  const highlights = move?.type === 'place'
+    ? [{
+      id: `local-fallback-learned-${pointKey(move.point)}`,
+      point: copyPoint(move.point),
+      variant: progressStatus === 'missed' ? 'warning' as const : progressStatus === 'met' ? 'positive' as const : 'neutral' as const,
+      label: `${pointToCoord(move.point, boardSize)}: move to learn from${progressStatus === 'met' ? ' - beginner job met' : progressStatus === 'missed' ? ' - beginner job missed' : ''}.`,
+    }]
+    : [];
 
-  return suggestions.length > 0 ? { suggestions } : undefined;
+  if (highlights.length === 0 && suggestions.length === 0) return undefined;
+
+  return {
+    ...(highlights.length > 0 ? { highlights } : {}),
+    ...(suggestions.length > 0 ? { suggestions } : {}),
+  };
 }
 
 export function getLocalGuidedFallback(
@@ -107,11 +130,17 @@ export function getLocalGuidedFallback(
     teachingLevel,
   });
   const progress = getBeginnerObjectiveProgress(game, teachingLevel);
+  const insight = getMoveInsight(game, teachingLevel);
+  const move = lastBlackMove(game);
   const shouldPassSensei = game.currentPlayer !== 'black';
   const lines = [
     introText(reason),
     progress?.text ?? describeLastMove(game),
   ];
+
+  if (insight) {
+    lines.push(`Lesson: ${insight.observation}`);
+  }
 
   if (objective) {
     const targetText = formatObjectiveTargetText(objective, game.board.size);
@@ -122,16 +151,21 @@ export function getLocalGuidedFallback(
   }
 
   if (shouldPassSensei) {
-    lines.push('I am passing for White so you can immediately try the next idea.');
+    lines.push(move?.type === 'place'
+      ? 'I marked your move, passed for White, and marked the next targets so you can immediately try the next idea.'
+      : 'I am passing for White so you can immediately try the next idea.');
   } else {
-    lines.push('Use the marked board guidance while the full AI connection is unavailable.');
+    lines.push('Use the marked targets to make the next move concrete.');
   }
 
   return {
     text: lines.join('\n\n'),
-    conceptIds: objective?.conceptIds ?? [],
+    conceptIds: uniqueConceptIds([
+      ...(objective?.conceptIds ?? []),
+      ...(insight?.conceptIds ?? []),
+    ]),
     actions: objective ? getBeginnerObjectiveActions(objective) : [],
-    ...(objective ? { boardFocus: buildObjectiveBoardFocus(objective, game.board.size) } : {}),
+    ...(objective ? { boardFocus: buildObjectiveBoardFocus(objective, game.board.size, move, progress?.status ?? null) } : {}),
     shouldPassSensei,
   };
 }

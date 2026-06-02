@@ -340,11 +340,19 @@ describe('useGoMaster local answers', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(state.game.currentPlayer).toBe('black');
     expect(state.bubble.variant).toBe('teaching');
-    expect(state.bubble.text).toContain('teach this beginner path locally');
+    expect(state.bubble.text).toContain('I can coach this guided game from the board in front of us.');
     expect(state.bubble.text).toContain('Good: C7 hit the marked corner goal');
+    expect(state.bubble.text).toContain('Lesson: C7 is a useful anchor because the edge helps it surround space.');
     expect(state.bubble.text).toContain('Make your stones work together');
+    expect(state.bubble.text).toContain('I marked your move, passed for White, and marked the next targets');
     expect(state.bubble.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
     expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+    expect(state.overlays.highlights).toEqual([{
+      id: 'local-fallback-learned-2,2',
+      point: { x: 2, y: 2 },
+      variant: 'positive',
+      label: 'C7: move to learn from - beginner job met.',
+    }]);
     expect(state.overlays.suggestions).toEqual([
       {
         id: 'local-fallback-move-4,2',
@@ -362,6 +370,7 @@ describe('useGoMaster local answers', () => {
     expect(state.bubble.text).not.toContain('GitHub login');
     expect(state.chatMessages.some((message) => message.text.includes('Cloud Sensei needs'))).toBe(false);
     expect(state.chatMessages.some((message) => message.text === 'White passes so you can try the next idea.')).toBe(true);
+    expect(useConceptStore.getState().getMastery('corner-opening').encounterCount).toBeGreaterThan(0);
     expect(useConceptStore.getState().getMastery('shape').encounterCount).toBeGreaterThan(0);
   });
 
