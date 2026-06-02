@@ -228,6 +228,20 @@ describe('useGoMaster local answers', () => {
     expect(state.bubble.text).toContain('Make your stones work together');
     expect(state.bubble.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
     expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+    expect(state.overlays.suggestions).toEqual([
+      {
+        id: 'local-fallback-move-4,2',
+        point: { x: 4, y: 2 },
+        rank: 1,
+        reason: 'Try E7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-fallback-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 2,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
     expect(state.bubble.text).not.toContain('GitHub login');
     expect(state.chatMessages.some((message) => message.text.includes('Cloud Sensei needs'))).toBe(false);
     expect(state.chatMessages.some((message) => message.text === 'White passes so you can try the next idea.')).toBe(true);

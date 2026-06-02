@@ -4,10 +4,12 @@ import {
   getBeginnerObjectiveProgress,
 } from '@/lib/coaching/beginner-objectives';
 import { getBeginnerObjectiveActions } from '@/lib/coaching/beginner-objective-actions';
-import { pointToCoord } from '@/lib/go-engine';
-import type { GameState, Move } from '@/lib/go-engine/types';
+import { pointKey, pointToCoord } from '@/lib/go-engine';
+import type { BoardSize, GameState, Move, Point } from '@/lib/go-engine/types';
 import type { TeachingLevel } from '@/lib/ai/system-prompt';
 import type { SenseiAction } from '@/lib/coaching/sensei-actions';
+import type { LocalBoardFocus, LocalSuggestionFocus } from '@/lib/coaching/local-question-answer';
+import type { BeginnerObjective } from '@/lib/coaching/beginner-objectives';
 
 type LocalFallbackReason = 'auth-expired' | 'auth-unavailable' | 'network-error' | 'server-error';
 
@@ -15,6 +17,7 @@ export interface LocalGuidedFallback {
   text: string;
   conceptIds: string[];
   actions: SenseiAction[];
+  boardFocus?: LocalBoardFocus;
   shouldPassSensei: boolean;
 }
 
@@ -58,6 +61,35 @@ function introText(reason: LocalFallbackReason): string {
   return 'Cloud Sensei had trouble answering, so I will keep the lesson moving locally for now.';
 }
 
+function copyPoint(point: Point): Point {
+  return { x: point.x, y: point.y };
+}
+
+function suggestionReason(objective: BeginnerObjective, point: Point, boardSize: BoardSize): string {
+  const coord = pointToCoord(point, boardSize);
+
+  if (objective.id === 'claim-corner') {
+    return `Start at ${coord}: the board edge helps this stone make territory.`;
+  }
+
+  if (objective.id === 'extend-from-stone') {
+    return `Try ${coord} as a one-space jump that works with your stones.`;
+  }
+
+  return `Give your group room by playing its liberty at ${coord}.`;
+}
+
+function buildObjectiveBoardFocus(objective: BeginnerObjective, boardSize: BoardSize): LocalBoardFocus | undefined {
+  const suggestions: LocalSuggestionFocus[] = objective.targetPoints.slice(0, 4).map((point, index) => ({
+    id: `local-fallback-move-${pointKey(point)}`,
+    point: copyPoint(point),
+    rank: index + 1,
+    reason: suggestionReason(objective, point, boardSize),
+  }));
+
+  return suggestions.length > 0 ? { suggestions } : undefined;
+}
+
 export function getLocalGuidedFallback(
   game: GameState,
   teachingLevel: TeachingLevel,
@@ -99,6 +131,7 @@ export function getLocalGuidedFallback(
     text: lines.join('\n\n'),
     conceptIds: objective?.conceptIds ?? [],
     actions: objective ? getBeginnerObjectiveActions(objective) : [],
+    ...(objective ? { boardFocus: buildObjectiveBoardFocus(objective, game.board.size) } : {}),
     shouldPassSensei,
   };
 }
