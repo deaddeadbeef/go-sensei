@@ -2,6 +2,8 @@
 
 import { useCallback, useRef, useState } from 'react';
 import { useGameStore } from '@/stores/game-store';
+import { useConceptStore } from '@/stores/concept-store';
+import { getIllegalMoveFeedback } from '@/lib/coaching/illegal-move-feedback';
 import { pointToSvg, cellSize } from '@/utils/coordinates';
 
 export function InteractionLayer() {
@@ -12,6 +14,11 @@ export function InteractionLayer() {
   const phase = useGameStore((s) => s.phase);
   const currentPlayer = useGameStore((s) => s.game.currentPlayer);
   const recordInteraction = useGameStore((s) => s.recordInteraction);
+  const clearOverlays = useGameStore((s) => s.clearOverlays);
+  const applyHighlights = useGameStore((s) => s.applyHighlights);
+  const applySuggestions = useGameStore((s) => s.applySuggestions);
+  const showBubble = useGameStore((s) => s.showBubble);
+  const recordEncounter = useConceptStore((s) => s.recordEncounter);
 
   const cell = cellSize(boardSize);
   const hitRadius = cell * 0.45;
@@ -22,9 +29,46 @@ export function InteractionLayer() {
     (x: number, y: number) => {
       if (isAiThinking || phase !== 'playing' || currentPlayer !== 'black') return;
       recordInteraction();
-      placeStone({ x, y });
+      const result = placeStone({ x, y });
+
+      if (!result.success) {
+        const state = useGameStore.getState();
+        const feedback = getIllegalMoveFeedback(state.game, { x, y }, state.teachingLevel);
+        if (!feedback) return;
+
+        for (const conceptId of feedback.conceptIds) {
+          recordEncounter(conceptId);
+        }
+
+        clearOverlays();
+        if (feedback.boardFocus.highlights?.length) {
+          applyHighlights(feedback.boardFocus.highlights);
+        }
+        if (feedback.boardFocus.suggestions?.length) {
+          applySuggestions(feedback.boardFocus.suggestions);
+        }
+
+        showBubble({
+          text: feedback.text,
+          variant: 'warning',
+          anchorPoint: { x, y },
+          actions: feedback.actions ?? [],
+          streamingComplete: true,
+        });
+      }
     },
-    [isAiThinking, phase, currentPlayer, placeStone, recordInteraction],
+    [
+      isAiThinking,
+      phase,
+      currentPlayer,
+      placeStone,
+      recordInteraction,
+      recordEncounter,
+      clearOverlays,
+      applyHighlights,
+      applySuggestions,
+      showBubble,
+    ],
   );
 
   const handleHover = useCallback(
