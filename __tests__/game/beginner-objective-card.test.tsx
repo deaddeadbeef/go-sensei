@@ -765,6 +765,7 @@ describe('BeginnerObjectiveCard', () => {
 
     fireEvent.click(originalReplyStep);
     expect(originalReplyStep.getAttribute('aria-pressed')).toBe('false');
+    expect(screen.queryByText('Next question')).toBeNull();
     expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).toContain('read-pressure-reply-3,3');
 
     const focusActions = screen.getAllByRole('button', { name: 'Show step' });
@@ -772,6 +773,8 @@ describe('BeginnerObjectiveCard', () => {
 
     const restoredOriginalReplyStep = screen.getByRole('button', { name: 'Show board highlights for step 2: Black D8 attacks D7 from above.' });
     expect(restoredOriginalReplyStep.getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByText('Next question')).toBeTruthy();
+    expect(screen.getByText('Before returning to D6, ask: did D8 change the attack direction while keeping both sides safe?')).toBeTruthy();
     expect(useGameStore.getState().overlays.targetHints).toEqual([
       {
         id: 'read-pressure-anchor-2,2',
