@@ -11,6 +11,7 @@ export type SenseiActionRoute =
   | { type: 'review' }
   | { type: 'guided_intro' }
   | { type: 'guided_game' }
+  | { type: 'guided_read_pressure'; mode: 'branch' | 'recount'; promptKey: string; replyKey: string }
   | { type: 'practice'; category: ProblemCategory }
   | { type: 'lesson'; lessonId: string };
 
@@ -42,6 +43,12 @@ export function getSenseiActionRoute(actionId: string): SenseiActionRoute | null
 
   if (actionId === 'guided:game') {
     return { type: 'guided_game' };
+  }
+
+  if (actionId.startsWith('guided:read-pressure:')) {
+    const [, , mode, promptKey, replyKey] = actionId.split(':');
+    if ((mode !== 'branch' && mode !== 'recount') || !promptKey || !replyKey) return null;
+    return { type: 'guided_read_pressure', mode, promptKey, replyKey };
   }
 
   if (actionId.startsWith('practice:')) {
