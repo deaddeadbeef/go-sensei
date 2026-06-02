@@ -296,6 +296,18 @@ function getPressureComparisonReplayAction(
   };
 }
 
+function getPressureDefenseReplayAction(
+  prompt: OneSpaceJumpReadPrompt,
+  reply: Point,
+  comparedReply: Point,
+  defensePoint: Point,
+): SenseiAction {
+  return {
+    id: `guided:read-pressure:defense:${prompt.key}:${targetKey(reply)}:${targetKey(comparedReply)}:${targetKey(defensePoint)}`,
+    label: 'Show defense',
+  };
+}
+
 function getPressureRecountFollowUp(
   prompt: OneSpaceJumpReadPrompt,
   anchorCoord: string,
@@ -415,6 +427,17 @@ function getPressureDefenseReadText(
   const coord = pointToCoord(point, board.size);
 
   return `${coord} directly defends ${defense.shortSideCoord}, the short side in this pressure line. Keep ${defense.shortSideCoord} breathing first; then recount before extending again.`;
+}
+
+function getReplayPressureDefensePoint(
+  prompt: OneSpaceJumpReadPrompt,
+  recount: PressureRecount,
+  board: BoardState,
+  defensePointKey: string,
+): Point | null {
+  const defense = getPressureDefenseRecommendation(prompt, recount, board);
+
+  return defense?.liberties.find((point) => targetKey(point) === defensePointKey) ?? null;
 }
 
 function getPressureComparisonSummary(
@@ -742,7 +765,7 @@ export function BeginnerObjectiveCard() {
     addChatMessage(
       `Defense read: ${defenseText}`,
       'teaching',
-      [getPressureComparisonReplayAction(prompt, recount.reply, comparedReply)],
+      [getPressureDefenseReplayAction(prompt, recount.reply, comparedReply, point)],
     );
   }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game.board, recordInteraction]);
 
@@ -767,11 +790,15 @@ export function BeginnerObjectiveCard() {
     ? guidedReadReplayRequest.replyKey
     : null;
   const replayedRecountReadReplyKey = replayedReadReplyKey
-    && (guidedReadReplayRequest?.mode === 'recount' || guidedReadReplayRequest?.mode === 'comparison')
+    && (
+      guidedReadReplayRequest?.mode === 'recount'
+      || guidedReadReplayRequest?.mode === 'comparison'
+      || guidedReadReplayRequest?.mode === 'defense'
+    )
     ? replayedReadReplyKey
     : null;
   const replayedComparisonReadReplyKey = replayedReadReplyKey
-    && guidedReadReplayRequest?.mode === 'comparison'
+    && (guidedReadReplayRequest?.mode === 'comparison' || guidedReadReplayRequest?.mode === 'defense')
     && guidedReadReplayRequest.comparedReplyKey
     && readPrompt?.replyPoints.some((point) => (
       targetKey(point) === guidedReadReplayRequest.comparedReplyKey
@@ -795,10 +822,25 @@ export function BeginnerObjectiveCard() {
     processedReplayRequestId.current = guidedReadReplayRequest.id;
     recordInteraction();
 
-    if (guidedReadReplayRequest.mode === 'recount' || guidedReadReplayRequest.mode === 'comparison') {
+    if (
+      guidedReadReplayRequest.mode === 'recount'
+      || guidedReadReplayRequest.mode === 'comparison'
+      || guidedReadReplayRequest.mode === 'defense'
+    ) {
       const recount = getPressureRecount(game, readPrompt, reply);
       if (recount) {
-        applyTargetHints(buildOneSpaceJumpRecountHighlights(readPrompt, recount, game.board));
+        const selectedDefense = guidedReadReplayRequest.mode === 'defense'
+          && replayedComparisonReadReplyKey
+          && guidedReadReplayRequest.defensePointKey
+          ? getReplayPressureDefensePoint(
+            readPrompt,
+            recount,
+            game.board,
+            guidedReadReplayRequest.defensePointKey,
+          )
+          : null;
+
+        applyTargetHints(buildOneSpaceJumpRecountHighlights(readPrompt, recount, game.board, selectedDefense));
       } else {
         applyTargetHints(buildOneSpaceJumpPressureHighlights(readPrompt, game.board, reply));
       }
@@ -811,6 +853,7 @@ export function BeginnerObjectiveCard() {
     guidedReadReplayRequest,
     readPrompt,
     recordInteraction,
+    replayedComparisonReadReplyKey,
     replayedReadReplyKey,
   ]);
 
@@ -846,8 +889,14 @@ export function BeginnerObjectiveCard() {
   const pressureComparisonSummary = readPrompt && comparedReadRecount && selectedReadRecount
     ? getPressureComparisonSummary(readPrompt, comparedReadRecount, selectedReadRecount, game.board)
     : null;
-  const effectiveDefenseReadPointKey = replayedReadReplyKey ? null : defenseReadPointKey;
   const pressureDefenseRecommendation = pressureComparisonSummary?.defenseRecommendation ?? null;
+  const replayedDefenseReadPointKey = replayedComparisonReadReplyKey
+    && guidedReadReplayRequest?.mode === 'defense'
+    && guidedReadReplayRequest.defensePointKey
+    && pressureDefenseRecommendation?.liberties.some((point) => targetKey(point) === guidedReadReplayRequest.defensePointKey)
+    ? guidedReadReplayRequest.defensePointKey
+    : null;
+  const effectiveDefenseReadPointKey = replayedDefenseReadPointKey ?? (replayedReadReplyKey ? null : defenseReadPointKey);
   const selectedDefenseReadPoint = pressureDefenseRecommendation && effectiveDefenseReadPointKey
     ? pressureDefenseRecommendation.liberties.find((point) => targetKey(point) === effectiveDefenseReadPointKey) ?? null
     : null;
