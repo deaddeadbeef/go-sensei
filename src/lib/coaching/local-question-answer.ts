@@ -653,14 +653,14 @@ function buildTargetReasonAnswer(game: GameState, teachingLevel: TeachingLevel, 
   const targetCoord = pointToCoord(targetPoint, game.board.size);
   const suggestions = objectiveSuggestions(objective, game.board.size, 'local-target-reason-move');
   const action = getBeginnerObjectiveLessonAction(objective);
-  const lastMove = lastPlacedMove(game);
+  const anchorMove = lastBlackPlacedMove(game);
   const lines: string[] = [];
 
   if (requestedPoint && !pointEquals(requestedPoint, targetPoint)) {
     lines.push(`${requestedCoord} is not one of the current marked beginner targets.`);
   }
 
-  lines.push(targetReason(objective, targetPoint, game.board.size, lastMove?.point ?? null));
+  lines.push(targetReason(objective, targetPoint, game.board.size, anchorMove?.point ?? null));
 
   const otherTargets = objective.targetPoints
     .filter((point) => !pointEquals(point, targetPoint))
@@ -733,7 +733,7 @@ function buildCandidateMoveAnswer(game: GameState, teachingLevel: TeachingLevel,
   const action = getBeginnerObjectiveLessonAction(objective);
   const targetCoordText = objectiveTargetCoordList(objective, game.board.size);
   const isMarkedTarget = objective.targetPoints.some((point) => pointEquals(point, requestedPoint));
-  const lastMove = lastPlacedMove(game);
+  const anchorMove = lastBlackPlacedMove(game);
 
   if (getStone(game.board, requestedPoint) !== null) {
     return {
@@ -751,7 +751,7 @@ function buildCandidateMoveAnswer(game: GameState, teachingLevel: TeachingLevel,
     return {
       text: [
         `Yes. ${coord} fits the current goal: ${objective.title}.`,
-        targetReason(objective, requestedPoint, game.board.size, lastMove?.point ?? null),
+        targetReason(objective, requestedPoint, game.board.size, anchorMove?.point ?? null),
         'I marked the current targets again so you can compare the options before playing.',
       ].join(' '),
       conceptIds: objective.conceptIds,
@@ -765,7 +765,7 @@ function buildCandidateMoveAnswer(game: GameState, teachingLevel: TeachingLevel,
 
   return {
     text: [
-      candidateMissReason(objective, requestedPoint, game.board.size, lastMove?.point ?? null),
+      candidateMissReason(objective, requestedPoint, game.board.size, anchorMove?.point ?? null),
       targetCoordText ? `For this board, I would prefer ${targetCoordText}.` : objective.instruction,
       `I highlighted ${coord} and re-marked the better beginner targets.`,
     ].join(' '),
@@ -824,7 +824,7 @@ function buildCandidateComparisonAnswer(game: GameState, teachingLevel: Teaching
 
   const suggestions = objectiveSuggestions(objective, game.board.size, 'local-candidate-comparison-move');
   const action = getBeginnerObjectiveLessonAction(objective);
-  const lastMove = lastPlacedMove(game);
+  const anchorMove = lastBlackPlacedMove(game);
   const targetCoordText = objectiveTargetCoordList(objective, game.board.size);
   const comparedPoints = requestedPoints.slice(0, 4);
   const markedPoints = comparedPoints.filter((candidate) => (
@@ -849,15 +849,15 @@ function buildCandidateComparisonAnswer(game: GameState, teachingLevel: Teaching
 
   if (markedPoints.length >= 2 && unmarkedPoints.length === 0) {
     lines.push(`Both choices fit the current goal: ${objective.title}.`);
-    lines.push(comparisonTargetReason(objective, markedPoints, game.board.size, lastMove?.point ?? null));
+    lines.push(comparisonTargetReason(objective, markedPoints, game.board.size, anchorMove?.point ?? null));
     lines.push('I marked both choices again; choose the side where you want your next area to grow.');
   } else if (markedPoints.length >= 1) {
     const preferred = markedPoints[0];
     const preferredCoord = pointToCoord(preferred, game.board.size);
     lines.push(`I would choose ${preferredCoord} for this beginner goal.`);
-    lines.push(targetReason(objective, preferred, game.board.size, lastMove?.point ?? null));
+    lines.push(targetReason(objective, preferred, game.board.size, anchorMove?.point ?? null));
     for (const point of unmarkedPoints.slice(0, 2)) {
-      lines.push(candidateMissReason(objective, point, game.board.size, lastMove?.point ?? null));
+      lines.push(candidateMissReason(objective, point, game.board.size, anchorMove?.point ?? null));
     }
     lines.push(`I highlighted the off-goal option${unmarkedPoints.length === 1 ? '' : 's'} and re-marked the better beginner target.`);
   } else {
@@ -868,7 +868,7 @@ function buildCandidateComparisonAnswer(game: GameState, teachingLevel: Teaching
       lines.push(objective.instruction);
     }
     for (const point of unmarkedPoints.slice(0, 2)) {
-      lines.push(candidateMissReason(objective, point, game.board.size, lastMove?.point ?? null));
+      lines.push(candidateMissReason(objective, point, game.board.size, anchorMove?.point ?? null));
     }
   }
 
@@ -1201,12 +1201,34 @@ function buildCoordinateAnswer(game: GameState, teachingLevel: TeachingLevel, q:
   if (requestedPoint && requestedCoord) {
     const column = requestedCoord[0];
     const row = requestedCoord.slice(1);
+    const stone = getStone(game.board, requestedPoint);
+    const isMarkedTarget = objective?.targetPoints.some((point) => pointEquals(point, requestedPoint)) ?? false;
+    const variant: LocalHighlightFocus['variant'] = stone === 'white'
+      ? 'danger'
+      : stone === 'black' || isMarkedTarget
+        ? 'positive'
+        : 'neutral';
+    const label = stone === 'black'
+      ? `${requestedCoord}: your Black stone.`
+      : stone === 'white'
+        ? `${requestedCoord}: White stone.`
+        : isMarkedTarget
+          ? `${requestedCoord}: marked target for ${objective?.title}.`
+          : `${requestedCoord}: column ${column}, row ${row}.`;
+
     lines.push(`${requestedCoord} means column ${column}, row ${row}. I highlighted ${requestedCoord} on the board.`);
+    if (stone === 'black') {
+      lines.push(`${requestedCoord} currently has your Black stone, so use it as an anchor for the next idea rather than trying to play there again.`);
+    } else if (stone === 'white') {
+      lines.push(`${requestedCoord} currently has a White stone, so it is blocked as a move; look at that stone's liberties before trying to attack it.`);
+    } else if (objective && isMarkedTarget) {
+      lines.push(`${requestedCoord} is also one of the marked targets for ${objective.title}. ${targetReason(objective, requestedPoint, game.board.size, lastBlackPlacedMove(game)?.point ?? null)}`);
+    }
     highlights.push({
       id: `local-coordinate-${pointKey(requestedPoint)}`,
       point: copyPoint(requestedPoint),
-      variant: 'neutral',
-      label: `${requestedCoord}: column ${column}, row ${row}.`,
+      variant,
+      label,
     });
   } else {
     lines.push('Read a coordinate by finding its letter column first, then its numbered row, and place the stone where they cross.');
