@@ -105,10 +105,11 @@ export interface ChatMessage {
 export interface GuidedReadReplayRequest {
   id: number;
   type: 'read-pressure';
-  mode: 'branch' | 'recount' | 'comparison';
+  mode: 'branch' | 'recount' | 'comparison' | 'defense';
   promptKey: string;
   replyKey: string;
   comparedReplyKey?: string;
+  defensePointKey?: string;
 }
 
 const MAX_CHAT_MESSAGES = 80;

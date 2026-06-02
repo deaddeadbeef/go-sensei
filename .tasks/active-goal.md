@@ -43,6 +43,7 @@ Latest completed slice:
 - Marked the short side and its actual defensive liberties on the board when a pressure recount shows one Black side has fewer liberties.
 - Added transcript actions that restore the full pressure comparison panel, recommendation, and short-side liberty markers instead of reopening only the final recount.
 - Added a non-mutating "try a defense" continuation after short-side pressure recommendations so learners can choose a defensive liberty and see why it stabilizes the short side.
+- Added defense-read transcript actions that restore the selected defensive liberty marker, so earlier defense trials reopen as the same board-side lesson instead of only the parent comparison.
 
 Next investigation candidates:
-- Whether defense-read transcript actions should restore the selected defense marker, not just the parent pressure comparison.
+- Whether trying a defense should show a post-defense recount so learners can see how the short side stabilizes after the chosen liberty.
