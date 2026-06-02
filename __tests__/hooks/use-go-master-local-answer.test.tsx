@@ -1271,6 +1271,58 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('groups').encounterCount).toBeGreaterThan(0);
   });
 
+  it('answers named group safety questions locally without fetching', () => {
+    act(() => {
+      useGameStore.getState().pass();
+      const result = useGameStore.getState().placeStone({ x: 4, y: 2 });
+      if (!result.success) throw new Error('test setup second move failed');
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('Is E7 safe?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('Your Black group at E7 is not in immediate danger');
+    expect(state.bubble.text).toContain('it has 4 liberties: E8, E6, D7, and F7.');
+    expect(state.bubble.text).toContain('Try G7, E5, or C5.');
+    expect(state.bubble.text).not.toContain('Your Black group at C7');
+    expect(state.chatMessages.at(-1)?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'lesson:liberties', label: 'Review liberties' },
+    ]);
+    expect(state.overlays.groups[0]).toMatchObject({
+      id: 'local-weak-group-current-4,2',
+      stones: [{ x: 4, y: 2 }],
+      color: 'black',
+      liberties: 4,
+      label: 'Black group with room: 4 liberties at E8, E6, D7, and F7.',
+    });
+    expect(state.overlays.liberties[0]).toEqual({
+      id: 'local-weak-group-current-liberties-4,2',
+      point: { x: 4, y: 2 },
+      count: 4,
+      libertyPoints: [
+        { x: 4, y: 1 },
+        { x: 4, y: 3 },
+        { x: 3, y: 2 },
+        { x: 5, y: 2 },
+      ],
+    });
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 6, y: 2 },
+      { x: 4, y: 4 },
+      { x: 2, y: 4 },
+    ]);
+    expect(useConceptStore.getState().getMastery('liberties').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('groups').encounterCount).toBeGreaterThan(0);
+  });
+
   it('explains marked target choices locally without fetching', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());
