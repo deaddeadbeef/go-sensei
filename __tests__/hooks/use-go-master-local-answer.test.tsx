@@ -726,6 +726,50 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('shape').encounterCount).toBeGreaterThan(0);
   });
 
+  it('teaches a reading routine locally without fetching', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('How do I think before I move?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('Use a three-question reading routine before you play.');
+    expect(state.bubble.text).toContain('First: count liberties.');
+    expect(state.bubble.text).toContain('On this board, apply the routine to: Make your stones work together.');
+    expect(state.bubble.text).toContain('Start by reading E7: what Black gains, how White might touch it, and whether C7 still has enough liberties.');
+    expect(state.chatMessages.at(-1)?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'practice:reading', label: 'Practice reading' },
+    ]);
+    expect(state.overlays.highlights).toEqual([{
+      id: 'local-reading-anchor-2,2',
+      point: { x: 2, y: 2 },
+      variant: 'neutral',
+      label: 'C7: use this stone as the anchor for your reading routine.',
+    }]);
+    expect(state.overlays.suggestions).toEqual([
+      {
+        id: 'local-reading-routine-move-4,2',
+        point: { x: 4, y: 2 },
+        rank: 1,
+        reason: 'Try E7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-reading-routine-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 2,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
+    expect(useConceptStore.getState().getMastery('reading').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('direction-of-play').encounterCount).toBeGreaterThan(0);
+  });
+
   it('reviews the guided game locally from the review control without fetching', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());

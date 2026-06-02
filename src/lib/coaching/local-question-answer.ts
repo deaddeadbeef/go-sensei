@@ -336,6 +336,16 @@ function isWeakGroupQuestion(q: string): boolean {
     || /\bshort\s+on\s+liberties\b/.test(q);
 }
 
+function isReadingRoutineQuestion(q: string): boolean {
+  return /\bhow\s+do\s+i\s+read\s+ahead\b/.test(q)
+    || /\bhow\s+do\s+i\s+(think|plan)\s+before\s+(i\s+)?(play|move)\b/.test(q)
+    || /\bwhat\s+should\s+i\s+(think\s+about|look\s+for|check)\s+before\s+(i\s+)?(play|move)\b/.test(q)
+    || /\bhow\s+do\s+i\s+(choose|decide|pick)\s+(a\s+)?(move|play)\b/.test(q)
+    || /\bhow\s+do\s+i\s+choose\s+between\s+moves\b/.test(q)
+    || /\bwhat\s+makes\s+(a\s+)?move\s+(good|safe|useful)\b/.test(q)
+    || /\breading\s+routine\b/.test(q);
+}
+
 function mentionedCoordinates(q: string, boardSize: BoardSize): Point[] {
   const points: Point[] = [];
   const seen = new Set<string>();
@@ -1410,6 +1420,71 @@ function buildShapeAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQ
   };
 }
 
+function buildReadingRoutineAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
+  const objective = getBeginnerObjective({
+    boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
+    moveCount: game.moveHistory.length,
+    currentPlayer: 'black',
+    teachingLevel,
+  });
+  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-reading-routine-move') : [];
+  const action = suggestions.length > 0 ? { id: 'hint', label: 'Show targets' } : null;
+  const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
+  const anchor = lastBlackPlacedMove(game);
+  const anchorCoord = anchor ? pointToCoord(anchor.point, game.board.size) : null;
+  const firstSuggestion = suggestions[0];
+  const firstSuggestionCoord = firstSuggestion ? pointToCoord(firstSuggestion.point, game.board.size) : null;
+  const highlights: LocalHighlightFocus[] = anchor
+    ? [{
+      id: `local-reading-anchor-${pointKey(anchor.point)}`,
+      point: copyPoint(anchor.point),
+      variant: 'neutral',
+      label: `${anchorCoord}: use this stone as the anchor for your reading routine.`,
+    }]
+    : [];
+  const lines = [
+    'Use a three-question reading routine before you play.',
+    'First: count liberties. If one of your groups has one or two liberties, read that emergency before expanding.',
+    'Second: name the purpose: territory, connection, shape, or capture.',
+    "Third: imagine White's reply next to that move; if your stone still has room and your goal is clearer, the move is worth testing.",
+  ];
+
+  if (objective) {
+    lines.push(`On this board, apply the routine to: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}`);
+  } else {
+    lines.push('On this board, pick one candidate and ask what it saves, connects, attacks, or claims.');
+  }
+
+  if (firstSuggestionCoord) {
+    lines.push(anchorCoord
+      ? `Start by reading ${firstSuggestionCoord}: what Black gains, how White might touch it, and whether ${anchorCoord} still has enough liberties.`
+      : `Start by reading ${firstSuggestionCoord}: what Black gains, how White might touch it, and whether the new stone still has liberties.`);
+  }
+
+  if (suggestions.length > 0) {
+    lines.push('I marked the targets so you can practice the routine on an actual move.');
+  }
+
+  return {
+    text: lines.join(' '),
+    conceptIds: uniqueConceptIds(['reading', 'direction-of-play', 'liberties', ...(objective?.conceptIds ?? [])]),
+    ...(suggestions.length > 0 || highlights.length > 0
+      ? {
+        boardFocus: {
+          ...(highlights.length > 0 ? { highlights } : {}),
+          ...(suggestions.length > 0 ? { suggestions } : {}),
+        },
+      }
+      : {}),
+    actions: [
+      ...(action ? [action] : []),
+      { id: 'practice:reading', label: 'Practice reading' },
+    ],
+  };
+}
+
 function buildConnectionAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
   const objective = getBeginnerObjective({
     boardSize: game.board.size,
@@ -2220,6 +2295,10 @@ export function getLocalQuestionAnswer(
 
   if (isInfluenceQuestion(q)) {
     return buildInfluenceAnswer(game, teachingLevel);
+  }
+
+  if (isReadingRoutineQuestion(q)) {
+    return buildReadingRoutineAnswer(game, teachingLevel);
   }
 
   if (isWeakGroupQuestion(q)) {
