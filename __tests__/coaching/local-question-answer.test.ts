@@ -1953,6 +1953,113 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('explains White pressure on an open one-space jump gap', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup first move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+    const extensionMove = playMove(afterWhitePass, { x: 4, y: 2 });
+    if (!extensionMove.success) throw new Error('test setup extension move failed');
+    const game = passMove(extensionMove.newState);
+
+    const answer = getLocalQuestionAnswer('Can White cut at D7?', game, 'guided');
+
+    expect(answer?.text).toContain('D7 is the one-point gap between C7 and E7.');
+    expect(answer?.text).toContain('White can test that gap by playing D7, but that is pressure, not an immediate capture.');
+    expect(answer?.text).toContain('If White actually attacks D7, count liberties before reacting');
+    expect(answer?.text).toContain('if both stones still have room, keep building with G7, E5, or C5.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['shape', 'reading', 'liberties', 'groups']));
+    expect(answer?.boardFocus?.highlights).toEqual([
+      {
+        id: 'local-gap-pressure-anchor-2,2',
+        point: { x: 2, y: 2 },
+        variant: 'positive',
+        label: 'C7: one side of the jump White could test.',
+      },
+      {
+        id: 'local-gap-pressure-stone-4,2',
+        point: { x: 4, y: 2 },
+        variant: 'positive',
+        label: 'E7: one side of the jump White could test.',
+      },
+      {
+        id: 'local-gap-pressure-open-3,2',
+        point: { x: 3, y: 2 },
+        variant: 'warning',
+        label: 'D7: gap White could pressure; count liberties before answering.',
+      },
+    ]);
+    expect(answer?.boardFocus?.suggestions?.map((suggestion) => suggestion.point)).toEqual([
+      { x: 6, y: 2 },
+      { x: 4, y: 4 },
+      { x: 2, y: 4 },
+    ]);
+    expect(answer?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'practice:reading', label: 'Practice reading' },
+    ]);
+  });
+
+  it('answers how to respond if White attacks the one-space jump gap', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup first move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+    const extensionMove = playMove(afterWhitePass, { x: 4, y: 2 });
+    if (!extensionMove.success) throw new Error('test setup extension move failed');
+    const game = passMove(extensionMove.newState);
+
+    const answer = getLocalQuestionAnswer('What should I do if White attacks D7?', game, 'guided');
+
+    expect(answer?.text).toContain('D7 is the one-point gap between C7 and E7.');
+    expect(answer?.text).toContain('If White actually attacks D7, count liberties before reacting');
+    expect(answer?.text).not.toContain('Your next job is: Make your stones work together.');
+    expect(answer?.boardFocus?.highlights?.[2]).toMatchObject({
+      point: { x: 3, y: 2 },
+      variant: 'warning',
+    });
+  });
+
+  it('explains whether two one-space jump stones are connected by rules and shape', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup first move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+    const extensionMove = playMove(afterWhitePass, { x: 4, y: 2 });
+    if (!extensionMove.success) throw new Error('test setup extension move failed');
+    const game = passMove(extensionMove.newState);
+
+    const answer = getLocalQuestionAnswer('Are C7 and E7 connected?', game, 'guided');
+
+    expect(answer?.text).toContain('C7 and E7 are not one solid group by the rules yet.');
+    expect(answer?.text).toContain('D7 is the open point between them.');
+    expect(answer?.text).toContain('They are connected in shape: a one-space jump that usually works together unless White attacks the gap.');
+    expect(answer?.text).toContain('For now, keep building with G7, E5, or C5.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['groups', 'shape', 'liberties']));
+    expect(answer?.boardFocus?.highlights).toEqual([
+      {
+        id: 'local-gap-connection-anchor-2,2',
+        point: { x: 2, y: 2 },
+        variant: 'positive',
+        label: 'C7: first stone in the one-space jump.',
+      },
+      {
+        id: 'local-gap-connection-stone-4,2',
+        point: { x: 4, y: 2 },
+        variant: 'positive',
+        label: 'E7: second stone in the one-space jump.',
+      },
+      {
+        id: 'local-gap-connection-open-3,2',
+        point: { x: 3, y: 2 },
+        variant: 'neutral',
+        label: 'D7: open gap; shape connection, not a solid group.',
+      },
+    ]);
+    expect(answer?.boardFocus?.suggestions?.map((suggestion) => suggestion.point)).toEqual([
+      { x: 6, y: 2 },
+      { x: 4, y: 4 },
+      { x: 2, y: 4 },
+    ]);
+  });
+
   it('answers ko questions with the current forbidden point when a ko is active', () => {
     const game = playSequence([
       { x: 1, y: 0 },
