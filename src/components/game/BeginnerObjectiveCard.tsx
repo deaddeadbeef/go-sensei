@@ -779,7 +779,7 @@ function getPressureReadSequenceRows(
   const comparisonRecount = comparedRecount && selectedRecount ? selectedRecount : null;
   const firstReply = primaryRecount?.reply ?? selectedReply;
   const rows: PressureReadSequenceRow[] = [{
-    key: 'pressure-gap',
+    key: `${prompt.key}:pressure-gap`,
     text: `White ${prompt.gapCoord} tests the gap between ${anchorCoord} and ${stoneCoord}.`,
     highlights: buildOneSpaceJumpPressureHighlights(prompt, board),
   }];
@@ -787,7 +787,7 @@ function getPressureReadSequenceRows(
   if (firstReply) {
     const firstReplyCoord = pointToCoord(firstReply, board.size);
     rows.push({
-      key: `pressure-reply-${targetKey(firstReply)}`,
+      key: `${prompt.key}:pressure-reply-${targetKey(firstReply)}`,
       text: `Black ${firstReplyCoord} attacks ${prompt.gapCoord} from ${getReplyDirection(firstReply, prompt.gap)}.`,
       highlights: buildOneSpaceJumpPressureHighlights(prompt, board, firstReply),
     });
@@ -795,7 +795,7 @@ function getPressureReadSequenceRows(
 
   if (primaryRecount) {
     rows.push({
-      key: `pressure-recount-${targetKey(primaryRecount.reply)}`,
+      key: `${prompt.key}:pressure-recount-${targetKey(primaryRecount.reply)}`,
       text: `Recount: ${formatPressureSequenceLibertyStep(prompt, primaryRecount, board)}.`,
       highlights: buildOneSpaceJumpRecountHighlights(prompt, primaryRecount, board),
     });
@@ -804,7 +804,7 @@ function getPressureReadSequenceRows(
   if (comparisonRecount) {
     const comparisonCoord = pointToCoord(comparisonRecount.reply, board.size);
     rows.push({
-      key: `pressure-compare-${targetKey(comparisonRecount.reply)}`,
+      key: `${prompt.key}:pressure-compare-${targetKey(comparisonRecount.reply)}`,
       text: `Compare ${comparisonCoord}: ${formatPressureSequenceLibertyStep(prompt, comparisonRecount, board)}.`,
       highlights: buildOneSpaceJumpRecountHighlights(prompt, comparisonRecount, board),
     });
@@ -813,7 +813,7 @@ function getPressureReadSequenceRows(
   if (selectedDefenseOutcome && selectedRecount) {
     const defenseCoord = pointToCoord(selectedDefenseOutcome.defense, board.size);
     rows.push({
-      key: `pressure-defense-${targetKey(selectedDefenseOutcome.defense)}`,
+      key: `${prompt.key}:pressure-defense-${targetKey(selectedDefenseOutcome.defense)}`,
       text: `Defend ${selectedDefenseOutcome.defendedSideCoord} at ${defenseCoord}; ${selectedDefenseOutcome.defendedSideCoord} has ${formatLibertyCount(selectedDefenseOutcome.defendedLiberties.length)}.`,
       highlights: buildOneSpaceJumpDefenseOutcomeHighlights(prompt, selectedRecount, board, selectedDefenseOutcome),
     });
@@ -823,7 +823,7 @@ function getPressureReadSequenceRows(
     const followUpCoord = pointToCoord(selectedFollowUpDefenseOutcome.defense, board.size);
 
     rows.push({
-      key: `pressure-follow-up-${targetKey(selectedFollowUpDefenseOutcome.defense)}`,
+      key: `${prompt.key}:pressure-follow-up-${targetKey(selectedFollowUpDefenseOutcome.defense)}`,
       text: selectedFollowUpDefenseOutcome.connectedSides
         ? `Follow-up ${followUpCoord} connects ${anchorCoord} and ${stoneCoord} into one group.`
         : `Follow-up ${followUpCoord}: ${selectedFollowUpDefenseOutcome.defendedSideCoord} has ${formatLibertyCount(selectedFollowUpDefenseOutcome.defendedLiberties.length)}; ${selectedFollowUpDefenseOutcome.otherSideCoord} has ${formatLibertyCount(selectedFollowUpDefenseOutcome.otherLiberties.length)}.`,
@@ -839,7 +839,7 @@ function getPressureReadSequenceRows(
 
   if (extensionHandoff) {
     rows.push({
-      key: `pressure-handoff-${targetKey(extensionHandoff.point)}`,
+      key: `${prompt.key}:pressure-handoff-${targetKey(extensionHandoff.point)}`,
       text: `Real-game handoff: play ${extensionHandoff.coord} after the stable read.`,
       highlights: buildPressureHandoffHighlights(extensionHandoff),
     });
@@ -1293,6 +1293,7 @@ export function BeginnerObjectiveCard() {
   const [comparisonReadReplyKey, setComparisonReadReplyKey] = useState<string | null>(null);
   const [defenseReadPointKey, setDefenseReadPointKey] = useState<string | null>(null);
   const [followUpDefenseReadPointKey, setFollowUpDefenseReadPointKey] = useState<string | null>(null);
+  const [pinnedPressureSequenceRowKey, setPinnedPressureSequenceRowKey] = useState<string | null>(null);
   const [pressureHandoffRecap, setPressureHandoffRecap] = useState<PressureHandoffRecap | null>(null);
   const processedReplayRequestId = useRef<number | null>(null);
 
@@ -1333,6 +1334,7 @@ export function BeginnerObjectiveCard() {
     setComparisonReadReplyKey(null);
     setDefenseReadPointKey(null);
     setFollowUpDefenseReadPointKey(null);
+    setPinnedPressureSequenceRowKey(null);
     applyTargetHints(buildTargetHintHighlights(objective, point, game.board));
   }, [applyTargetHints, clearGuidedReadReplay, game.board, objective]);
 
@@ -1346,6 +1348,7 @@ export function BeginnerObjectiveCard() {
     setComparisonReadReplyKey(null);
     setDefenseReadPointKey(null);
     setFollowUpDefenseReadPointKey(null);
+    setPinnedPressureSequenceRowKey(null);
     applyTargetHints(buildOneSpaceJumpPressureHighlights(prompt, game.board));
   }, [applyTargetHints, clearGuidedReadReplay, game.board, recordInteraction]);
 
@@ -1361,6 +1364,7 @@ export function BeginnerObjectiveCard() {
     setComparisonReadReplyKey(null);
     setDefenseReadPointKey(null);
     setFollowUpDefenseReadPointKey(null);
+    setPinnedPressureSequenceRowKey(null);
     applyTargetHints(buildOneSpaceJumpPressureHighlights(prompt, game.board, reply));
     addChatMessage(`Branch choice: ${feedback}`, 'teaching', [getPressureReplayAction('branch', prompt, reply)]);
   }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game.board, recordInteraction]);
@@ -1378,6 +1382,7 @@ export function BeginnerObjectiveCard() {
     setComparisonReadReplyKey(null);
     setDefenseReadPointKey(null);
     setFollowUpDefenseReadPointKey(null);
+    setPinnedPressureSequenceRowKey(null);
     applyTargetHints(buildOneSpaceJumpRecountHighlights(prompt, recount, game.board));
     addChatMessage(`Second read: ${recount.text}`, 'teaching', [getPressureReplayAction('recount', prompt, reply)]);
   }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game, recordInteraction]);
@@ -1400,6 +1405,7 @@ export function BeginnerObjectiveCard() {
     setComparisonReadReplyKey(targetKey(comparedReply));
     setDefenseReadPointKey(null);
     setFollowUpDefenseReadPointKey(null);
+    setPinnedPressureSequenceRowKey(null);
     applyTargetHints(buildOneSpaceJumpRecountHighlights(prompt, recount, game.board));
     const comparisonText = [
       recount.text,
@@ -1436,6 +1442,7 @@ export function BeginnerObjectiveCard() {
     setComparisonReadReplyKey(targetKey(comparedReply));
     setDefenseReadPointKey(targetKey(point));
     setFollowUpDefenseReadPointKey(null);
+    setPinnedPressureSequenceRowKey(null);
     applyTargetHints(defenseOutcome
       ? buildOneSpaceJumpDefenseOutcomeHighlights(prompt, recount, game.board, defenseOutcome)
       : buildOneSpaceJumpRecountHighlights(prompt, recount, game.board, point));
@@ -1480,6 +1487,7 @@ export function BeginnerObjectiveCard() {
     setComparisonReadReplyKey(targetKey(comparedReply));
     setDefenseReadPointKey(targetKey(firstDefensePoint));
     setFollowUpDefenseReadPointKey(targetKey(point));
+    setPinnedPressureSequenceRowKey(null);
     applyTargetHints(followUpOutcome
       ? buildOneSpaceJumpFollowUpDefenseOutcomeHighlights(prompt, recount, game.board, firstDefenseOutcome, followUpOutcome)
       : buildOneSpaceJumpDefenseOutcomeHighlights(prompt, recount, game.board, firstDefenseOutcome));
@@ -1499,6 +1507,7 @@ export function BeginnerObjectiveCard() {
     setComparisonReadReplyKey(null);
     setDefenseReadPointKey(null);
     setFollowUpDefenseReadPointKey(null);
+    setPinnedPressureSequenceRowKey(null);
     clearGuidedReadReplay();
     clearTargetHelp();
     recordInteraction();
@@ -1786,6 +1795,7 @@ export function BeginnerObjectiveCard() {
     selectedDefenseReadOutcome,
     selectedFollowUpDefenseReadOutcome,
   );
+  const pinnedPressureSequenceRow = pressureReadSequenceRows.find((row) => row.key === pinnedPressureSequenceRowKey) ?? null;
   const readPromptAnchorCoord = readPrompt ? pointToCoord(readPrompt.anchor, game.board.size) : null;
   const readPromptStoneCoord = readPrompt ? pointToCoord(readPrompt.stone, game.board.size) : null;
   const selectedReadReplyCoord = selectedReadReply ? pointToCoord(selectedReadReply, game.board.size) : null;
@@ -1805,7 +1815,18 @@ export function BeginnerObjectiveCard() {
     applyTargetHints(row.highlights);
   };
   const restorePressureReadHighlights = () => {
-    applyTargetHints(activePressureReadHighlights);
+    applyTargetHints(pinnedPressureSequenceRow?.highlights ?? activePressureReadHighlights);
+  };
+  const togglePressureReadSequenceRow = (row: PressureReadSequenceRow) => {
+    if (pinnedPressureSequenceRow?.key === row.key) {
+      setPinnedPressureSequenceRowKey(null);
+      applyTargetHints(activePressureReadHighlights);
+      return;
+    }
+
+    setActiveTargetKey(null);
+    setPinnedPressureSequenceRowKey(row.key);
+    applyTargetHints(row.highlights);
   };
 
   return (
@@ -2130,23 +2151,33 @@ export function BeginnerObjectiveCard() {
                         Read sequence
                       </div>
                       <div className="mt-1 space-y-0.5 text-[11px] leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
-                        {pressureReadSequenceRows.map((row, index) => (
-                          <button
-                            key={row.key}
-                            type="button"
-                            className="block w-full rounded px-1 py-0.5 text-left transition hover:bg-white/[0.06] focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-1"
-                            style={{ color: COLORS.ui.textSecondary, outlineColor: COLORS.ui.accent }}
-                            aria-label={`Show board highlights for step ${index + 1}: ${row.text}`}
-                            onPointerEnter={() => showPressureReadSequenceRow(row)}
-                            onPointerMove={() => showPressureReadSequenceRow(row)}
-                            onMouseEnter={() => showPressureReadSequenceRow(row)}
-                            onMouseLeave={restorePressureReadHighlights}
-                            onFocus={() => showPressureReadSequenceRow(row)}
-                            onBlur={restorePressureReadHighlights}
-                          >
-                            {index + 1}. {row.text}
-                          </button>
-                        ))}
+                        {pressureReadSequenceRows.map((row, index) => {
+                          const isPinned = pinnedPressureSequenceRow?.key === row.key;
+
+                          return (
+                            <button
+                              key={row.key}
+                              type="button"
+                              className="block w-full rounded px-1 py-0.5 text-left transition hover:bg-white/[0.06] focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-1"
+                              style={{
+                                color: isPinned ? COLORS.ui.textPrimary : COLORS.ui.textSecondary,
+                                backgroundColor: isPinned ? `${COLORS.overlay.positive}1f` : 'transparent',
+                                outlineColor: COLORS.ui.accent,
+                              }}
+                              aria-label={`Show board highlights for step ${index + 1}: ${row.text}`}
+                              aria-pressed={isPinned}
+                              onPointerEnter={() => showPressureReadSequenceRow(row)}
+                              onPointerMove={() => showPressureReadSequenceRow(row)}
+                              onMouseEnter={() => showPressureReadSequenceRow(row)}
+                              onMouseLeave={restorePressureReadHighlights}
+                              onFocus={() => showPressureReadSequenceRow(row)}
+                              onBlur={restorePressureReadHighlights}
+                              onClick={() => togglePressureReadSequenceRow(row)}
+                            >
+                              {index + 1}. {row.text}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
