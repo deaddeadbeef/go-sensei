@@ -2069,6 +2069,54 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([{ id: 'lesson:territory', label: 'Review territory' }]);
   });
 
+  it('turns capture-race plan questions into a count-save-recount sequence', () => {
+    const game = playSequence([
+      { x: 2, y: 2 },
+      { x: 2, y: 1 },
+      { x: 4, y: 4 },
+      { x: 1, y: 2 },
+    ]);
+
+    const answer = getLocalQuestionAnswer('What should I read next in this race?', game, 'guided');
+
+    expect(answer?.text).toContain('Read this capture race as count, save, recount.');
+    expect(answer?.text).toContain('Step 1: Black is behind, so first add a liberty at C6 or D7.');
+    expect(answer?.text).toContain('Step 2: after White answers, count again: Black started with 2 liberties and White started with 3.');
+    expect(answer?.text).toContain('Step 3: if Black is still behind, add another liberty; when Black catches up, start filling White liberties at C9, B8, or D8.');
+    expect(answer?.text).not.toContain('Defend first by playing one of the marked Black liberties.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['reading', 'liberties', 'groups', 'capture']));
+    expect(answer?.boardFocus?.groups).toEqual([
+      {
+        id: 'local-capture-race-plan-black-group-2,2',
+        stones: [{ x: 2, y: 2 }],
+        color: 'black',
+        liberties: 2,
+        label: 'Black group to save first: 2 liberties at C6 and D7.',
+      },
+      {
+        id: 'local-capture-race-plan-white-group-2,1',
+        stones: [{ x: 2, y: 1 }],
+        color: 'white',
+        liberties: 3,
+        label: 'White group to chase after Black catches up: 3 liberties at C9, B8, and D8.',
+      },
+    ]);
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-capture-race-plan-save-2,3',
+        point: { x: 2, y: 3 },
+        rank: 1,
+        reason: 'Step 1: save Black by adding a liberty at C6.',
+      },
+      {
+        id: 'local-capture-race-plan-save-3,2',
+        point: { x: 3, y: 2 },
+        rank: 2,
+        reason: 'Step 1 backup: save Black by adding a liberty at D7.',
+      },
+    ]);
+  });
+
   it('explains a one-space jump framework when asking if territory is mine', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup first move failed');

@@ -2778,6 +2778,81 @@ function buildCaptureRaceAnswer(game: GameState, teachingLevel: TeachingLevel): 
   };
 }
 
+function buildCaptureRacePlanAnswer(game: GameState): LocalQuestionAnswer | null {
+  const race = findCaptureRacePair(game);
+  if (!race) return null;
+
+  const blackAnchor = groupAnchor(race.black);
+  const whiteAnchor = groupAnchor(race.white);
+  const blackLibertyCoords = race.black.liberties.map((liberty) => pointToCoord(liberty, game.board.size));
+  const whiteLibertyCoords = race.white.liberties.map((liberty) => pointToCoord(liberty, game.board.size));
+  const blackLiberties = race.black.liberties.length;
+  const whiteLiberties = race.white.liberties.length;
+
+  if (blackLiberties >= whiteLiberties) return null;
+
+  const suggestions = race.black.liberties.slice(0, 4).map((liberty, index) => {
+    const coord = pointToCoord(liberty, game.board.size);
+
+    return {
+      id: `local-capture-race-plan-save-${pointKey(liberty)}`,
+      point: copyPoint(liberty),
+      rank: index + 1,
+      reason: index === 0
+        ? `Step 1: save Black by adding a liberty at ${coord}.`
+        : `Step 1 backup: save Black by adding a liberty at ${coord}.`,
+    };
+  });
+
+  return {
+    text: [
+      'Read this capture race as count, save, recount.',
+      `Step 1: Black is behind, so first add a liberty at ${joinOrList(blackLibertyCoords)}.`,
+      `Step 2: after White answers, count again: Black started with ${blackLiberties} liberties and White started with ${whiteLiberties}.`,
+      `Step 3: if Black is still behind, add another liberty; when Black catches up, start filling White liberties at ${joinOrList(whiteLibertyCoords)}.`,
+      'I marked both groups, all liberties, and the saving moves so the race has a repeatable plan.',
+    ].join(' '),
+    conceptIds: ['reading', 'liberties', 'groups', 'capture'],
+    boardFocus: {
+      liberties: [
+        {
+          id: `local-capture-race-plan-black-liberties-${pointKey(blackAnchor)}`,
+          point: copyPoint(blackAnchor),
+          count: blackLiberties,
+          libertyPoints: race.black.liberties.map(copyPoint),
+        },
+        {
+          id: `local-capture-race-plan-white-liberties-${pointKey(whiteAnchor)}`,
+          point: copyPoint(whiteAnchor),
+          count: whiteLiberties,
+          libertyPoints: race.white.liberties.map(copyPoint),
+        },
+      ],
+      groups: [
+        {
+          id: `local-capture-race-plan-black-group-${pointKey(blackAnchor)}`,
+          stones: race.black.stones.map(copyPoint),
+          color: race.black.color,
+          liberties: blackLiberties,
+          label: `Black group to save first: ${libertyCountPhrase(blackLiberties)} at ${joinList(blackLibertyCoords)}.`,
+        },
+        {
+          id: `local-capture-race-plan-white-group-${pointKey(whiteAnchor)}`,
+          stones: race.white.stones.map(copyPoint),
+          color: race.white.color,
+          liberties: whiteLiberties,
+          label: `White group to chase after Black catches up: ${libertyCountPhrase(whiteLiberties)} at ${joinList(whiteLibertyCoords)}.`,
+        },
+      ],
+      suggestions,
+    },
+    actions: [
+      { id: 'hint', label: 'Show targets' },
+      { id: 'practice:reading', label: 'Practice reading' },
+    ],
+  };
+}
+
 interface SnapbackContext {
   whiteMove: Extract<Move, { type: 'place' }>;
   whiteGroup: Group;
@@ -3086,6 +3161,9 @@ function buildFightFollowUpAnswer(game: GameState, teachingLevel: TeachingLevel,
   if (isFightPlanQuestion(q)) {
     const occupiedCutPlanAnswer = buildOccupiedOneSpaceJumpCutPlanAnswer(game, q);
     if (occupiedCutPlanAnswer) return occupiedCutPlanAnswer;
+
+    const captureRacePlanAnswer = buildCaptureRacePlanAnswer(game);
+    if (captureRacePlanAnswer) return captureRacePlanAnswer;
   }
 
   const occupiedCutAnswer = buildOccupiedOneSpaceJumpCutAnswer(game, q);
