@@ -238,14 +238,26 @@ function isShapeQuestion(q: string): boolean {
     || /\bmake\s+(my\s+)?stones\s+work\b/.test(q);
 }
 
-function mentionedCoordinate(q: string, boardSize: BoardSize): Point | null {
+function mentionedCoordinates(q: string, boardSize: BoardSize): Point[] {
+  const points: Point[] = [];
+  const seen = new Set<string>();
+
   for (const token of q.split(/\s+/)) {
     if (!/^[a-hj-t]\d{1,2}$/i.test(token)) continue;
     const point = coordToPoint(token, boardSize);
-    if (point) return point;
+    if (!point) continue;
+
+    const key = pointKey(point);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    points.push(point);
   }
 
-  return null;
+  return points;
+}
+
+function mentionedCoordinate(q: string, boardSize: BoardSize): Point | null {
+  return mentionedCoordinates(q, boardSize)[0] ?? null;
 }
 
 function isTargetReasonQuestion(q: string, boardSize: BoardSize): boolean {
@@ -263,6 +275,12 @@ function isCandidateMoveQuestion(q: string, boardSize: BoardSize): boolean {
     || /\bhow\s+about\b/.test(q)
     || /\bis\s+[a-hj-t]\d{1,2}\s+(good|bad|ok|okay|right|wrong|playable|safe)\b/.test(q)
     || /\bplay\s+(at\s+)?[a-hj-t]\d{1,2}\b/.test(q);
+}
+
+function isCandidateComparisonQuestion(q: string, boardSize: BoardSize): boolean {
+  if (mentionedCoordinates(q, boardSize).length < 2) return false;
+
+  return /\b(or|vs|versus|compare|choose|which|better)\b/.test(q);
 }
 
 function suggestionReason(objective: BeginnerObjective, point: Point, boardSize: BoardSize): string {
@@ -459,6 +477,106 @@ function buildCandidateMoveAnswer(game: GameState, teachingLevel: TeachingLevel,
         variant: 'warning',
         label: `${coord}: open, but not the current beginner target.`,
       }],
+      suggestions,
+    },
+    actions: [
+      { id: 'hint', label: 'Show targets' },
+      ...(action ? [action] : []),
+    ],
+  };
+}
+
+function comparisonTargetReason(
+  objective: BeginnerObjective,
+  points: Point[],
+  boardSize: BoardSize,
+  anchor: Point | null,
+): string {
+  const coords = points.map((point) => pointToCoord(point, boardSize));
+  const coordText = joinList(coords);
+
+  if (objective.id === 'claim-corner') {
+    return `${coordText} are marked corner starts. The board edges help both of them make territory, so either one is a good beginner choice.`;
+  }
+
+  if (objective.id === 'extend-from-stone') {
+    const anchorCoord = anchor ? pointToCoord(anchor, boardSize) : 'your anchor stone';
+    return `${coordText} are both one-space jumps from ${anchorCoord}. They teach the same idea in different directions: keep a one-point gap so the stones help each other without clumping.`;
+  }
+
+  return `${coordText} are marked liberties for the group that needs room, so either one helps that group breathe.`;
+}
+
+function buildCandidateComparisonAnswer(game: GameState, teachingLevel: TeachingLevel, q: string): LocalQuestionAnswer | null {
+  const requestedPoints = mentionedCoordinates(q, game.board.size);
+  if (requestedPoints.length < 2) return null;
+
+  const objective = getBeginnerObjective({
+    boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
+    moveCount: game.moveHistory.length,
+    currentPlayer: 'black',
+    teachingLevel,
+  });
+
+  if (!objective) return null;
+
+  const suggestions = objectiveSuggestions(objective, game.board.size, 'local-candidate-comparison-move');
+  const action = getBeginnerObjectiveLessonAction(objective);
+  const lastMove = lastPlacedMove(game);
+  const targetCoordText = objectiveTargetCoordList(objective, game.board.size);
+  const comparedPoints = requestedPoints.slice(0, 4);
+  const markedPoints = comparedPoints.filter((candidate) => (
+    objective.targetPoints.some((target) => pointEquals(target, candidate))
+  ));
+  const unmarkedPoints = comparedPoints.filter((candidate) => (
+    !objective.targetPoints.some((target) => pointEquals(target, candidate))
+  ));
+  const highlights: LocalHighlightFocus[] = unmarkedPoints.map((point) => {
+    const coord = pointToCoord(point, game.board.size);
+    return {
+      id: `local-candidate-comparison-${pointKey(point)}`,
+      point: copyPoint(point),
+      variant: getStone(game.board, point) === null ? 'warning' : 'danger',
+      label: getStone(game.board, point) === null
+        ? `${coord}: open, but not the current beginner target.`
+        : `${coord}: already occupied.`,
+    };
+  });
+
+  const lines: string[] = [];
+
+  if (markedPoints.length >= 2 && unmarkedPoints.length === 0) {
+    lines.push(`Both choices fit the current goal: ${objective.title}.`);
+    lines.push(comparisonTargetReason(objective, markedPoints, game.board.size, lastMove?.point ?? null));
+    lines.push('I marked both choices again; choose the side where you want your next area to grow.');
+  } else if (markedPoints.length >= 1) {
+    const preferred = markedPoints[0];
+    const preferredCoord = pointToCoord(preferred, game.board.size);
+    lines.push(`I would choose ${preferredCoord} for this beginner goal.`);
+    lines.push(targetReason(objective, preferred, game.board.size, lastMove?.point ?? null));
+    for (const point of unmarkedPoints.slice(0, 2)) {
+      lines.push(candidateMissReason(objective, point, game.board.size, lastMove?.point ?? null));
+    }
+    lines.push(`I highlighted the off-goal option${unmarkedPoints.length === 1 ? '' : 's'} and re-marked the better beginner target.`);
+  } else {
+    lines.push('Neither mentioned point is one of the current marked beginner targets.');
+    if (targetCoordText) {
+      lines.push(`For this board, I would compare the marked choices instead: ${targetCoordText}.`);
+    } else {
+      lines.push(objective.instruction);
+    }
+    for (const point of unmarkedPoints.slice(0, 2)) {
+      lines.push(candidateMissReason(objective, point, game.board.size, lastMove?.point ?? null));
+    }
+  }
+
+  return {
+    text: lines.join(' '),
+    conceptIds: objective.conceptIds,
+    boardFocus: {
+      ...(highlights.length > 0 ? { highlights } : {}),
       suggestions,
     },
     actions: [
@@ -670,6 +788,11 @@ export function getLocalQuestionAnswer(
 
   if (isMoveReviewQuestion(q)) {
     return buildMoveReviewAnswer(game, teachingLevel);
+  }
+
+  if (isCandidateComparisonQuestion(q, game.board.size)) {
+    const comparisonAnswer = buildCandidateComparisonAnswer(game, teachingLevel, q);
+    if (comparisonAnswer) return comparisonAnswer;
   }
 
   if (isTargetReasonQuestion(q, game.board.size)) {
