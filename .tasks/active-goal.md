@@ -39,6 +39,7 @@ Latest completed slice:
 - Added transcript actions that reopen the exact pressure branch or second-read recount on the board, so earlier reading work is recoverable after the learner switches replies or scrolls the chat.
 - Added a direct compare-other-reply loop in the pressure mini-branch so learners can switch from one recounted answer to the alternate reply and immediately see the new liberty counts without changing the real game.
 - Added a side-by-side comparison summary after pressure replies are compared, so learners can see both liberty counts and the directional difference in one place.
+- Added a concrete defensive recommendation when a pressure comparison reveals one Black side has fewer liberties, and made the second-read sentence stop claiming both sides are safe in that case.
 
 Next investigation candidates:
-- Whether the pressure summary should turn into a concrete recommendation when one reply leaves a Black side with fewer liberties.
+- Whether the board should mark the short-side liberties from a pressure comparison so the recommendation is visible directly on the stones.
