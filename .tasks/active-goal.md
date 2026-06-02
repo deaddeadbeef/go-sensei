@@ -27,6 +27,7 @@ Latest completed slice:
 - Hardened the action-routing UI tests so typewriter timing and Skill Tree animation scheduling no longer make the full suite retry-dependent.
 - Added a plan-style snapback follow-up so "what should I read next after this snapback?" teaches capture-count-continue, marks every White group the snapback removes, and shows the post-capture liberty count.
 - Added durable guided-board snapshots so the learning path can restore a paused guided 9x9 after session storage is lost, with learner-facing resume coaching.
+- Made restored guided boards immediately playable and actionable by locally passing an interrupted White turn, restoring ranked board-analysis suggestions, and highlighting the last learner move.
 
 Next investigation candidates:
-- Whether restored guided-board coaching should immediately redraw objective overlays from the resumed board before the next learner move.
+- Whether guided learners should get a compact "what changed after my last move" recap pinned near the board after each objective step, instead of relying on the chat transcript.

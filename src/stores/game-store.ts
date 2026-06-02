@@ -17,6 +17,8 @@ import {
   getGroup,
   pointEquals,
   getStone,
+  pointKey,
+  pointToCoord,
 } from '@/lib/go-engine';
 import type { Problem, ProblemAttempt, ProblemCategory } from '@/lib/problems/types';
 import type { MoveNode } from '@/lib/problems/types';
@@ -24,7 +26,12 @@ import { PROBLEMS } from '@/lib/problems/problem-data';
 import { applyProblemMove, buildProblemGame } from '@/lib/problems/runtime';
 import type { ValidationResult } from '@/lib/problems/validator';
 import type { SenseiAction } from '@/lib/coaching/sensei-actions';
-import { formatObjectiveTargetText, getBeginnerObjective } from '@/lib/coaching/beginner-objectives';
+import {
+  formatObjectiveTargetText,
+  getBeginnerObjective,
+  getBeginnerObjectiveProgress,
+} from '@/lib/coaching/beginner-objectives';
+import type { BeginnerObjective } from '@/lib/coaching/beginner-objectives';
 import { getBeginnerObjectiveActions } from '@/lib/coaching/beginner-objective-actions';
 import { useProgressStore } from './progress-store';
 
@@ -403,14 +410,18 @@ const defaultBubble: SenseiBubbleState = {
   streamingComplete: true,
 };
 
-function formatRestoredMoveCount(moveCount: number): string {
-  if (moveCount === 0) return 'before the first move';
-
-  return `with ${moveCount} ${moveCount === 1 ? 'move' : 'moves'}`;
+function countLearnerPlacedMoves(game: GameState): number {
+  return game.moveHistory.filter((move) => move.type === 'place' && move.color === 'black').length;
 }
 
-function buildGuidedResumeBubble(game: GameState): SenseiBubbleState {
-  const objective = getBeginnerObjective({
+function formatRestoredMoveCount(learnerMoveCount: number): string {
+  if (learnerMoveCount === 0) return 'before your first learner move';
+
+  return `with ${learnerMoveCount} learner ${learnerMoveCount === 1 ? 'move' : 'moves'}`;
+}
+
+function getGuidedResumeObjective(game: GameState): BeginnerObjective | null {
+  return getBeginnerObjective({
     boardSize: game.board.size,
     board: game.board,
     moveHistory: game.moveHistory,
@@ -418,9 +429,26 @@ function buildGuidedResumeBubble(game: GameState): SenseiBubbleState {
     currentPlayer: 'black',
     teachingLevel: 'guided',
   });
+}
+
+function shouldPassWhiteOnGuidedResume(game: GameState): boolean {
+  const lastMove = game.moveHistory[game.moveHistory.length - 1];
+
+  return game.phase === 'playing'
+    && game.currentPlayer === 'white'
+    && lastMove?.type === 'place'
+    && lastMove.color === 'black';
+}
+
+function buildGuidedResumeBubble(
+  game: GameState,
+  passedForWhite: boolean,
+  objective = getGuidedResumeObjective(game),
+): SenseiBubbleState {
   const targetText = objective
     ? formatObjectiveTargetText(objective, game.board.size)
     : null;
+  const learnerMoveText = `I restored your paused board ${formatRestoredMoveCount(countLearnerPlacedMoves(game))}.`;
 
   return {
     ...defaultBubble,
@@ -428,7 +456,8 @@ function buildGuidedResumeBubble(game: GameState): SenseiBubbleState {
     text: objective
       ? [
           'Welcome back to your guided 9x9.',
-          `I restored your paused board ${formatRestoredMoveCount(game.moveHistory.length)}.`,
+          passedForWhite ? 'White passed while I restored this board, so it is your turn again.' : '',
+          learnerMoveText,
           `Your next job is: ${objective.title}.`,
           objective.instruction,
           targetText ?? '',
@@ -436,9 +465,10 @@ function buildGuidedResumeBubble(game: GameState): SenseiBubbleState {
         ].filter(Boolean).join(' ')
       : [
           'Welcome back to your guided 9x9.',
-          `I restored your paused board ${formatRestoredMoveCount(game.moveHistory.length)}.`,
+          passedForWhite ? 'White passed while I restored this board, so it is your turn again.' : '',
+          learnerMoveText,
           'Keep looking for the biggest safe move.',
-        ].join(' '),
+        ].filter(Boolean).join(' '),
     variant: 'teaching',
     actions: objective ? getBeginnerObjectiveActions(objective) : [],
     streamingComplete: true,
@@ -490,6 +520,70 @@ const defaultOverlays = {
   influence: [] as OverlayInfluence[],
   groups: [] as OverlayGroup[],
 };
+
+function lastBlackPlacedMove(game: GameState): Extract<GameState['moveHistory'][number], { type: 'place' }> | null {
+  for (let index = game.moveHistory.length - 1; index >= 0; index -= 1) {
+    const move = game.moveHistory[index];
+    if (move.type === 'place' && move.color === 'black') return move;
+  }
+
+  return null;
+}
+
+function suggestionReason(objective: BeginnerObjective, point: Point, boardSize: BoardSize): string {
+  const coord = pointToCoord(point, boardSize);
+
+  if (objective.id === 'claim-corner') {
+    return `Start at ${coord}: the board edge helps this stone make territory.`;
+  }
+
+  if (objective.id === 'extend-from-stone') {
+    return `Try ${coord} as a one-space jump that works with your stones.`;
+  }
+
+  return `Give your group room by playing its liberty at ${coord}.`;
+}
+
+function buildObjectiveSuggestions(
+  objective: BeginnerObjective,
+  boardSize: BoardSize,
+  idPrefix: string,
+): OverlaySuggestion[] {
+  return objective.targetPoints.slice(0, 4).map((point, index) => ({
+    id: `${idPrefix}-${pointKey(point)}`,
+    point: { ...point },
+    rank: index + 1,
+    reason: suggestionReason(objective, point, boardSize),
+  }));
+}
+
+function buildGuidedResumeOverlays(
+  game: GameState,
+  objective = getGuidedResumeObjective(game),
+): GameStore['overlays'] {
+  const progress = getBeginnerObjectiveProgress(game, 'guided');
+  const lastMove = lastBlackPlacedMove(game);
+  const highlights: OverlayHighlight[] = lastMove
+    ? [{
+        id: `guided-resume-learned-${pointKey(lastMove.point)}`,
+        point: { ...lastMove.point },
+        variant: progress?.status === 'met' ? 'positive' : progress?.status === 'missed' ? 'warning' : 'neutral',
+        label: `${pointToCoord(lastMove.point, game.board.size)}: move to learn from${progress?.status === 'met' ? ' - beginner job met' : progress?.status === 'missed' ? ' - beginner job missed' : ''}.`,
+      }]
+    : [];
+  const suggestions = objective
+    ? buildObjectiveSuggestions(objective, game.board.size, 'guided-resume-move')
+    : [];
+
+  return {
+    highlights,
+    liberties: [],
+    suggestions,
+    arrows: [],
+    influence: [],
+    groups: [],
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Store
@@ -1034,20 +1128,26 @@ export const useGameStore = create<GameStore>()(
       if (!useProgressStore.getState().hasStartedIntroGame) {
         useProgressStore.getState().markIntroGameStarted();
       }
+      const passedForWhite = shouldPassWhiteOnGuidedResume(snapshot);
+      const restoredGame = passedForWhite ? passMove(snapshot) : snapshot;
+      if (passedForWhite) {
+        saveGuidedSnapshot(restoredGame, 'guided');
+      }
+      const resumeObjective = getGuidedResumeObjective(restoredGame);
       const nextProgress = useProgressStore.getState();
       set({
-        game: snapshot,
+        game: restoredGame,
         appPhase: 'game',
-        phase: snapshot.phase,
+        phase: restoredGame.phase,
         teachingLevel: 'guided',
         hoveredPoint: null,
         hoveredGroup: null,
         lastPlayerMove: null,
         lastAiMove: null,
         isAiThinking: false,
-        overlays: { ...defaultOverlays },
+        overlays: buildGuidedResumeOverlays(restoredGame, resumeObjective),
         pendingCaptures: [],
-        bubble: buildGuidedResumeBubble(snapshot),
+        bubble: buildGuidedResumeBubble(restoredGame, passedForWhite, resumeObjective),
         chatMessages: [],
         lesson: { ...defaultLesson },
         lessonInteraction: { ...defaultLessonInteraction },
