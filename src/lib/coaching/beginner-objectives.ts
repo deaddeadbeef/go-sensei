@@ -138,8 +138,10 @@ function getExtensionTargets(board: BoardState, color: StoneColor, moveHistory?:
   for (const stone of anchors) {
     for (const delta of ONE_SPACE_JUMP_DELTAS) {
       const target = { x: stone.x + delta.x, y: stone.y + delta.y };
+      const gap = { x: stone.x + delta.x / 2, y: stone.y + delta.y / 2 };
       if (!isOnBoard(board, target)) continue;
       if (!isTeachingExtensionTarget(board, target)) continue;
+      if (getStone(board, gap) !== null) continue;
       if (getStone(board, target) !== null) continue;
       if (isAdjacentToColor(board, target, color)) continue;
       targets.push(target);

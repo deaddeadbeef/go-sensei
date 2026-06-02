@@ -752,7 +752,6 @@ describe('useGoMaster local answers', () => {
       ],
     }]);
     expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
-      { x: 4, y: 2 },
       { x: 2, y: 4 },
     ]);
     expect(useConceptStore.getState().getMastery('direction-of-play').encounterCount).toBeGreaterThan(0);

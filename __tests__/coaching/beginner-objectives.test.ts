@@ -92,6 +92,34 @@ describe('beginner objectives', () => {
     expect(formatObjectiveTargetText(objective, 9)).toBe('Try E7 or C5.');
   });
 
+  it('does not suggest a one-space jump through an occupied gap', () => {
+    const board = boardWith([
+      { point: { x: 2, y: 2 }, color: 'black' },
+      { point: { x: 3, y: 2 }, color: 'white' },
+    ]);
+
+    const objective = getBeginnerObjective({
+      boardSize: 9,
+      board,
+      moveHistory: [
+        { type: 'place', point: { x: 2, y: 2 }, color: 'black', captured: [] },
+        { type: 'place', point: { x: 3, y: 2 }, color: 'white', captured: [] },
+      ],
+      moveCount: 2,
+      currentPlayer: 'black',
+      teachingLevel: 'guided',
+    });
+
+    expect(objective).toMatchObject({
+      id: 'extend-from-stone',
+      title: 'Make your stones work together',
+    });
+    expect(objective?.targetPoints).toEqual([{ x: 2, y: 4 }]);
+    expect(objective?.targetPoints).not.toContainEqual({ x: 4, y: 2 });
+    if (!objective) throw new Error('Expected extension objective');
+    expect(formatObjectiveTargetText(objective, 9)).toBe('Try C5.');
+  });
+
   it('keeps pointing at open corners when the learner starts in the center', () => {
     const board = boardWith([
       { point: { x: 4, y: 4 }, color: 'black' },
