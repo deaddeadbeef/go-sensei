@@ -411,6 +411,33 @@ function isReadingRoutineQuestion(q: string): boolean {
     || /\breading\s+routine\b/.test(q);
 }
 
+function isPlayAwayQuestion(q: string): boolean {
+  return /\btenuki\b/.test(q)
+    || /\bplay\s+away\b/.test(q)
+    || /\bplay\s+far\s+away\b/.test(q)
+    || /\bignore\s+(this|the)\s+(side|area|corner|position)\b/.test(q)
+    || /\bshould\s+i\s+ignore\s+(this|the)\b/.test(q);
+}
+
+function isSenteQuestion(q: string): boolean {
+  return /\bsente\b/.test(q)
+    || /\bgote\b/.test(q);
+}
+
+function isDefendFirstQuestion(q: string): boolean {
+  return /\bdefend\s+first\b/.test(q)
+    || /\bshould\s+i\s+defend\b/.test(q)
+    || /\bdo\s+i\s+need\s+to\s+defend\b/.test(q)
+    || /\bshould\s+i\s+keep\s+extending\b/.test(q)
+    || /\bkeep\s+extending\b/.test(q);
+}
+
+function isSecondObjectiveStrategyQuestion(q: string): boolean {
+  return isPlayAwayQuestion(q)
+    || isSenteQuestion(q)
+    || isDefendFirstQuestion(q);
+}
+
 function mentionedCoordinates(q: string, boardSize: BoardSize): Point[] {
   const points: Point[] = [];
   const seen = new Set<string>();
@@ -1926,6 +1953,80 @@ function buildBoardMarkerAnswer(game: GameState, teachingLevel: TeachingLevel): 
   };
 }
 
+function buildSecondObjectiveStrategyAnswer(game: GameState, teachingLevel: TeachingLevel, q: string): LocalQuestionAnswer | null {
+  if (!isSecondObjectiveStrategyQuestion(q)) return null;
+
+  const objective = game.phase === 'playing'
+    ? getBeginnerObjective({
+      boardSize: game.board.size,
+      board: game.board,
+      moveHistory: game.moveHistory,
+      moveCount: game.moveHistory.length,
+      currentPlayer: 'black',
+      teachingLevel,
+    })
+    : null;
+
+  if (objective?.id !== 'extend-from-stone') return null;
+
+  const suggestions = objectiveSuggestions(objective, game.board.size, 'local-second-objective-move');
+  const targetCoordText = objectiveTargetCoordList(objective, game.board.size);
+  const targetText = targetCoordText ? `Try ${targetCoordText}.` : objective.instruction;
+  const anchor = lastBlackPlacedMove(game);
+  const anchorCoord = anchor ? pointToCoord(anchor.point, game.board.size) : 'your anchor stone';
+  const latest = latestMove(game);
+  const conceptIds = uniqueConceptIds([
+    ...(isSenteQuestion(q) || isPlayAwayQuestion(q) ? ['sente-gote'] : []),
+    ...(isDefendFirstQuestion(q) ? ['liberties'] : []),
+    ...(objective.conceptIds ?? []),
+  ]);
+  const lines: string[] = [];
+
+  if (isSenteQuestion(q)) {
+    lines.push('Sente means a move that strongly asks the opponent to answer.');
+    lines.push('Gote means a quiet move that lets the opponent choose freely elsewhere.');
+    lines.push('Right now there is no urgent forcing move on this simple board.');
+    lines.push(`Your sente-like habit is to make a move with purpose: extend from ${anchorCoord} with ${targetCoordText ?? 'one of the marked jumps'}, then see how White has to deal with the growing shape.`);
+  } else if (isDefendFirstQuestion(q)) {
+    const keepExtending = /\bkeep\s+extending\b/.test(q);
+    lines.push('Defend first when one of your groups is short on liberties or a cutting point is under attack.');
+    if (latest?.type === 'pass' && latest.color === 'white') {
+      lines.push(`${anchorCoord} still has room, and White just passed for teaching, so there is no emergency to defend.`);
+    } else {
+      lines.push(`${anchorCoord} still has room, and no White stone is attacking it yet, so there is no emergency to defend.`);
+    }
+    lines.push(`${keepExtending ? 'Yes: keep extending' : 'Keep extending'} with ${targetCoordText ?? 'one of the marked jumps'}.`);
+  } else {
+    lines.push('Tenuki means playing away from the local area.');
+    lines.push(`On this guided board, do not drift away yet: ${anchorCoord} is your anchor, and the useful play-away is a nearby one-space jump.`);
+    lines.push(targetText);
+    lines.push('That is away enough to grow, but close enough that your stones still work together.');
+  }
+
+  if (suggestions.length > 0) {
+    lines.push('I marked the extension targets so the idea becomes a move you can play.');
+  }
+
+  return {
+    text: lines.join(' '),
+    conceptIds,
+    boardFocus: {
+      ...(anchor ? {
+        highlights: [{
+          id: `local-second-objective-anchor-${pointKey(anchor.point)}`,
+          point: copyPoint(anchor.point),
+          variant: 'positive' as const,
+          label: `${anchorCoord}: anchor stone for the current one-space-jump idea.`,
+        }],
+      } : {}),
+      ...(suggestions.length > 0 ? { suggestions } : {}),
+    },
+    actions: [
+      ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+    ],
+  };
+}
+
 function buildCornerOpeningAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
   const objective = game.phase === 'playing'
     ? getBeginnerObjective({
@@ -1940,17 +2041,32 @@ function buildCornerOpeningAnswer(game: GameState, teachingLevel: TeachingLevel)
   const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-corner-opening-move') : [];
   const action = objective ? getBeginnerObjectiveLessonAction(objective) : null;
   const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
-  const lines = [
-    'For a first beginner move, choose a corner before the center.',
-    'Corners are the easiest place for beginners to make territory because two board edges already act like walls.',
-    'A corner already has two board edges helping it make territory.',
-    'The center reaches many directions, but it has to build every border itself before it becomes points.',
-    'That is why the first guided goal starts near a corner instead of the open center.',
-  ];
+  const lines: string[] = [];
+
+  if (objective?.id === 'extend-from-stone') {
+    const anchor = lastBlackPlacedMove(game);
+    const anchorCoord = anchor ? pointToCoord(anchor.point, game.board.size) : 'your anchor stone';
+    const centerCoord = pointToCoord({ x: Math.floor(game.board.size / 2), y: Math.floor(game.board.size / 2) }, game.board.size);
+    const targetCoordText = objectiveTargetCoordList(objective, game.board.size);
+
+    lines.push('You already started from a corner, so this is no longer a first-move center choice.');
+    lines.push('The center reaches many directions, but it still has to build every border itself before it becomes points.');
+    lines.push(`A center move like ${centerCoord} is playable later, but it does not help ${anchorCoord} as directly as the marked one-space jumps.`);
+    lines.push(`For this board, keep building from ${anchorCoord} with ${targetCoordText ?? 'one of the marked jumps'}.`);
+    lines.push('I marked the extension targets again.');
+  } else {
+    lines.push(
+      'For a first beginner move, choose a corner before the center.',
+      'Corners are the easiest place for beginners to make territory because two board edges already act like walls.',
+      'A corner already has two board edges helping it make territory.',
+      'The center reaches many directions, but it has to build every border itself before it becomes points.',
+      'That is why the first guided goal starts near a corner instead of the open center.',
+    );
+  }
 
   if (objective?.id === 'claim-corner') {
     lines.push(`${targetText ?? 'Try one of the marked corner starts.'} I marked the corner starts again.`);
-  } else if (objective) {
+  } else if (objective && objective.id !== 'extend-from-stone') {
     lines.push(`For the current board, keep following: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}`);
   }
 
@@ -3387,6 +3503,11 @@ export function getLocalQuestionAnswer(
 
   if (isPassQuestion(q)) {
     return buildPassAnswer(game, teachingLevel, q);
+  }
+
+  if (isSecondObjectiveStrategyQuestion(q)) {
+    const strategyAnswer = buildSecondObjectiveStrategyAnswer(game, teachingLevel, q);
+    if (strategyAnswer) return strategyAnswer;
   }
 
   if (isOneSpaceJumpPressureQuestion(q)) {

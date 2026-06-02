@@ -1,0 +1,21 @@
+# Active Goal: AI Go Tutor Improvement
+
+Objective: Keep improving this AI go tutor until it becomes truly inspiring and useful.
+
+Current branch: `codex/go-sensei-learning-foundation`
+
+Current PR: draft PR #24
+
+Working approach:
+- Keep changes learner-facing and evidence-driven.
+- Probe local guided questions before adding new router behavior.
+- Add focused failing tests before implementation.
+- Verify with unit tests, static checks, build, and browser smoke when behavior reaches the UI.
+
+Latest completed slice:
+- Added local guided answers for second-objective questions around tenuki, playing away, sente, defending first, keeping the extension plan, and center play after a corner anchor.
+- Verified the slice with the full unit suite, typecheck, lint, build, and browser smoke.
+
+Next investigation candidates:
+- Later guided positions where weak-group safety, local fights, or opponent pressure should be explained in even more natural beginner language.
+- Recommendation flow mismatch where "Guided game" can return to a persisted non-guided game if progress says the intro already started.
