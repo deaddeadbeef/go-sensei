@@ -18,7 +18,8 @@ Latest completed slice:
 - Fixed guided-game routing so learning path, dashboard, and Sensei guided-game actions restore a true guided 9x9 board instead of returning to a stale non-guided game.
 - Fixed the Sensei bubble typewriter so guided-game coaching text appears after React Strict Mode replays the initial effect.
 - Added local attack-vs-defense decisions so guided learners get a board-specific priority call during simple fights.
+- Added local capture-race guidance so beginner fight questions compare adjacent group liberties before giving a priority.
 
 Next investigation candidates:
-- Later guided positions where opponent pressure, follow-up cuts, or capture races should be explained in even more natural beginner language.
+- Later guided positions where opponent follow-up cuts or snapback-like pressure should be explained in natural beginner language.
 - Whether the guided 9x9 entry should preserve a paused guided board across app reloads more explicitly than the current session store does.
