@@ -377,6 +377,11 @@ function isCaptureRaceQuestion(q: string): boolean {
     || /\bwho\s+has\s+more\s+liberties\b/.test(q);
 }
 
+function isSnapbackQuestion(q: string): boolean {
+  return /\bsnap[\s-]?back\b/.test(q)
+    || /\bunder\s+the\s+stones\b/.test(q);
+}
+
 function isGameReviewQuestion(q: string): boolean {
   return /\bgame\s+review\b/.test(q)
     || /\breview\s+(this|the|my)\s+(game|board|position)\b/.test(q)
@@ -2677,6 +2682,87 @@ function buildCaptureRaceAnswer(game: GameState, teachingLevel: TeachingLevel): 
   };
 }
 
+interface SnapbackContext {
+  whiteMove: Extract<Move, { type: 'place' }>;
+  whiteGroup: Group;
+  snapbackPoint: Point;
+  recaptured: Point[];
+}
+
+function findSnapbackContext(game: GameState): SnapbackContext | null {
+  const move = latestMove(game);
+  if (move?.type !== 'place' || move.color !== 'white' || move.captured.length === 0) return null;
+
+  const whiteGroup = getGroup(game.board, move.point);
+  if (!whiteGroup || whiteGroup.color !== 'white' || whiteGroup.liberties.length !== 1) return null;
+
+  const snapbackPoint = whiteGroup.liberties[0];
+  const recapture = playMove(game, snapbackPoint);
+  if (!recapture.success || recapture.captured.length === 0) return null;
+
+  return {
+    whiteMove: move,
+    whiteGroup,
+    snapbackPoint,
+    recaptured: recapture.captured,
+  };
+}
+
+function buildSnapbackAnswer(game: GameState): LocalQuestionAnswer {
+  const context = findSnapbackContext(game);
+
+  if (!context) {
+    return {
+      text: 'A snapback is a capture trick: you let the opponent capture one stone, then immediately recapture the whole cramped group because that capture left it with one liberty. Look for it after a capture into a tight shape, especially when the recapture point is the only liberty.',
+      conceptIds: ['snapback', 'tesuji', 'capture', 'reading'],
+      actions: [
+        { id: 'lesson:snapback', label: 'Review snapback' },
+        { id: 'practice:tesuji', label: 'Practice tesuji' },
+      ],
+    };
+  }
+
+  const whiteCoord = pointToCoord(context.whiteMove.point, game.board.size);
+  const capturedCoords = context.whiteMove.captured.map((point) => pointToCoord(point, game.board.size));
+  const snapbackCoord = pointToCoord(context.snapbackPoint, game.board.size);
+  const recapturedCoords = context.recaptured.map((point) => pointToCoord(point, game.board.size));
+
+  return {
+    text: [
+      `White just captured ${joinList(capturedCoords)} by playing ${whiteCoord}.`,
+      `That capture is cramped: the White stones connected to ${whiteCoord} have only one liberty, ${snapbackCoord}.`,
+      `Black can snap back at ${snapbackCoord} and recapture ${joinList(recapturedCoords)}.`,
+      'Play the marked snapback point before White gets another liberty.',
+    ].join(' '),
+    conceptIds: ['snapback', 'tesuji', 'capture', 'reading', 'liberties'],
+    boardFocus: {
+      highlights: [{
+        id: `local-snapback-white-capture-${pointKey(context.whiteMove.point)}`,
+        point: copyPoint(context.whiteMove.point),
+        variant: 'danger',
+        label: `${whiteCoord}: White captured into a snapback shape.`,
+      }],
+      liberties: [{
+        id: `local-snapback-liberties-${pointKey(context.whiteMove.point)}`,
+        point: copyPoint(context.whiteMove.point),
+        count: context.whiteGroup.liberties.length,
+        libertyPoints: context.whiteGroup.liberties.map(copyPoint),
+      }],
+      suggestions: [{
+        id: `local-snapback-recapture-${pointKey(context.snapbackPoint)}`,
+        point: copyPoint(context.snapbackPoint),
+        rank: 1,
+        reason: `Snap back at ${snapbackCoord}: recapture the cramped White stones.`,
+      }],
+    },
+    actions: [
+      { id: 'hint', label: 'Show targets' },
+      { id: 'lesson:snapback', label: 'Review snapback' },
+      { id: 'practice:tesuji', label: 'Practice tesuji' },
+    ],
+  };
+}
+
 function buildAttackDefenseDecisionAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
   const weakGroup = findLearnerWeakGroup(game);
 
@@ -4206,6 +4292,10 @@ export function getLocalQuestionAnswer(
       actions: [{ id: 'practice:capture', label: 'Practice capture' }],
       ...(atariContext ? { boardFocus: atariContext.boardFocus } : {}),
     };
+  }
+
+  if (isSnapbackQuestion(q)) {
+    return buildSnapbackAnswer(game);
   }
 
   if (q.includes('capture') || q.includes('capturing')) {

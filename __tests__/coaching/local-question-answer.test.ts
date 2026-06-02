@@ -1,5 +1,5 @@
 import { getLocalGameReviewAnswer, getLocalQuestionAnswer } from '@/lib/coaching/local-question-answer';
-import { createGame, passMove, playMove } from '@/lib/go-engine';
+import { createGame, passMove, playMove, setStone } from '@/lib/go-engine';
 import type { GameState, Point } from '@/lib/go-engine';
 
 function playSequence(points: Point[]): GameState {
@@ -12,6 +12,34 @@ function playSequence(points: Point[]): GameState {
   }
 
   return game;
+}
+
+function snapbackGameAfterWhiteCapture(): GameState {
+  let game = createGame(9);
+  const setup = [
+    { point: { x: 4, y: 4 }, color: 'black' },
+    { point: { x: 3, y: 3 }, color: 'white' },
+    { point: { x: 3, y: 4 }, color: 'white' },
+    { point: { x: 4, y: 5 }, color: 'white' },
+    { point: { x: 5, y: 4 }, color: 'white' },
+    { point: { x: 4, y: 2 }, color: 'black' },
+    { point: { x: 5, y: 3 }, color: 'black' },
+    { point: { x: 3, y: 2 }, color: 'black' },
+    { point: { x: 2, y: 3 }, color: 'black' },
+    { point: { x: 2, y: 4 }, color: 'black' },
+    { point: { x: 3, y: 5 }, color: 'black' },
+    { point: { x: 4, y: 6 }, color: 'black' },
+    { point: { x: 5, y: 5 }, color: 'black' },
+    { point: { x: 6, y: 4 }, color: 'black' },
+  ] as const;
+
+  for (const stone of setup) {
+    game = { ...game, board: setStone(game.board, stone.point, stone.color) };
+  }
+
+  const whiteCapture = playMove({ ...game, currentPlayer: 'white' }, { x: 4, y: 3 });
+  if (!whiteCapture.success) throw new Error(`test setup snapback capture failed: ${whiteCapture.reason}`);
+  return whiteCapture.newState;
 }
 
 describe('local question answer', () => {
@@ -2384,6 +2412,41 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([
       { id: 'lesson:ladder', label: 'Review ladders' },
       { id: 'practice:reading', label: 'Practice reading' },
+    ]);
+  });
+
+  it('answers snapback questions with the current recapture point', () => {
+    const game = snapbackGameAfterWhiteCapture();
+
+    const answer = getLocalQuestionAnswer('Can I snapback now?', game, 'guided');
+
+    expect(answer?.text).toContain('White just captured E5 by playing E6.');
+    expect(answer?.text).toContain('That capture is cramped: the White stones connected to E6 have only one liberty, E5.');
+    expect(answer?.text).toContain('Black can snap back at E5 and recapture E6, D6, D5, E4, and F5.');
+    expect(answer?.text).toContain('Play the marked snapback point before White gets another liberty.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['snapback', 'tesuji', 'capture', 'reading']));
+    expect(answer?.boardFocus?.highlights).toEqual([{
+      id: 'local-snapback-white-capture-4,3',
+      point: { x: 4, y: 3 },
+      variant: 'danger',
+      label: 'E6: White captured into a snapback shape.',
+    }]);
+    expect(answer?.boardFocus?.liberties).toEqual([{
+      id: 'local-snapback-liberties-4,3',
+      point: { x: 4, y: 3 },
+      count: 1,
+      libertyPoints: [{ x: 4, y: 4 }],
+    }]);
+    expect(answer?.boardFocus?.suggestions).toEqual([{
+      id: 'local-snapback-recapture-4,4',
+      point: { x: 4, y: 4 },
+      rank: 1,
+      reason: 'Snap back at E5: recapture the cramped White stones.',
+    }]);
+    expect(answer?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'lesson:snapback', label: 'Review snapback' },
+      { id: 'practice:tesuji', label: 'Practice tesuji' },
     ]);
   });
 
