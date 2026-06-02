@@ -1234,7 +1234,122 @@ function buildOneSpaceJumpGapAnswer(game: GameState, teachingLevel: TeachingLeve
   };
 }
 
+interface OccupiedOneSpaceJumpCut {
+  anchor: Point;
+  stone: Point;
+  gap: Point;
+  anchorGroup: Group;
+  stoneGroup: Group;
+  cuttingGroup: Group;
+}
+
+function findOccupiedOneSpaceJumpCut(game: GameState, requestedPoint: Point | null): OccupiedOneSpaceJumpCut | null {
+  const whiteMoves = game.moveHistory
+    .filter((move): move is Extract<Move, { type: 'place' }> => move.type === 'place' && move.color === 'white')
+    .slice()
+    .reverse();
+
+  for (const move of whiteMoves) {
+    if (requestedPoint && !pointEquals(requestedPoint, move.point)) continue;
+    const cuttingGroup = getGroup(game.board, move.point);
+    if (!cuttingGroup || cuttingGroup.color !== 'white' || cuttingGroup.stones.length !== 1) continue;
+
+    for (const delta of ONE_SPACE_JUMP_DELTAS) {
+      const anchor = { x: move.point.x - delta.x / 2, y: move.point.y - delta.y / 2 };
+      const stone = { x: move.point.x + delta.x / 2, y: move.point.y + delta.y / 2 };
+      if (!isOnBoard(game.board, anchor) || !isOnBoard(game.board, stone)) continue;
+      if (getStone(game.board, anchor) !== 'black' || getStone(game.board, stone) !== 'black') continue;
+      const anchorGroup = getGroup(game.board, anchor);
+      const stoneGroup = getGroup(game.board, stone);
+      if (!anchorGroup || !stoneGroup) continue;
+      if (pointKey(groupAnchor(anchorGroup)) === pointKey(groupAnchor(stoneGroup))) continue;
+
+      return { anchor, stone, gap: move.point, anchorGroup, stoneGroup, cuttingGroup };
+    }
+  }
+
+  return null;
+}
+
+function libertyCountPhrase(count: number): string {
+  return `${count} ${count === 1 ? 'liberty' : 'liberties'}`;
+}
+
+function buildOccupiedOneSpaceJumpCutAnswer(game: GameState, q: string): LocalQuestionAnswer | null {
+  const cut = findOccupiedOneSpaceJumpCut(game, mentionedCoordinate(q, game.board.size));
+  if (!cut) return null;
+
+  const anchorCoord = pointToCoord(cut.anchor, game.board.size);
+  const stoneCoord = pointToCoord(cut.stone, game.board.size);
+  const gapCoord = pointToCoord(cut.gap, game.board.size);
+  const anchorLibertyCoords = cut.anchorGroup.liberties.map((liberty) => pointToCoord(liberty, game.board.size));
+  const stoneLibertyCoords = cut.stoneGroup.liberties.map((liberty) => pointToCoord(liberty, game.board.size));
+  const cutLibertyCoords = cut.cuttingGroup.liberties.map((liberty) => pointToCoord(liberty, game.board.size));
+  const suggestions = cut.cuttingGroup.liberties.slice(0, 4).map((liberty, index) => {
+    const coord = pointToCoord(liberty, game.board.size);
+
+    return {
+      id: `local-occupied-cut-attack-${pointKey(liberty)}`,
+      point: copyPoint(liberty),
+      rank: index + 1,
+      reason: `Attack the White cutting stone by playing ${coord}.`,
+    };
+  });
+
+  return {
+    text: [
+      `White has played into the one-space jump gap at ${gapCoord}.`,
+      `${anchorCoord} and ${stoneCoord} are separate Black groups by the rules now, but neither is captured.`,
+      `Black at ${anchorCoord} has ${libertyCountPhrase(cut.anchorGroup.liberties.length)}: ${joinList(anchorLibertyCoords)}.`,
+      `Black at ${stoneCoord} has ${libertyCountPhrase(cut.stoneGroup.liberties.length)}: ${joinList(stoneLibertyCoords)}.`,
+      `The White cutting stone at ${gapCoord} has ${libertyCountPhrase(cut.cuttingGroup.liberties.length)}: ${joinList(cutLibertyCoords)}.`,
+      `Answer the cut by attacking the marked White liberties, starting with ${joinOrList(cutLibertyCoords.slice(0, 2))}.`,
+      'I marked both Black groups, the White cutting stone, and the replies to read next.',
+    ].join(' '),
+    conceptIds: ['connect-and-cut', 'reading', 'liberties', 'groups', 'capture'],
+    boardFocus: {
+      highlights: [{
+        id: `local-occupied-cut-stone-${pointKey(cut.gap)}`,
+        point: copyPoint(cut.gap),
+        variant: 'danger',
+        label: `${gapCoord}: White occupies the gap between ${anchorCoord} and ${stoneCoord}.`,
+      }],
+      groups: [
+        {
+          id: `local-occupied-cut-black-left-${pointKey(cut.anchor)}`,
+          stones: cut.anchorGroup.stones.map(copyPoint),
+          color: cut.anchorGroup.color,
+          liberties: cut.anchorGroup.liberties.length,
+          label: `Black group at ${anchorCoord}: ${libertyCountPhrase(cut.anchorGroup.liberties.length)} at ${joinList(anchorLibertyCoords)}.`,
+        },
+        {
+          id: `local-occupied-cut-black-right-${pointKey(cut.stone)}`,
+          stones: cut.stoneGroup.stones.map(copyPoint),
+          color: cut.stoneGroup.color,
+          liberties: cut.stoneGroup.liberties.length,
+          label: `Black group at ${stoneCoord}: ${libertyCountPhrase(cut.stoneGroup.liberties.length)} at ${joinList(stoneLibertyCoords)}.`,
+        },
+        {
+          id: `local-occupied-cut-white-${pointKey(cut.gap)}`,
+          stones: cut.cuttingGroup.stones.map(copyPoint),
+          color: cut.cuttingGroup.color,
+          liberties: cut.cuttingGroup.liberties.length,
+          label: `White cutting stone at ${gapCoord}: ${libertyCountPhrase(cut.cuttingGroup.liberties.length)} at ${joinList(cutLibertyCoords)}.`,
+        },
+      ],
+      suggestions,
+    },
+    actions: [
+      { id: 'hint', label: 'Show targets' },
+      { id: 'practice:reading', label: 'Practice reading' },
+    ],
+  };
+}
+
 function buildOneSpaceJumpPressureAnswer(game: GameState, teachingLevel: TeachingLevel, q: string): LocalQuestionAnswer | null {
+  const occupiedCutAnswer = buildOccupiedOneSpaceJumpCutAnswer(game, q);
+  if (occupiedCutAnswer) return occupiedCutAnswer;
+
   const shape = findLearnerOneSpaceJumpShape(game);
   if (!shape) return null;
 

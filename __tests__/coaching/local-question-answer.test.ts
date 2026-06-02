@@ -2219,6 +2219,63 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('answers when White occupies the one-space jump gap between two Black stones', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup first move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+    const extensionMove = playMove(afterWhitePass, { x: 4, y: 2 });
+    if (!extensionMove.success) throw new Error('test setup extension move failed');
+    const whiteCut = playMove(extensionMove.newState, { x: 3, y: 2 });
+    if (!whiteCut.success) throw new Error('test setup white cut failed');
+
+    const answer = getLocalQuestionAnswer('Did White cut me?', whiteCut.newState, 'guided');
+
+    expect(answer?.text).toContain('White has played into the one-space jump gap at D7.');
+    expect(answer?.text).toContain('C7 and E7 are separate Black groups by the rules now, but neither is captured.');
+    expect(answer?.text).toContain('Black at C7 has 3 liberties: C8, C6, and B7.');
+    expect(answer?.text).toContain('Black at E7 has 3 liberties: E8, E6, and F7.');
+    expect(answer?.text).toContain('The White cutting stone at D7 has 2 liberties: D8 and D6.');
+    expect(answer?.text).toContain('Answer the cut by attacking the marked White liberties, starting with D8 or D6.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['connect-and-cut', 'reading', 'liberties', 'groups']));
+    expect(answer?.boardFocus?.highlights).toEqual([{
+      id: 'local-occupied-cut-stone-3,2',
+      point: { x: 3, y: 2 },
+      variant: 'danger',
+      label: 'D7: White occupies the gap between C7 and E7.',
+    }]);
+    expect(answer?.boardFocus?.groups).toEqual([
+      {
+        id: 'local-occupied-cut-black-left-2,2',
+        stones: [{ x: 2, y: 2 }],
+        color: 'black',
+        liberties: 3,
+        label: 'Black group at C7: 3 liberties at C8, C6, and B7.',
+      },
+      {
+        id: 'local-occupied-cut-black-right-4,2',
+        stones: [{ x: 4, y: 2 }],
+        color: 'black',
+        liberties: 3,
+        label: 'Black group at E7: 3 liberties at E8, E6, and F7.',
+      },
+      {
+        id: 'local-occupied-cut-white-3,2',
+        stones: [{ x: 3, y: 2 }],
+        color: 'white',
+        liberties: 2,
+        label: 'White cutting stone at D7: 2 liberties at D8 and D6.',
+      },
+    ]);
+    expect(answer?.boardFocus?.suggestions?.map((suggestion) => suggestion.point)).toEqual([
+      { x: 3, y: 1 },
+      { x: 3, y: 3 },
+    ]);
+    expect(answer?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'practice:reading', label: 'Practice reading' },
+    ]);
+  });
+
   it('answers how to respond if White attacks the one-space jump gap', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup first move failed');
