@@ -215,6 +215,47 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('influence').encounterCount).toBeGreaterThan(0);
   });
 
+  it('explains influence locally with current extension targets', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('What is influence?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('Influence is future pressure, not territory you can count yet.');
+    expect(state.bubble.text).toContain('A center stone can reach many directions, so it may help later fights, connections, or extensions, but by itself it does not surround points.');
+    expect(state.bubble.text).toContain('C7 already has some influence; it becomes useful when the next stone works with it.');
+    expect(state.bubble.text).toContain('Try E7 or C5.');
+    expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+    expect(state.overlays.highlights).toEqual([{
+      id: 'local-influence-anchor-2,2',
+      point: { x: 2, y: 2 },
+      variant: 'neutral',
+      label: 'C7: current Black stone creating future pressure.',
+    }]);
+    expect(state.overlays.suggestions).toEqual([
+      {
+        id: 'local-influence-move-4,2',
+        point: { x: 4, y: 2 },
+        rank: 1,
+        reason: 'Try E7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-influence-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 2,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
+    expect(useConceptStore.getState().getMastery('influence').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('direction-of-play').encounterCount).toBeGreaterThan(0);
+  });
+
   it('explains the game goal locally without fetching', () => {
     act(() => {
       useGameStore.getState().startGuidedIntroGame();
