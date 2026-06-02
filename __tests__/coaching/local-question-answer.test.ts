@@ -2304,6 +2304,32 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('keeps White follow-up questions grounded in an occupied one-space jump cut', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup first move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+    const extensionMove = playMove(afterWhitePass, { x: 4, y: 2 });
+    if (!extensionMove.success) throw new Error('test setup extension move failed');
+    const whiteCut = playMove(extensionMove.newState, { x: 3, y: 2 });
+    if (!whiteCut.success) throw new Error('test setup white cut failed');
+
+    const answer = getLocalQuestionAnswer('What if White answers now?', whiteCut.newState, 'guided');
+
+    expect(answer?.text).toContain('White has played into the one-space jump gap at D7.');
+    expect(answer?.text).toContain('Answer the cut by attacking the marked White liberties, starting with D8 or D6.');
+    expect(answer?.text).not.toContain('Read White from your Black stone');
+    expect(answer?.boardFocus?.highlights).toEqual([{
+      id: 'local-occupied-cut-stone-3,2',
+      point: { x: 3, y: 2 },
+      variant: 'danger',
+      label: 'D7: White occupies the gap between C7 and E7.',
+    }]);
+    expect(answer?.boardFocus?.suggestions?.map((suggestion) => suggestion.point)).toEqual([
+      { x: 3, y: 1 },
+      { x: 3, y: 3 },
+    ]);
+  });
+
   it('answers how to respond if White attacks the one-space jump gap', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup first move failed');
@@ -2448,6 +2474,22 @@ describe('local question answer', () => {
       { id: 'lesson:snapback', label: 'Review snapback' },
       { id: 'practice:tesuji', label: 'Practice tesuji' },
     ]);
+  });
+
+  it('keeps natural snapback follow-ups on the immediate recapture point', () => {
+    const game = snapbackGameAfterWhiteCapture();
+
+    const answer = getLocalQuestionAnswer('What happens if White responds?', game, 'guided');
+
+    expect(answer?.text).toContain('White just captured E5 by playing E6.');
+    expect(answer?.text).toContain('Black can snap back at E5 and recapture E6, D6, D5, E4, and F5.');
+    expect(answer?.text).not.toContain('Read White from your Black stone');
+    expect(answer?.boardFocus?.suggestions).toEqual([{
+      id: 'local-snapback-recapture-4,4',
+      point: { x: 4, y: 4 },
+      rank: 1,
+      reason: 'Snap back at E5: recapture the cramped White stones.',
+    }]);
   });
 
   it('leaves unrecognized questions to cloud Sensei', () => {
