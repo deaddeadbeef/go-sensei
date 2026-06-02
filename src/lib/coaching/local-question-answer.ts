@@ -242,6 +242,18 @@ function isShapeQuestion(q: string): boolean {
     || /\bmake\s+(my\s+)?stones\s+work\b/.test(q);
 }
 
+function isConnectionQuestion(q: string): boolean {
+  const mentionsConnection = /\bconnect(?:ed|ing|ion|ions)?\b/.test(q)
+    || /\bcut(?:s|ting)?\b/.test(q)
+    || /\bdiagonal(?:ly|s)?\b/.test(q)
+    || /\bgroups?\b/.test(q);
+
+  return /\bwhat\s+(is|are)\s+(a\s+)?groups?\b/.test(q)
+    || /\bhow\s+do\s+i\s+connect\b/.test(q)
+    || /\bdo\s+diagonal\s+stones\s+connect\b/.test(q)
+    || (mentionsConnection && /\b(stones?|groups?|diagonal(?:ly|s)?|cuts?|cutting|solid|jump)\b/.test(q));
+}
+
 function mentionedCoordinates(q: string, boardSize: BoardSize): Point[] {
   const points: Point[] = [];
   const seen = new Set<string>();
@@ -1246,6 +1258,64 @@ function buildShapeAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQ
   };
 }
 
+function buildConnectionAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
+  const objective = getBeginnerObjective({
+    boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
+    moveCount: game.moveHistory.length,
+    currentPlayer: 'black',
+    teachingLevel,
+  });
+  const lastMove = lastPlacedMove(game);
+  const context = lastMove ? buildLibertyContext(game, lastMove.point, 'This connected group') : null;
+  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-connection-move') : [];
+  const anchorText = lastMove ? pointToCoord(lastMove.point, game.board.size) : null;
+  const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
+  const targetCoords = objective?.targetPoints.slice(0, 4).map((point) => pointToCoord(point, game.board.size)) ?? [];
+  const lines = [
+    'Stones become one solid group only when they touch up, down, left, or right.',
+    'Diagonals do not connect.',
+    'A cut is the empty point or line where the opponent can separate stones that are only loosely related.',
+  ];
+
+  if (context) {
+    lines.push(context.sentence);
+  } else {
+    lines.push('Play a stone first, then I can mark its group and liberties on the board.');
+  }
+
+  if (objective?.id === 'extend-from-stone') {
+    if (targetCoords.length === 1) {
+      lines.push(`${targetCoords[0]} is not a solid connection${anchorText ? ` to ${anchorText}` : ''} yet. It is a one-space jump: close enough to work together while reaching for territory. If White attacks the gap later, answer by connecting or defending.`);
+    } else {
+      const targets = targetCoords.length > 1 ? joinList(targetCoords) : 'The marked targets';
+      lines.push(`${targets} are not solid connections${anchorText ? ` to ${anchorText}` : ''} yet. They are one-space jumps: close enough to work together while reaching for territory. If White attacks the gap later, answer by connecting or defending.`);
+    }
+  } else if (objective) {
+    lines.push(`For the current board, first follow the beginner target: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}`);
+  }
+
+  if (context && suggestions.length > 0) {
+    lines.push('I marked your current group and the connection-shape targets.');
+  } else if (suggestions.length > 0) {
+    lines.push('I marked the current beginner targets.');
+  }
+
+  return {
+    text: lines.join(' '),
+    conceptIds: uniqueConceptIds(['groups', 'liberties', 'shape', ...(objective?.conceptIds ?? [])]),
+    boardFocus: {
+      ...(context?.boardFocus ?? {}),
+      ...(suggestions.length > 0 ? { suggestions } : {}),
+    },
+    actions: [
+      ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+      { id: 'lesson:groups', label: 'Review groups' },
+    ],
+  };
+}
+
 function buildMoveReviewAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
   const progress = getBeginnerObjectiveProgress(game, teachingLevel);
   const insight = getMoveInsight(game, teachingLevel);
@@ -1457,6 +1527,10 @@ export function getLocalQuestionAnswer(
 
   if (isCornerOpeningQuestion(q)) {
     return buildCornerOpeningAnswer(game, teachingLevel);
+  }
+
+  if (isConnectionQuestion(q)) {
+    return buildConnectionAnswer(game, teachingLevel);
   }
 
   if (isCandidateMoveQuestion(q, game.board.size)) {
