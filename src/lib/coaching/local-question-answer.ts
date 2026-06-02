@@ -486,6 +486,13 @@ function isCornerOpeningQuestion(q: string): boolean {
     || /\bhow\s+do\s+i\s+start\s+(the\s+)?opening\b/.test(q);
 }
 
+function isInfluenceQuestion(q: string): boolean {
+  return /\binfluence\b/.test(q)
+    || /\bcenter\s+(pressure|reach)\b/.test(q)
+    || /\bdoes\s+(the\s+)?cent(er|re)\s+(make|claim|become)\s+territory\b/.test(q)
+    || /\bhow\s+does\s+(a\s+)?cent(er|re)\s+stone\s+(help|work|matter)\b/.test(q);
+}
+
 function suggestionReason(objective: BeginnerObjective, point: Point, boardSize: BoardSize): string {
   const coord = pointToCoord(point, boardSize);
 
@@ -1289,6 +1296,69 @@ function buildCornerOpeningAnswer(game: GameState, teachingLevel: TeachingLevel)
   };
 }
 
+function buildInfluenceAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
+  const objective = game.phase === 'playing'
+    ? getBeginnerObjective({
+      boardSize: game.board.size,
+      board: game.board,
+      moveHistory: game.moveHistory,
+      moveCount: game.moveHistory.length,
+      currentPlayer: 'black',
+      teachingLevel,
+    })
+    : null;
+  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-influence-move') : [];
+  const action = objective ? getBeginnerObjectiveLessonAction(objective) : null;
+  const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
+  const lastMove = lastBlackPlacedMove(game);
+  const lastMoveCoord = lastMove ? pointToCoord(lastMove.point, game.board.size) : null;
+  const highlights: LocalHighlightFocus[] = lastMove
+    ? [{
+      id: `local-influence-anchor-${pointKey(lastMove.point)}`,
+      point: copyPoint(lastMove.point),
+      variant: 'neutral',
+      label: `${lastMoveCoord}: current Black stone creating future pressure.`,
+    }]
+    : [];
+  const lines = [
+    'Influence is future pressure, not territory you can count yet.',
+    'A center stone can reach many directions, so it may help later fights, connections, or extensions, but by itself it does not surround points.',
+  ];
+
+  if (objective?.id === 'claim-corner') {
+    lines.push(`${targetText ?? 'Try one of the marked corner starts.'} Corners turn into visible territory faster because the board edges already help form the border.`);
+  } else if (objective?.id === 'extend-from-stone') {
+    lines.push(lastMoveCoord
+      ? `${lastMoveCoord} already has some influence; it becomes useful when the next stone works with it. ${targetText ?? 'Use one of the marked one-space jumps.'}`
+      : `Influence becomes useful when nearby stones work together. ${targetText ?? 'Use one of the marked one-space jumps.'}`);
+  } else if (objective?.id === 'look-for-weak-groups') {
+    lines.push(`${targetText ?? objective.instruction} If a group is short on liberties, make it safe before chasing big influence.`);
+  } else {
+    lines.push('The useful question is: what can this pressure help next: territory, connection, attack, or safety?');
+  }
+
+  if (suggestions.length > 0) {
+    lines.push('I marked the practical next target so influence turns into a board action.');
+  }
+
+  return {
+    text: lines.join(' '),
+    conceptIds: uniqueConceptIds(['influence', 'territory', 'direction-of-play', ...(objective?.conceptIds ?? [])]),
+    ...(suggestions.length > 0 || highlights.length > 0
+      ? {
+        boardFocus: {
+          ...(highlights.length > 0 ? { highlights } : {}),
+          ...(suggestions.length > 0 ? { suggestions } : {}),
+        },
+      }
+      : {}),
+    actions: [
+      ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+      ...(action ? [action] : []),
+    ],
+  };
+}
+
 function buildShapeAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
   const objective = getBeginnerObjective({
     boardSize: game.board.size,
@@ -2021,6 +2091,10 @@ export function getLocalQuestionAnswer(
 
   if (isCornerOpeningQuestion(q)) {
     return buildCornerOpeningAnswer(game, teachingLevel);
+  }
+
+  if (isInfluenceQuestion(q)) {
+    return buildInfluenceAnswer(game, teachingLevel);
   }
 
   if (isWeakGroupQuestion(q)) {
