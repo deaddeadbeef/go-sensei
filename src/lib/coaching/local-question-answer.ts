@@ -311,6 +311,22 @@ function isKomiQuestion(q: string): boolean {
   return /\bkomi\b/.test(q);
 }
 
+function isCoordinateQuestion(q: string, boardSize: BoardSize): boolean {
+  const mentionsPoint = mentionedCoordinate(q, boardSize) !== null;
+  if (mentionsPoint) {
+    if (/\bwhat\s+about\b/.test(q) || /\bhow\s+about\b/.test(q)) return false;
+
+    return /\b(where|show|find|locate)\b/.test(q)
+      || /\bwhat\s+(is|does)\s+[a-hj-t]\d{1,2}\b/.test(q)
+      || /\bhow\s+do\s+i\s+(find|read|see)\b/.test(q);
+  }
+
+  return /\bhow\s+(do|does)\s+(go\s+)?coordinates?\s+work\b/.test(q)
+    || /\bwhat\s+(is|are)\s+(go\s+)?coordinates?\b/.test(q)
+    || /\bhow\s+do\s+i\s+read\s+(the\s+)?board\b/.test(q)
+    || /\bwhich\s+way\s+do\s+numbers\s+go\b/.test(q);
+}
+
 function suggestionReason(objective: BeginnerObjective, point: Point, boardSize: BoardSize): string {
   const coord = pointToCoord(point, boardSize);
 
@@ -759,6 +775,62 @@ function buildKomiAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQu
   };
 }
 
+function buildCoordinateAnswer(game: GameState, teachingLevel: TeachingLevel, q: string): LocalQuestionAnswer {
+  const requestedPoint = mentionedCoordinate(q, game.board.size);
+  const requestedCoord = requestedPoint ? pointToCoord(requestedPoint, game.board.size) : null;
+  const objective = getBeginnerObjective({
+    boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
+    moveCount: game.moveHistory.length,
+    currentPlayer: 'black',
+    teachingLevel,
+  });
+  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-coordinate-move') : [];
+  const action = objective ? getBeginnerObjectiveLessonAction(objective) : null;
+  const lines = [
+    'Go coordinates name intersections, not squares.',
+    `Letters run left to right across the board and skip I; numbers run from bottom to top, so row ${game.board.size} is the top edge and row 1 is the bottom edge.`,
+  ];
+  const highlights: LocalHighlightFocus[] = [];
+
+  if (requestedPoint && requestedCoord) {
+    const column = requestedCoord[0];
+    const row = requestedCoord.slice(1);
+    lines.push(`${requestedCoord} means column ${column}, row ${row}. I highlighted ${requestedCoord} on the board.`);
+    highlights.push({
+      id: `local-coordinate-${pointKey(requestedPoint)}`,
+      point: copyPoint(requestedPoint),
+      variant: 'neutral',
+      label: `${requestedCoord}: column ${column}, row ${row}.`,
+    });
+  } else {
+    lines.push('Read a coordinate by finding its letter column first, then its numbered row, and place the stone where they cross.');
+  }
+
+  if (objective) {
+    const targetText = formatObjectiveTargetText(objective, game.board.size);
+    lines.push(`For the current beginner goal, ${targetText ?? objective.instruction}`);
+  }
+
+  if (suggestions.length > 0) {
+    lines.push('I kept the current target points marked so you can connect the coordinate labels to the board.');
+  }
+
+  return {
+    text: lines.join(' '),
+    conceptIds: uniqueConceptIds(['stones-and-board', ...(objective?.conceptIds ?? [])]),
+    boardFocus: {
+      ...(highlights.length > 0 ? { highlights } : {}),
+      ...(suggestions.length > 0 ? { suggestions } : {}),
+    },
+    actions: [
+      ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+      ...(action ? [action] : []),
+    ],
+  };
+}
+
 function buildShapeAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
   const objective = getBeginnerObjective({
     boardSize: game.board.size,
@@ -973,6 +1045,10 @@ export function getLocalQuestionAnswer(
 
   if (isPositionQuestion(q)) {
     return buildPositionAnswer(game, teachingLevel);
+  }
+
+  if (isCoordinateQuestion(q, game.board.size)) {
+    return buildCoordinateAnswer(game, teachingLevel, q);
   }
 
   if (isCandidateComparisonQuestion(q, game.board.size)) {
