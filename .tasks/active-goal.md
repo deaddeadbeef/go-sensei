@@ -30,6 +30,7 @@ Latest completed slice:
 - Made restored guided boards immediately playable and actionable by locally passing an interrupted White turn, restoring ranked board-analysis suggestions, and highlighting the last learner move.
 - Added a compact board-side "What changed" recap after guided learner moves so the last-move lesson stays visible near the stones instead of only in the sidebar or chat.
 - Added hover/focus explanations for guided objective target buttons so learners can see why a specific coordinate is suggested before playing it.
+- Added transient board highlights for guided target explanations so hovering or focusing a coordinate also marks the target, anchor, gap, or weak group stones on the board.
 
 Next investigation candidates:
-- Whether target-level hints should also highlight the anchor, gap, or weak-group liberty on the board while the learner hovers or focuses a suggested coordinate.
+- Whether the guided board should show a compact "read this gap next" follow-up after a one-space-jump target is chosen and White passes.
