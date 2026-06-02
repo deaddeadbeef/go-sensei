@@ -669,11 +669,13 @@ describe('BeginnerObjectiveCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Try C6 defense for C7' }));
 
     const defenseText = 'C6 directly defends C7, the short side in this pressure line. Keep C7 breathing first; then recount before extending again.';
+    const defenseOutcomeText = 'After C6, C7 grows from 2 to 5 liberties at B7, C5, B6, D5, and E6. E7 has 3 liberties at E8, E6, and F7. C7 is no longer the short side, so the defense did its job; now recount the whole position before extending again.';
     expect(screen.getByText('Defense read')).toBeTruthy();
     expect(screen.getByText(defenseText)).toBeTruthy();
+    expect(screen.getByText(defenseOutcomeText)).toBeTruthy();
     expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
     expect(useGameStore.getState().chatMessages.at(-1)).toMatchObject({
-      text: `Defense read: ${defenseText}`,
+      text: `Defense read: ${defenseText} ${defenseOutcomeText}`,
       variant: 'teaching',
       actions: [
         { id: 'guided:read-pressure:defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3', label: 'Show defense' },
@@ -741,6 +743,7 @@ describe('BeginnerObjectiveCard', () => {
     );
 
     const defenseText = 'C6 directly defends C7, the short side in this pressure line. Keep C7 breathing first; then recount before extending again.';
+    const defenseOutcomeText = 'After C6, C7 grows from 2 to 5 liberties at B7, C5, B6, D5, and E6. E7 has 3 liberties at E8, E6, and F7. C7 is no longer the short side, so the defense did its job; now recount the whole position before extending again.';
 
     fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for D7' }));
     fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
@@ -755,6 +758,7 @@ describe('BeginnerObjectiveCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
 
     expect(screen.queryByText(defenseText)).toBeNull();
+    expect(screen.queryByText(defenseOutcomeText)).toBeNull();
     expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).not.toContain('read-pressure-selected-defense-2,3');
 
     const defenseActions = screen.getAllByRole('button', { name: 'Show defense' });
@@ -762,6 +766,7 @@ describe('BeginnerObjectiveCard', () => {
 
     expect(screen.getByText('Defense read')).toBeTruthy();
     expect(screen.getByText(defenseText)).toBeTruthy();
+    expect(screen.getByText(defenseOutcomeText)).toBeTruthy();
     expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
     expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
       {
