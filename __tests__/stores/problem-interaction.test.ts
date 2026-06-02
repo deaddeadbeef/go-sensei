@@ -236,6 +236,7 @@ describe('problem interaction store', () => {
       expect(result.success).toBe(true);
     });
     const pausedHistory = useGameStore.getState().game.moveHistory;
+    expect(useGameStore.getState().game.currentPlayer).toBe('white');
 
     act(() => useGameStore.getState().startNewGame(19));
     act(() => useGameStore.getState().setTeachingLevel('beginner'));
@@ -250,10 +251,62 @@ describe('problem interaction store', () => {
     expect(state.phase).toBe('playing');
     expect(state.teachingLevel).toBe('guided');
     expect(state.game.board.size).toBe(9);
-    expect(state.game.moveHistory).toEqual(pausedHistory);
+    expect(state.game.currentPlayer).toBe('black');
+    expect(state.game.board.grid[2][2]).toBe('black');
+    expect(state.game.moveHistory).toEqual([
+      ...pausedHistory,
+      { type: 'pass', color: 'white' },
+    ]);
+    expect(state.overlays.highlights).toEqual([{
+      id: 'guided-resume-learned-2,2',
+      point: { x: 2, y: 2 },
+      variant: 'positive',
+      label: 'C7: move to learn from - beginner job met.',
+    }]);
+    expect(state.overlays.suggestions.map((suggestion) => ({
+      point: suggestion.point,
+      rank: suggestion.rank,
+      reason: suggestion.reason,
+    }))).toEqual([
+      {
+        point: { x: 4, y: 2 },
+        rank: 1,
+        reason: 'Try E7 as a one-space jump that works with your stones.',
+      },
+      {
+        point: { x: 2, y: 4 },
+        rank: 2,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
     expect(state.bubble.text).toContain('Welcome back to your guided 9x9.');
-    expect(state.bubble.text).toContain('I restored your paused board with 1 move.');
+    expect(state.bubble.text).toContain('White passed while I restored this board, so it is your turn again.');
+    expect(state.bubble.text).toContain('I restored your paused board with 1 learner move.');
     expect(state.bubble.text).toContain('Your next job is: Make your stones work together.');
+  });
+
+  it('openGuidedGame does not add a pass when the durable guided board is already the learner turn', () => {
+    act(() => useGameStore.getState().startGuidedIntroGame());
+    act(() => {
+      const result = useGameStore.getState().placeStone({ x: 2, y: 2 });
+      expect(result.success).toBe(true);
+    });
+    act(() => useGameStore.getState().pass());
+    const pausedHistory = useGameStore.getState().game.moveHistory;
+    expect(useGameStore.getState().game.currentPlayer).toBe('black');
+
+    act(() => useGameStore.getState().startNewGame(19));
+    act(() => useGameStore.getState().setTeachingLevel('beginner'));
+    act(() => useGameStore.getState().openGuidedGame());
+
+    const state = useGameStore.getState();
+    expect(state.game.currentPlayer).toBe('black');
+    expect(state.game.moveHistory).toEqual(pausedHistory);
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+    ]);
+    expect(state.bubble.text).not.toContain('White passed while I restored this board');
   });
 
   it('starts guided intro with concrete first-target coaching', () => {
