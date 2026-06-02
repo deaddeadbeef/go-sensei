@@ -20,6 +20,7 @@ import type { BoardState, GameState, Group, Move, Point } from '@/lib/go-engine'
 import { useGameStore } from '@/stores/game-store';
 import type { OverlayHighlight } from '@/stores/game-store';
 import { COLORS } from '@/utils/colors';
+import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const ONE_SPACE_JUMP_DELTAS: Point[] = [
@@ -1384,6 +1385,69 @@ function StablePressureExtensionHandoff({
   );
 }
 
+interface ReplaySequenceContinuationButtonProps {
+  children: ReactNode;
+  ariaLabel: string;
+  onClick: () => void;
+  tone?: 'accent' | 'warning';
+  mono?: boolean;
+  disabled?: boolean;
+  className?: string;
+}
+
+function ReplaySequenceContinuationButton({
+  children,
+  ariaLabel,
+  onClick,
+  tone = 'accent',
+  mono = false,
+  disabled = false,
+  className,
+}: ReplaySequenceContinuationButtonProps) {
+  const toneColor = tone === 'warning' ? COLORS.overlay.warning : COLORS.ui.accent;
+
+  return (
+    <button
+      type="button"
+      className={[
+        className,
+        'rounded border px-2 py-0.5 text-[11px] transition hover:bg-white/[0.07]',
+        mono ? 'font-mono font-bold' : 'font-semibold',
+        disabled ? 'disabled:cursor-default disabled:opacity-70 disabled:hover:bg-transparent' : null,
+      ].filter(Boolean).join(' ')}
+      style={{
+        borderColor: toneColor,
+        color: COLORS.ui.textPrimary,
+        backgroundColor: `${toneColor}1f`,
+      }}
+      disabled={disabled}
+      aria-label={ariaLabel}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  );
+}
+
+interface ReplaySequenceContinuationRowProps {
+  label: string;
+  children: ReactNode;
+}
+
+function ReplaySequenceContinuationRow({
+  label,
+  children,
+}: ReplaySequenceContinuationRowProps) {
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+      <span className="text-[11px] font-semibold" style={{ color: COLORS.ui.textSecondary }}>
+        {label}
+      </span>
+      {children}
+    </div>
+  );
+}
+
 export function BeginnerObjectiveCard() {
   const game = useGameStore((s) => s.game);
   const teachingLevel = useGameStore((s) => s.teachingLevel);
@@ -2484,15 +2548,9 @@ export function BeginnerObjectiveCard() {
                             {replayedPressureSequenceNextQuestion}
                           </p>
                           {replayedPressureSequenceCompareFromHere && (
-                            <button
-                              type="button"
-                              className="mt-2 rounded border px-2 py-0.5 text-[11px] font-semibold transition hover:bg-white/[0.07]"
-                              style={{
-                                borderColor: COLORS.ui.accent,
-                                color: COLORS.ui.textPrimary,
-                                backgroundColor: `${COLORS.ui.accent}1f`,
-                              }}
-                              aria-label={`Compare ${replayedPressureSequenceCompareFromHere.comparisonCoord} from here`}
+                            <ReplaySequenceContinuationButton
+                              className="mt-2"
+                              ariaLabel={`Compare ${replayedPressureSequenceCompareFromHere.comparisonCoord} from here`}
                               onClick={() => compareReadPressureReply(
                                 replayedPressureSequenceCompareFromHere.prompt,
                                 replayedPressureSequenceCompareFromHere.baselineReply,
@@ -2500,27 +2558,19 @@ export function BeginnerObjectiveCard() {
                               )}
                             >
                               Compare {replayedPressureSequenceCompareFromHere.comparisonCoord} from here
-                            </button>
+                            </ReplaySequenceContinuationButton>
                           )}
                           {replayedPressureSequenceDefensesFromHere && (
-                            <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                              <span className="text-[11px] font-semibold" style={{ color: COLORS.ui.textSecondary }}>
-                                Defend from here:
-                              </span>
+                            <ReplaySequenceContinuationRow label="Defend from here:">
                               {replayedPressureSequenceDefensesFromHere.defense.liberties.map((point) => {
                                 const coord = pointToCoord(point, game.board.size);
 
                                 return (
-                                  <button
+                                  <ReplaySequenceContinuationButton
                                     key={`read-pressure-replayed-defense-${targetKey(point)}`}
-                                    type="button"
-                                    className="rounded border px-2 py-0.5 font-mono text-[11px] font-bold transition hover:bg-white/[0.07]"
-                                    style={{
-                                      borderColor: COLORS.overlay.warning,
-                                      color: COLORS.ui.textPrimary,
-                                      backgroundColor: `${COLORS.overlay.warning}1f`,
-                                    }}
-                                    aria-label={`Try ${coord} defense from here`}
+                                    tone="warning"
+                                    mono
+                                    ariaLabel={`Try ${coord} defense from here`}
                                     onClick={() => tryReadPressureDefense(
                                       replayedPressureSequenceDefensesFromHere.prompt,
                                       replayedPressureSequenceDefensesFromHere.recount,
@@ -2530,30 +2580,21 @@ export function BeginnerObjectiveCard() {
                                     )}
                                   >
                                     Try {coord} from here
-                                  </button>
+                                  </ReplaySequenceContinuationButton>
                                 );
                               })}
-                            </div>
+                            </ReplaySequenceContinuationRow>
                           )}
                           {replayedPressureSequenceFollowUpDefensesFromHere && (
-                            <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                              <span className="text-[11px] font-semibold" style={{ color: COLORS.ui.textSecondary }}>
-                                Continue from here:
-                              </span>
+                            <ReplaySequenceContinuationRow label="Continue from here:">
                               {replayedPressureSequenceFollowUpDefensesFromHere.followUpDefense.liberties.map((point) => {
                                 const coord = pointToCoord(point, game.board.size);
 
                                 return (
-                                  <button
+                                  <ReplaySequenceContinuationButton
                                     key={`read-pressure-replayed-follow-up-${targetKey(point)}`}
-                                    type="button"
-                                    className="rounded border px-2 py-0.5 font-mono text-[11px] font-bold transition hover:bg-white/[0.07]"
-                                    style={{
-                                      borderColor: COLORS.ui.accent,
-                                      color: COLORS.ui.textPrimary,
-                                      backgroundColor: `${COLORS.ui.accent}1f`,
-                                    }}
-                                    aria-label={`Try ${coord} follow-up defense from here`}
+                                    mono
+                                    ariaLabel={`Try ${coord} follow-up defense from here`}
                                     onClick={() => tryReadPressureFollowUpDefense(
                                       replayedPressureSequenceFollowUpDefensesFromHere.prompt,
                                       replayedPressureSequenceFollowUpDefensesFromHere.recount,
@@ -2565,26 +2606,21 @@ export function BeginnerObjectiveCard() {
                                     )}
                                   >
                                     Try {coord} from here
-                                  </button>
+                                  </ReplaySequenceContinuationButton>
                                 );
                               })}
-                            </div>
+                            </ReplaySequenceContinuationRow>
                           )}
                           {replayedPressureSequenceHandoffFromHere && (
-                            <button
-                              type="button"
-                              className="mt-2 rounded border px-2 py-0.5 font-mono text-[11px] font-bold transition hover:bg-white/[0.07] disabled:cursor-default disabled:opacity-70 disabled:hover:bg-transparent"
-                              style={{
-                                borderColor: COLORS.ui.accent,
-                                color: COLORS.ui.textPrimary,
-                                backgroundColor: `${COLORS.ui.accent}1f`,
-                              }}
+                            <ReplaySequenceContinuationButton
+                              className="mt-2"
+                              mono
                               disabled={!canPlayTarget}
-                              aria-label={`Play ${replayedPressureSequenceHandoffFromHere.coord} from here`}
+                              ariaLabel={`Play ${replayedPressureSequenceHandoffFromHere.coord} from here`}
                               onClick={() => handlePressureHandoffClick(replayedPressureSequenceHandoffFromHere)}
                             >
                               Play {replayedPressureSequenceHandoffFromHere.coord} from here
-                            </button>
+                            </ReplaySequenceContinuationButton>
                           )}
                         </div>
                       )}
