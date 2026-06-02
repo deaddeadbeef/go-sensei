@@ -15,13 +15,15 @@ const variantColors: Record<string, string> = {
 
 export function HighlightOverlay() {
   const highlights = useGameStore((s) => s.overlays.highlights);
+  const targetHints = useGameStore((s) => s.overlays.targetHints ?? []);
   const boardSize = useGameStore((s) => s.game.board.size);
+  const visibleHighlights = [...highlights, ...targetHints];
 
-  if (highlights.length === 0) return null;
+  if (visibleHighlights.length === 0) return null;
 
   return (
     <AnimatePresence>
-      {highlights.map((h, i) => {
+      {visibleHighlights.map((h, i) => {
         const { cx, cy } = pointToSvg(h.point, boardSize);
         const r = stoneRadius(boardSize) * 1.1;
         const color = variantColors[h.variant] || COLORS.overlay.suggestion;
