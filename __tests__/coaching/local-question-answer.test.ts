@@ -51,6 +51,25 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([{ id: 'lesson:territory', label: 'Review territory' }]);
   });
 
+  it('answers natural first-move orientation questions with the opening objective', () => {
+    const bestMove = getLocalQuestionAnswer('What is the best first move?', createGame(9), 'guided');
+    const start = getLocalQuestionAnswer('Where should I start?', createGame(9), 'guided');
+    const cornerChoice = getLocalQuestionAnswer('Which corner should I choose?', createGame(9), 'guided');
+
+    for (const answer of [bestMove, start, cornerChoice]) {
+      expect(answer?.text).toContain('Your next job is: Start with a corner.');
+      expect(answer?.text).toContain('Try C7, G7, C3, or G3.');
+      expect(answer?.text).toContain('I marked the best beginner targets on the board.');
+      expect(answer?.conceptIds).toEqual(expect.arrayContaining(['corner-opening', 'territory']));
+      expect(answer?.boardFocus?.suggestions?.map((suggestion) => suggestion.point)).toEqual([
+        { x: 2, y: 2 },
+        { x: 6, y: 2 },
+        { x: 2, y: 6 },
+        { x: 6, y: 6 },
+      ]);
+    }
+  });
+
   it('answers next-move questions from the learner perspective after a just-played move', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
@@ -64,6 +83,56 @@ describe('local question answer', () => {
       { x: 4, y: 2 },
       { x: 2, y: 4 },
     ]);
+  });
+
+  it('answers natural plan questions with the current post-opening objective', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+
+    const answer = getLocalQuestionAnswer('What is my plan now?', afterWhitePass, 'guided');
+
+    expect(answer?.text).toContain('Your next job is: Make your stones work together.');
+    expect(answer?.text).toContain('Play a one-space jump from one of your stones. Try E7 or C5.');
+    expect(answer?.text).toContain('I marked the best beginner targets on the board.');
+    expect(answer?.boardFocus?.suggestions?.map((suggestion) => suggestion.point)).toEqual([
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+    ]);
+  });
+
+  it('explains coordinates that are outside the current 9x9 board', () => {
+    const answer = getLocalQuestionAnswer('Can I play T19?', createGame(9), 'guided');
+
+    expect(answer?.text).toContain('T19 is outside this 9x9 board.');
+    expect(answer?.text).toContain('On this board, valid columns are A through J, skipping I, and valid rows are 1 through 9.');
+    expect(answer?.text).toContain('For this guided position, start with one of the marked 9x9 targets: C7, G7, C3, or G3.');
+    expect(answer?.text).toContain('I marked the legal beginner targets so the board size is visible.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['stones-and-board', 'corner-opening', 'territory']));
+    expect(answer?.boardFocus?.suggestions?.map((suggestion) => suggestion.point)).toEqual([
+      { x: 2, y: 2 },
+      { x: 6, y: 2 },
+      { x: 2, y: 6 },
+      { x: 6, y: 6 },
+    ]);
+  });
+
+  it('answers connect-at-coordinate phrasing as a candidate move question', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+
+    const answer = getLocalQuestionAnswer('Can I connect at D7?', afterWhitePass, 'guided');
+
+    expect(answer?.text).toContain('D7 touches C7 directly.');
+    expect(answer?.text).toContain('this beginner goal is practicing a one-space jump');
+    expect(answer?.text).toContain('For this board, I would prefer E7 or C5.');
+    expect(answer?.boardFocus?.highlights).toEqual([{
+      id: 'local-candidate-question-3,2',
+      point: { x: 3, y: 2 },
+      variant: 'warning',
+      label: 'D7: open, but not the current beginner target.',
+    }]);
   });
 
   it('steadies a confused beginner with one visible board job', () => {
