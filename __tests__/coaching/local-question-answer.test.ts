@@ -643,6 +643,60 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('explains the latest White move as board pressure with a practical reply', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+    const whiteMove = playMove(firstMove.newState, { x: 3, y: 2 });
+    if (!whiteMove.success) throw new Error('test setup white move failed');
+
+    const answer = getLocalQuestionAnswer('Why did White play there?', whiteMove.newState, 'guided');
+
+    expect(answer?.text).toContain('White just played D7.');
+    expect(answer?.text).toContain('It touches your Black group at C7 and leaves it with 3 liberties: C8, C6, and B7.');
+    expect(answer?.text).toContain('That is pressure, not a mystery: White is making your group easier to attack if you ignore its liberties.');
+    expect(answer?.text).toContain('Your reply should still be practical: Make your stones work together. Play a one-space jump from one of your stones. Try E7 or C5.');
+    expect(answer?.text).toContain("I highlighted White's move and marked Black's practical replies.");
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['direction-of-play', 'groups', 'liberties', 'shape']));
+    expect(answer?.boardFocus?.highlights).toEqual([{
+      id: 'local-opponent-move-3,2',
+      point: { x: 3, y: 2 },
+      variant: 'warning',
+      label: 'D7: latest White move pressures a Black group.',
+    }]);
+    expect(answer?.boardFocus?.liberties).toEqual([{
+      id: 'local-opponent-pressure-liberties-2,2',
+      point: { x: 2, y: 2 },
+      count: 3,
+      libertyPoints: [
+        { x: 2, y: 1 },
+        { x: 2, y: 3 },
+        { x: 1, y: 2 },
+      ],
+    }]);
+    expect(answer?.boardFocus?.groups?.[0]).toMatchObject({
+      id: 'local-opponent-pressure-group-2,2',
+      stones: [{ x: 2, y: 2 }],
+      color: 'black',
+      liberties: 3,
+      label: "Black group pressured by White's D7: 3 liberties at C8, C6, and B7.",
+    });
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-opponent-response-move-4,2',
+        point: { x: 4, y: 2 },
+        rank: 1,
+        reason: 'Try E7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-opponent-response-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 2,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+  });
+
   it('identifies the current weak group and marks rescue liberties', () => {
     const game = playSequence([
       { x: 2, y: 2 },
