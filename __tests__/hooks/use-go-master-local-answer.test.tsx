@@ -1094,4 +1094,38 @@ describe('useGoMaster local answers', () => {
     ]);
     expect(useConceptStore.getState().getMastery('life-and-death').encounterCount).toBeGreaterThan(0);
   });
+
+  it('answers progress reflection questions from tracked evidence without fetching', () => {
+    act(() => {
+      useProgressStore.setState({
+        completedLessons: ['groups', 'liberties'],
+        hasStartedIntroGame: true,
+        problemAttempts: [
+          { problemId: 'capture-001', solved: true, attempts: 1, moveSequence: [], timestamp: 1 },
+        ],
+      });
+      useConceptStore.getState().recordEvidence('liberties', 'lesson_completed');
+      useConceptStore.getState().recordEvidence('capture', 'problem_solved');
+      useConceptStore.getState().recordEvidence('groups', 'ai_tag_success');
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('How am I doing?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('Progress check: you have completed 2 lessons, solved 1 problem, and started a guided 9x9 game.');
+    expect(state.bubble.text).toContain('Strongest evidence: Capture and Liberties are moving from vocabulary into practice.');
+    expect(state.bubble.text).toContain('Still fragile: Groups needs more proof.');
+    expect(state.bubble.text).toContain('Next honest step: Capturing Stones. This is the next lesson in the learning path.');
+    expect(state.bubble.actions).toEqual([{ id: 'lesson:capture', label: 'Start lesson' }]);
+    expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'lesson:capture', label: 'Start lesson' }]);
+    expect(useConceptStore.getState().getMastery('capture').encounterCount).toBeGreaterThan(1);
+    expect(useConceptStore.getState().getMastery('liberties').encounterCount).toBeGreaterThan(1);
+  });
 });
