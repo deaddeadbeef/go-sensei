@@ -438,7 +438,7 @@ function isCandidateMoveQuestion(q: string, boardSize: BoardSize): boolean {
   return /\b(should|can|could|would)\s+i\s+(play|try|move)\b/.test(q)
     || /\bwhat\s+about\b/.test(q)
     || /\bhow\s+about\b/.test(q)
-    || /\bis\s+[a-hj-t]\d{1,2}\s+(good|bad|ok|okay|right|wrong|playable|safe)\b/.test(q)
+    || /\bis\s+[a-hj-t]\d{1,2}\s+(a\s+)?(good|bad|ok|okay|right|wrong|playable|safe)(\s+(move|play))?\b/.test(q)
     || /\bplay\s+(at\s+)?[a-hj-t]\d{1,2}\b/.test(q);
 }
 
@@ -770,10 +770,27 @@ function buildTargetReasonAnswer(game: GameState, teachingLevel: TeachingLevel, 
   const blockedContext = requestedPoint && !pointEquals(requestedPoint, targetPoint)
     ? blockedOneSpaceJumpContext(game.board, requestedPoint, anchorMove?.point ?? null, 'local-target-reason')
     : null;
+  const requestedOccupant = requestedPoint ? getStone(game.board, requestedPoint) : null;
+  const requestedHighlight = requestedPoint && !pointEquals(requestedPoint, targetPoint) && !blockedContext
+    ? {
+        id: `local-target-reason-question-${pointKey(requestedPoint)}`,
+        point: copyPoint(requestedPoint),
+        variant: requestedOccupant === 'white' ? 'danger' : 'warning',
+        label: requestedOccupant === null
+          ? `${requestedCoord}: open, but not the current beginner target.`
+          : `${requestedCoord}: already occupied, not the current beginner target.`,
+      } satisfies LocalHighlightFocus
+    : null;
 
   if (requestedPoint && !pointEquals(requestedPoint, targetPoint)) {
     lines.push(`${requestedCoord} is not one of the current marked beginner targets.`);
-    if (blockedContext) lines.push(blockedContext.sentence);
+    if (blockedContext) {
+      lines.push(blockedContext.sentence);
+    } else if (requestedOccupant === null) {
+      lines.push(candidateMissReason(objective, requestedPoint, game.board.size, anchorMove?.point ?? null, game.board));
+    } else {
+      lines.push(`${requestedCoord} is already occupied, so explain it as board shape, not as a move to play now.`);
+    }
   }
 
   lines.push(targetReason(objective, targetPoint, game.board.size, anchorMove?.point ?? null));
@@ -787,13 +804,18 @@ function buildTargetReasonAnswer(game: GameState, teachingLevel: TeachingLevel, 
     lines.push(`${otherTargets.join(' or ')} works for the same beginner goal.`);
   }
 
-  lines.push(`I marked the current targets again; ${targetCoord} is the one I explained.`);
+  if (requestedPoint && !pointEquals(requestedPoint, targetPoint)) {
+    lines.push(`I highlighted ${requestedCoord} and marked the current targets again; compare it with ${targetCoord}.`);
+  } else {
+    lines.push(`I marked the current targets again; ${targetCoord} is the one I explained.`);
+  }
 
   return {
     text: lines.join(' '),
     conceptIds: objective.conceptIds,
     boardFocus: {
       ...(blockedContext ? { highlights: blockedContext.highlights } : {}),
+      ...(requestedHighlight ? { highlights: [requestedHighlight] } : {}),
       suggestions,
     },
     actions: [

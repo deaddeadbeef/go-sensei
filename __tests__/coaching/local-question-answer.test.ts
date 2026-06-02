@@ -1108,6 +1108,29 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
   });
 
+  it('explains why an unmarked coordinate is not the current beginner target', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+
+    const answer = getLocalQuestionAnswer('Why D7?', firstMove.newState, 'guided');
+
+    expect(answer?.text).toContain('D7 is not one of the current marked beginner targets.');
+    expect(answer?.text).toContain('D7 touches C7 directly.');
+    expect(answer?.text).toContain('this beginner goal is practicing a one-space jump');
+    expect(answer?.text).toContain('E7 is marked because it is a one-space jump from C7');
+    expect(answer?.text).toContain('I highlighted D7 and marked the current targets again; compare it with E7.');
+    expect(answer?.boardFocus?.highlights).toEqual([{
+      id: 'local-target-reason-question-3,2',
+      point: { x: 3, y: 2 },
+      variant: 'warning',
+      label: 'D7: open, but not the current beginner target.',
+    }]);
+    expect(answer?.boardFocus?.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+    ]);
+  });
+
   it('does not explain a target through a White-occupied one-space jump gap', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup first move failed');
@@ -1178,6 +1201,27 @@ describe('local question answer', () => {
 
     expect(answer?.text).toContain('D7 touches C7 directly.');
     expect(answer?.text).toContain('this beginner goal is practicing a one-space jump');
+    expect(answer?.text).toContain('For this board, I would prefer E7 or C5.');
+    expect(answer?.text).toContain('I highlighted D7 and re-marked the better beginner targets.');
+    expect(answer?.boardFocus?.highlights).toEqual([{
+      id: 'local-candidate-question-3,2',
+      point: { x: 3, y: 2 },
+      variant: 'warning',
+      label: 'D7: open, but not the current beginner target.',
+    }]);
+    expect(answer?.boardFocus?.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+    ]);
+  });
+
+  it('answers natural good-move coordinate questions locally', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+
+    const answer = getLocalQuestionAnswer('Is D7 a good move?', firstMove.newState, 'guided');
+
+    expect(answer?.text).toContain('D7 touches C7 directly.');
     expect(answer?.text).toContain('For this board, I would prefer E7 or C5.');
     expect(answer?.text).toContain('I highlighted D7 and re-marked the better beginner targets.');
     expect(answer?.boardFocus?.highlights).toEqual([{
