@@ -592,6 +592,45 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
   });
 
+  it('teaches a reusable reading routine with the current targets', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+
+    const answer = getLocalQuestionAnswer('How do I read ahead?', firstMove.newState, 'guided');
+
+    expect(answer?.text).toContain('Use a three-question reading routine before you play.');
+    expect(answer?.text).toContain('First: count liberties. If one of your groups has one or two liberties, read that emergency before expanding.');
+    expect(answer?.text).toContain('Second: name the purpose: territory, connection, shape, or capture.');
+    expect(answer?.text).toContain("Third: imagine White's reply next to that move; if your stone still has room and your goal is clearer, the move is worth testing.");
+    expect(answer?.text).toContain('On this board, apply the routine to: Make your stones work together. Play a one-space jump from one of your stones. Try E7 or C5.');
+    expect(answer?.text).toContain('Start by reading E7: what Black gains, how White might touch it, and whether C7 still has enough liberties.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['reading', 'direction-of-play', 'liberties', 'shape']));
+    expect(answer?.boardFocus?.highlights).toEqual([{
+      id: 'local-reading-anchor-2,2',
+      point: { x: 2, y: 2 },
+      variant: 'neutral',
+      label: 'C7: use this stone as the anchor for your reading routine.',
+    }]);
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-reading-routine-move-4,2',
+        point: { x: 4, y: 2 },
+        rank: 1,
+        reason: 'Try E7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-reading-routine-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 2,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'practice:reading', label: 'Practice reading' },
+    ]);
+  });
+
   it('explains solid connection versus one-space jump shape', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
