@@ -70,6 +70,85 @@ describe('local question answer', () => {
     }
   });
 
+  it('explains board star points without confusing them with numbered targets', () => {
+    const answer = getLocalQuestionAnswer('What are the dots on the board?', createGame(9), 'guided');
+
+    expect(answer?.text).toContain('The small printed dots are star points, also called hoshi.');
+    expect(answer?.text).toContain('They are visual reference points, not stones and not mandatory moves.');
+    expect(answer?.text).toContain('On this 9x9 board, the star points are C7, G7, E5, C3, and G3.');
+    expect(answer?.text).toContain('For your first guided move, use a corner star point: C7, G7, C3, or G3.');
+    expect(answer?.text).toContain('I highlighted the star points and marked the beginner corner targets.');
+    expect(answer?.text).not.toContain('glowing numbered circles');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['stones-and-board', 'corner-opening', 'territory']));
+    expect(answer?.boardFocus?.highlights).toEqual([
+      {
+        id: 'local-star-point-2,2',
+        point: { x: 2, y: 2 },
+        variant: 'positive',
+        label: 'C7: corner star point and beginner target.',
+      },
+      {
+        id: 'local-star-point-6,2',
+        point: { x: 6, y: 2 },
+        variant: 'positive',
+        label: 'G7: corner star point and beginner target.',
+      },
+      {
+        id: 'local-star-point-4,4',
+        point: { x: 4, y: 4 },
+        variant: 'neutral',
+        label: 'E5: center star point; useful later, not the first guided target.',
+      },
+      {
+        id: 'local-star-point-2,6',
+        point: { x: 2, y: 6 },
+        variant: 'positive',
+        label: 'C3: corner star point and beginner target.',
+      },
+      {
+        id: 'local-star-point-6,6',
+        point: { x: 6, y: 6 },
+        variant: 'positive',
+        label: 'G3: corner star point and beginner target.',
+      },
+    ]);
+    expect(answer?.boardFocus?.suggestions?.map((suggestion) => suggestion.point)).toEqual([
+      { x: 2, y: 2 },
+      { x: 6, y: 2 },
+      { x: 2, y: 6 },
+      { x: 6, y: 6 },
+    ]);
+  });
+
+  it('answers star-point move questions with the current beginner target', () => {
+    const answer = getLocalQuestionAnswer('Should I play a star point?', createGame(9), 'guided');
+
+    expect(answer?.text).toContain('A star point is a printed reference dot on the board.');
+    expect(answer?.text).toContain('Yes: for this opening, choose one of the corner star points: C7, G7, C3, or G3.');
+    expect(answer?.text).toContain('Skip the center star point E5 for now');
+    expect(answer?.boardFocus?.suggestions?.map((suggestion) => suggestion.point)).toEqual([
+      { x: 2, y: 2 },
+      { x: 6, y: 2 },
+      { x: 2, y: 6 },
+      { x: 6, y: 6 },
+    ]);
+  });
+
+  it('explains center-versus-corner opening choice from the current board', () => {
+    const answer = getLocalQuestionAnswer('Center or corner?', createGame(9), 'guided');
+
+    expect(answer?.text).toContain('For a first beginner move, choose a corner before the center.');
+    expect(answer?.text).toContain('The center reaches many directions, but it has to build every border itself before it becomes points.');
+    expect(answer?.text).toContain('A corner already has two board edges helping it make territory.');
+    expect(answer?.text).toContain('Try C7, G7, C3, or G3.');
+    expect(answer?.boardFocus?.suggestions?.map((suggestion) => suggestion.point)).toEqual([
+      { x: 2, y: 2 },
+      { x: 6, y: 2 },
+      { x: 2, y: 6 },
+      { x: 6, y: 6 },
+    ]);
+  });
+
   it('answers next-move questions from the learner perspective after a just-played move', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
@@ -240,7 +319,7 @@ describe('local question answer', () => {
     const answer = getLocalQuestionAnswer('Why not the center?', createGame(9), 'guided');
 
     expect(answer?.text).toContain('Corners are the easiest place for beginners to make territory because two board edges already act like walls.');
-    expect(answer?.text).toContain('A center stone reaches in every direction, but it has to build all four sides itself before it becomes points.');
+    expect(answer?.text).toContain('The center reaches many directions, but it has to build every border itself before it becomes points.');
     expect(answer?.text).toContain('That is why the first guided goal starts near a corner instead of the open center.');
     expect(answer?.text).toContain('Try C7, G7, C3, or G3.');
     expect(answer?.text).toContain('I marked the corner starts again.');
