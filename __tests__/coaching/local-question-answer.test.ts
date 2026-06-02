@@ -80,6 +80,52 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([{ id: 'lesson:liberties', label: 'Review liberties' }]);
   });
 
+  it('reviews a successful beginner move without cloud help', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+
+    const answer = getLocalQuestionAnswer('Was that good?', firstMove.newState, 'guided');
+
+    expect(answer?.text).toContain('Yes. Good: C7 hit the marked corner goal.');
+    expect(answer?.text).toContain('C7 is a useful anchor');
+    expect(answer?.text).toContain('Next: Play a one-space jump from one of your stones. Try E7 or C5.');
+    expect(answer?.text).toContain('I marked the next beginner targets on the board.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['corner-opening', 'territory', 'shape']));
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-review-next-move-4,2',
+        point: { x: 4, y: 2 },
+        rank: 1,
+        reason: 'Try E7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-review-next-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 2,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
+  });
+
+  it('reviews a missed beginner goal constructively', () => {
+    const firstMove = playMove(createGame(9), { x: 4, y: 4 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+
+    const answer = getLocalQuestionAnswer('Did I make a mistake?', firstMove.newState, 'guided');
+
+    expect(answer?.text).toContain('Not for this beginner goal.');
+    expect(answer?.text).toContain('E5 was not one of the marked corner points.');
+    expect(answer?.text).toContain('E5 reaches in every direction');
+    expect(answer?.text).toContain('Next: Place your next stone near an empty corner. Try C7, G7, C3, or G3.');
+    expect(answer?.actions).toEqual([{ id: 'lesson:territory', label: 'Review territory' }]);
+    expect(answer?.boardFocus?.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 2, y: 2 },
+      { x: 6, y: 2 },
+      { x: 2, y: 6 },
+      { x: 6, y: 6 },
+    ]);
+  });
+
   it('answers liberty questions with current board context', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
