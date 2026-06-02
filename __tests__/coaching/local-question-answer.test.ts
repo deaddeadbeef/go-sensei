@@ -126,6 +126,34 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('explains one-space jumps with current shape targets', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+
+    const answer = getLocalQuestionAnswer('What is a one-space jump?', firstMove.newState, 'guided');
+
+    expect(answer?.text).toContain('Shape means your stones are arranged so they help each other');
+    expect(answer?.text).toContain('A one-space jump leaves one empty point between friendly stones.');
+    expect(answer?.text).toContain('On this board, C7 is your anchor. Try E7 or C5.');
+    expect(answer?.text).toContain('I marked the current shape targets on the board.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['shape', 'direction-of-play']));
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-shape-move-4,2',
+        point: { x: 4, y: 2 },
+        rank: 1,
+        reason: 'Try E7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-shape-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 2,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+  });
+
   it('answers liberty questions with current board context', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
