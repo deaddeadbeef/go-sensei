@@ -180,6 +180,78 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('answers tenuki and play-away questions during the extension objective', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+
+    const tenuki = getLocalQuestionAnswer('Can I tenuki?', afterWhitePass, 'guided');
+    const playAway = getLocalQuestionAnswer('Should I play far away?', afterWhitePass, 'guided');
+
+    for (const answer of [tenuki, playAway]) {
+      expect(answer?.text).toContain('Tenuki means playing away from the local area.');
+      expect(answer?.text).toContain('On this guided board, do not drift away yet: C7 is your anchor, and the useful play-away is a nearby one-space jump.');
+      expect(answer?.text).toContain('Try E7 or C5.');
+      expect(answer?.conceptIds).toEqual(expect.arrayContaining(['direction-of-play', 'shape', 'sente-gote']));
+      expect(answer?.boardFocus?.suggestions?.map((suggestion) => suggestion.point)).toEqual([
+        { x: 4, y: 2 },
+        { x: 2, y: 4 },
+      ]);
+      expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+    }
+  });
+
+  it('defines sente from the current quiet extension position', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+
+    const answer = getLocalQuestionAnswer('What is sente?', afterWhitePass, 'guided');
+
+    expect(answer?.text).toContain('Sente means a move that strongly asks the opponent to answer.');
+    expect(answer?.text).toContain('Right now there is no urgent forcing move on this simple board.');
+    expect(answer?.text).toContain('Your sente-like habit is to make a move with purpose: extend from C7 with E7 or C5, then see how White has to deal with the growing shape.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['sente-gote', 'shape', 'direction-of-play']));
+    expect(answer?.boardFocus?.suggestions?.map((suggestion) => suggestion.point)).toEqual([
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+    ]);
+  });
+
+  it('answers whether to defend first before the second guided move', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+
+    const answer = getLocalQuestionAnswer('Should I defend first?', afterWhitePass, 'guided');
+
+    expect(answer?.text).toContain('Defend first when one of your groups is short on liberties or a cutting point is under attack.');
+    expect(answer?.text).toContain('C7 still has room, and White just passed for teaching, so there is no emergency to defend.');
+    expect(answer?.text).toContain('Keep extending with E7 or C5.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['liberties', 'shape', 'direction-of-play']));
+    expect(answer?.boardFocus?.suggestions?.map((suggestion) => suggestion.point)).toEqual([
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+    ]);
+  });
+
+  it('reframes center questions after the learner already has a corner anchor', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+
+    const answer = getLocalQuestionAnswer('Can I play the center now?', afterWhitePass, 'guided');
+
+    expect(answer?.text).toContain('You already started from a corner, so this is no longer a first-move center choice.');
+    expect(answer?.text).toContain('A center move like E5 is playable later, but it does not help C7 as directly as the marked one-space jumps.');
+    expect(answer?.text).toContain('For this board, keep building from C7 with E7 or C5.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['influence', 'shape', 'direction-of-play']));
+    expect(answer?.boardFocus?.suggestions?.map((suggestion) => suggestion.point)).toEqual([
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+    ]);
+  });
+
   it('explains coordinates that are outside the current 9x9 board', () => {
     const answer = getLocalQuestionAnswer('Can I play T19?', createGame(9), 'guided');
 
