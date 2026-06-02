@@ -775,36 +775,42 @@ describe('BeginnerObjectiveCard', () => {
     expect(restoredOriginalReplyStep.getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByText('Next question')).toBeTruthy();
     expect(screen.getByText('Before returning to D6, ask: did D8 change the attack direction while keeping both sides safe?')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Compare D6 from here' }));
+
+    expect(restoredOriginalReplyStep.getAttribute('aria-pressed')).toBe('false');
+    expect(screen.queryByText('Next question')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Compare D6 from here' })).toBeNull();
     expect(useGameStore.getState().overlays.targetHints).toEqual([
       {
         id: 'read-pressure-anchor-2,2',
         point: { x: 2, y: 2 },
-        variant: 'neutral',
-        label: 'C7: one side of the jump; check whether this side becomes short.',
+        variant: 'positive',
+        label: 'C7: 3 liberties after D6: C8, C6, and B7.',
       },
       {
         id: 'read-pressure-stone-4,2',
         point: { x: 4, y: 2 },
-        variant: 'neutral',
-        label: 'E7: one side of the jump; check whether this side becomes short.',
+        variant: 'positive',
+        label: 'E7: 3 liberties after D6: E8, E6, and F7.',
       },
       {
         id: 'read-pressure-gap-3,2',
         point: { x: 3, y: 2 },
         variant: 'warning',
-        label: 'D7: imagined White pressure point.',
+        label: 'D7: imagined White pressure point to keep watching.',
       },
       {
         id: 'read-pressure-reply-3,1',
         point: { x: 3, y: 1 },
-        variant: 'positive',
-        label: 'D8: selected first reply; attack the imagined cutting stone.',
+        variant: 'neutral',
+        label: 'D8: alternate reply to compare later.',
       },
       {
         id: 'read-pressure-reply-3,3',
         point: { x: 3, y: 3 },
-        variant: 'neutral',
-        label: 'D6: alternate reply to compare in the branch.',
+        variant: 'positive',
+        label: 'D6: selected reply used for this recount.',
       },
     ]);
   });

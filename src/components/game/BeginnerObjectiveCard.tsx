@@ -1999,6 +1999,23 @@ export function BeginnerObjectiveCard() {
   const replayedPressureSequenceNextQuestion = activePressureReplayRequestId !== null
     ? pinnedPressureSequenceRow?.nextQuestion ?? null
     : null;
+  const replayedPressureSequenceCompareFromHere = activePressureReplayRequestId !== null
+    && pinnedPressureSequenceRow
+    && readPrompt
+    && selectedReadReply
+    && selectedReadRecount
+    && comparedReadReply
+    && (
+      pinnedPressureSequenceRow.replayKey === `reply-${targetKey(comparedReadReply)}`
+      || pinnedPressureSequenceRow.replayKey === `recount-${targetKey(comparedReadReply)}`
+    )
+    ? {
+      baselineReply: comparedReadReply,
+      comparisonCoord: pointToCoord(selectedReadReply, game.board.size),
+      comparisonReply: selectedReadReply,
+      prompt: readPrompt,
+    }
+    : null;
   const readPromptAnchorCoord = readPrompt ? pointToCoord(readPrompt.anchor, game.board.size) : null;
   const readPromptStoneCoord = readPrompt ? pointToCoord(readPrompt.stone, game.board.size) : null;
   const selectedReadReplyCoord = selectedReadReply ? pointToCoord(selectedReadReply, game.board.size) : null;
@@ -2416,6 +2433,25 @@ export function BeginnerObjectiveCard() {
                           <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
                             {replayedPressureSequenceNextQuestion}
                           </p>
+                          {replayedPressureSequenceCompareFromHere && (
+                            <button
+                              type="button"
+                              className="mt-2 rounded border px-2 py-0.5 text-[11px] font-semibold transition hover:bg-white/[0.07]"
+                              style={{
+                                borderColor: COLORS.ui.accent,
+                                color: COLORS.ui.textPrimary,
+                                backgroundColor: `${COLORS.ui.accent}1f`,
+                              }}
+                              aria-label={`Compare ${replayedPressureSequenceCompareFromHere.comparisonCoord} from here`}
+                              onClick={() => compareReadPressureReply(
+                                replayedPressureSequenceCompareFromHere.prompt,
+                                replayedPressureSequenceCompareFromHere.baselineReply,
+                                replayedPressureSequenceCompareFromHere.comparisonReply,
+                              )}
+                            >
+                              Compare {replayedPressureSequenceCompareFromHere.comparisonCoord} from here
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
