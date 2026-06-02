@@ -55,6 +55,10 @@ interface PressureDefenseRecommendation {
   text: string;
 }
 
+interface PressureDefenseOutcome {
+  text: string;
+}
+
 interface PressureComparisonSummary {
   rows: string[];
   text: string;
@@ -429,6 +433,63 @@ function getPressureDefenseReadText(
   return `${coord} directly defends ${defense.shortSideCoord}, the short side in this pressure line. Keep ${defense.shortSideCoord} breathing first; then recount before extending again.`;
 }
 
+function getPressureDefenseOutcome(
+  game: GameState,
+  prompt: OneSpaceJumpReadPrompt,
+  recount: PressureRecount,
+  defense: PressureDefenseRecommendation,
+  point: Point,
+): PressureDefenseOutcome | null {
+  if (!defense.liberties.some((liberty) => targetKey(liberty) === targetKey(point))) return null;
+
+  const whitePressure = playMove({
+    ...game,
+    currentPlayer: 'white',
+    phase: 'playing',
+    positionHistory: new Set(game.positionHistory),
+  }, prompt.gap);
+  if (!whitePressure.success) return null;
+
+  const blackReply = playMove(whitePressure.newState, recount.reply);
+  if (!blackReply.success) return null;
+
+  const blackDefense = playMove({
+    ...blackReply.newState,
+    currentPlayer: 'black',
+    positionHistory: new Set(blackReply.newState.positionHistory),
+  }, point);
+  if (!blackDefense.success) return null;
+
+  const anchorGroup = getGroup(blackDefense.newState.board, prompt.anchor);
+  const stoneGroup = getGroup(blackDefense.newState.board, prompt.stone);
+  if (!anchorGroup || !stoneGroup) return null;
+
+  const boardSize = game.board.size;
+  const coord = pointToCoord(point, boardSize);
+  const anchorCoord = pointToCoord(prompt.anchor, boardSize);
+  const stoneCoord = pointToCoord(prompt.stone, boardSize);
+  const defendedIsAnchor = targetKey(defense.shortSide) === targetKey(prompt.anchor);
+  const defendedCoord = defense.shortSideCoord;
+  const otherCoord = defendedIsAnchor ? stoneCoord : anchorCoord;
+  const defendedBeforeCount = defendedIsAnchor ? recount.anchorLiberties.length : recount.stoneLiberties.length;
+  const defendedAfterLiberties = defendedIsAnchor ? anchorGroup.liberties : stoneGroup.liberties;
+  const otherAfterLiberties = defendedIsAnchor ? stoneGroup.liberties : anchorGroup.liberties;
+  const defendedLibertyText = joinAndCoordinateList(defendedAfterLiberties.map((liberty) => pointToCoord(liberty, boardSize)));
+  const otherLibertyText = joinAndCoordinateList(otherAfterLiberties.map((liberty) => pointToCoord(liberty, boardSize)));
+  const defendedChangeText = defendedAfterLiberties.length > defendedBeforeCount
+    ? `${defendedCoord} grows from ${defendedBeforeCount} to ${formatLibertyCount(defendedAfterLiberties.length)} at ${defendedLibertyText}.`
+    : `${defendedCoord} has ${formatLibertyCount(defendedAfterLiberties.length)} at ${defendedLibertyText}.`;
+  const followUpText = defendedAfterLiberties.length > otherAfterLiberties.length
+    ? `${defendedCoord} is no longer the short side, so the defense did its job; now recount the whole position before extending again.`
+    : defendedAfterLiberties.length === otherAfterLiberties.length
+      ? `${defendedCoord} is level with ${otherCoord}, so the defense did its job; now recount the whole position before extending again.`
+      : `${defendedCoord} is still the short side, so read one more defense before extending again.`;
+
+  return {
+    text: `After ${coord}, ${defendedChangeText} ${otherCoord} has ${formatLibertyCount(otherAfterLiberties.length)} at ${otherLibertyText}. ${followUpText}`,
+  };
+}
+
 function getReplayPressureDefensePoint(
   prompt: OneSpaceJumpReadPrompt,
   recount: PressureRecount,
@@ -752,6 +813,10 @@ export function BeginnerObjectiveCard() {
     point: Point,
   ) => {
     const defenseText = getPressureDefenseReadText(defense, point, game.board);
+    const defenseOutcome = getPressureDefenseOutcome(game, prompt, recount, defense, point);
+    const defenseMessage = [defenseText, defenseOutcome?.text]
+      .filter((text): text is string => Boolean(text))
+      .join(' ');
 
     recordInteraction();
     clearGuidedReadReplay();
@@ -763,11 +828,11 @@ export function BeginnerObjectiveCard() {
     setDefenseReadPointKey(targetKey(point));
     applyTargetHints(buildOneSpaceJumpRecountHighlights(prompt, recount, game.board, point));
     addChatMessage(
-      `Defense read: ${defenseText}`,
+      `Defense read: ${defenseMessage}`,
       'teaching',
       [getPressureDefenseReplayAction(prompt, recount.reply, comparedReply, point)],
     );
-  }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game.board, recordInteraction]);
+  }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game, recordInteraction]);
 
   const handleTargetClick = useCallback((point: Point) => {
     if (!canPlayTarget) return;
@@ -902,6 +967,9 @@ export function BeginnerObjectiveCard() {
     : null;
   const selectedDefenseReadText = pressureDefenseRecommendation && selectedDefenseReadPoint
     ? getPressureDefenseReadText(pressureDefenseRecommendation, selectedDefenseReadPoint, game.board)
+    : null;
+  const selectedDefenseReadOutcome = readPrompt && selectedReadRecount && pressureDefenseRecommendation && selectedDefenseReadPoint
+    ? getPressureDefenseOutcome(game, readPrompt, selectedReadRecount, pressureDefenseRecommendation, selectedDefenseReadPoint)
     : null;
   const readPromptAnchorCoord = readPrompt ? pointToCoord(readPrompt.anchor, game.board.size) : null;
   const readPromptStoneCoord = readPrompt ? pointToCoord(readPrompt.stone, game.board.size) : null;
@@ -1109,6 +1177,11 @@ export function BeginnerObjectiveCard() {
                                   <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
                                     {selectedDefenseReadText}
                                   </p>
+                                  {selectedDefenseReadOutcome && (
+                                    <p className="mt-1 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+                                      {selectedDefenseReadOutcome.text}
+                                    </p>
+                                  )}
                                 </div>
                               )}
                             </>
