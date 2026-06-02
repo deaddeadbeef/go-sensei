@@ -51,6 +51,47 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([{ id: 'lesson:territory', label: 'Review territory' }]);
   });
 
+  it('explains why beginners start near a corner instead of the center', () => {
+    const answer = getLocalQuestionAnswer('Why not the center?', createGame(9), 'guided');
+
+    expect(answer?.text).toContain('Corners are the easiest place for beginners to make territory because two board edges already act like walls.');
+    expect(answer?.text).toContain('A center stone reaches in every direction, but it has to build all four sides itself before it becomes points.');
+    expect(answer?.text).toContain('That is why the first guided goal starts near a corner instead of the open center.');
+    expect(answer?.text).toContain('Try C7, G7, C3, or G3.');
+    expect(answer?.text).toContain('I marked the corner starts again.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['corner-opening', 'territory', 'influence']));
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-corner-opening-move-2,2',
+        point: { x: 2, y: 2 },
+        rank: 1,
+        reason: 'Start at C7: the board edge helps this stone make territory.',
+      },
+      {
+        id: 'local-corner-opening-move-6,2',
+        point: { x: 6, y: 2 },
+        rank: 2,
+        reason: 'Start at G7: the board edge helps this stone make territory.',
+      },
+      {
+        id: 'local-corner-opening-move-2,6',
+        point: { x: 2, y: 6 },
+        rank: 3,
+        reason: 'Start at C3: the board edge helps this stone make territory.',
+      },
+      {
+        id: 'local-corner-opening-move-6,6',
+        point: { x: 6, y: 6 },
+        rank: 4,
+        reason: 'Start at G3: the board edge helps this stone make territory.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'lesson:territory', label: 'Review territory' },
+    ]);
+  });
+
   it('answers next-move questions by pointing weak groups at liberties', () => {
     const game = playSequence([
       { x: 2, y: 2 },

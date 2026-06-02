@@ -106,6 +106,39 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('corner-opening').encounterCount).toBeGreaterThan(0);
   });
 
+  it('explains corner starts locally without fetching', () => {
+    act(() => {
+      useGameStore.getState().startGuidedIntroGame();
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('Why not the center?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('Corners are the easiest place for beginners to make territory because two board edges already act like walls.');
+    expect(state.bubble.text).toContain('A center stone reaches in every direction, but it has to build all four sides itself before it becomes points.');
+    expect(state.bubble.text).toContain('Try C7, G7, C3, or G3.');
+    expect(state.chatMessages.at(-1)?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'lesson:territory', label: 'Review territory' },
+    ]);
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 2, y: 2 },
+      { x: 6, y: 2 },
+      { x: 2, y: 6 },
+      { x: 6, y: 6 },
+    ]);
+    expect(useConceptStore.getState().getMastery('corner-opening').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('territory').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('influence').encounterCount).toBeGreaterThan(0);
+  });
+
   it('keeps logged-out guided player moves local instead of fetching and warning about auth', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());
