@@ -376,6 +376,69 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('explains what the last successful move changed', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+
+    const answer = getLocalQuestionAnswer('What did that change?', firstMove.newState, 'guided');
+
+    expect(answer?.text).toContain('That move changed the position around C7.');
+    expect(answer?.text).toContain('It completed the beginner job: Good: C7 hit the marked corner goal.');
+    expect(answer?.text).toContain('C7 is a useful anchor because the edge helps it surround space.');
+    expect(answer?.text).toContain('The board now asks for: Make your stones work together. Play a one-space jump from one of your stones. Try E7 or C5.');
+    expect(answer?.text).toContain('I highlighted C7 and marked the next targets so the cause-and-effect is visible.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['direction-of-play', 'corner-opening', 'territory', 'shape']));
+    expect(answer?.boardFocus?.highlights).toEqual([{
+      id: 'local-move-impact-2,2',
+      point: { x: 2, y: 2 },
+      variant: 'positive',
+      label: 'C7: met the current beginner job.',
+    }]);
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-move-impact-next-move-4,2',
+        point: { x: 4, y: 2 },
+        rank: 1,
+        reason: 'Try E7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-move-impact-next-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 2,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+  });
+
+  it('explains what a missed opening move changed and marks the repair targets', () => {
+    const firstMove = playMove(createGame(9), { x: 4, y: 4 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+
+    const answer = getLocalQuestionAnswer('What changed?', firstMove.newState, 'guided');
+
+    expect(answer?.text).toContain('That move changed the position around E5.');
+    expect(answer?.text).toContain('It missed the beginner job: Progress check: E5 was not one of the marked corner points.');
+    expect(answer?.text).toContain('E5 reaches in every direction, but it does not use the board edge.');
+    expect(answer?.text).toContain('The board now asks for: Start with a corner. Place your next stone near an empty corner. Try C7, G7, C3, or G3.');
+    expect(answer?.boardFocus?.highlights).toEqual([{
+      id: 'local-move-impact-4,4',
+      point: { x: 4, y: 4 },
+      variant: 'warning',
+      label: 'E5: missed the current beginner job.',
+    }]);
+    expect(answer?.boardFocus?.suggestions?.map((suggestion) => suggestion.point)).toEqual([
+      { x: 2, y: 2 },
+      { x: 6, y: 2 },
+      { x: 2, y: 6 },
+      { x: 6, y: 6 },
+    ]);
+    expect(answer?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'lesson:territory', label: 'Review territory' },
+    ]);
+  });
+
   it('builds a local beginner game review from objective progress', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');

@@ -605,6 +605,37 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('shape').encounterCount).toBeGreaterThan(0);
   });
 
+  it('explains what the last move changed locally without fetching', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('What did that change?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('That move changed the position around C7.');
+    expect(state.bubble.text).toContain('It completed the beginner job: Good: C7 hit the marked corner goal.');
+    expect(state.bubble.text).toContain('The board now asks for: Make your stones work together.');
+    expect(state.bubble.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+    expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+    expect(state.overlays.highlights).toEqual([{
+      id: 'local-move-impact-2,2',
+      point: { x: 2, y: 2 },
+      variant: 'positive',
+      label: 'C7: met the current beginner job.',
+    }]);
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+    ]);
+    expect(useConceptStore.getState().getMastery('direction-of-play').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('shape').encounterCount).toBeGreaterThan(0);
+  });
+
   it('reviews the guided game locally from the review control without fetching', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());

@@ -81,6 +81,15 @@ function lastPlacedMove(game: GameState): Extract<Move, { type: 'place' }> | nul
   return null;
 }
 
+function lastBlackPlacedMove(game: GameState): Extract<Move, { type: 'place' }> | null {
+  for (let index = game.moveHistory.length - 1; index >= 0; index -= 1) {
+    const move = game.moveHistory[index];
+    if (move.type === 'place' && move.color === 'black') return move;
+  }
+
+  return null;
+}
+
 function latestMove(game: GameState): Move | null {
   return game.moveHistory[game.moveHistory.length - 1] ?? null;
 }
@@ -268,6 +277,16 @@ function isMoveReviewQuestion(q: string): boolean {
     || /\bdid\s+i\s+(make\s+a\s+mistake|play\s+(well|badly|good|right|wrong))\b/.test(q)
     || /\bwhy\s+(was|is)\s+(that|this|my\s+move)\s+(good|bad|right|wrong)\b/.test(q)
     || /\breview\s+(that|this|my)\s+move\b/.test(q);
+}
+
+function isMoveImpactQuestion(q: string): boolean {
+  return /\bwhat\s+(did|does)\s+(that|this|my\s+move)\s+(change|do|make|accomplish)\b/.test(q)
+    || /\bwhat\s+changed\b/.test(q)
+    || /\bwhat\s+did\s+(that|this)\s+change\b/.test(q)
+    || /\bwhat\s+did\s+i\s+(change|accomplish|make)\b/.test(q)
+    || /\bhow\s+did\s+(that|this|my\s+move)\s+(help|change|matter)\b/.test(q)
+    || /\bwhy\s+did\s+(that|this|my\s+move)\s+(help|matter|work)\b/.test(q)
+    || /\bwhat\s+does\s+(that|this)\s+mean\s+for\s+(the\s+)?board\b/.test(q);
 }
 
 function isGameReviewQuestion(q: string): boolean {
@@ -1462,6 +1481,93 @@ function buildWeakGroupAnswer(game: GameState, teachingLevel: TeachingLevel): Lo
   };
 }
 
+function buildMoveImpactAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
+  const move = lastBlackPlacedMove(game);
+  const objective = getBeginnerObjective({
+    boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
+    moveCount: game.moveHistory.length,
+    currentPlayer: 'black',
+    teachingLevel,
+  });
+  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-move-impact-next-move') : [];
+  const action = objective ? getBeginnerObjectiveLessonAction(objective) : null;
+
+  if (!move) {
+    const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
+
+    return {
+      text: [
+        'Play a stone first, then ask what changed and I will tie that move back to the board.',
+        objective ? `Your first visible job is: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}` : '',
+        suggestions.length > 0 ? 'I marked the starting targets so you can create a move worth reviewing.' : '',
+      ].filter(Boolean).join(' '),
+      conceptIds: uniqueConceptIds(['stones-and-board', 'direction-of-play', ...(objective?.conceptIds ?? [])]),
+      ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
+      actions: [
+        ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+        ...(action ? [action] : []),
+      ],
+    };
+  }
+
+  const coord = pointToCoord(move.point, game.board.size);
+  const progress = getBeginnerObjectiveProgress(game, teachingLevel);
+  const insight = getMoveInsight(game, teachingLevel);
+  const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
+  const highlightVariant: LocalHighlightFocus['variant'] = progress?.status === 'missed'
+    ? 'warning'
+    : progress?.status === 'met'
+      ? 'positive'
+      : 'neutral';
+  const lines = [
+    `That move changed the position around ${coord}.`,
+  ];
+
+  if (progress) {
+    lines.push(progress.status === 'met'
+      ? `It completed the beginner job: ${progress.text}`
+      : `It missed the beginner job: ${progress.text}`);
+  }
+
+  if (insight) {
+    lines.push(insight.observation);
+  }
+
+  if (objective) {
+    lines.push(`The board now asks for: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}`);
+  } else {
+    lines.push('The useful habit is to ask what this stone helps next: more room, easier territory, a safer group, or a capture threat.');
+  }
+
+  lines.push(suggestions.length > 0
+    ? `I highlighted ${coord} and marked the next targets so the cause-and-effect is visible.`
+    : `I highlighted ${coord} so you can re-read the change on the board.`);
+
+  return {
+    text: lines.join(' '),
+    conceptIds: uniqueConceptIds([
+      'direction-of-play',
+      ...(insight?.conceptIds ?? []),
+      ...(objective?.conceptIds ?? []),
+    ]),
+    boardFocus: {
+      highlights: [{
+        id: `local-move-impact-${pointKey(move.point)}`,
+        point: copyPoint(move.point),
+        variant: highlightVariant,
+        label: `${coord}: ${progress?.status === 'met' ? 'met the current beginner job' : progress?.status === 'missed' ? 'missed the current beginner job' : 'last Black move'}.`,
+      }],
+      ...(suggestions.length > 0 ? { suggestions } : {}),
+    },
+    actions: [
+      ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+      ...(action ? [action] : []),
+    ],
+  };
+}
+
 function buildMoveReviewAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
   const progress = getBeginnerObjectiveProgress(game, teachingLevel);
   const insight = getMoveInsight(game, teachingLevel);
@@ -1852,6 +1958,10 @@ export function getLocalQuestionAnswer(
 
   if (isGameReviewQuestion(q)) {
     return getLocalGameReviewAnswer(game, teachingLevel);
+  }
+
+  if (isMoveImpactQuestion(q)) {
+    return buildMoveImpactAnswer(game, teachingLevel);
   }
 
   if (isMoveReviewQuestion(q)) {
