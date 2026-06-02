@@ -7,6 +7,7 @@ import {
   getAllGroups,
   getGroup,
   getStone,
+  isOnBoard,
   passMove,
   playMove,
   pointEquals,
@@ -616,6 +617,47 @@ function objectiveTargetCoordList(objective: BeginnerObjective, boardSize: Board
 interface BlockedOneSpaceJumpContext {
   sentence: string;
   highlights: LocalHighlightFocus[];
+}
+
+interface WhiteBlockedOneSpaceJumpGap {
+  sentence: string;
+  highlight: LocalHighlightFocus;
+}
+
+function findWhiteBlockedOneSpaceJumpGap(
+  board: GameState['board'],
+  anchor: Point | null,
+  cleanTargetText: string | null,
+  idPrefix: string,
+): WhiteBlockedOneSpaceJumpGap | null {
+  if (!anchor) return null;
+
+  for (const delta of ONE_SPACE_JUMP_DELTAS) {
+    const target = { x: anchor.x + delta.x, y: anchor.y + delta.y };
+    const gap = { x: anchor.x + delta.x / 2, y: anchor.y + delta.y / 2 };
+    if (!isOnBoard(board, target)) continue;
+    if (getStone(board, target) !== null) continue;
+    if (getStone(board, gap) !== 'white') continue;
+
+    const anchorCoord = pointToCoord(anchor, board.size);
+    const targetCoord = pointToCoord(target, board.size);
+    const gapCoord = pointToCoord(gap, board.size);
+    const nextStep = cleanTargetText
+      ? `use the clean marked extension instead: ${cleanTargetText}.`
+      : 'do not treat that outside point as a clean connection-shape target yet.';
+
+    return {
+      sentence: `White is occupying ${gapCoord}, the gap between ${anchorCoord} and ${targetCoord}. ${targetCoord} is blocked as a one-space jump right now, so ${nextStep}`,
+      highlight: {
+        id: `${idPrefix}-blocked-gap-${pointKey(gap)}`,
+        point: copyPoint(gap),
+        variant: 'danger',
+        label: `${gapCoord}: White occupies the one-space jump gap toward ${targetCoord}.`,
+      },
+    };
+  }
+
+  return null;
 }
 
 function blockedOneSpaceJumpContext(
@@ -1926,12 +1968,19 @@ function buildConnectionAnswer(game: GameState, teachingLevel: TeachingLevel): L
     currentPlayer: 'black',
     teachingLevel,
   });
-  const lastMove = lastPlacedMove(game);
-  const context = lastMove ? buildLibertyContext(game, lastMove.point, 'This connected group') : null;
+  const learnerAnchorMove = lastBlackPlacedMove(game);
+  const context = learnerAnchorMove ? buildLibertyContext(game, learnerAnchorMove.point, 'This connected group') : null;
   const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-connection-move') : [];
-  const anchorText = lastMove ? pointToCoord(lastMove.point, game.board.size) : null;
+  const anchorText = learnerAnchorMove ? pointToCoord(learnerAnchorMove.point, game.board.size) : null;
   const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
+  const targetCoordText = objective ? objectiveTargetCoordList(objective, game.board.size) : null;
   const targetCoords = objective?.targetPoints.slice(0, 4).map((point) => pointToCoord(point, game.board.size)) ?? [];
+  const blockedGap = findWhiteBlockedOneSpaceJumpGap(
+    game.board,
+    learnerAnchorMove?.point ?? null,
+    targetCoordText,
+    'local-connection',
+  );
   const lines = [
     'Stones become one solid group only when they touch up, down, left, or right.',
     'Diagonals do not connect.',
@@ -1942,6 +1991,10 @@ function buildConnectionAnswer(game: GameState, teachingLevel: TeachingLevel): L
     lines.push(context.sentence);
   } else {
     lines.push('Play a stone first, then I can mark its group and liberties on the board.');
+  }
+
+  if (blockedGap) {
+    lines.push(blockedGap.sentence);
   }
 
   if (objective?.id === 'extend-from-stone') {
@@ -1955,7 +2008,9 @@ function buildConnectionAnswer(game: GameState, teachingLevel: TeachingLevel): L
     lines.push(`For the current board, first follow the beginner target: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}`);
   }
 
-  if (context && suggestions.length > 0) {
+  if (context && blockedGap && suggestions.length > 0) {
+    lines.push(`I marked your current group, the blocked gap, and the clean connection-shape ${suggestions.length === 1 ? 'target' : 'targets'}.`);
+  } else if (context && suggestions.length > 0) {
     lines.push('I marked your current group and the connection-shape targets.');
   } else if (suggestions.length > 0) {
     lines.push('I marked the current beginner targets.');
@@ -1966,6 +2021,7 @@ function buildConnectionAnswer(game: GameState, teachingLevel: TeachingLevel): L
     conceptIds: uniqueConceptIds(['groups', 'liberties', 'shape', ...(objective?.conceptIds ?? [])]),
     boardFocus: {
       ...(context?.boardFocus ?? {}),
+      ...(blockedGap ? { highlights: [blockedGap.highlight] } : {}),
       ...(suggestions.length > 0 ? { suggestions } : {}),
     },
     actions: [

@@ -830,6 +830,52 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('explains a White cut through a one-space jump gap from the learner anchor', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+    const whiteMove = playMove(firstMove.newState, { x: 3, y: 2 });
+    if (!whiteMove.success) throw new Error('test setup white move failed');
+
+    const answer = getLocalQuestionAnswer('Did White cut me?', whiteMove.newState, 'guided');
+
+    expect(answer?.text).toContain('Your group at C7 currently has 3 liberties: C8, C6, and B7.');
+    expect(answer?.text).toContain('White is occupying D7, the gap between C7 and E7.');
+    expect(answer?.text).toContain('E7 is blocked as a one-space jump right now, so use the clean marked extension instead: C5.');
+    expect(answer?.text).toContain('I marked your current group, the blocked gap, and the clean connection-shape target.');
+    expect(answer?.text).not.toContain('to D7 yet');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['groups', 'liberties', 'shape', 'direction-of-play']));
+    expect(answer?.boardFocus?.highlights).toEqual([{
+      id: 'local-connection-blocked-gap-3,2',
+      point: { x: 3, y: 2 },
+      variant: 'danger',
+      label: 'D7: White occupies the one-space jump gap toward E7.',
+    }]);
+    expect(answer?.boardFocus?.liberties).toEqual([{
+      id: 'local-liberties-2,2',
+      point: { x: 2, y: 2 },
+      count: 3,
+      libertyPoints: [
+        { x: 2, y: 1 },
+        { x: 2, y: 3 },
+        { x: 1, y: 2 },
+      ],
+    }]);
+    expect(answer?.boardFocus?.groups?.[0]).toMatchObject({
+      id: 'local-group-2,2',
+      stones: [{ x: 2, y: 2 }],
+      color: 'black',
+      liberties: 3,
+    });
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-connection-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 1,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
+  });
+
   it('explains the latest White move as board pressure with a practical reply', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
