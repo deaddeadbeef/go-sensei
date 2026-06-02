@@ -1297,6 +1297,62 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('groups').encounterCount).toBeGreaterThan(0);
   });
 
+  it('chooses defense before attack when a Black group is short on liberties', () => {
+    act(() => {
+      useGameStore.getState().startGuidedIntroGame();
+      playStoreSequence([
+        { x: 2, y: 2 },
+        { x: 2, y: 1 },
+        { x: 4, y: 4 },
+        { x: 1, y: 2 },
+      ]);
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('Should I attack or defend?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('Defend first.');
+    expect(state.bubble.text).toContain('Your Black group at C7 has only 2 liberties: C6 and D7.');
+    expect(state.bubble.text).toContain('Attack later, after this group has room.');
+    expect(state.bubble.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'lesson:liberties', label: 'Review liberties' },
+    ]);
+    expect(state.chatMessages.at(-1)?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'lesson:liberties', label: 'Review liberties' },
+    ]);
+    expect(state.overlays.groups[0]).toMatchObject({
+      id: 'local-attack-defense-weak-group-2,2',
+      stones: [{ x: 2, y: 2 }],
+      color: 'black',
+      liberties: 2,
+      label: 'Defend Black group first: 2 liberties at C6 and D7.',
+    });
+    expect(state.overlays.liberties[0]).toEqual({
+      id: 'local-attack-defense-weak-liberties-2,2',
+      point: { x: 2, y: 2 },
+      count: 2,
+      libertyPoints: [
+        { x: 2, y: 3 },
+        { x: 3, y: 2 },
+      ],
+    });
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 2, y: 3 },
+      { x: 3, y: 2 },
+    ]);
+    expect(useConceptStore.getState().getMastery('reading').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('liberties').encounterCount).toBeGreaterThan(0);
+  });
+
   it('answers learner danger questions locally without fetching', () => {
     act(() => {
       const result = useGameStore.getState().applyAiMove({ x: 3, y: 2 });
@@ -1683,6 +1739,56 @@ describe('useGoMaster local answers', () => {
       reason: 'Capture White by filling its last liberty at D7.',
     }]);
     expect(useConceptStore.getState().getMastery('capture').encounterCount).toBeGreaterThan(0);
+  });
+
+  it('chooses capture when White is in atari and Black is not weak', () => {
+    act(() => {
+      useGameStore.getState().startGuidedIntroGame();
+      playStoreSequence([
+        { x: 2, y: 1 },
+        { x: 2, y: 2 },
+        { x: 2, y: 3 },
+        { x: 0, y: 0 },
+        { x: 1, y: 2 },
+        { x: 0, y: 1 },
+      ]);
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('Attack or defend?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('Attack now.');
+    expect(state.bubble.text).toContain('White has a group at C7 in atari.');
+    expect(state.bubble.text).toContain('Black can capture by playing D7.');
+    expect(state.bubble.actions).toEqual([{ id: 'practice:capture', label: 'Practice capture' }]);
+    expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'practice:capture', label: 'Practice capture' }]);
+    expect(state.overlays.liberties).toEqual([{
+      id: 'local-attack-defense-capture-liberties-2,2',
+      point: { x: 2, y: 2 },
+      count: 1,
+      libertyPoints: [{ x: 3, y: 2 }],
+    }]);
+    expect(state.overlays.groups[0]).toMatchObject({
+      id: 'local-attack-defense-capture-group-2,2',
+      color: 'white',
+      liberties: 1,
+      label: 'Attack White group now: capture by playing D7.',
+    });
+    expect(state.overlays.suggestions).toEqual([{
+      id: 'local-attack-defense-capture-move-3,2',
+      point: { x: 3, y: 2 },
+      rank: 1,
+      reason: 'Capture White by filling its last liberty at D7.',
+    }]);
+    expect(useConceptStore.getState().getMastery('capture').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('reading').encounterCount).toBeGreaterThan(0);
   });
 
   it('clears stale board overlays when a follow-up local answer has no board focus', () => {
