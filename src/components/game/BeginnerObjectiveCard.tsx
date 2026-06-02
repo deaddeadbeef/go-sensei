@@ -27,8 +27,32 @@ const ONE_SPACE_JUMP_DELTAS: Point[] = [
   { x: 0, y: -2 },
 ];
 
+interface OneSpaceJumpReadPrompt {
+  key: string;
+  title: string;
+  text: string;
+  variationText: string;
+  anchor: Point;
+  stone: Point;
+  gap: Point;
+  replyPoints: Point[];
+  gapCoord: string;
+}
+
 function targetKey(point: Point): string {
   return `${point.x},${point.y}`;
+}
+
+function copyPoint(point: Point): Point {
+  return { x: point.x, y: point.y };
+}
+
+function joinCoordinateList(coords: string[]): string {
+  if (coords.length === 0) return '';
+  if (coords.length === 1) return coords[0];
+  if (coords.length === 2) return `${coords[0]} or ${coords[1]}`;
+
+  return `${coords.slice(0, -1).join(', ')}, or ${coords[coords.length - 1]}`;
 }
 
 function getCornerTargetExplanation(point: Point, board: BoardState): string {
@@ -52,6 +76,21 @@ function getExtensionAnchor(board: BoardState, target: Point): { anchor: Point; 
   }
 
   return null;
+}
+
+function getGapPressureReplyPoints(board: BoardState, anchor: Point, stone: Point, gap: Point): Point[] {
+  const isHorizontalJump = Math.abs(stone.x - anchor.x) === 2;
+  const candidates = isHorizontalJump
+    ? [
+        { x: gap.x, y: gap.y - 1 },
+        { x: gap.x, y: gap.y + 1 },
+      ]
+    : [
+        { x: gap.x - 1, y: gap.y },
+        { x: gap.x + 1, y: gap.y },
+      ];
+
+  return candidates.filter((point) => isOnBoard(board, point) && getStone(board, point) === null);
 }
 
 function getExtensionTargetExplanation(point: Point, board: BoardState): string {
@@ -108,7 +147,7 @@ function getLastBlackPlacement(moveHistory: Move[]): Extract<Move, { type: 'plac
   return null;
 }
 
-function getOneSpaceJumpReadPrompt(game: GameState): { title: string; text: string } | null {
+function getOneSpaceJumpReadPrompt(game: GameState): OneSpaceJumpReadPrompt | null {
   const move = getLastBlackPlacement(game.moveHistory);
   if (!move) return null;
 
@@ -118,11 +157,57 @@ function getOneSpaceJumpReadPrompt(game: GameState): { title: string; text: stri
   const stoneCoord = pointToCoord(move.point, game.board.size);
   const anchorCoord = pointToCoord(shape.anchor, game.board.size);
   const gapCoord = pointToCoord(shape.gap, game.board.size);
+  const replyPoints = getGapPressureReplyPoints(game.board, shape.anchor, move.point, shape.gap);
+  const replyText = joinCoordinateList(replyPoints.map((point) => pointToCoord(point, game.board.size)));
 
   return {
+    key: `read-pressure-${targetKey(shape.anchor)}-${targetKey(move.point)}-${targetKey(shape.gap)}`,
     title: `Watch ${gapCoord}`,
     text: `If White plays ${gapCoord}, the jump between ${anchorCoord} and ${stoneCoord} is under pressure. First read whether Black should connect or defend that gap before extending again.`,
+    variationText: `Imagine White plays ${gapCoord}. Compare three plans: connect by attacking the cutting stone${replyText ? ` at ${replyText}` : ''}, defend a Black side that is short on liberties, or keep extending if both stones still have room.`,
+    anchor: copyPoint(shape.anchor),
+    stone: copyPoint(move.point),
+    gap: copyPoint(shape.gap),
+    replyPoints: replyPoints.map(copyPoint),
+    gapCoord,
   };
+}
+
+function buildOneSpaceJumpPressureHighlights(prompt: OneSpaceJumpReadPrompt, board: BoardState): OverlayHighlight[] {
+  const anchorCoord = pointToCoord(prompt.anchor, board.size);
+  const stoneCoord = pointToCoord(prompt.stone, board.size);
+  const gapCoord = pointToCoord(prompt.gap, board.size);
+
+  return [
+    {
+      id: `read-pressure-anchor-${targetKey(prompt.anchor)}`,
+      point: copyPoint(prompt.anchor),
+      variant: 'neutral',
+      label: `${anchorCoord}: one side of the jump; check whether this side becomes short.`,
+    },
+    {
+      id: `read-pressure-stone-${targetKey(prompt.stone)}`,
+      point: copyPoint(prompt.stone),
+      variant: 'neutral',
+      label: `${stoneCoord}: one side of the jump; check whether this side becomes short.`,
+    },
+    {
+      id: `read-pressure-gap-${targetKey(prompt.gap)}`,
+      point: copyPoint(prompt.gap),
+      variant: 'warning',
+      label: `${gapCoord}: imagine White tests the open gap here.`,
+    },
+    ...prompt.replyPoints.map((point) => {
+      const coord = pointToCoord(point, board.size);
+
+      return {
+        id: `read-pressure-reply-${targetKey(point)}`,
+        point: copyPoint(point),
+        variant: 'positive' as const,
+        label: `${coord}: first reply to read against the cutting stone.`,
+      };
+    }),
+  ];
 }
 
 function buildTargetHintHighlights(objective: BeginnerObjective, point: Point, board: BoardState): OverlayHighlight[] {
@@ -200,6 +285,7 @@ export function BeginnerObjectiveCard() {
   const applyTargetHints = useGameStore((s) => s.applyTargetHints);
   const canPlayTarget = phase === 'playing' && game.currentPlayer === 'black' && !isAiThinking;
   const [activeTargetKey, setActiveTargetKey] = useState<string | null>(null);
+  const [activeReadPromptKey, setActiveReadPromptKey] = useState<string | null>(null);
 
   const objective = getBeginnerObjective({
     boardSize: game.board.size,
@@ -209,6 +295,10 @@ export function BeginnerObjectiveCard() {
     currentPlayer: game.currentPlayer,
     teachingLevel,
   });
+  const progress = getBeginnerObjectiveProgress(game, teachingLevel);
+  const readPrompt = progress?.status === 'met' && progress.objectiveId === 'extend-from-stone'
+    ? getOneSpaceJumpReadPrompt(game)
+    : null;
 
   const clearTargetHelp = useCallback(() => {
     setActiveTargetKey(null);
@@ -217,16 +307,31 @@ export function BeginnerObjectiveCard() {
 
   useEffect(() => () => applyTargetHints([]), [applyTargetHints]);
 
+  useEffect(() => {
+    if (activeReadPromptKey === null || activeReadPromptKey === readPrompt?.key) return;
+
+    applyTargetHints([]);
+  }, [activeReadPromptKey, applyTargetHints, readPrompt?.key]);
+
   const showTargetHelp = useCallback((point: Point) => {
     if (!objective) return;
 
     setActiveTargetKey(targetKey(point));
+    setActiveReadPromptKey(null);
     applyTargetHints(buildTargetHintHighlights(objective, point, game.board));
   }, [applyTargetHints, game.board, objective]);
+
+  const showReadPressure = useCallback((prompt: OneSpaceJumpReadPrompt) => {
+    recordInteraction();
+    setActiveTargetKey(null);
+    setActiveReadPromptKey(prompt.key);
+    applyTargetHints(buildOneSpaceJumpPressureHighlights(prompt, game.board));
+  }, [applyTargetHints, game.board, recordInteraction]);
 
   const handleTargetClick = useCallback((point: Point) => {
     if (!canPlayTarget) return;
 
+    setActiveReadPromptKey(null);
     clearTargetHelp();
     recordInteraction();
     placeStone(point);
@@ -235,14 +340,11 @@ export function BeginnerObjectiveCard() {
   if (!objective) return null;
 
   const targetText = formatObjectiveTargetText(objective, game.board.size);
-  const progress = getBeginnerObjectiveProgress(game, teachingLevel);
   const progressColor = progress?.status === 'met' ? COLORS.overlay.positive : COLORS.overlay.warning;
   const playableTargets = objective.targetPoints.slice(0, 4);
   const hasLearnerMove = game.moveHistory.some((move) => move.color === 'black');
   const insight = hasLearnerMove ? getMoveInsight(game, teachingLevel) : null;
-  const readPrompt = progress?.status === 'met' && progress.objectiveId === 'extend-from-stone'
-    ? getOneSpaceJumpReadPrompt(game)
-    : null;
+  const showReadPressureDetail = readPrompt !== null && activeReadPromptKey === readPrompt.key;
   const activeTarget = activeTargetKey
     ? playableTargets.find((point) => targetKey(point) === activeTargetKey) ?? null
     : null;
@@ -279,6 +381,31 @@ export function BeginnerObjectiveCard() {
           <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
             {readPrompt.text}
           </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              className="rounded border px-2 py-0.5 text-[11px] font-semibold transition hover:bg-white/[0.07]"
+              style={{
+                borderColor: COLORS.ui.accent,
+                color: COLORS.ui.textPrimary,
+                backgroundColor: showReadPressureDetail ? `${COLORS.overlay.warning}26` : `${COLORS.ui.accent}1f`,
+              }}
+              aria-label={`Show pressure variation for ${readPrompt.gapCoord}`}
+              onClick={() => showReadPressure(readPrompt)}
+            >
+              Show pressure
+            </button>
+          </div>
+          {showReadPressureDetail && (
+            <div className="mt-2 rounded border px-2 py-1.5" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+              <div className="text-xs font-semibold" style={{ color: COLORS.ui.textPrimary }}>
+                Pressure variation
+              </div>
+              <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+                {readPrompt.variationText}
+              </p>
+            </div>
+          )}
         </div>
       )}
       <div className="font-semibold" style={{ color: COLORS.ui.textPrimary }}>
