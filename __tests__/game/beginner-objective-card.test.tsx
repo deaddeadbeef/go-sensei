@@ -152,6 +152,21 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText('E7 is a one-space jump from C7. The empty point at D7 leaves room to grow while the two stones still work together.')).toBeTruthy();
   });
 
+  it('keeps a compact read-next prompt for the open gap after a one-space jump', () => {
+    act(() => {
+      useGameStore.getState().placeStone({ x: 2, y: 2 });
+      useGameStore.getState().pass();
+      useGameStore.getState().placeStone({ x: 4, y: 2 });
+      useGameStore.getState().pass();
+    });
+
+    render(<BeginnerObjectiveCard />);
+
+    expect(screen.getByText('Read next')).toBeTruthy();
+    expect(screen.getByText('Watch D7')).toBeTruthy();
+    expect(screen.getByText('If White plays D7, the jump between C7 and E7 is under pressure. First read whether Black should connect or defend that gap before extending again.')).toBeTruthy();
+  });
+
   it('keeps the last missed objective visible without blocking the next try', () => {
     act(() => {
       useGameStore.getState().placeStone({ x: 4, y: 4 });

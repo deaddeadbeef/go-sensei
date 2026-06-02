@@ -14,7 +14,7 @@ import {
   isOnBoard,
   pointToCoord,
 } from '@/lib/go-engine';
-import type { BoardState, Group, Point } from '@/lib/go-engine';
+import type { BoardState, GameState, Group, Move, Point } from '@/lib/go-engine';
 import { useGameStore } from '@/stores/game-store';
 import type { OverlayHighlight } from '@/stores/game-store';
 import { COLORS } from '@/utils/colors';
@@ -97,6 +97,32 @@ function getTargetExplanation(objective: BeginnerObjective, point: Point, board:
     case 'look-for-weak-groups':
       return getWeakGroupTargetExplanation(point, board);
   }
+}
+
+function getLastBlackPlacement(moveHistory: Move[]): Extract<Move, { type: 'place' }> | null {
+  for (let index = moveHistory.length - 1; index >= 0; index -= 1) {
+    const move = moveHistory[index];
+    if (move.type === 'place' && move.color === 'black') return move;
+  }
+
+  return null;
+}
+
+function getOneSpaceJumpReadPrompt(game: GameState): { title: string; text: string } | null {
+  const move = getLastBlackPlacement(game.moveHistory);
+  if (!move) return null;
+
+  const shape = getExtensionAnchor(game.board, move.point);
+  if (!shape) return null;
+
+  const stoneCoord = pointToCoord(move.point, game.board.size);
+  const anchorCoord = pointToCoord(shape.anchor, game.board.size);
+  const gapCoord = pointToCoord(shape.gap, game.board.size);
+
+  return {
+    title: `Watch ${gapCoord}`,
+    text: `If White plays ${gapCoord}, the jump between ${anchorCoord} and ${stoneCoord} is under pressure. First read whether Black should connect or defend that gap before extending again.`,
+  };
 }
 
 function buildTargetHintHighlights(objective: BeginnerObjective, point: Point, board: BoardState): OverlayHighlight[] {
@@ -214,6 +240,9 @@ export function BeginnerObjectiveCard() {
   const playableTargets = objective.targetPoints.slice(0, 4);
   const hasLearnerMove = game.moveHistory.some((move) => move.color === 'black');
   const insight = hasLearnerMove ? getMoveInsight(game, teachingLevel) : null;
+  const readPrompt = progress?.status === 'met' && progress.objectiveId === 'extend-from-stone'
+    ? getOneSpaceJumpReadPrompt(game)
+    : null;
   const activeTarget = activeTargetKey
     ? playableTargets.find((point) => targetKey(point) === activeTargetKey) ?? null
     : null;
@@ -236,6 +265,19 @@ export function BeginnerObjectiveCard() {
           </div>
           <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
             {insight.observation}
+          </p>
+        </div>
+      )}
+      {readPrompt && (
+        <div className="mb-2 border-b border-white/10 pb-2">
+          <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: COLORS.ui.textSecondary }}>
+            Read next
+          </div>
+          <div className="mt-1 text-xs font-semibold" style={{ color: COLORS.ui.textPrimary }}>
+            {readPrompt.title}
+          </div>
+          <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+            {readPrompt.text}
           </p>
         </div>
       )}
