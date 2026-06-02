@@ -344,6 +344,36 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
   });
 
+  it('explains komi as a scoring bonus without treating it as territory', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+
+    const answer = getLocalQuestionAnswer('What is komi?', afterWhitePass, 'guided');
+
+    expect(answer?.text).toContain("Komi is 6.5 points added to White's score because Black moves first.");
+    expect(answer?.text).toContain('balances the first-move advantage');
+    expect(answer?.text).toContain('Komi is not territory White has surrounded');
+    expect(answer?.text).toContain('For now, improve the board before counting it: Make your stones work together.');
+    expect(answer?.text).toContain('I marked the next targets so you can keep building a position worth scoring later.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['scoring', 'territory', 'shape']));
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-komi-move-4,2',
+        point: { x: 4, y: 2 },
+        rank: 1,
+        reason: 'Try E7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-komi-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 2,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+  });
+
   it('answers liberty questions with current board context', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
