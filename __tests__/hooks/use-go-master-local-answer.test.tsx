@@ -605,6 +605,43 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('shape').encounterCount).toBeGreaterThan(0);
   });
 
+  it('reviews the guided game locally from the review control without fetching', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.requestReview();
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('Local beginner review: here are the board moments I can verify without cloud help.');
+    expect(state.bubble.text).toContain('Best move: Move 1 C7 followed "Start with a corner".');
+    expect(state.bubble.text).toContain('Next practice target: Make your stones work together.');
+    expect(state.bubble.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'guided:intro', label: 'Start fresh guided game' },
+    ]);
+    expect(state.chatMessages.at(-1)?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'guided:intro', label: 'Start fresh guided game' },
+    ]);
+    expect(state.overlays.highlights).toEqual([{
+      id: 'local-game-review-best-2,2',
+      point: { x: 2, y: 2 },
+      variant: 'positive',
+      label: 'Move 1 C7 followed: Start with a corner.',
+    }]);
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+    ]);
+    expect(useConceptStore.getState().getMastery('corner-opening').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('shape').encounterCount).toBeGreaterThan(0);
+  });
+
   it('explains the current shape instruction locally without fetching', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());
