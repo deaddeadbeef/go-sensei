@@ -35,6 +35,7 @@ Latest completed slice:
 - Added a quick "Show pressure" variation for completed one-space jumps so learners can compare attacking the cutter, defending a short side, or continuing outward without mutating the game.
 - Added a non-mutating playable mini-branch inside the pressure variation so learners can choose a first reply and get immediate feedback while the real guided game stays intact.
 - Added a second-step recount inside the pressure mini-branch so learners can simulate White entering the gap, choose a reply, then count liberties on both Black sides before returning to the real game.
+- Preserved pressure mini-branch choices and second-read recounts in the chat transcript so the sidebar remembers the same teaching moments shown beside the board.
 
 Next investigation candidates:
-- Whether the guided board should preserve the learner's latest mini-branch choice in the chat transcript so the sidebar and board-side prompt stay in sync.
+- Whether chat transcript entries for mini-branches should expose follow-up actions that can restore the same board-side branch view after the learner scrolls away or revisits the board.
