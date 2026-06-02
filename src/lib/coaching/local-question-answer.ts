@@ -296,6 +296,14 @@ function isMoveImpactQuestion(q: string): boolean {
     || /\bwhat\s+does\s+(that|this)\s+mean\s+for\s+(the\s+)?board\b/.test(q);
 }
 
+function isLearningTakeawayQuestion(q: string): boolean {
+  return /\bwhat\s+(did|does)\s+(that|this|my\s+move)\s+teach\s+me\b/.test(q)
+    || /\bwhat\s+(should|can)\s+i\s+(learn|take[-\s]?away)\s+from\s+(that|this|my\s+move|the\s+move|this\s+position|the\s+position|this\s+board)\b/.test(q)
+    || /\bwhat\s+(is|s)\s+the\s+(lesson|take[-\s]?away)\s+(here|from\s+(that|this|my\s+move|the\s+move|this\s+position|the\s+position|this\s+board))\b/.test(q)
+    || /\bwhat\s+lesson\s+should\s+i\s+(learn|take[-\s]?away)\b/.test(q)
+    || /\bwhat\s+should\s+i\s+remember\s+from\s+(that|this|my\s+move|this\s+position|this\s+board)\b/.test(q);
+}
+
 function isOpponentMoveQuestion(q: string): boolean {
   return /\bwhy\s+did\s+(white|sensei|you|the\s+opponent)\s+(play|move)\b/.test(q)
     || /\bwhy\s+does\s+(white|sensei|the\s+opponent)\s+(play|move)\b/.test(q)
@@ -2025,6 +2033,94 @@ function buildMoveImpactAnswer(game: GameState, teachingLevel: TeachingLevel): L
   };
 }
 
+function buildLearningTakeawayAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
+  const move = lastBlackPlacedMove(game);
+  const objective = getBeginnerObjective({
+    boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
+    moveCount: game.moveHistory.length,
+    currentPlayer: 'black',
+    teachingLevel,
+  });
+  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-learning-takeaway-move') : [];
+  const action = objective ? getBeginnerObjectiveLessonAction(objective) : null;
+
+  if (!move) {
+    const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
+
+    return {
+      text: [
+        'Play a stone first, then ask what it taught you.',
+        'A good takeaway comes from comparing your move with one visible beginner job.',
+        objective ? `Your first job is: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}` : '',
+        suggestions.length > 0 ? 'I marked the starting targets so the lesson begins with a concrete choice.' : '',
+      ].filter(Boolean).join(' '),
+      conceptIds: uniqueConceptIds(['stones-and-board', 'direction-of-play', ...(objective?.conceptIds ?? [])]),
+      ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
+      actions: [
+        ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+        ...(action ? [action] : []),
+      ],
+    };
+  }
+
+  const coord = pointToCoord(move.point, game.board.size);
+  const progress = getBeginnerObjectiveProgress(game, teachingLevel);
+  const insight = getMoveInsight(game, teachingLevel);
+  const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
+  const highlightVariant: LocalHighlightFocus['variant'] = progress?.status === 'missed'
+    ? 'warning'
+    : progress?.status === 'met'
+      ? 'positive'
+      : 'neutral';
+  const lines: string[] = [];
+
+  if (progress?.status === 'met') {
+    lines.push(`Lesson from ${coord}: your move worked because it followed the beginner job. ${progress.text}`);
+  } else if (progress?.status === 'missed') {
+    lines.push(`Lesson from ${coord}: the useful lesson is the mismatch. ${progress.text}`);
+  } else {
+    lines.push(`Lesson from ${coord}: every stone should make the next board question easier to answer.`);
+  }
+
+  if (insight) {
+    lines.push(`Board idea: ${insight.observation}`);
+  }
+
+  if (objective) {
+    lines.push(`Practice it now by playing the next job: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}`);
+  } else {
+    lines.push('Practice it now by asking which move gives your stones more room, easier territory, or a clear capture threat.');
+  }
+
+  lines.push(suggestions.length > 0
+    ? `I highlighted ${coord} and marked the practice targets so the lesson has a next move.`
+    : `I highlighted ${coord} so you can connect the lesson back to the board.`);
+
+  return {
+    text: lines.join(' '),
+    conceptIds: uniqueConceptIds([
+      'direction-of-play',
+      ...(insight?.conceptIds ?? []),
+      ...(objective?.conceptIds ?? []),
+    ]),
+    boardFocus: {
+      highlights: [{
+        id: `local-learning-takeaway-${pointKey(move.point)}`,
+        point: copyPoint(move.point),
+        variant: highlightVariant,
+        label: `${coord}: move to learn from${progress?.status === 'met' ? ' - beginner job met' : progress?.status === 'missed' ? ' - beginner job missed' : ''}.`,
+      }],
+      ...(suggestions.length > 0 ? { suggestions } : {}),
+    },
+    actions: [
+      ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+      ...(action ? [action] : []),
+    ],
+  };
+}
+
 function adjacentGroupsByColor(game: GameState, point: Point, color: 'black' | 'white'): Group[] {
   const seen = new Set<string>();
   const groups: Group[] = [];
@@ -2530,6 +2626,10 @@ export function getLocalQuestionAnswer(
 
   if (isMoveImpactQuestion(q)) {
     return buildMoveImpactAnswer(game, teachingLevel);
+  }
+
+  if (isLearningTakeawayQuestion(q)) {
+    return buildLearningTakeawayAnswer(game, teachingLevel);
   }
 
   if (isMoveReviewQuestion(q)) {

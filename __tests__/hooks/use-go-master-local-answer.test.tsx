@@ -726,6 +726,47 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('shape').encounterCount).toBeGreaterThan(0);
   });
 
+  it('turns the last move into a local takeaway without fetching', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('What did this teach me?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('Lesson from C7: your move worked because it followed the beginner job.');
+    expect(state.bubble.text).toContain('Practice it now by playing the next job: Make your stones work together.');
+    expect(state.bubble.text).toContain('I highlighted C7 and marked the practice targets so the lesson has a next move.');
+    expect(state.bubble.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+    expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+    expect(state.overlays.highlights).toEqual([{
+      id: 'local-learning-takeaway-2,2',
+      point: { x: 2, y: 2 },
+      variant: 'positive',
+      label: 'C7: move to learn from - beginner job met.',
+    }]);
+    expect(state.overlays.suggestions).toEqual([
+      {
+        id: 'local-learning-takeaway-move-4,2',
+        point: { x: 4, y: 2 },
+        rank: 1,
+        reason: 'Try E7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-learning-takeaway-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 2,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
+    expect(useConceptStore.getState().getMastery('direction-of-play').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('corner-opening').encounterCount).toBeGreaterThan(0);
+  });
+
   it('teaches a reading routine locally without fetching', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());

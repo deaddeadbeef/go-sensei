@@ -451,6 +451,41 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
   });
 
+  it('turns the last move into a local learning takeaway', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+
+    const answer = getLocalQuestionAnswer('What should I learn from this?', firstMove.newState, 'guided');
+
+    expect(answer?.text).toContain('Lesson from C7: your move worked because it followed the beginner job.');
+    expect(answer?.text).toContain('Good: C7 hit the marked corner goal.');
+    expect(answer?.text).toContain('Board idea: C7 is a useful anchor because the edge helps it surround space.');
+    expect(answer?.text).toContain('Practice it now by playing the next job: Make your stones work together. Play a one-space jump from one of your stones. Try E7 or C5.');
+    expect(answer?.text).toContain('I highlighted C7 and marked the practice targets so the lesson has a next move.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['direction-of-play', 'corner-opening', 'territory', 'shape']));
+    expect(answer?.boardFocus?.highlights).toEqual([{
+      id: 'local-learning-takeaway-2,2',
+      point: { x: 2, y: 2 },
+      variant: 'positive',
+      label: 'C7: move to learn from - beginner job met.',
+    }]);
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-learning-takeaway-move-4,2',
+        point: { x: 4, y: 2 },
+        rank: 1,
+        reason: 'Try E7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-learning-takeaway-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 2,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+  });
+
   it('explains what a missed opening move changed and marks the repair targets', () => {
     const firstMove = playMove(createGame(9), { x: 4, y: 4 });
     if (!firstMove.success) throw new Error('test setup move failed');
