@@ -374,6 +374,44 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
   });
 
+  it('explains how to find a board coordinate and highlights it', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+
+    const answer = getLocalQuestionAnswer('Where is E7?', afterWhitePass, 'guided');
+
+    expect(answer?.text).toContain('Go coordinates name intersections, not squares.');
+    expect(answer?.text).toContain('Letters run left to right across the board and skip I');
+    expect(answer?.text).toContain('row 9 is the top edge and row 1 is the bottom edge');
+    expect(answer?.text).toContain('E7 means column E, row 7.');
+    expect(answer?.text).toContain('I highlighted E7 on the board.');
+    expect(answer?.text).toContain('For the current beginner goal, Try E7 or C5.');
+    expect(answer?.text).toContain('I kept the current target points marked');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['stones-and-board', 'shape']));
+    expect(answer?.boardFocus?.highlights).toEqual([{
+      id: 'local-coordinate-4,2',
+      point: { x: 4, y: 2 },
+      variant: 'neutral',
+      label: 'E7: column E, row 7.',
+    }]);
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-coordinate-move-4,2',
+        point: { x: 4, y: 2 },
+        rank: 1,
+        reason: 'Try E7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-coordinate-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 2,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+  });
+
   it('answers liberty questions with current board context', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
