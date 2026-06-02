@@ -46,6 +46,7 @@ Latest completed slice:
 - Added defense-read transcript actions that restore the selected defensive liberty marker, so earlier defense trials reopen as the same board-side lesson instead of only the parent comparison.
 - Added a post-defense recount to the non-mutating defense trial, so learners see how the chosen liberty changes the short-side liberty count before returning to the real game.
 - Switched defense-trial board markers to the post-defense recount, so the board shows the stabilized side's actual liberties and flags the newly shorter side instead of stale pre-defense warnings.
+- Added a replayable follow-up defense continuation when a successful defense makes the other side shorter, so learners can keep reading the new weak side without mutating the real game.
 
 Next investigation candidates:
-- Whether the pressure mini-branch should let learners continue from the newly shorter side after a successful defense, instead of ending the local read there.
+- Whether the pressure mini-branch should compare follow-up defenses like E8, E6, and F7 side by side, especially when one move connects both sides into a single group.
