@@ -462,6 +462,24 @@ function isOneSpaceJumpGapQuestion(q: string): boolean {
     || /\bbetween\s+them\b/.test(q);
 }
 
+function isOneSpaceJumpPressureQuestion(q: string): boolean {
+  return /\b(white|opponent|sensei)\b/.test(q) && /\b(cut|attack|threaten|play|reply|answer|pressure)\b/.test(q)
+    || /\b(can|could|would|will|might)\s+(white|opponent|sensei)\s+cut\b/.test(q)
+    || /\bwhat\s+if\s+(white|opponent|sensei)\s+(plays|attacks|cuts|pressures)\b/.test(q)
+    || /\bwhat\s+should\s+i\s+do\s+if\s+(white|opponent|sensei)\s+(plays|attacks|cuts|pressures)\b/.test(q)
+    || /\b(if|when)\s+(white|opponent|sensei)\s+(plays|attacks|cuts|pressures)\b/.test(q)
+    || /\b(can|should|do)\s+i\s+(ignore|answer|defend)\s+(the\s+)?(cut|gap|attack|pressure)\b/.test(q);
+}
+
+function isOneSpaceJumpConnectionQuestion(q: string, boardSize: BoardSize): boolean {
+  if (mentionedCoordinates(q, boardSize).length < 2) return false;
+
+  return /\bconnect(?:ed|ing|ion|ions)?\b/.test(q)
+    || /\bsame\s+group\b/.test(q)
+    || /\bwork\s+together\b/.test(q)
+    || /\bseparate(?:d)?\b/.test(q);
+}
+
 function isPassQuestion(q: string): boolean {
   if (!/\bpass(ed|ing)?\b/.test(q)) return false;
 
@@ -1102,6 +1120,130 @@ function buildOneSpaceJumpGapAnswer(game: GameState, teachingLevel: TeachingLeve
           point: copyPoint(shape.gap),
           variant: 'neutral',
           label: `${gapCoord}: intentional gap; answer it if White attacks.`,
+        },
+      ],
+      ...(suggestions.length > 0 ? { suggestions } : {}),
+    },
+    actions: [
+      ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+      { id: 'lesson:groups', label: 'Review groups' },
+    ],
+  };
+}
+
+function buildOneSpaceJumpPressureAnswer(game: GameState, teachingLevel: TeachingLevel, q: string): LocalQuestionAnswer | null {
+  const shape = findLearnerOneSpaceJumpShape(game);
+  if (!shape) return null;
+
+  const requestedPoint = mentionedCoordinate(q, game.board.size);
+  if (requestedPoint && !pointEquals(requestedPoint, shape.gap)) return null;
+  if (getStone(game.board, shape.gap) !== null) return null;
+
+  const objective = getBeginnerObjective({
+    boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
+    moveCount: game.moveHistory.length,
+    currentPlayer: 'black',
+    teachingLevel,
+  });
+  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-gap-pressure-move') : [];
+  const targetText = objective ? objectiveTargetCoordList(objective, game.board.size) : null;
+  const anchorCoord = pointToCoord(shape.anchor, game.board.size);
+  const stoneCoord = pointToCoord(shape.stone, game.board.size);
+  const gapCoord = pointToCoord(shape.gap, game.board.size);
+
+  return {
+    text: [
+      `${gapCoord} is the one-point gap between ${anchorCoord} and ${stoneCoord}.`,
+      `White can test that gap by playing ${gapCoord}, but that is pressure, not an immediate capture.`,
+      `If White actually attacks ${gapCoord}, count liberties before reacting: defend the stone that becomes short on room; if both stones still have room, keep building${targetText ? ` with ${targetText}` : ''}.`,
+      'I highlighted the two stones and the gap White could pressure so the reading question stays tied to the board.',
+    ].join(' '),
+    conceptIds: uniqueConceptIds(['shape', 'reading', 'liberties', 'groups', ...(objective?.conceptIds ?? [])]),
+    boardFocus: {
+      highlights: [
+        {
+          id: `local-gap-pressure-anchor-${pointKey(shape.anchor)}`,
+          point: copyPoint(shape.anchor),
+          variant: 'positive',
+          label: `${anchorCoord}: one side of the jump White could test.`,
+        },
+        {
+          id: `local-gap-pressure-stone-${pointKey(shape.stone)}`,
+          point: copyPoint(shape.stone),
+          variant: 'positive',
+          label: `${stoneCoord}: one side of the jump White could test.`,
+        },
+        {
+          id: `local-gap-pressure-open-${pointKey(shape.gap)}`,
+          point: copyPoint(shape.gap),
+          variant: 'warning',
+          label: `${gapCoord}: gap White could pressure; count liberties before answering.`,
+        },
+      ],
+      ...(suggestions.length > 0 ? { suggestions } : {}),
+    },
+    actions: [
+      ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+      { id: 'practice:reading', label: 'Practice reading' },
+    ],
+  };
+}
+
+function buildOneSpaceJumpConnectionAnswer(game: GameState, teachingLevel: TeachingLevel, q: string): LocalQuestionAnswer | null {
+  const shape = findLearnerOneSpaceJumpShape(game);
+  if (!shape) return null;
+
+  const requestedPoints = mentionedCoordinates(q, game.board.size);
+  if (requestedPoints.length >= 2) {
+    const mentionsAnchor = requestedPoints.some((point) => pointEquals(point, shape.anchor));
+    const mentionsStone = requestedPoints.some((point) => pointEquals(point, shape.stone));
+    if (!mentionsAnchor || !mentionsStone) return null;
+  }
+
+  const objective = getBeginnerObjective({
+    boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
+    moveCount: game.moveHistory.length,
+    currentPlayer: 'black',
+    teachingLevel,
+  });
+  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-gap-connection-move') : [];
+  const targetText = objective ? objectiveTargetCoordList(objective, game.board.size) : null;
+  const anchorCoord = pointToCoord(shape.anchor, game.board.size);
+  const stoneCoord = pointToCoord(shape.stone, game.board.size);
+  const gapCoord = pointToCoord(shape.gap, game.board.size);
+
+  return {
+    text: [
+      `${anchorCoord} and ${stoneCoord} are not one solid group by the rules yet.`,
+      `${gapCoord} is the open point between them.`,
+      'They are connected in shape: a one-space jump that usually works together unless White attacks the gap.',
+      targetText ? `For now, keep building with ${targetText}.` : 'For now, keep building unless the gap is attacked or one stone becomes short on liberties.',
+      'I highlighted the two stones and the open gap so you can see the difference between rule connection and shape connection.',
+    ].join(' '),
+    conceptIds: uniqueConceptIds(['groups', 'shape', 'liberties', ...(objective?.conceptIds ?? [])]),
+    boardFocus: {
+      highlights: [
+        {
+          id: `local-gap-connection-anchor-${pointKey(shape.anchor)}`,
+          point: copyPoint(shape.anchor),
+          variant: 'positive',
+          label: `${anchorCoord}: first stone in the one-space jump.`,
+        },
+        {
+          id: `local-gap-connection-stone-${pointKey(shape.stone)}`,
+          point: copyPoint(shape.stone),
+          variant: 'positive',
+          label: `${stoneCoord}: second stone in the one-space jump.`,
+        },
+        {
+          id: `local-gap-connection-open-${pointKey(shape.gap)}`,
+          point: copyPoint(shape.gap),
+          variant: 'neutral',
+          label: `${gapCoord}: open gap; shape connection, not a solid group.`,
         },
       ],
       ...(suggestions.length > 0 ? { suggestions } : {}),
@@ -3057,6 +3199,16 @@ export function getLocalQuestionAnswer(
 
   if (isPassQuestion(q)) {
     return buildPassAnswer(game, teachingLevel, q);
+  }
+
+  if (isOneSpaceJumpPressureQuestion(q)) {
+    const pressureAnswer = buildOneSpaceJumpPressureAnswer(game, teachingLevel, q);
+    if (pressureAnswer) return pressureAnswer;
+  }
+
+  if (isOneSpaceJumpConnectionQuestion(q, game.board.size)) {
+    const connectionAnswer = buildOneSpaceJumpConnectionAnswer(game, teachingLevel, q);
+    if (connectionAnswer) return connectionAnswer;
   }
 
   if (isOpponentMoveQuestion(q)) {
