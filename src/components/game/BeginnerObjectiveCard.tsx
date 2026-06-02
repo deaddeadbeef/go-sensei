@@ -98,6 +98,7 @@ interface PressureReadSequenceRow {
   replayKey: string;
   text: string;
   focusText: string;
+  nextQuestion: string;
   highlights: OverlayHighlight[];
 }
 
@@ -844,11 +845,16 @@ function getPressureReadSequenceRows(
   const comparisonRecount = comparedRecount && selectedRecount ? selectedRecount : null;
   const firstReply = primaryRecount?.reply ?? selectedReply;
   const liveComparisonCoord = comparisonRecount ? pointToCoord(comparisonRecount.reply, board.size) : null;
+  const firstReplyKeepsSidesSafe = primaryRecount
+    ? primaryRecount.anchorLiberties.length === primaryRecount.stoneLiberties.length
+      && primaryRecount.anchorLiberties.length >= 3
+    : false;
   const rows: PressureReadSequenceRow[] = [{
     key: `${prompt.key}:pressure-gap`,
     replayKey: 'gap',
     text: `White ${prompt.gapCoord} tests the gap between ${anchorCoord} and ${stoneCoord}.`,
     focusText: `Use this as the reference point: every branch starts by imagining White ${prompt.gapCoord} before Black answers.`,
+    nextQuestion: `If White really plays ${prompt.gapCoord}, which Black reply attacks the cutter without leaving a short side?`,
     highlights: buildOneSpaceJumpPressureHighlights(prompt, board),
   }];
 
@@ -861,6 +867,11 @@ function getPressureReadSequenceRows(
       focusText: liveComparisonCoord
         ? `Compare this saved first answer with the live ${liveComparisonCoord} branch; the direction changes before the liberty counts are checked.`
         : `Save this first answer before recounting ${anchorCoord} and ${stoneCoord}; it sets the branch direction.`,
+      nextQuestion: liveComparisonCoord
+        ? firstReplyKeepsSidesSafe
+          ? `Before returning to ${liveComparisonCoord}, ask: did ${firstReplyCoord} change the attack direction while keeping both sides safe?`
+          : `Before returning to ${liveComparisonCoord}, ask: did ${firstReplyCoord} change the attack direction or reveal a short side?`
+        : `Before recounting, ask which side of the jump ${firstReplyCoord} pressures first.`,
       highlights: buildOneSpaceJumpPressureHighlights(prompt, board, firstReply),
     });
   }
@@ -874,6 +885,9 @@ function getPressureReadSequenceRows(
       focusText: liveComparisonCoord
         ? `Pin this ${primaryCoord} count as the baseline before the live ${liveComparisonCoord} comparison; it shows what stayed safe or became short.`
         : `Pin this liberty count before choosing another reply; it tells you whether either side is already short.`,
+      nextQuestion: liveComparisonCoord
+        ? `Before checking ${liveComparisonCoord}, ask which liberty count is the baseline for comparison.`
+        : `Which side is shorter after ${primaryCoord}, or are both sides ready for another reply?`,
       highlights: buildOneSpaceJumpRecountHighlights(prompt, primaryRecount, board),
     });
   }
@@ -888,6 +902,7 @@ function getPressureReadSequenceRows(
       focusText: primaryCoord
         ? `This is the live comparison against ${primaryCoord}; use it to see whether the reply direction or liberty count changed.`
         : `This is the alternate reply count; compare it against the first answer before extending.`,
+      nextQuestion: `After ${comparisonCoord}, which side changed, and does that force a defense before extending?`,
       highlights: buildOneSpaceJumpRecountHighlights(prompt, comparisonRecount, board),
     });
   }
@@ -899,6 +914,7 @@ function getPressureReadSequenceRows(
       replayKey: `defense-${targetKey(selectedDefenseOutcome.defense)}`,
       text: `Defend ${selectedDefenseOutcome.defendedSideCoord} at ${defenseCoord}; ${selectedDefenseOutcome.defendedSideCoord} has ${formatLibertyCount(selectedDefenseOutcome.defendedLiberties.length)}.`,
       focusText: `This shows how ${defenseCoord} changes the short side before the next read; compare it with the warning markers from the branch.`,
+      nextQuestion: `After ${defenseCoord}, which side is now shorter, and should the read continue there?`,
       highlights: buildOneSpaceJumpDefenseOutcomeHighlights(prompt, selectedRecount, board, selectedDefenseOutcome),
     });
   }
@@ -915,6 +931,9 @@ function getPressureReadSequenceRows(
       focusText: selectedFollowUpDefenseOutcome.connectedSides
         ? `This shows the follow-up that connects ${anchorCoord} and ${stoneCoord}; compare it with defenses that only add liberties.`
         : `This shows the second defense after the other side became short; compare the new liberty counts before returning to the real board.`,
+      nextQuestion: selectedFollowUpDefenseOutcome.connectedSides
+        ? `Does ${followUpCoord} connect the stones strongly enough to leave the local fight?`
+        : `After ${followUpCoord}, are both sides stable enough to return to the real board?`,
       highlights: buildOneSpaceJumpFollowUpDefenseOutcomeHighlights(
         prompt,
         selectedRecount,
@@ -932,6 +951,7 @@ function getPressureReadSequenceRows(
       replayKey: `handoff-${targetKey(extensionHandoff.point)}`,
       text: `Real-game handoff: play ${extensionHandoff.coord} after the stable read.`,
       focusText: `This is the real move unlocked by the completed read; play it after the ${stableSource} show ${anchorCoord} and ${stoneCoord} are stable.`,
+      nextQuestion: `What real move can you play now that ${anchorCoord} and ${stoneCoord} survived the simulation?`,
       highlights: buildPressureHandoffHighlights(extensionHandoff),
     });
   }
@@ -1976,6 +1996,9 @@ export function BeginnerObjectiveCard() {
       : replayedPressureSequenceRow?.key ?? null
     : pinnedPressureSequenceRowKey;
   const pinnedPressureSequenceRow = pressureReadSequenceRows.find((row) => row.key === effectivePinnedPressureSequenceRowKey) ?? null;
+  const replayedPressureSequenceNextQuestion = activePressureReplayRequestId !== null
+    ? pinnedPressureSequenceRow?.nextQuestion ?? null
+    : null;
   const readPromptAnchorCoord = readPrompt ? pointToCoord(readPrompt.anchor, game.board.size) : null;
   const readPromptStoneCoord = readPrompt ? pointToCoord(readPrompt.stone, game.board.size) : null;
   const selectedReadReplyCoord = selectedReadReply ? pointToCoord(selectedReadReply, game.board.size) : null;
@@ -2385,6 +2408,16 @@ export function BeginnerObjectiveCard() {
                           );
                         })}
                       </div>
+                      {replayedPressureSequenceNextQuestion && (
+                        <div className="mt-2 border-t border-white/10 pt-2">
+                          <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: COLORS.ui.textSecondary }}>
+                            Next question
+                          </div>
+                          <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
+                            {replayedPressureSequenceNextQuestion}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
