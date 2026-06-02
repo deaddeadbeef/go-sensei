@@ -21,7 +21,7 @@ export function SuggestionOverlay() {
         const isBest = sg.rank === 1;
 
         return (
-          <g key={sg.id}>
+          <g key={sg.id} pointerEvents="none">
             <motion.circle
               cx={cx}
               cy={cy}

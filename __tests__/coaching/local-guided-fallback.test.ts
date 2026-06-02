@@ -13,6 +13,20 @@ describe('local guided fallback', () => {
       conceptIds: expect.arrayContaining(['shape', 'direction-of-play']),
       actions: [{ id: 'hint', label: 'Show targets' }],
     });
+    expect(fallback?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-fallback-move-4,2',
+        point: { x: 4, y: 2 },
+        rank: 1,
+        reason: 'Try E7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-fallback-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 2,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
     expect(fallback?.text).toContain('cloud Sensei session expired');
     expect(fallback?.text).toContain('Good: C7 hit the marked corner goal');
     expect(fallback?.text).toContain('Make your stones work together');
@@ -34,6 +48,12 @@ describe('local guided fallback', () => {
         { id: 'lesson:territory', label: 'Review territory' },
       ],
     });
+    expect(fallback?.boardFocus?.suggestions?.map((suggestion) => suggestion.point)).toEqual([
+      { x: 2, y: 2 },
+      { x: 6, y: 2 },
+      { x: 2, y: 6 },
+      { x: 6, y: 6 },
+    ]);
     expect(fallback?.text).toContain('Progress check: E5 was not one of the marked corner points.');
     expect(fallback?.text).toContain('Try C7, G7, C3, or G3.');
     expect(fallback?.text).toContain('Next focus: Start with a corner.');
@@ -51,6 +71,12 @@ describe('local guided fallback', () => {
         { id: 'lesson:territory', label: 'Review territory' },
       ],
     });
+    expect(fallback?.boardFocus?.suggestions?.map((suggestion) => suggestion.point)).toEqual([
+      { x: 2, y: 2 },
+      { x: 6, y: 2 },
+      { x: 2, y: 6 },
+      { x: 6, y: 6 },
+    ]);
     expect(fallback?.text).toContain('teach this beginner path locally');
     expect(fallback?.text).not.toContain('GitHub login');
     expect(fallback?.text).toContain('Start with a corner');

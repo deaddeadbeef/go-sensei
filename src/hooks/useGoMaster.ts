@@ -238,6 +238,22 @@ export function useGoMaster() {
         passSenseiIfNeeded('White passes so you can try the next idea.');
       }
 
+      const focus = fallback.boardFocus;
+      if (focus) {
+        if (focus.highlights?.length) {
+          applyHighlights(focus.highlights);
+        }
+        for (const liberty of focus.liberties ?? []) {
+          applyLibertyOverlay(liberty);
+        }
+        if (focus.groups?.length) {
+          applyGroups(focus.groups);
+        }
+        if (focus.suggestions?.length) {
+          applySuggestions(focus.suggestions);
+        }
+      }
+
       showBubble({
         text: fallback.text,
         variant: reason === 'auth-unavailable' ? 'teaching' : 'warning',
@@ -248,7 +264,7 @@ export function useGoMaster() {
 
       return true;
     },
-    [passSenseiIfNeeded, recordEncounter, showBubble],
+    [passSenseiIfNeeded, recordEncounter, applyHighlights, applyLibertyOverlay, applyGroups, applySuggestions, showBubble],
   );
 
   const applyLocalAnswer = useCallback((localAnswer: LocalQuestionAnswer) => {
