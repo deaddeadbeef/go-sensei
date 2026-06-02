@@ -10,9 +10,15 @@ describe('local guided fallback', () => {
 
     expect(fallback).toMatchObject({
       shouldPassSensei: true,
-      conceptIds: expect.arrayContaining(['shape', 'direction-of-play']),
+      conceptIds: expect.arrayContaining(['corner-opening', 'territory', 'shape', 'direction-of-play']),
       actions: [{ id: 'hint', label: 'Show targets' }],
     });
+    expect(fallback?.boardFocus?.highlights).toEqual([{
+      id: 'local-fallback-learned-2,2',
+      point: { x: 2, y: 2 },
+      variant: 'positive',
+      label: 'C7: move to learn from - beginner job met.',
+    }]);
     expect(fallback?.boardFocus?.suggestions).toEqual([
       {
         id: 'local-fallback-move-4,2',
@@ -29,9 +35,10 @@ describe('local guided fallback', () => {
     ]);
     expect(fallback?.text).toContain('cloud Sensei session expired');
     expect(fallback?.text).toContain('Good: C7 hit the marked corner goal');
+    expect(fallback?.text).toContain('Lesson: C7 is a useful anchor because the edge helps it surround space.');
     expect(fallback?.text).toContain('Make your stones work together');
     expect(fallback?.text).toContain('Try E7 or C5');
-    expect(fallback?.text).toContain('passing for White');
+    expect(fallback?.text).toContain('I marked your move, passed for White, and marked the next targets');
   });
 
   it('names the missed visible objective before repeating the next focus', () => {
@@ -54,7 +61,14 @@ describe('local guided fallback', () => {
       { x: 2, y: 6 },
       { x: 6, y: 6 },
     ]);
+    expect(fallback?.boardFocus?.highlights).toEqual([{
+      id: 'local-fallback-learned-4,4',
+      point: { x: 4, y: 4 },
+      variant: 'warning',
+      label: 'E5: move to learn from - beginner job missed.',
+    }]);
     expect(fallback?.text).toContain('Progress check: E5 was not one of the marked corner points.');
+    expect(fallback?.text).toContain('Lesson: E5 reaches in every direction, but it does not use the board edge.');
     expect(fallback?.text).toContain('Try C7, G7, C3, or G3.');
     expect(fallback?.text).toContain('Next focus: Start with a corner.');
     expect(fallback?.text).not.toContain('GitHub login');
@@ -77,10 +91,10 @@ describe('local guided fallback', () => {
       { x: 2, y: 6 },
       { x: 6, y: 6 },
     ]);
-    expect(fallback?.text).toContain('teach this beginner path locally');
+    expect(fallback?.text).toContain('I can coach this guided game from the board in front of us.');
     expect(fallback?.text).not.toContain('GitHub login');
     expect(fallback?.text).toContain('Start with a corner');
-    expect(fallback?.text).toContain('marked board guidance');
+    expect(fallback?.text).toContain('Use the marked targets to make the next move concrete.');
   });
 
   it('does not take over non-beginner modes', () => {
