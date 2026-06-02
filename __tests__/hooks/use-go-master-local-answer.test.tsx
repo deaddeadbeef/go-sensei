@@ -538,6 +538,49 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('direction-of-play').encounterCount).toBeGreaterThan(0);
   });
 
+  it('explains connection locally without fetching', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('How do I connect my stones?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('Stones become one solid group only when they touch up, down, left, or right.');
+    expect(state.bubble.text).toContain('Diagonals do not connect.');
+    expect(state.bubble.text).toContain('E7 and C5 are not solid connections to C7 yet. They are one-space jumps');
+    expect(state.bubble.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'lesson:groups', label: 'Review groups' },
+    ]);
+    expect(state.chatMessages.at(-1)?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'lesson:groups', label: 'Review groups' },
+    ]);
+    expect(state.overlays.groups[0]).toMatchObject({
+      id: 'local-group-2,2',
+      stones: [{ x: 2, y: 2 }],
+      color: 'black',
+      liberties: 4,
+    });
+    expect(state.overlays.liberties[0].libertyPoints).toEqual([
+      { x: 2, y: 1 },
+      { x: 2, y: 3 },
+      { x: 1, y: 2 },
+      { x: 3, y: 2 },
+    ]);
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+    ]);
+    expect(useConceptStore.getState().getMastery('groups').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('shape').encounterCount).toBeGreaterThan(0);
+  });
+
   it('explains marked target choices locally without fetching', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());

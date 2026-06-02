@@ -288,6 +288,57 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
   });
 
+  it('explains solid connection versus one-space jump shape', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+
+    const answer = getLocalQuestionAnswer('How do I connect my stones?', afterWhitePass, 'guided');
+
+    expect(answer?.text).toContain('Stones become one solid group only when they touch up, down, left, or right.');
+    expect(answer?.text).toContain('Diagonals do not connect.');
+    expect(answer?.text).toContain('A cut is the empty point or line where the opponent can separate stones that are only loosely related.');
+    expect(answer?.text).toContain('Your group at C7 currently has 4 liberties');
+    expect(answer?.text).toContain('E7 and C5 are not solid connections to C7 yet. They are one-space jumps');
+    expect(answer?.text).toContain('I marked your current group and the connection-shape targets.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['groups', 'liberties', 'shape', 'direction-of-play']));
+    expect(answer?.boardFocus?.liberties).toEqual([{
+      id: 'local-liberties-2,2',
+      point: { x: 2, y: 2 },
+      count: 4,
+      libertyPoints: [
+        { x: 2, y: 1 },
+        { x: 2, y: 3 },
+        { x: 1, y: 2 },
+        { x: 3, y: 2 },
+      ],
+    }]);
+    expect(answer?.boardFocus?.groups?.[0]).toMatchObject({
+      id: 'local-group-2,2',
+      stones: [{ x: 2, y: 2 }],
+      color: 'black',
+      liberties: 4,
+    });
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-connection-move-4,2',
+        point: { x: 4, y: 2 },
+        rank: 1,
+        reason: 'Try E7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-connection-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 2,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'lesson:groups', label: 'Review groups' },
+    ]);
+  });
+
   it('explains why a marked target move matters', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
