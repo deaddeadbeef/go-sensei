@@ -627,11 +627,25 @@ function isBoardMarkerQuestion(q: string): boolean {
     || /\bwhy\s+are\s+(there\s+)?(numbers|targets|suggestions|markers|dots|circles)\s+on\s+(the\s+)?board\b/.test(q);
 }
 
+function isStarPointQuestion(q: string): boolean {
+  if (/\bnumbered\b/.test(q) && /\b(dots?|circles|targets|suggestions|markers)\b/.test(q)) return false;
+
+  return /\bstar[-\s]?points?\b/.test(q)
+    || /\bhoshi\b/.test(q)
+    || /\bwhat\s+are\s+(these|the)\s+(small\s+|printed\s+|black\s+)?dots?\b/.test(q)
+    || /\bwhat\s+do\s+(these|the)\s+(small\s+|printed\s+|black\s+)?dots?\s+(mean|do)\b/.test(q)
+    || /\bwhy\s+are\s+(there\s+)?(small\s+|printed\s+|black\s+)?dots?\s+on\s+(the\s+)?board\b/.test(q)
+    || /\b(can|should|do)\s+i\s+play\s+on\s+(the\s+)?(dot|dots)\b/.test(q);
+}
+
 function isCornerOpeningQuestion(q: string): boolean {
   return /\bwhy\s+(start|play|begin|open)\s+(in|near|with)\s+(a\s+)?corner\b/.test(q)
     || /\bwhy\s+(the\s+)?corners?\b/.test(q)
     || /\bwhy\s+not\s+(the\s+)?cent(er|re)\b/.test(q)
     || /\bshould\s+i\s+(start|play|begin|open)\s+(in|near|with)\s+(the\s+)?cent(er|re)\b/.test(q)
+    || /\b(should|can|do)\s+i\s+play\s+(in\s+)?(the\s+)?(cent(er|re)|middle)\b/.test(q)
+    || /\bcent(er|re)\s+or\s+corner\b/.test(q)
+    || /\bcorner\s+or\s+cent(er|re)\b/.test(q)
     || /\bis\s+(the\s+)?cent(er|re)\s+(good|bad|ok|okay)\s+(to\s+start|for\s+my\s+first\s+move|in\s+the\s+opening)?\b/.test(q)
     || /\bshould\s+i\s+(start|play|begin|open)\s+(in|near|with)\s+(a\s+)?corner\b/.test(q)
     || /\bwhere\s+should\s+i\s+start\s+(the\s+)?opening\b/.test(q)
@@ -1783,6 +1797,98 @@ function markerObjectiveReason(objective: BeginnerObjective, boardSize: BoardSiz
   return 'These targets are liberties for a group that is short on breathing room; playing one gives that group more ways to escape.';
 }
 
+function getStarPoints(boardSize: BoardSize): Point[] {
+  if (boardSize === 9) {
+    return [
+      { x: 2, y: 2 },
+      { x: 6, y: 2 },
+      { x: 4, y: 4 },
+      { x: 2, y: 6 },
+      { x: 6, y: 6 },
+    ];
+  }
+
+  const low = boardSize >= 13 ? 3 : 2;
+  const high = boardSize - low - 1;
+  const middle = Math.floor(boardSize / 2);
+  const points = [
+    { x: low, y: low },
+    { x: high, y: low },
+    { x: middle, y: middle },
+    { x: low, y: high },
+    { x: high, y: high },
+  ];
+
+  return points.filter((point) => point.x >= 0 && point.x < boardSize && point.y >= 0 && point.y < boardSize);
+}
+
+function buildStarPointAnswer(game: GameState, teachingLevel: TeachingLevel, q: string): LocalQuestionAnswer {
+  const objective = game.phase === 'playing'
+    ? getBeginnerObjective({
+      boardSize: game.board.size,
+      board: game.board,
+      moveHistory: game.moveHistory,
+      moveCount: game.moveHistory.length,
+      currentPlayer: 'black',
+      teachingLevel,
+    })
+    : null;
+  const starPoints = getStarPoints(game.board.size);
+  const starPointCoords = starPoints.map((point) => pointToCoord(point, game.board.size));
+  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-star-point-move') : [];
+  const targetCoordText = objective ? objectiveTargetCoordList(objective, game.board.size) : null;
+  const centerPoint = starPoints.find((point) => point.x === Math.floor(game.board.size / 2) && point.y === Math.floor(game.board.size / 2));
+  const centerCoord = centerPoint ? pointToCoord(centerPoint, game.board.size) : null;
+  const action = objective ? getBeginnerObjectiveLessonAction(objective) : null;
+  const targetKeys = new Set((objective?.targetPoints ?? []).map(pointKey));
+  const asksForMove = /\b(can|should|do)\s+i\s+play\b/.test(q);
+
+  return {
+    text: [
+      'The small printed dots are star points, also called hoshi.',
+      'A star point is a printed reference dot on the board.',
+      'They are visual reference points, not stones and not mandatory moves.',
+      starPointCoords.length > 0 ? `On this ${game.board.size}x${game.board.size} board, the star points are ${joinList(starPointCoords)}.` : '',
+      asksForMove && objective?.id === 'claim-corner' && targetCoordText
+        ? `Yes: for this opening, choose one of the corner star points: ${targetCoordText}.`
+        : '',
+      objective?.id === 'claim-corner' && centerCoord
+        ? `Skip the center star point ${centerCoord} for now; it reaches many directions but does not use board edges to make early territory.`
+        : '',
+      !asksForMove && objective?.id === 'claim-corner' && targetCoordText
+        ? `For your first guided move, use a corner star point: ${targetCoordText}.`
+        : '',
+      starPointCoords.length > 0 && suggestions.length > 0
+        ? 'I highlighted the star points and marked the beginner corner targets.'
+        : 'I highlighted the star points so you can use them as board landmarks.',
+    ].filter(Boolean).join(' '),
+    conceptIds: uniqueConceptIds(['stones-and-board', ...(objective?.conceptIds ?? [])]),
+    boardFocus: {
+      highlights: starPoints.map((point) => {
+        const coord = pointToCoord(point, game.board.size);
+        const isTarget = targetKeys.has(pointKey(point));
+        const isCenter = centerPoint ? pointEquals(point, centerPoint) : false;
+
+        return {
+          id: `local-star-point-${pointKey(point)}`,
+          point: copyPoint(point),
+          variant: isTarget ? 'positive' : 'neutral',
+          label: isTarget
+            ? `${coord}: corner star point and beginner target.`
+            : isCenter
+              ? `${coord}: center star point; useful later, not the first guided target.`
+              : `${coord}: star point board landmark.`,
+        };
+      }),
+      ...(suggestions.length > 0 ? { suggestions } : {}),
+    },
+    actions: [
+      ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+      ...(action ? [action] : []),
+    ],
+  };
+}
+
 function buildBoardMarkerAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer | null {
   const objective = game.phase === 'playing'
     ? getBeginnerObjective({
@@ -1835,8 +1941,10 @@ function buildCornerOpeningAnswer(game: GameState, teachingLevel: TeachingLevel)
   const action = objective ? getBeginnerObjectiveLessonAction(objective) : null;
   const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
   const lines = [
+    'For a first beginner move, choose a corner before the center.',
     'Corners are the easiest place for beginners to make territory because two board edges already act like walls.',
-    'A center stone reaches in every direction, but it has to build all four sides itself before it becomes points.',
+    'A corner already has two board edges helping it make territory.',
+    'The center reaches many directions, but it has to build every border itself before it becomes points.',
     'That is why the first guided goal starts near a corner instead of the open center.',
   ];
 
@@ -3354,6 +3462,10 @@ export function getLocalQuestionAnswer(
   if (isTargetReasonQuestion(q, game.board.size)) {
     const targetAnswer = buildTargetReasonAnswer(game, teachingLevel, q);
     if (targetAnswer) return targetAnswer;
+  }
+
+  if (isStarPointQuestion(q)) {
+    return buildStarPointAnswer(game, teachingLevel, q);
   }
 
   if (isBoardMarkerQuestion(q)) {

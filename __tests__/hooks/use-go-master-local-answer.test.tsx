@@ -198,7 +198,7 @@ describe('useGoMaster local answers', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(state.bubble.variant).toBe('teaching');
     expect(state.bubble.text).toContain('Corners are the easiest place for beginners to make territory because two board edges already act like walls.');
-    expect(state.bubble.text).toContain('A center stone reaches in every direction, but it has to build all four sides itself before it becomes points.');
+    expect(state.bubble.text).toContain('The center reaches many directions, but it has to build every border itself before it becomes points.');
     expect(state.bubble.text).toContain('Try C7, G7, C3, or G3.');
     expect(state.chatMessages.at(-1)?.actions).toEqual([
       { id: 'hint', label: 'Show targets' },
