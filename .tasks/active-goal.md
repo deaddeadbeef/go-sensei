@@ -49,6 +49,7 @@ Latest completed slice:
 - Added a replayable follow-up defense continuation when a successful defense makes the other side shorter, so learners can keep reading the new weak side without mutating the real game.
 - Added a follow-up defense comparison summary that contrasts E8, E6, and F7 and explicitly names E6 as the move that connects both Black sides into one group.
 - Added a stable-read handoff that turns equal pressure comparisons and resolved follow-up defenses into a concrete real-game extension button.
+- Added a post-handoff "Read applied" recap that ties the real extension move back to the simulated pressure read before moving on to the next gap.
 
 Next investigation candidates:
-- Whether the real-game extension played after a pressure handoff should get a short recap tying the actual move back to the simulated read.
+- Whether the pressure mini-branch should preserve and compare whole sequences in a compact timeline, so learners can review the reading path without replaying each button.
