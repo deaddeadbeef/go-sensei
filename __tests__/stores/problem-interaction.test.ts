@@ -191,6 +191,19 @@ describe('problem interaction store', () => {
     expect(state.bubble.text).toContain('9x9');
   });
 
+  it('starts guided intro with concrete first-target coaching', () => {
+    act(() => useGameStore.getState().startGuidedIntroGame());
+
+    const bubble = useGameStore.getState().bubble;
+    expect(bubble.text).toContain('Your first job is: Start with a corner.');
+    expect(bubble.text).toContain('Place your next stone near an empty corner. Try C7, G7, C3, or G3.');
+    expect(bubble.text).toContain('Click a marked coordinate when you are ready.');
+    expect(bubble.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'lesson:territory', label: 'Review territory' },
+    ]);
+  });
+
   it('startNewGame preserves the intro-started flag', () => {
     act(() => useGameStore.getState().startGuidedIntroGame());
     act(() => useGameStore.getState().startNewGame(9));

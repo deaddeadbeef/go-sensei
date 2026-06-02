@@ -24,6 +24,8 @@ import { PROBLEMS } from '@/lib/problems/problem-data';
 import { applyProblemMove, buildProblemGame } from '@/lib/problems/runtime';
 import type { ValidationResult } from '@/lib/problems/validator';
 import type { SenseiAction } from '@/lib/coaching/sensei-actions';
+import { formatObjectiveTargetText, getBeginnerObjective } from '@/lib/coaching/beginner-objectives';
+import { getBeginnerObjectiveActions } from '@/lib/coaching/beginner-objective-actions';
 import { useProgressStore } from './progress-store';
 
 // ---------------------------------------------------------------------------
@@ -1028,9 +1030,21 @@ export const useGameStore = create<GameStore>()(
   startGuidedIntroGame: () => {
     useProgressStore.getState().markIntroGameStarted();
     const nextProgress = useProgressStore.getState();
+    const guidedGame = createGame(9);
+    const openingObjective = getBeginnerObjective({
+      boardSize: guidedGame.board.size,
+      board: guidedGame.board,
+      moveHistory: guidedGame.moveHistory,
+      moveCount: guidedGame.moveHistory.length,
+      currentPlayer: guidedGame.currentPlayer,
+      teachingLevel: 'guided',
+    });
+    const openingTargetText = openingObjective
+      ? formatObjectiveTargetText(openingObjective, guidedGame.board.size)
+      : null;
 
     set({
-      game: createGame(9),
+      game: guidedGame,
       appPhase: 'game',
       phase: 'playing',
       teachingLevel: 'guided',
@@ -1061,8 +1075,18 @@ export const useGameStore = create<GameStore>()(
       bubble: {
         ...defaultBubble,
         visible: true,
-        text: 'This is a 9x9 board. Your first goal is simple: play near a corner and learn why corners are easier to surround.',
+        text: openingObjective
+          ? [
+              'This is a 9x9 board.',
+              `Your first job is: ${openingObjective.title}.`,
+              openingObjective.instruction,
+              openingTargetText ?? '',
+              openingObjective.why,
+              'Click a marked coordinate when you are ready.',
+            ].filter(Boolean).join(' ')
+          : 'This is a 9x9 board. Your first goal is simple: play near a corner and learn why corners are easier to surround.',
         variant: 'teaching',
+        actions: openingObjective ? getBeginnerObjectiveActions(openingObjective) : [],
         streamingComplete: true,
       },
       hasStartedIntroGame: true,
