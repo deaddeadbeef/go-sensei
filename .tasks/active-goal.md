@@ -38,6 +38,7 @@ Latest completed slice:
 - Preserved pressure mini-branch choices and second-read recounts in the chat transcript so the sidebar remembers the same teaching moments shown beside the board.
 - Added transcript actions that reopen the exact pressure branch or second-read recount on the board, so earlier reading work is recoverable after the learner switches replies or scrolls the chat.
 - Added a direct compare-other-reply loop in the pressure mini-branch so learners can switch from one recounted answer to the alternate reply and immediately see the new liberty counts without changing the real game.
+- Added a side-by-side comparison summary after pressure replies are compared, so learners can see both liberty counts and the directional difference in one place.
 
 Next investigation candidates:
-- Whether compared pressure reads should end with a side-by-side summary that names what changed between the two replies.
+- Whether the pressure summary should turn into a concrete recommendation when one reply leaves a Black side with fewer liberties.
