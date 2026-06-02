@@ -294,7 +294,15 @@ function isPassQuestion(q: string): boolean {
     || /\bwhat\s+(is|does|did)\b/.test(q)
     || /\bdid\s+(white|sensei|you)\s+pass\b/.test(q)
     || /\bshould\s+i\s+pass\b/.test(q)
+    || /\b(can|could|do)\s+i\s+pass\b/.test(q)
+    || /\bpass\s+now\b/.test(q)
     || /\bwhose\s+turn\b/.test(q);
+}
+
+function isLearnerPassDecisionQuestion(q: string): boolean {
+  return /\bshould\s+i\s+pass\b/.test(q)
+    || /\b(can|could|do)\s+i\s+pass\b/.test(q)
+    || /\bpass\s+now\b/.test(q);
 }
 
 function isPositionQuestion(q: string): boolean {
@@ -683,7 +691,7 @@ function buildCandidateComparisonAnswer(game: GameState, teachingLevel: Teaching
   };
 }
 
-function buildPassAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
+function buildPassAnswer(game: GameState, teachingLevel: TeachingLevel, q: string): LocalQuestionAnswer {
   const objective = getBeginnerObjective({
     boardSize: game.board.size,
     board: game.board,
@@ -697,7 +705,12 @@ function buildPassAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQu
   const move = latestMove(game);
   const lines: string[] = [];
 
-  if (move?.type === 'pass' && move.color === 'white' && game.currentPlayer === 'black') {
+  if (isLearnerPassDecisionQuestion(q) && objective && game.phase === 'playing') {
+    lines.push('Not yet. Passing is usually an endgame decision, when both players believe there are no valuable moves left.');
+    lines.push('Early in this guided game, passing would skip useful practice and hand the turn away.');
+    const targetText = formatObjectiveTargetText(objective, game.board.size);
+    lines.push(`Your better move is: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}`);
+  } else if (move?.type === 'pass' && move.color === 'white' && game.currentPlayer === 'black') {
     lines.push('White passed because I am keeping this guided practice moving locally: you get the next turn right away so you can try the next beginner idea.');
   } else if (move?.type === 'pass') {
     lines.push(`${move.color === 'black' ? 'Black' : 'White'} passed, which means that player chose not to place a stone on that turn.`);
@@ -705,15 +718,19 @@ function buildPassAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQu
     lines.push('A pass means a player chooses not to place a stone on that turn.');
   }
 
-  lines.push('In a real game, players usually pass near the end when they believe there are no valuable moves left; two passes in a row move the game to scoring.');
+  if (!isLearnerPassDecisionQuestion(q)) {
+    lines.push('In a real game, players usually pass near the end when they believe there are no valuable moves left; two passes in a row move the game to scoring.');
+  }
 
-  if (objective) {
+  if (objective && !isLearnerPassDecisionQuestion(q)) {
     const targetText = formatObjectiveTargetText(objective, game.board.size);
     lines.push(`Here, do not treat White's pass as endgame strategy. Your next focus is: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}`);
   }
 
   if (suggestions.length > 0) {
-    lines.push('I marked the next beginner targets on the board.');
+    lines.push(isLearnerPassDecisionQuestion(q)
+      ? 'I marked the moves that keep the game useful right now.'
+      : 'I marked the next beginner targets on the board.');
   }
 
   return {
@@ -1325,7 +1342,7 @@ export function getLocalQuestionAnswer(
   }
 
   if (isPassQuestion(q)) {
-    return buildPassAnswer(game, teachingLevel);
+    return buildPassAnswer(game, teachingLevel, q);
   }
 
   if (isKomiQuestion(q)) {
