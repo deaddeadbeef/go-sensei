@@ -19,7 +19,8 @@ Latest completed slice:
 - Fixed the Sensei bubble typewriter so guided-game coaching text appears after React Strict Mode replays the initial effect.
 - Added local attack-vs-defense decisions so guided learners get a board-specific priority call during simple fights.
 - Added local capture-race guidance so beginner fight questions compare adjacent group liberties before giving a priority.
+- Added occupied-cut guidance so a beginner sees both split Black groups, the White cutting stone, and the liberties to attack after White enters a one-space jump gap.
 
 Next investigation candidates:
-- Later guided positions where opponent follow-up cuts or snapback-like pressure should be explained in natural beginner language.
+- Later guided positions where snapback-like pressure or late fight follow-ups should be explained in natural beginner language.
 - Whether the guided 9x9 entry should preserve a paused guided board across app reloads more explicitly than the current session store does.

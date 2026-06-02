@@ -1464,6 +1464,49 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('direction-of-play').encounterCount).toBeGreaterThan(0);
   });
 
+  it('answers occupied cut questions locally from the guided chat', () => {
+    act(() => {
+      useGameStore.getState().startGuidedIntroGame();
+      useGameStore.getState().placeStone({ x: 2, y: 2 });
+      useGameStore.getState().pass();
+      useGameStore.getState().placeStone({ x: 4, y: 2 });
+      useGameStore.getState().placeStone({ x: 3, y: 2 });
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('Did White cut me?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('White has played into the one-space jump gap at D7.');
+    expect(state.bubble.text).toContain('C7 and E7 are separate Black groups by the rules now, but neither is captured.');
+    expect(state.bubble.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'practice:reading', label: 'Practice reading' },
+    ]);
+    expect(state.chatMessages.at(-1)?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'practice:reading', label: 'Practice reading' },
+    ]);
+    expect(state.overlays.highlights).toEqual([{
+      id: 'local-occupied-cut-stone-3,2',
+      point: { x: 3, y: 2 },
+      variant: 'danger',
+      label: 'D7: White occupies the gap between C7 and E7.',
+    }]);
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 3, y: 1 },
+      { x: 3, y: 3 },
+    ]);
+    expect(useConceptStore.getState().getMastery('connect-and-cut').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('reading').encounterCount).toBeGreaterThan(0);
+  });
+
   it('answers learner danger questions locally without fetching', () => {
     act(() => {
       const result = useGameStore.getState().applyAiMove({ x: 3, y: 2 });
