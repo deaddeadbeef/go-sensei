@@ -1,4 +1,4 @@
-import { coordToPoint, getAllGroups, getGroup, getStone, pointEquals, pointKey, pointToCoord } from '@/lib/go-engine';
+import { calculateTerritory, coordToPoint, countStones, getAllGroups, getGroup, getStone, pointEquals, pointKey, pointToCoord } from '@/lib/go-engine';
 import type { BoardSize, GameState, Group, Move, Point } from '@/lib/go-engine/types';
 import type { TeachingLevel } from '@/lib/ai/system-prompt';
 import {
@@ -295,6 +295,16 @@ function isPassQuestion(q: string): boolean {
     || /\bdid\s+(white|sensei|you)\s+pass\b/.test(q)
     || /\bshould\s+i\s+pass\b/.test(q)
     || /\bwhose\s+turn\b/.test(q);
+}
+
+function isPositionQuestion(q: string): boolean {
+  return /\b(am\s+i|are\s+we|is\s+black|is\s+white)\s+(winning|ahead|behind|losing)\b/.test(q)
+    || /\bwho\s+(is|s)\s+(winning|ahead|behind)\b/.test(q)
+    || /\bwhat\s+(is|s)\s+the\s+score\b/.test(q)
+    || /\bscore\b/.test(q)
+    || /\bhow\s+many\s+points\b/.test(q)
+    || /\bcount\s+(the\s+)?(score|points|territory)\b/.test(q)
+    || /\bposition\s+(look|looks)\b/.test(q);
 }
 
 function suggestionReason(objective: BeginnerObjective, point: Point, boardSize: BoardSize): string {
@@ -644,6 +654,68 @@ function buildPassAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQu
   };
 }
 
+function pluralize(count: number, singular: string, plural = `${singular}s`): string {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function formatLead(blackScore: number, whiteScore: number): string {
+  const margin = Math.abs(blackScore - whiteScore);
+  if (margin === 0) return 'The score is tied';
+
+  return `${blackScore > whiteScore ? 'Black' : 'White'} leads by ${margin} ${margin === 1 ? 'point' : 'points'}`;
+}
+
+function buildPositionAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
+  const blackStones = countStones(game.board, 'black');
+  const whiteStones = countStones(game.board, 'white');
+  const objective = game.phase === 'playing'
+    ? getBeginnerObjective({
+      boardSize: game.board.size,
+      board: game.board,
+      moveHistory: game.moveHistory,
+      moveCount: game.moveHistory.length,
+      currentPlayer: 'black',
+      teachingLevel,
+    })
+    : null;
+  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-position-move') : [];
+  const action = objective ? getBeginnerObjectiveLessonAction(objective) : null;
+  const lines: string[] = [];
+
+  if (game.phase === 'scoring' || game.phase === 'finished') {
+    const territory = calculateTerritory(game.board, game.komi);
+    const blackScore = territory.finalBlackScore;
+    const whiteScore = territory.finalWhiteScore;
+
+    lines.push(`${formatLead(blackScore, whiteScore)} if this board is scored now.`);
+    lines.push(`Black has ${pluralize(blackStones, 'stone')} plus ${pluralize(territory.blackTerritory.length, 'territory point')}; White has ${pluralize(whiteStones, 'stone')} plus ${pluralize(territory.whiteTerritory.length, 'territory point')} and ${game.komi} komi.`);
+    lines.push('In scoring, first make sure dead stones are marked correctly; that can change the final count.');
+  } else {
+    lines.push('It is too early for a real score: most of the board is still open, so territory is not settled yet.');
+    lines.push(`Right now Black has ${pluralize(blackStones, 'stone')} on the board and ${pluralize(game.captures.black, 'capture')}; White has ${pluralize(whiteStones, 'stone')} and ${pluralize(game.captures.white, 'capture')}, plus ${game.komi} komi.`);
+    lines.push('A better beginner position check is: are your stones near easy territory, do they have room, and are any groups short on liberties?');
+
+    if (objective) {
+      const targetText = formatObjectiveTargetText(objective, game.board.size);
+      lines.push(`For this board, your next useful test is: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}`);
+    }
+  }
+
+  if (suggestions.length > 0) {
+    lines.push('I marked the next targets so you can improve the position instead of only counting it.');
+  }
+
+  return {
+    text: lines.join(' '),
+    conceptIds: uniqueConceptIds(['scoring', 'territory', ...(objective?.conceptIds ?? [])]),
+    ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
+    actions: [
+      ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+      ...(action ? [action] : []),
+    ],
+  };
+}
+
 function buildShapeAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
   const objective = getBeginnerObjective({
     boardSize: game.board.size,
@@ -850,6 +922,10 @@ export function getLocalQuestionAnswer(
 
   if (isPassQuestion(q)) {
     return buildPassAnswer(game, teachingLevel);
+  }
+
+  if (isPositionQuestion(q)) {
+    return buildPositionAnswer(game, teachingLevel);
   }
 
   if (isCandidateComparisonQuestion(q, game.board.size)) {
