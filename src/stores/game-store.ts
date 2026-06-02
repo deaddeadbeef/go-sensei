@@ -111,6 +111,7 @@ export interface GuidedReadReplayRequest {
   comparedReplyKey?: string;
   defensePointKey?: string;
   followUpDefensePointKey?: string;
+  pinnedSequenceStepKey?: string;
 }
 
 const MAX_CHAT_MESSAGES = 80;

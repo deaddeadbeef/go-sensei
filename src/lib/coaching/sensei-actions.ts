@@ -19,6 +19,7 @@ export type SenseiActionRoute =
       comparedReplyKey?: string;
       defensePointKey?: string;
       followUpDefensePointKey?: string;
+      pinnedSequenceStepKey?: string;
     }
   | { type: 'practice'; category: ProblemCategory }
   | { type: 'lesson'; lessonId: string };
@@ -34,6 +35,20 @@ const lessonIds = new Set(LESSONS.map((lesson) => lesson.id));
 
 function isProblemCategory(value: string): value is ProblemCategory {
   return problemCategories.has(value);
+}
+
+function isPressureSequenceStepKey(value: string): boolean {
+  return (
+    value === 'gap'
+    || /^(?:reply|recount|compare|defense|follow-up|handoff)-\d+,\d+$/.test(value)
+  );
+}
+
+function getPinnedPressureSequenceStepKey(segments: string[]): string | null | undefined {
+  if (segments.length === 0) return undefined;
+  if (segments.length !== 2 || segments[0] !== 'pin' || !isPressureSequenceStepKey(segments[1])) return null;
+
+  return segments[1];
 }
 
 export function getSenseiActionRoute(actionId: string): SenseiActionRoute | null {
@@ -54,7 +69,8 @@ export function getSenseiActionRoute(actionId: string): SenseiActionRoute | null
   }
 
   if (actionId.startsWith('guided:read-pressure:')) {
-    const [, , mode, promptKey, replyKey, comparedReplyKey, defensePointKey, followUpDefensePointKey] = actionId.split(':');
+    const segments = actionId.split(':');
+    const [, , mode, promptKey, replyKey] = segments;
     if (
       (
         mode !== 'branch'
@@ -66,14 +82,29 @@ export function getSenseiActionRoute(actionId: string): SenseiActionRoute | null
       || !promptKey
       || !replyKey
     ) return null;
+
+    const withPinnedSequenceStep = <T extends Extract<SenseiActionRoute, { type: 'guided_read_pressure' }>>(
+      route: T,
+      rest: string[],
+    ): T | null => {
+      const pinnedSequenceStepKey = getPinnedPressureSequenceStepKey(rest);
+      if (pinnedSequenceStepKey === null) return null;
+      if (!pinnedSequenceStepKey) return route;
+
+      return { ...route, pinnedSequenceStepKey };
+    };
+
     if (mode === 'comparison' || mode === 'defense' || mode === 'follow-up-defense') {
+      const comparedReplyKey = segments[5];
       if (!comparedReplyKey || comparedReplyKey === replyKey) return null;
       if (mode === 'defense' || mode === 'follow-up-defense') {
+        const defensePointKey = segments[6];
         if (!defensePointKey) return null;
         if (mode === 'follow-up-defense') {
+          const followUpDefensePointKey = segments[7];
           if (!followUpDefensePointKey) return null;
 
-          return {
+          return withPinnedSequenceStep({
             type: 'guided_read_pressure',
             mode,
             promptKey,
@@ -81,23 +112,34 @@ export function getSenseiActionRoute(actionId: string): SenseiActionRoute | null
             comparedReplyKey,
             defensePointKey,
             followUpDefensePointKey,
-          };
+          }, segments.slice(8));
         }
 
-        return {
+        return withPinnedSequenceStep({
           type: 'guided_read_pressure',
           mode,
           promptKey,
           replyKey,
           comparedReplyKey,
           defensePointKey,
-        };
+        }, segments.slice(7));
       }
 
-      return { type: 'guided_read_pressure', mode, promptKey, replyKey, comparedReplyKey };
+      return withPinnedSequenceStep({
+        type: 'guided_read_pressure',
+        mode,
+        promptKey,
+        replyKey,
+        comparedReplyKey,
+      }, segments.slice(6));
     }
 
-    return { type: 'guided_read_pressure', mode, promptKey, replyKey };
+    return withPinnedSequenceStep({
+      type: 'guided_read_pressure',
+      mode,
+      promptKey,
+      replyKey,
+    }, segments.slice(5));
   }
 
   if (actionId.startsWith('practice:')) {

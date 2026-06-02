@@ -53,6 +53,7 @@ Latest completed slice:
 - Added a compact read-sequence recap inside the pressure mini-branch, preserving the original reply, comparison reply, defense/follow-up, and real-game handoff as numbered steps.
 - Made read-sequence recap rows keyboard-focusable and hoverable, so each step can temporarily show its matching stones, liberties, defense, follow-up, or real-game handoff target on the board.
 - Let learners pin and unpin a read-sequence row's board highlights, so one reading position can stay visible while they study the branch.
+- Reflected pinned read-sequence rows in transcript replay actions, so a learner can reopen the same branch with the last studied sequence step still pressed and highlighted.
 
 Next investigation candidates:
-- Whether the pinned read-sequence state should be reflected in the chat transcript action replay, so reopening a branch can restore the learner's last studied step.
+- Whether sequence-focus transcript messages should summarize what changed between the pinned step and the live branch, so learners know why that step was worth saving.
