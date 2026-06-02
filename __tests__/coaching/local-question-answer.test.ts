@@ -2564,6 +2564,91 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('turns snapback plan follow-ups into a capture-count-continue sequence', () => {
+    const game = snapbackGameAfterWhiteCapture();
+
+    const answer = getLocalQuestionAnswer('What should I read next after this snapback?', game, 'guided');
+
+    expect(answer?.text).toContain('Read this snapback as capture, count, continue.');
+    expect(answer?.text).toContain('Step 1: snap back at E5 and remove E6, D6, D5, E4, and F5.');
+    expect(answer?.text).toContain("Step 2: after those stones come off, Black's new stone at E5 has 4 liberties: E6, E4, D5, and F5.");
+    expect(answer?.text).toContain('Step 3: if White keeps fighting nearby, use that count before choosing the next forcing move; if White plays away, the snapback already won this local tactic.');
+    expect(answer?.text).not.toContain('Play the marked snapback point before White gets another liberty.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['snapback', 'tesuji', 'capture', 'reading', 'liberties']));
+    expect(answer?.boardFocus?.highlights).toEqual([
+      {
+        id: 'local-snapback-plan-white-capture-4,3',
+        point: { x: 4, y: 3 },
+        variant: 'danger',
+        label: 'E6: White captured into the snapback shape.',
+      },
+      {
+        id: 'local-snapback-plan-recapture-point-4,4',
+        point: { x: 4, y: 4 },
+        variant: 'positive',
+        label: 'E5: Step 1 snapback and remove the cramped White stones.',
+      },
+    ]);
+    expect(answer?.boardFocus?.liberties).toEqual([
+      {
+        id: 'local-snapback-plan-white-liberties-4,3',
+        point: { x: 4, y: 3 },
+        count: 1,
+        libertyPoints: [{ x: 4, y: 4 }],
+      },
+      {
+        id: 'local-snapback-plan-black-after-4,4',
+        point: { x: 4, y: 4 },
+        count: 4,
+        libertyPoints: [
+          { x: 4, y: 3 },
+          { x: 4, y: 5 },
+          { x: 3, y: 4 },
+          { x: 5, y: 4 },
+        ],
+      },
+    ]);
+    expect(answer?.boardFocus?.groups).toEqual([
+      {
+        id: 'local-snapback-plan-white-group-4,3',
+        stones: [
+          { x: 4, y: 3 },
+          { x: 3, y: 3 },
+          { x: 3, y: 4 },
+        ],
+        color: 'white',
+        liberties: 1,
+        label: 'White stones to remove at E6, D6, and D5: 1 liberty at E5.',
+      },
+      {
+        id: 'local-snapback-plan-white-group-4,5',
+        stones: [{ x: 4, y: 5 }],
+        color: 'white',
+        liberties: 1,
+        label: 'White stone to remove at E4: 1 liberty at E5.',
+      },
+      {
+        id: 'local-snapback-plan-white-group-5,4',
+        stones: [{ x: 5, y: 4 }],
+        color: 'white',
+        liberties: 1,
+        label: 'White stone to remove at F5: 1 liberty at E5.',
+      },
+    ]);
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-snapback-plan-recapture-4,4',
+        point: { x: 4, y: 4 },
+        rank: 1,
+        reason: 'Step 1: snap back at E5 and remove E6, D6, D5, E4, and F5.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'practice:reading', label: 'Practice reading' },
+    ]);
+  });
+
   it('keeps natural snapback follow-ups on the immediate recapture point', () => {
     const game = snapbackGameAfterWhiteCapture();
 
