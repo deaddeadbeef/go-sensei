@@ -401,6 +401,7 @@ export function BeginnerObjectiveCard() {
   const isAiThinking = useGameStore((s) => s.isAiThinking);
   const placeStone = useGameStore((s) => s.placeStone);
   const recordInteraction = useGameStore((s) => s.recordInteraction);
+  const addChatMessage = useGameStore((s) => s.addChatMessage);
   const applyTargetHints = useGameStore((s) => s.applyTargetHints);
   const canPlayTarget = phase === 'playing' && game.currentPlayer === 'black' && !isAiThinking;
   const [activeTargetKey, setActiveTargetKey] = useState<string | null>(null);
@@ -454,13 +455,16 @@ export function BeginnerObjectiveCard() {
   }, [applyTargetHints, game.board, recordInteraction]);
 
   const chooseReadPressureReply = useCallback((prompt: OneSpaceJumpReadPrompt, reply: Point) => {
+    const feedback = getPressureChoiceFeedback(prompt, reply, game.board);
+
     recordInteraction();
     setActiveTargetKey(null);
     setActiveReadPromptKey(prompt.key);
     setSelectedReadReplyKey(targetKey(reply));
     setRecountReadReplyKey(null);
     applyTargetHints(buildOneSpaceJumpPressureHighlights(prompt, game.board, reply));
-  }, [applyTargetHints, game.board, recordInteraction]);
+    addChatMessage(`Branch choice: ${feedback}`, 'teaching');
+  }, [addChatMessage, applyTargetHints, game.board, recordInteraction]);
 
   const recountReadPressureReply = useCallback((prompt: OneSpaceJumpReadPrompt, reply: Point) => {
     const recount = getPressureRecount(game, prompt, reply);
@@ -472,7 +476,8 @@ export function BeginnerObjectiveCard() {
     setSelectedReadReplyKey(targetKey(reply));
     setRecountReadReplyKey(targetKey(reply));
     applyTargetHints(buildOneSpaceJumpRecountHighlights(prompt, recount, game.board));
-  }, [applyTargetHints, game, recordInteraction]);
+    addChatMessage(`Second read: ${recount.text}`, 'teaching');
+  }, [addChatMessage, applyTargetHints, game, recordInteraction]);
 
   const handleTargetClick = useCallback((point: Point) => {
     if (!canPlayTarget) return;
