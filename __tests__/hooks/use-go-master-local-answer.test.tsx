@@ -190,6 +190,36 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('territory').encounterCount).toBeGreaterThan(0);
   });
 
+  it('explains komi locally without fetching', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendPlayerMove(false, 0);
+    });
+    expect(useGameStore.getState().game.currentPlayer).toBe('black');
+
+    act(() => {
+      result.current.sendMessage('What is komi?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain("Komi is 6.5 points added to White's score because Black moves first.");
+    expect(state.bubble.text).toContain('Komi is not territory White has surrounded');
+    expect(state.bubble.text).toContain('For now, improve the board before counting it: Make your stones work together.');
+    expect(state.bubble.text).toContain('I marked the next targets so you can keep building a position worth scoring later.');
+    expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+    ]);
+    expect(useConceptStore.getState().getMastery('scoring').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('territory').encounterCount).toBeGreaterThan(0);
+  });
+
   it('reviews the last beginner move locally without fetching', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());

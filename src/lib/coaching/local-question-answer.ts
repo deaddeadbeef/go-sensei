@@ -307,6 +307,10 @@ function isPositionQuestion(q: string): boolean {
     || /\bposition\s+(look|looks)\b/.test(q);
 }
 
+function isKomiQuestion(q: string): boolean {
+  return /\bkomi\b/.test(q);
+}
+
 function suggestionReason(objective: BeginnerObjective, point: Point, boardSize: BoardSize): string {
   const coord = pointToCoord(point, boardSize);
 
@@ -716,6 +720,45 @@ function buildPositionAnswer(game: GameState, teachingLevel: TeachingLevel): Loc
   };
 }
 
+function buildKomiAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
+  const objective = game.phase === 'playing'
+    ? getBeginnerObjective({
+      boardSize: game.board.size,
+      board: game.board,
+      moveHistory: game.moveHistory,
+      moveCount: game.moveHistory.length,
+      currentPlayer: 'black',
+      teachingLevel,
+    })
+    : null;
+  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-komi-move') : [];
+  const action = objective ? getBeginnerObjectiveLessonAction(objective) : null;
+  const lines = [
+    `Komi is ${game.komi} points added to White's score because Black moves first.`,
+    'It balances the first-move advantage and usually makes draws impossible because of the half point.',
+    'Komi is not territory White has surrounded; it is a scoring bonus that matters when the game is counted.',
+  ];
+
+  if (objective) {
+    const targetText = formatObjectiveTargetText(objective, game.board.size);
+    lines.push(`For now, improve the board before counting it: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}`);
+  }
+
+  if (suggestions.length > 0) {
+    lines.push('I marked the next targets so you can keep building a position worth scoring later.');
+  }
+
+  return {
+    text: lines.join(' '),
+    conceptIds: uniqueConceptIds(['scoring', 'territory', ...(objective?.conceptIds ?? [])]),
+    ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
+    actions: [
+      ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+      ...(action ? [action] : []),
+    ],
+  };
+}
+
 function buildShapeAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
   const objective = getBeginnerObjective({
     boardSize: game.board.size,
@@ -922,6 +965,10 @@ export function getLocalQuestionAnswer(
 
   if (isPassQuestion(q)) {
     return buildPassAnswer(game, teachingLevel);
+  }
+
+  if (isKomiQuestion(q)) {
+    return buildKomiAnswer(game, teachingLevel);
   }
 
   if (isPositionQuestion(q)) {
