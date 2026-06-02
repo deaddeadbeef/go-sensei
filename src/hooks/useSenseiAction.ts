@@ -8,7 +8,7 @@ export function useSenseiAction() {
   const showProblems = useGameStore((s) => s.showProblems);
   const showReview = useGameStore((s) => s.showReview);
   const startGuidedIntroGame = useGameStore((s) => s.startGuidedIntroGame);
-  const returnToGame = useGameStore((s) => s.returnToGame);
+  const openGuidedGame = useGameStore((s) => s.openGuidedGame);
   const startLesson = useGameStore((s) => s.startLesson);
   const { requestHint } = useGoMaster();
 
@@ -34,7 +34,7 @@ export function useSenseiAction() {
     }
 
     if (route.type === 'guided_game') {
-      returnToGame();
+      openGuidedGame();
       return;
     }
 
@@ -44,5 +44,5 @@ export function useSenseiAction() {
     }
 
     startLesson(route.lessonId);
-  }, [dismissBubble, requestHint, returnToGame, showProblems, showReview, startGuidedIntroGame, startLesson]);
+  }, [dismissBubble, requestHint, openGuidedGame, showProblems, showReview, startGuidedIntroGame, startLesson]);
 }

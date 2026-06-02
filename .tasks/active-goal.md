@@ -15,7 +15,9 @@ Working approach:
 Latest completed slice:
 - Added local guided answers for second-objective questions around tenuki, playing away, sente, defending first, keeping the extension plan, and center play after a corner anchor.
 - Verified the slice with the full unit suite, typecheck, lint, build, and browser smoke.
+- Fixed guided-game routing so learning path, dashboard, and Sensei guided-game actions restore a true guided 9x9 board instead of returning to a stale non-guided game.
+- Fixed the Sensei bubble typewriter so guided-game coaching text appears after React Strict Mode replays the initial effect.
 
 Next investigation candidates:
 - Later guided positions where weak-group safety, local fights, or opponent pressure should be explained in even more natural beginner language.
-- Recommendation flow mismatch where "Guided game" can return to a persisted non-guided game if progress says the intro already started.
+- Whether the guided 9x9 entry should preserve a paused guided board across app reloads more explicitly than the current session store does.
