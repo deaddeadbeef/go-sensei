@@ -41,6 +41,7 @@ Latest completed slice:
 - Added a side-by-side comparison summary after pressure replies are compared, so learners can see both liberty counts and the directional difference in one place.
 - Added a concrete defensive recommendation when a pressure comparison reveals one Black side has fewer liberties, and made the second-read sentence stop claiming both sides are safe in that case.
 - Marked the short side and its actual defensive liberties on the board when a pressure recount shows one Black side has fewer liberties.
+- Added transcript actions that restore the full pressure comparison panel, recommendation, and short-side liberty markers instead of reopening only the final recount.
 
 Next investigation candidates:
-- Whether transcript actions should restore short-side liberty markers alongside reopened pressure recounts.
+- Whether the board-side pressure reader should offer a small "try the defense" continuation after it recommends defending a short side.
