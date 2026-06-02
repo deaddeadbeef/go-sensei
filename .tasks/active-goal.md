@@ -45,6 +45,7 @@ Latest completed slice:
 - Added a non-mutating "try a defense" continuation after short-side pressure recommendations so learners can choose a defensive liberty and see why it stabilizes the short side.
 - Added defense-read transcript actions that restore the selected defensive liberty marker, so earlier defense trials reopen as the same board-side lesson instead of only the parent comparison.
 - Added a post-defense recount to the non-mutating defense trial, so learners see how the chosen liberty changes the short-side liberty count before returning to the real game.
+- Switched defense-trial board markers to the post-defense recount, so the board shows the stabilized side's actual liberties and flags the newly shorter side instead of stale pre-defense warnings.
 
 Next investigation candidates:
-- Whether defense trial board markers should switch from the pre-defense short-side liberties to the post-defense recount's updated liberties.
+- Whether the pressure mini-branch should let learners continue from the newly shorter side after a successful defense, instead of ending the local read there.

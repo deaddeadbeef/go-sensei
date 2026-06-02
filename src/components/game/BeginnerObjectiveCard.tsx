@@ -57,6 +57,12 @@ interface PressureDefenseRecommendation {
 
 interface PressureDefenseOutcome {
   text: string;
+  defense: Point;
+  defendedSide: Point;
+  defendedSideCoord: string;
+  defendedLiberties: Point[];
+  otherSideCoord: string;
+  otherLiberties: Point[];
 }
 
 interface PressureComparisonSummary {
@@ -487,6 +493,12 @@ function getPressureDefenseOutcome(
 
   return {
     text: `After ${coord}, ${defendedChangeText} ${otherCoord} has ${formatLibertyCount(otherAfterLiberties.length)} at ${otherLibertyText}. ${followUpText}`,
+    defense: copyPoint(point),
+    defendedSide: copyPoint(defense.shortSide),
+    defendedSideCoord: defense.shortSideCoord,
+    defendedLiberties: defendedAfterLiberties.map(copyPoint),
+    otherSideCoord: otherCoord,
+    otherLiberties: otherAfterLiberties.map(copyPoint),
   };
 }
 
@@ -604,6 +616,84 @@ function buildOneSpaceJumpRecountHighlights(
         };
       })
       : []),
+  ];
+}
+
+function buildOneSpaceJumpDefenseOutcomeHighlights(
+  prompt: OneSpaceJumpReadPrompt,
+  recount: PressureRecount,
+  board: BoardState,
+  outcome: PressureDefenseOutcome,
+): OverlayHighlight[] {
+  const anchorCoord = pointToCoord(prompt.anchor, board.size);
+  const stoneCoord = pointToCoord(prompt.stone, board.size);
+  const gapCoord = pointToCoord(prompt.gap, board.size);
+  const defenseCoord = pointToCoord(outcome.defense, board.size);
+  const selectedReplyKey = targetKey(recount.reply);
+  const defendedIsAnchor = targetKey(outcome.defendedSide) === targetKey(prompt.anchor);
+  const anchorLiberties = defendedIsAnchor ? outcome.defendedLiberties : outcome.otherLiberties;
+  const stoneLiberties = defendedIsAnchor ? outcome.otherLiberties : outcome.defendedLiberties;
+  const anchorLibertyText = joinAndCoordinateList(anchorLiberties.map((point) => pointToCoord(point, board.size)));
+  const stoneLibertyText = joinAndCoordinateList(stoneLiberties.map((point) => pointToCoord(point, board.size)));
+  const anchorIsShort = anchorLiberties.length < stoneLiberties.length;
+  const stoneIsShort = stoneLiberties.length < anchorLiberties.length;
+  const defendedStillShort = outcome.defendedLiberties.length < outcome.otherLiberties.length;
+  const defenseLibertyVariant = defendedStillShort ? 'warning' as const : 'positive' as const;
+
+  return [
+    {
+      id: `read-pressure-anchor-${targetKey(prompt.anchor)}`,
+      point: copyPoint(prompt.anchor),
+      variant: anchorIsShort ? 'warning' as const : 'positive' as const,
+      label: anchorIsShort
+        ? `${anchorCoord}: short side with ${formatLibertyCount(anchorLiberties.length)} after ${defenseCoord} defense: ${anchorLibertyText}.`
+        : `${anchorCoord}: ${formatLibertyCount(anchorLiberties.length)} after ${defenseCoord} defense: ${anchorLibertyText}.`,
+    },
+    {
+      id: `read-pressure-stone-${targetKey(prompt.stone)}`,
+      point: copyPoint(prompt.stone),
+      variant: stoneIsShort ? 'warning' as const : 'positive' as const,
+      label: stoneIsShort
+        ? `${stoneCoord}: short side with ${formatLibertyCount(stoneLiberties.length)} after ${defenseCoord} defense: ${stoneLibertyText}.`
+        : `${stoneCoord}: ${formatLibertyCount(stoneLiberties.length)} after ${defenseCoord} defense: ${stoneLibertyText}.`,
+    },
+    {
+      id: `read-pressure-gap-${targetKey(prompt.gap)}`,
+      point: copyPoint(prompt.gap),
+      variant: 'warning',
+      label: `${gapCoord}: imagined White pressure point to keep watching.`,
+    },
+    ...prompt.replyPoints.map((point) => {
+      const coord = pointToCoord(point, board.size);
+      const isSelected = targetKey(point) === selectedReplyKey;
+
+      return {
+        id: `read-pressure-reply-${targetKey(point)}`,
+        point: copyPoint(point),
+        variant: isSelected ? 'positive' as const : 'neutral' as const,
+        label: isSelected
+          ? `${coord}: selected reply before this defense.`
+          : `${coord}: alternate reply to compare later.`,
+      };
+    }),
+    {
+      id: `read-pressure-selected-defense-${targetKey(outcome.defense)}`,
+      point: copyPoint(outcome.defense),
+      variant: 'positive',
+      label: `${defenseCoord}: simulated defense; ${outcome.defendedSideCoord} now has ${formatLibertyCount(outcome.defendedLiberties.length)}.`,
+    },
+    ...outcome.defendedLiberties.map((point) => {
+      const coord = pointToCoord(point, board.size);
+
+      return {
+        id: `read-pressure-defense-liberty-${targetKey(point)}`,
+        point: copyPoint(point),
+        variant: defenseLibertyVariant,
+        label: defendedStillShort
+          ? `${coord}: ${outcome.defendedSideCoord} still needs this liberty after ${defenseCoord}.`
+          : `${coord}: ${outcome.defendedSideCoord} liberty after ${defenseCoord} defense.`,
+      };
+    }),
   ];
 }
 
@@ -826,7 +916,9 @@ export function BeginnerObjectiveCard() {
     setRecountReadReplyKey(targetKey(recount.reply));
     setComparisonReadReplyKey(targetKey(comparedReply));
     setDefenseReadPointKey(targetKey(point));
-    applyTargetHints(buildOneSpaceJumpRecountHighlights(prompt, recount, game.board, point));
+    applyTargetHints(defenseOutcome
+      ? buildOneSpaceJumpDefenseOutcomeHighlights(prompt, recount, game.board, defenseOutcome)
+      : buildOneSpaceJumpRecountHighlights(prompt, recount, game.board, point));
     addChatMessage(
       `Defense read: ${defenseMessage}`,
       'teaching',
@@ -904,8 +996,16 @@ export function BeginnerObjectiveCard() {
             guidedReadReplayRequest.defensePointKey,
           )
           : null;
+        const replayedDefense = selectedDefense
+          ? getPressureDefenseRecommendation(readPrompt, recount, game.board)
+          : null;
+        const replayedDefenseOutcome = selectedDefense && replayedDefense
+          ? getPressureDefenseOutcome(game, readPrompt, recount, replayedDefense, selectedDefense)
+          : null;
 
-        applyTargetHints(buildOneSpaceJumpRecountHighlights(readPrompt, recount, game.board, selectedDefense));
+        applyTargetHints(replayedDefenseOutcome
+          ? buildOneSpaceJumpDefenseOutcomeHighlights(readPrompt, recount, game.board, replayedDefenseOutcome)
+          : buildOneSpaceJumpRecountHighlights(readPrompt, recount, game.board, selectedDefense));
       } else {
         applyTargetHints(buildOneSpaceJumpPressureHighlights(readPrompt, game.board, reply));
       }
