@@ -1219,6 +1219,58 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('groups').encounterCount).toBeGreaterThan(0);
   });
 
+  it('answers learner danger questions locally without fetching', () => {
+    act(() => {
+      const result = useGameStore.getState().applyAiMove({ x: 3, y: 2 });
+      if (!result.success) throw new Error('test setup white move failed');
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('Is my group in danger?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('Your Black group at C7 is under pressure, but it is not in immediate danger');
+    expect(state.bubble.text).toContain('it has 3 liberties: C8, C6, and B7.');
+    expect(state.bubble.text).toContain('Immediate danger usually starts at one or two liberties');
+    expect(state.bubble.text).toContain('Try C5.');
+    expect(state.bubble.text).not.toContain('Diagonals do not connect.');
+    expect(state.chatMessages.at(-1)?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'lesson:liberties', label: 'Review liberties' },
+    ]);
+    expect(state.overlays.groups[0]).toMatchObject({
+      id: 'local-weak-group-current-2,2',
+      stones: [{ x: 2, y: 2 }],
+      color: 'black',
+      liberties: 3,
+      label: 'Black group under pressure, not weak yet: 3 liberties at C8, C6, and B7.',
+    });
+    expect(state.overlays.liberties[0]).toEqual({
+      id: 'local-weak-group-current-liberties-2,2',
+      point: { x: 2, y: 2 },
+      count: 3,
+      libertyPoints: [
+        { x: 2, y: 1 },
+        { x: 2, y: 3 },
+        { x: 1, y: 2 },
+      ],
+    });
+    expect(state.overlays.suggestions).toEqual([{
+      id: 'local-weak-group-current-move-2,4',
+      point: { x: 2, y: 4 },
+      rank: 1,
+      reason: 'Try C5 as a one-space jump that works with your stones.',
+    }]);
+    expect(useConceptStore.getState().getMastery('liberties').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('groups').encounterCount).toBeGreaterThan(0);
+  });
+
   it('explains marked target choices locally without fetching', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());
