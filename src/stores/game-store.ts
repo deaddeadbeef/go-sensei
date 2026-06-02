@@ -386,6 +386,10 @@ export function getRestorableAppPhase(appPhase: AppPhase | undefined): AppPhase 
   }
 }
 
+function isGuidedGameSnapshot(game: GameState | null | undefined): game is GameState {
+  return game?.board.size === 9 && Array.isArray(game.moveHistory) && game.moveHistory.length > 0;
+}
+
 // ---------------------------------------------------------------------------
 // Default slices
 // ---------------------------------------------------------------------------
@@ -398,6 +402,48 @@ const defaultBubble: SenseiBubbleState = {
   actions: [],
   streamingComplete: true,
 };
+
+function formatRestoredMoveCount(moveCount: number): string {
+  if (moveCount === 0) return 'before the first move';
+
+  return `with ${moveCount} ${moveCount === 1 ? 'move' : 'moves'}`;
+}
+
+function buildGuidedResumeBubble(game: GameState): SenseiBubbleState {
+  const objective = getBeginnerObjective({
+    boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
+    moveCount: game.moveHistory.length,
+    currentPlayer: 'black',
+    teachingLevel: 'guided',
+  });
+  const targetText = objective
+    ? formatObjectiveTargetText(objective, game.board.size)
+    : null;
+
+  return {
+    ...defaultBubble,
+    visible: true,
+    text: objective
+      ? [
+          'Welcome back to your guided 9x9.',
+          `I restored your paused board ${formatRestoredMoveCount(game.moveHistory.length)}.`,
+          `Your next job is: ${objective.title}.`,
+          objective.instruction,
+          targetText ?? '',
+          objective.why,
+        ].filter(Boolean).join(' ')
+      : [
+          'Welcome back to your guided 9x9.',
+          `I restored your paused board ${formatRestoredMoveCount(game.moveHistory.length)}.`,
+          'Keep looking for the biggest safe move.',
+        ].join(' '),
+    variant: 'teaching',
+    actions: objective ? getBeginnerObjectiveActions(objective) : [],
+    streamingComplete: true,
+  };
+}
 
 const defaultLesson: LessonState = {
   active: false,
@@ -453,6 +499,14 @@ export const useGameStore = create<GameStore>()(
   persist(
     (set, get) => {
       const progress = useProgressStore.getState();
+      const saveGuidedSnapshot = (
+        game: GameState,
+        teachingLevel: GameStore['teachingLevel'] = get().teachingLevel,
+      ) => {
+        if (teachingLevel === 'guided' && game.board.size === 9) {
+          useProgressStore.getState().saveGuidedGameSnapshot(game);
+        }
+      };
 
       return ({
   // ---- Initial state ----
@@ -513,6 +567,7 @@ export const useGameStore = create<GameStore>()(
 
     if (result.success) {
       const captured = result.captured;
+      saveGuidedSnapshot(result.newState);
       set((s) => ({
         game: result.newState,
         lastPlayerMove: point,
@@ -548,6 +603,7 @@ export const useGameStore = create<GameStore>()(
 
     if (result.success) {
       const captured = result.captured;
+      saveGuidedSnapshot(result.newState);
       set((s) => ({
         game: result.newState,
         lastAiMove: point,
@@ -585,8 +641,10 @@ export const useGameStore = create<GameStore>()(
   pass() {
     const { game, phase } = get();
     if (phase !== 'playing') return;
+    const nextGame = passMove(game);
+    saveGuidedSnapshot(nextGame);
     set({
-      game: passMove(game),
+      game: nextGame,
       lastInteractionTime: Date.now(),
       hesitationLevel: 'none',
     });
@@ -595,7 +653,9 @@ export const useGameStore = create<GameStore>()(
   resign() {
     const { game, phase } = get();
     if (phase !== 'playing') return;
-    set({ game: resignGame(game), phase: 'finished' });
+    const nextGame = resignGame(game);
+    saveGuidedSnapshot(nextGame);
+    set({ game: nextGame, phase: 'finished' });
   },
 
   undo() {
@@ -622,6 +682,7 @@ export const useGameStore = create<GameStore>()(
       current = prev;
     }
 
+    saveGuidedSnapshot(current);
     set({
       game: current,
       koRejection: null,
@@ -968,6 +1029,47 @@ export const useGameStore = create<GameStore>()(
       return;
     }
 
+    const snapshot = useProgressStore.getState().guidedGameSnapshot;
+    if (isGuidedGameSnapshot(snapshot)) {
+      if (!useProgressStore.getState().hasStartedIntroGame) {
+        useProgressStore.getState().markIntroGameStarted();
+      }
+      const nextProgress = useProgressStore.getState();
+      set({
+        game: snapshot,
+        appPhase: 'game',
+        phase: snapshot.phase,
+        teachingLevel: 'guided',
+        hoveredPoint: null,
+        hoveredGroup: null,
+        lastPlayerMove: null,
+        lastAiMove: null,
+        isAiThinking: false,
+        overlays: { ...defaultOverlays },
+        pendingCaptures: [],
+        bubble: buildGuidedResumeBubble(snapshot),
+        chatMessages: [],
+        lesson: { ...defaultLesson },
+        lessonInteraction: { ...defaultLessonInteraction },
+        scorecard: null,
+        territory: null,
+        deadStones: [],
+        koRejection: null,
+        lastInteractionTime: Date.now(),
+        hesitationLevel: 'none',
+        hintOffered: false,
+        currentLessonId: null,
+        currentStep: 0,
+        currentProblemId: null,
+        preferredProblemFilter: null,
+        problemInteraction: { ...defaultProblemInteraction },
+        completedLessons: nextProgress.completedLessons,
+        hasStartedIntroGame: nextProgress.hasStartedIntroGame,
+        problemAttempts: nextProgress.problemAttempts,
+      });
+      return;
+    }
+
     get().startGuidedIntroGame();
   },
 
@@ -1039,9 +1141,10 @@ export const useGameStore = create<GameStore>()(
   },
 
   startGuidedIntroGame: () => {
-    useProgressStore.getState().markIntroGameStarted();
-    const nextProgress = useProgressStore.getState();
     const guidedGame = createGame(9);
+    useProgressStore.getState().markIntroGameStarted();
+    saveGuidedSnapshot(guidedGame, 'guided');
+    const nextProgress = useProgressStore.getState();
     const openingObjective = getBeginnerObjective({
       boardSize: guidedGame.board.size,
       board: guidedGame.board,
