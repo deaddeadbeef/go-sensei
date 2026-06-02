@@ -1,20 +1,40 @@
 "use client";
-import { useState, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { BUBBLE_TYPEWRITER_SPEED } from '@/utils/animation';
 
 export function useTypewriter(text: string, speed: number = BUBBLE_TYPEWRITER_SPEED) {
-  const [displayedText, setDisplayedText] = useState('');
+  const [displayedText, setDisplayedTextState] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const indexRef = useRef(0);
   const prevTextRef = useRef('');
+  const displayedTextRef = useRef('');
+
+  const setDisplayedText = useCallback((nextText: string) => {
+    displayedTextRef.current = nextText;
+    setDisplayedTextState(nextText);
+  }, []);
 
   useEffect(() => {
-    if (text === prevTextRef.current) return;
     const timers: ReturnType<typeof setTimeout>[] = [];
+    const previousText = prevTextRef.current;
+    const currentDisplayedText = displayedTextRef.current;
+
+    if (text === previousText && currentDisplayedText === text) return;
+
+    if (!text) {
+      prevTextRef.current = '';
+      indexRef.current = 0;
+      displayedTextRef.current = '';
+      timers.push(setTimeout(() => setDisplayedText(''), 0));
+      timers.push(setTimeout(() => setIsTyping(false), 0));
+      return () => {
+        for (const timer of timers) clearTimeout(timer);
+      };
+    }
 
     // If new text extends old text, continue from current position
-    if (text.startsWith(prevTextRef.current)) {
-      indexRef.current = prevTextRef.current.length;
+    if (text.startsWith(previousText)) {
+      indexRef.current = Math.min(currentDisplayedText.length, text.length);
     } else {
       indexRef.current = 0;
       timers.push(setTimeout(() => setDisplayedText(''), 0));
@@ -37,7 +57,7 @@ export function useTypewriter(text: string, speed: number = BUBBLE_TYPEWRITER_SP
       for (const timer of timers) clearTimeout(timer);
       clearInterval(interval);
     };
-  }, [text, speed]);
+  }, [text, speed, setDisplayedText]);
 
   return { displayedText, isTyping, isComplete: displayedText === text };
 }

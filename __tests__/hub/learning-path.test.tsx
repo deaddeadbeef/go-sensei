@@ -39,6 +39,23 @@ describe('LearningPath', () => {
     expect(useGameStore.getState().game.board.size).toBe(9);
   });
 
+  it('restores guided 9x9 from the guided game card when progress has a stale normal game', () => {
+    useGameStore.getState().startGuidedIntroGame();
+    useGameStore.getState().startNewGame(19);
+    useGameStore.getState().setTeachingLevel('beginner');
+    useGameStore.getState().showLearningPath();
+
+    render(<LearningPath />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Guided game: Use ideas in play\./ }));
+
+    expect(useProgressStore.getState().hasStartedIntroGame).toBe(true);
+    expect(useGameStore.getState().appPhase).toBe('game');
+    expect(useGameStore.getState().teachingLevel).toBe('guided');
+    expect(useGameStore.getState().game.board.size).toBe(9);
+    expect(useGameStore.getState().bubble.text).toContain('Your first job is: Start with a corner.');
+  });
+
   it('opens the full problem picker from the problems path card', () => {
     render(<LearningPath />);
 

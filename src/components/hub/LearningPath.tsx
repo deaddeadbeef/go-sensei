@@ -43,7 +43,7 @@ export function LearningPath() {
   const showReview = useGameStore((s) => s.showReview);
   const showSkillTree = useGameStore((s) => s.showSkillTree);
   const showDashboard = useGameStore((s) => s.showDashboard);
-  const returnToGame = useGameStore((s) => s.returnToGame);
+  const openGuidedGame = useGameStore((s) => s.openGuidedGame);
   const mastery = useConceptStore((s) => s.mastery);
   const dueReviewCount = useReviewStore((s) => {
     void s.cards;
@@ -78,11 +78,11 @@ export function LearningPath() {
         showReview();
         break;
       case 'guided_game':
-        returnToGame();
+        openGuidedGame();
         break;
     }
   };
-  const openGuidedGame = hasStartedIntroGame ? returnToGame : startGuidedIntroGame;
+  const openGuidedGameCard = hasStartedIntroGame ? openGuidedGame : startGuidedIntroGame;
   const openProblems = () => showProblems();
 
   return (
@@ -204,7 +204,7 @@ export function LearningPath() {
           <PathCard
             title="Guided game"
             text={hasStartedIntroGame ? 'Use ideas in play.' : 'Start the first 9x9 board.'}
-            onClick={openGuidedGame}
+            onClick={openGuidedGameCard}
           />
         </section>
       </div>

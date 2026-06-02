@@ -352,6 +352,7 @@ interface GameStore {
   showLearningPath: () => void;
 
   returnToGame: () => void;
+  openGuidedGame: () => void;
 
   // Scoring
   enterScoring: (territory: {
@@ -959,6 +960,16 @@ export const useGameStore = create<GameStore>()(
   })),
 
   returnToGame: () => set({ appPhase: 'game' }),
+
+  openGuidedGame: () => {
+    const state = get();
+    if (state.teachingLevel === 'guided' && state.game.board.size === 9) {
+      set({ appPhase: 'game' });
+      return;
+    }
+
+    get().startGuidedIntroGame();
+  },
 
   // Scoring
   enterScoring(territory) {
