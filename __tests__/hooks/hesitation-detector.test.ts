@@ -1,5 +1,6 @@
-import { canOfferHesitationHint } from '@/hooks/useHesitationDetector';
+import { buildHesitationNudge, canOfferHesitationHint } from '@/hooks/useHesitationDetector';
 import type { HesitationHintGateInput } from '@/hooks/useHesitationDetector';
+import { createGame, passMove, playMove } from '@/lib/go-engine';
 
 const baseInput: HesitationHintGateInput = {
   isAiThinking: false,
@@ -30,5 +31,31 @@ describe('hesitation detector', () => {
     expect(canOfferHesitationHint({ ...baseInput, bubbleVisible: true })).toBe(false);
     expect(canOfferHesitationHint({ ...baseInput, phase: 'welcome' })).toBe(false);
     expect(canOfferHesitationHint({ ...baseInput, phase: 'finished' })).toBe(false);
+  });
+
+  it('nudges guided beginners with the current opening target', () => {
+    const nudge = buildHesitationNudge(createGame(9), 'guided');
+
+    expect(nudge.text).toContain('Your current job is Start with a corner');
+    expect(nudge.text).toContain('Place your next stone near an empty corner. Try C7, G7, C3, or G3.');
+    expect(nudge.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+  });
+
+  it('updates the nudge after the learner claims a corner', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('Opening move should be legal');
+
+    const nudge = buildHesitationNudge(passMove(firstMove.newState), 'guided');
+
+    expect(nudge.text).toContain('Your current job is Make your stones work together');
+    expect(nudge.text).toContain('Play a one-space jump from one of your stones. Try E7 or C5.');
+    expect(nudge.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+  });
+
+  it('falls back to a general nudge outside beginner objectives', () => {
+    const nudge = buildHesitationNudge(createGame(19), 'advanced');
+
+    expect(nudge.text).toBe('Take your time. Want me to suggest a useful move?');
+    expect(nudge.actions).toEqual([{ id: 'hint', label: 'Show me' }]);
   });
 });
