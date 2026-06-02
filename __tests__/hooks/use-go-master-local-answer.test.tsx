@@ -263,6 +263,36 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('scoring').encounterCount).toBeGreaterThan(0);
   });
 
+  it('explains undo locally after the guided White pass without fetching', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendPlayerMove(false, 0);
+    });
+    expect(useGameStore.getState().game.currentPlayer).toBe('black');
+
+    act(() => {
+      result.current.sendMessage('Can I undo?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('The Undo button will take back the local White pass and your previous Black move');
+    expect(state.bubble.text).toContain('Use it for misclicks');
+    expect(state.bubble.text).toContain('Your current guided target is: Make your stones work together.');
+    expect(state.bubble.text).toContain('I marked the current targets again.');
+    expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+    ]);
+    expect(useConceptStore.getState().getMastery('stones-and-board').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('shape').encounterCount).toBeGreaterThan(0);
+  });
+
   it('discourages early learner passes locally without fetching', () => {
     act(() => {
       useGameStore.getState().startGuidedIntroGame();
