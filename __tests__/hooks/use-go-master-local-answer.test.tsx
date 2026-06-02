@@ -81,6 +81,41 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('territory').encounterCount).toBeGreaterThan(0);
   });
 
+  it('answers confused beginner messages with one board job without fetching', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage("I'm stuck");
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('Slow down to one board job.');
+    expect(state.bubble.text).toContain('Your current job is: Make your stones work together.');
+    expect(state.bubble.text).toContain('Play a one-space jump from one of your stones. Try E7 or C5.');
+    expect(state.bubble.text).toContain('choose one marked coordinate, then ask what it changed');
+    expect(state.bubble.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+    expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+    expect(state.overlays.suggestions).toEqual([
+      {
+        id: 'local-confusion-move-4,2',
+        point: { x: 4, y: 2 },
+        rank: 1,
+        reason: 'Try E7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-confusion-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 2,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
+    expect(useConceptStore.getState().getMastery('direction-of-play').encounterCount).toBeGreaterThan(0);
+  });
+
   it('answers direct hint requests with local objective suggestions before fetching', () => {
     act(() => {
       useGameStore.getState().startGuidedIntroGame();

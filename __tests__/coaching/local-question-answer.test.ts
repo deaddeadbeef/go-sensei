@@ -51,6 +51,62 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([{ id: 'lesson:territory', label: 'Review territory' }]);
   });
 
+  it('answers next-move questions from the learner perspective after a just-played move', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+
+    const answer = getLocalQuestionAnswer('What should I do?', firstMove.newState, 'guided');
+
+    expect(firstMove.newState.currentPlayer).toBe('white');
+    expect(answer?.text).toContain('Your next job is: Make your stones work together.');
+    expect(answer?.text).toContain('Play a one-space jump from one of your stones. Try E7 or C5.');
+    expect(answer?.boardFocus?.suggestions?.map((suggestion) => suggestion.point)).toEqual([
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+    ]);
+  });
+
+  it('steadies a confused beginner with one visible board job', () => {
+    const answer = getLocalQuestionAnswer("I'm confused", createGame(9), 'guided');
+
+    expect(answer?.text).toContain('Slow down to one board job.');
+    expect(answer?.text).toContain('Your current job is: Start with a corner.');
+    expect(answer?.text).toContain('Place your next stone near an empty corner. Try C7, G7, C3, or G3.');
+    expect(answer?.text).toContain('Do not try to solve the whole board yet: choose one marked coordinate, then ask what it changed.');
+    expect(answer?.text).toContain('I marked the targets again so your next action is visible.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['direction-of-play', 'corner-opening', 'territory']));
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-confusion-move-2,2',
+        point: { x: 2, y: 2 },
+        rank: 1,
+        reason: 'Start at C7: the board edge helps this stone make territory.',
+      },
+      {
+        id: 'local-confusion-move-6,2',
+        point: { x: 6, y: 2 },
+        rank: 2,
+        reason: 'Start at G7: the board edge helps this stone make territory.',
+      },
+      {
+        id: 'local-confusion-move-2,6',
+        point: { x: 2, y: 6 },
+        rank: 3,
+        reason: 'Start at C3: the board edge helps this stone make territory.',
+      },
+      {
+        id: 'local-confusion-move-6,6',
+        point: { x: 6, y: 6 },
+        rank: 4,
+        reason: 'Start at G3: the board edge helps this stone make territory.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'lesson:territory', label: 'Review territory' },
+    ]);
+  });
+
   it('explains why beginners start near a corner instead of the center', () => {
     const answer = getLocalQuestionAnswer('Why not the center?', createGame(9), 'guided');
 

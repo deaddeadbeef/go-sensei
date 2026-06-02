@@ -6,7 +6,7 @@ import {
   getBeginnerObjective,
   getBeginnerObjectiveProgress,
 } from '@/lib/coaching/beginner-objectives';
-import { getBeginnerObjectiveLessonAction } from '@/lib/coaching/beginner-objective-actions';
+import { getBeginnerObjectiveActions, getBeginnerObjectiveLessonAction } from '@/lib/coaching/beginner-objective-actions';
 import type { BeginnerObjective } from '@/lib/coaching/beginner-objectives';
 import { getMoveInsight } from '@/lib/coaching/move-insight';
 import type { SenseiAction } from '@/lib/coaching/sensei-actions';
@@ -228,6 +228,14 @@ function isNextMoveQuestion(q: string): boolean {
     || /\bshow\s+me\s+(a\s+)?move\b/.test(q)
     || /\bhelp\s+me\s+(move|play|choose)\b/.test(q)
     || /\bhint\b/.test(q);
+}
+
+function isConfusionQuestion(q: string): boolean {
+  return /\b(i\s+m|im|i\s+am|i\s+feel)\s+(confused|lost|stuck|overwhelmed)\b/.test(q)
+    || /\b(i\s+do\s+not|i\s+don\s+t|i\s+dont)\s+(understand|know)\b/.test(q)
+    || /\b(this|go)\s+(is|feels)\s+(confusing|overwhelming|hard)\b/.test(q)
+    || /\btoo\s+much\b/.test(q)
+    || /\bwhere\s+do\s+i\s+even\s+start\b/.test(q);
 }
 
 function isMoveReviewQuestion(q: string): boolean {
@@ -1483,7 +1491,7 @@ function buildObjectiveAnswer(game: GameState, teachingLevel: TeachingLevel): Lo
     board: game.board,
     moveHistory: game.moveHistory,
     moveCount: game.moveHistory.length,
-    currentPlayer: game.currentPlayer,
+    currentPlayer: 'black',
     teachingLevel,
   });
 
@@ -1504,6 +1512,42 @@ function buildObjectiveAnswer(game: GameState, teachingLevel: TeachingLevel): Lo
     conceptIds: objective.conceptIds,
     ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
     ...(action ? { actions: [action] } : {}),
+  };
+}
+
+function buildConfusionAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
+  const objective = getBeginnerObjective({
+    boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
+    moveCount: game.moveHistory.length,
+    currentPlayer: 'black',
+    teachingLevel,
+  });
+
+  if (!objective) {
+    return {
+      text: 'Slow down to one board question: find an empty intersection where your stones get more room, easier territory, or a capture threat. Ask "What should I play?" when you want a concrete target.',
+      conceptIds: ['direction-of-play'],
+    };
+  }
+
+  const targetText = formatObjectiveTargetText(objective, game.board.size);
+  const suggestions = objectiveSuggestions(objective, game.board.size, 'local-confusion-move');
+
+  return {
+    text: [
+      'Slow down to one board job.',
+      `Your current job is: ${objective.title}.`,
+      objective.instruction,
+      targetText ?? '',
+      objective.why,
+      'Do not try to solve the whole board yet: choose one marked coordinate, then ask what it changed.',
+      suggestions.length > 0 ? 'I marked the targets again so your next action is visible.' : '',
+    ].filter(Boolean).join(' '),
+    conceptIds: uniqueConceptIds(['direction-of-play', ...(objective.conceptIds ?? [])]),
+    ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
+    actions: getBeginnerObjectiveActions(objective),
   };
 }
 
@@ -1651,6 +1695,10 @@ export function getLocalQuestionAnswer(
 
   if (isShapeQuestion(q)) {
     return buildShapeAnswer(game, teachingLevel);
+  }
+
+  if (isConfusionQuestion(q)) {
+    return buildConfusionAnswer(game, teachingLevel);
   }
 
   if (isNextMoveQuestion(q)) {
