@@ -1,5 +1,5 @@
 import { getLocalGuidedFallback } from '@/lib/coaching/local-guided-fallback';
-import { createGame, playMove } from '@/lib/go-engine';
+import { createGame, passMove, playMove } from '@/lib/go-engine';
 
 describe('local guided fallback', () => {
   it('keeps a guided learner moving after a failed AI response to a first move', () => {
@@ -72,6 +72,36 @@ describe('local guided fallback', () => {
     expect(fallback?.text).toContain('Try C7, G7, C3, or G3.');
     expect(fallback?.text).toContain('Next focus: Start with a corner.');
     expect(fallback?.text).not.toContain('GitHub login');
+  });
+
+  it('explains a successful one-space jump as shape during local guided feedback', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup first move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+    const extensionMove = playMove(afterWhitePass, { x: 4, y: 2 });
+    if (!extensionMove.success) throw new Error('test setup extension move failed');
+
+    const fallback = getLocalGuidedFallback(extensionMove.newState, 'guided', 'auth-unavailable');
+
+    expect(fallback).toMatchObject({
+      shouldPassSensei: true,
+      conceptIds: expect.arrayContaining(['shape', 'direction-of-play']),
+      actions: [{ id: 'hint', label: 'Show targets' }],
+    });
+    expect(fallback?.text).toContain('Good: E7 made a one-space jump from your stone.');
+    expect(fallback?.text).toContain('Lesson: E7 is a one-space jump from C7. The empty point at D7 leaves room to grow');
+    expect(fallback?.text).toContain('Next focus: Make your stones work together. Play a one-space jump from one of your stones. Try G7, E5, or C5.');
+    expect(fallback?.boardFocus?.highlights).toEqual([{
+      id: 'local-fallback-learned-4,2',
+      point: { x: 4, y: 2 },
+      variant: 'positive',
+      label: 'E7: move to learn from - beginner job met.',
+    }]);
+    expect(fallback?.boardFocus?.suggestions?.map((suggestion) => suggestion.point)).toEqual([
+      { x: 6, y: 2 },
+      { x: 4, y: 4 },
+      { x: 2, y: 4 },
+    ]);
   });
 
   it('offers local objective guidance without passing when it is already black to play', () => {

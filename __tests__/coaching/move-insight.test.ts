@@ -1,5 +1,5 @@
 import { getMoveInsight } from '@/lib/coaching/move-insight';
-import { createBoard, createGame, playMove, setStone } from '@/lib/go-engine';
+import { createBoard, createGame, passMove, playMove, setStone } from '@/lib/go-engine';
 import type { GameState, Point, StoneColor } from '@/lib/go-engine/types';
 
 function boardWith(stones: Array<{ point: Point; color: StoneColor }>) {
@@ -46,6 +46,24 @@ describe('move insight', () => {
     expect(insight?.observation).toContain('C7');
     expect(insight?.nextStep).toContain('one-space jump');
     expect(insight?.nextStep).toContain('Try E7 or C5');
+  });
+
+  it('explains a completed one-space jump by naming the anchor and gap', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup first move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+    const extensionMove = playMove(afterWhitePass, { x: 4, y: 2 });
+    if (!extensionMove.success) throw new Error('test setup extension move failed');
+
+    const insight = getMoveInsight(extensionMove.newState, 'guided');
+
+    expect(insight).toMatchObject({
+      title: 'One-space jump shape',
+      conceptIds: expect.arrayContaining(['shape', 'direction-of-play']),
+    });
+    expect(insight?.observation).toContain('E7 is a one-space jump from C7.');
+    expect(insight?.observation).toContain('The empty point at D7 leaves room to grow');
+    expect(insight?.nextStep).toContain('Try G7, E5, or C5');
   });
 
   it('coaches center openings toward corners', () => {
