@@ -382,6 +382,19 @@ function isSnapbackQuestion(q: string): boolean {
     || /\bunder\s+the\s+stones\b/.test(q);
 }
 
+function isFightFollowUpQuestion(q: string): boolean {
+  return isWhiteReplyQuestion(q)
+    || /\bwhat\s+(happens|comes)\s+next\b/.test(q)
+    || /\bwhat\s+now\b/.test(q)
+    || /\bwhat\s+should\s+i\s+read\s+next\b/.test(q)
+    || /\bwhat\s+is\s+the\s+(next\s+)?follow[-\s]?up\b/.test(q)
+    || /\bwhat\s+should\s+i\s+do\s+next\s+in\s+this\s+(fight|cut|race)\b/.test(q)
+    || /\bwhat\s+happens\s+if\s+(white|sensei|the\s+opponent)\s+(answers|responds|replies|runs|escapes|connects|extends|captures|adds\s+a\s+liberty)\b/.test(q)
+    || /\bwhat\s+if\s+(white|sensei|the\s+opponent)\s+(runs|escapes|connects|extends|captures|adds\s+a\s+liberty)\b/.test(q)
+    || /\b(after|once)\s+(white|sensei|the\s+opponent)\s+(answers|responds|replies|runs|escapes|connects|extends|captures|adds\s+a\s+liberty)\b/.test(q)
+    || /\bdoes\s+(white|sensei|the\s+opponent)\s+have\s+(an?\s+)?(answer|reply|escape)\b/.test(q);
+}
+
 function isGameReviewQuestion(q: string): boolean {
   return /\bgame\s+review\b/.test(q)
     || /\breview\s+(this|the|my)\s+(game|board|position)\b/.test(q)
@@ -2984,6 +2997,21 @@ function buildAttackDefenseDecisionAnswer(game: GameState, teachingLevel: Teachi
   };
 }
 
+function buildFightFollowUpAnswer(game: GameState, teachingLevel: TeachingLevel, q: string): LocalQuestionAnswer | null {
+  if (findSnapbackContext(game)) return buildSnapbackAnswer(game);
+
+  const occupiedCutAnswer = buildOccupiedOneSpaceJumpCutAnswer(game, q);
+  if (occupiedCutAnswer) return occupiedCutAnswer;
+
+  if (findCaptureRacePair(game)) return buildCaptureRaceAnswer(game, teachingLevel);
+
+  if (findLearnerWeakGroup(game) || findLearnerCaptureTarget(game) || findLearnerPressureTarget(game)) {
+    return buildAttackDefenseDecisionAnswer(game, teachingLevel);
+  }
+
+  return null;
+}
+
 function buildThreatAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
   const captureTarget = findLearnerCaptureTarget(game);
   const pressureTarget = captureTarget ? null : findLearnerPressureTarget(game);
@@ -4150,6 +4178,11 @@ export function getLocalQuestionAnswer(
   if (isOneSpaceJumpConnectionQuestion(q, game.board.size)) {
     const connectionAnswer = buildOneSpaceJumpConnectionAnswer(game, teachingLevel, q);
     if (connectionAnswer) return connectionAnswer;
+  }
+
+  if (isFightFollowUpQuestion(q)) {
+    const followUpAnswer = buildFightFollowUpAnswer(game, teachingLevel, q);
+    if (followUpAnswer) return followUpAnswer;
   }
 
   if (isOpponentMoveQuestion(q)) {
