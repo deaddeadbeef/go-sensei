@@ -1056,6 +1056,30 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('answers empty-point safety questions as candidate move checks', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+
+    const answer = getLocalQuestionAnswer('Is D7 safe?', firstMove.newState, 'guided');
+
+    expect(answer?.text).toContain('D7 touches C7 directly.');
+    expect(answer?.text).toContain('this beginner goal is practicing a one-space jump');
+    expect(answer?.text).toContain('For this board, I would prefer E7 or C5.');
+    expect(answer?.text).toContain('I highlighted D7 and re-marked the better beginner targets.');
+    expect(answer?.text).not.toContain('D7 is not one of your Black groups');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['shape', 'direction-of-play']));
+    expect(answer?.boardFocus?.highlights).toEqual([{
+      id: 'local-candidate-question-3,2',
+      point: { x: 3, y: 2 },
+      variant: 'warning',
+      label: 'D7: open, but not the current beginner target.',
+    }]);
+    expect(answer?.boardFocus?.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+    ]);
+  });
+
   it('explains why a marked target move matters', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
