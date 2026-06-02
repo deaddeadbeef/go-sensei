@@ -438,6 +438,7 @@ function isCandidateMoveQuestion(q: string, boardSize: BoardSize): boolean {
   return /\b(should|can|could|would)\s+i\s+(play|try|move)\b/.test(q)
     || /\bwhat\s+about\b/.test(q)
     || /\bhow\s+about\b/.test(q)
+    || /\bwhat\s+(is|s)\s+wrong\s+with\s+[a-hj-t]\d{1,2}\b/.test(q)
     || /\bis\s+[a-hj-t]\d{1,2}\s+(a\s+)?(good|bad|ok|okay|right|wrong|playable|safe)(\s+(move|play))?\b/.test(q)
     || /\bplay\s+(at\s+)?[a-hj-t]\d{1,2}\b/.test(q);
 }
@@ -455,6 +456,8 @@ function isOneSpaceJumpGapQuestion(q: string): boolean {
 
   return /\bgap\b/.test(q)
     || /\bfill\s+(the\s+)?(gap|space)\b/.test(q)
+    || /\bconnect\s+solidly\s+(at\s+)?[a-hj-t]\d{1,2}\b/.test(q)
+    || /\bfill\s+[a-hj-t]\d{1,2}\s+to\s+connect\b/.test(q)
     || /\bplay\s+between\s+(them|my\s+stones|these\s+stones|the\s+stones)\b/.test(q)
     || /\bbetween\s+them\b/.test(q);
 }
@@ -844,6 +847,11 @@ function candidateMissReason(
   board?: GameState['board'],
 ): string {
   const coord = pointToCoord(point, boardSize);
+  const occupant = board ? getStone(board, point) : null;
+
+  if (occupant !== null) {
+    return `${coord} is already occupied by ${occupant === 'black' ? 'your Black stone' : 'White'}, so do not evaluate it as a new move to play now.`;
+  }
 
   if (objective.id === 'claim-corner') {
     return `${coord} is open, but this beginner goal is about starting near a corner where the board edge helps you make territory.`;
