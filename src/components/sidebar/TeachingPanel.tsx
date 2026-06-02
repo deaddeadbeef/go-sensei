@@ -4,8 +4,9 @@ import { CONCEPTS } from '@/lib/concepts/concept-data';
 import { getMoveInsight } from '@/lib/coaching/move-insight';
 import { useConceptStore } from '@/stores/concept-store';
 import { useGameStore } from '@/stores/game-store';
+import type { Point } from '@/lib/go-engine';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 
 const variantColors: Record<string, string> = {
   positive: '#4ade80',
@@ -31,7 +32,12 @@ export function TeachingPanel() {
   const game = useGameStore((s) => s.game);
   const teachingLevel = useGameStore((s) => s.teachingLevel);
   const boardSize = useGameStore((s) => s.game.board.size);
+  const phase = useGameStore((s) => s.phase);
+  const currentPlayer = useGameStore((s) => s.game.currentPlayer);
+  const isAiThinking = useGameStore((s) => s.isAiThinking);
   const lastInteractionTime = useGameStore((s) => s.lastInteractionTime);
+  const placeStone = useGameStore((s) => s.placeStone);
+  const recordInteraction = useGameStore((s) => s.recordInteraction);
   const recordEvidence = useConceptStore((s) => s.recordEvidence);
   const insight = getMoveInsight(game, teachingLevel);
   const insightConceptIds = insight ? [...new Set(insight.conceptIds)] : [];
@@ -50,6 +56,14 @@ export function TeachingPanel() {
 
   const hasBoardAnalysis = labeledHighlights.length + labeledArrows.length + labeledGroups.length + labeledSuggestions.length > 0;
   const hasContent = insight !== null || hasBoardAnalysis;
+  const canPlaySuggestion = phase === 'playing' && currentPlayer === 'black' && !isAiThinking;
+
+  const handleSuggestionClick = useCallback((point: Point) => {
+    if (!canPlaySuggestion) return;
+
+    recordInteraction();
+    placeStone(point);
+  }, [canPlaySuggestion, placeStone, recordInteraction]);
 
   useEffect(() => {
     if (!insightRecordKey || !insightConceptKey) return;
@@ -98,7 +112,14 @@ export function TeachingPanel() {
                 </div>
                 <div className="space-y-1">
                   {labeledSuggestions.map((s) => (
-                    <div key={s.id} className="flex items-start gap-1.5">
+                    <button
+                      key={s.id}
+                      type="button"
+                      className="flex w-full items-start gap-1.5 rounded-sm text-left transition hover:bg-white/[0.04] disabled:cursor-default disabled:hover:bg-transparent"
+                      disabled={!canPlaySuggestion}
+                      aria-label={`Play ${coordLabel(s.point.x, s.point.y, boardSize)} suggestion: ${s.reason}`}
+                      onClick={() => handleSuggestionClick(s.point)}
+                    >
                       <span
                         className="shrink-0 rounded px-1 py-0.5 text-[10px] font-mono font-bold leading-none"
                         style={{ backgroundColor: `${variantColors.neutral}33`, color: variantColors.neutral }}
@@ -106,7 +127,7 @@ export function TeachingPanel() {
                         {coordLabel(s.point.x, s.point.y, boardSize)} #{s.rank}
                       </span>
                       <span className="text-xs text-white/70 leading-tight">{s.reason}</span>
-                    </div>
+                    </button>
                   ))}
                   {labeledHighlights.map((h) => (
                     <div key={h.id} className="flex items-start gap-1.5">
