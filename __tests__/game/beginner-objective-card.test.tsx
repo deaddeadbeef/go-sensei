@@ -514,6 +514,50 @@ describe('BeginnerObjectiveCard', () => {
         { id: 'guided:read-pressure:recount:read-pressure-2,2-4,2-3,2:3,3', label: 'Show recount' },
       ],
     });
+    expect(useGameStore.getState().overlays.targetHints).toEqual([
+      {
+        id: 'read-pressure-anchor-2,2',
+        point: { x: 2, y: 2 },
+        variant: 'warning',
+        label: 'C7: short side with 2 liberties after D6: C6 and B7.',
+      },
+      {
+        id: 'read-pressure-stone-4,2',
+        point: { x: 4, y: 2 },
+        variant: 'positive',
+        label: 'E7: 3 liberties after D6: E8, E6, and F7.',
+      },
+      {
+        id: 'read-pressure-gap-3,2',
+        point: { x: 3, y: 2 },
+        variant: 'warning',
+        label: 'D7: imagined White pressure point to keep watching.',
+      },
+      {
+        id: 'read-pressure-reply-3,1',
+        point: { x: 3, y: 1 },
+        variant: 'neutral',
+        label: 'D8: alternate reply to compare later.',
+      },
+      {
+        id: 'read-pressure-reply-3,3',
+        point: { x: 3, y: 3 },
+        variant: 'positive',
+        label: 'D6: selected reply used for this recount.',
+      },
+      {
+        id: 'read-pressure-short-liberty-2,3',
+        point: { x: 2, y: 3 },
+        variant: 'warning',
+        label: 'C6: defend this C7 liberty before extending.',
+      },
+      {
+        id: 'read-pressure-short-liberty-1,2',
+        point: { x: 1, y: 2 },
+        variant: 'warning',
+        label: 'B7: defend this C7 liberty before extending.',
+      },
+    ]);
   });
 
   it('keeps the last missed objective visible without blocking the next try', () => {

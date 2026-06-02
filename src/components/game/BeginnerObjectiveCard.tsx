@@ -419,19 +419,30 @@ function buildOneSpaceJumpRecountHighlights(
   const selectedReplyKey = targetKey(recount.reply);
   const anchorLibertyText = joinAndCoordinateList(recount.anchorLiberties.map((point) => pointToCoord(point, board.size)));
   const stoneLibertyText = joinAndCoordinateList(recount.stoneLiberties.map((point) => pointToCoord(point, board.size)));
+  const anchorIsShort = recount.anchorLiberties.length < recount.stoneLiberties.length;
+  const stoneIsShort = recount.stoneLiberties.length < recount.anchorLiberties.length;
+  const shortSide = anchorIsShort
+    ? { coord: anchorCoord, liberties: recount.anchorLiberties }
+    : stoneIsShort
+      ? { coord: stoneCoord, liberties: recount.stoneLiberties }
+      : null;
 
   return [
     {
       id: `read-pressure-anchor-${targetKey(prompt.anchor)}`,
       point: copyPoint(prompt.anchor),
-      variant: 'positive',
-      label: `${anchorCoord}: ${formatLibertyCount(recount.anchorLiberties.length)} after ${replyCoord}: ${anchorLibertyText}.`,
+      variant: anchorIsShort ? 'warning' : 'positive',
+      label: anchorIsShort
+        ? `${anchorCoord}: short side with ${formatLibertyCount(recount.anchorLiberties.length)} after ${replyCoord}: ${anchorLibertyText}.`
+        : `${anchorCoord}: ${formatLibertyCount(recount.anchorLiberties.length)} after ${replyCoord}: ${anchorLibertyText}.`,
     },
     {
       id: `read-pressure-stone-${targetKey(prompt.stone)}`,
       point: copyPoint(prompt.stone),
-      variant: 'positive',
-      label: `${stoneCoord}: ${formatLibertyCount(recount.stoneLiberties.length)} after ${replyCoord}: ${stoneLibertyText}.`,
+      variant: stoneIsShort ? 'warning' : 'positive',
+      label: stoneIsShort
+        ? `${stoneCoord}: short side with ${formatLibertyCount(recount.stoneLiberties.length)} after ${replyCoord}: ${stoneLibertyText}.`
+        : `${stoneCoord}: ${formatLibertyCount(recount.stoneLiberties.length)} after ${replyCoord}: ${stoneLibertyText}.`,
     },
     {
       id: `read-pressure-gap-${targetKey(prompt.gap)}`,
@@ -452,6 +463,18 @@ function buildOneSpaceJumpRecountHighlights(
           : `${coord}: alternate reply to compare later.`,
       };
     }),
+    ...(shortSide
+      ? shortSide.liberties.map((point) => {
+        const coord = pointToCoord(point, board.size);
+
+        return {
+          id: `read-pressure-short-liberty-${targetKey(point)}`,
+          point: copyPoint(point),
+          variant: 'warning' as const,
+          label: `${coord}: defend this ${shortSide.coord} liberty before extending.`,
+        };
+      })
+      : []),
   ];
 }
 

@@ -40,6 +40,7 @@ Latest completed slice:
 - Added a direct compare-other-reply loop in the pressure mini-branch so learners can switch from one recounted answer to the alternate reply and immediately see the new liberty counts without changing the real game.
 - Added a side-by-side comparison summary after pressure replies are compared, so learners can see both liberty counts and the directional difference in one place.
 - Added a concrete defensive recommendation when a pressure comparison reveals one Black side has fewer liberties, and made the second-read sentence stop claiming both sides are safe in that case.
+- Marked the short side and its actual defensive liberties on the board when a pressure recount shows one Black side has fewer liberties.
 
 Next investigation candidates:
-- Whether the board should mark the short-side liberties from a pressure comparison so the recommendation is visible directly on the stones.
+- Whether transcript actions should restore short-side liberty markers alongside reopened pressure recounts.
