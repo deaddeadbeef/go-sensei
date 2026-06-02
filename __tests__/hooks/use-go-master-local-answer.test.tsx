@@ -832,6 +832,68 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('liberties').encounterCount).toBeGreaterThan(0);
   });
 
+  it('explains learner threats locally without fetching', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('What am I threatening?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('Not a capture threat yet.');
+    expect(state.bubble.text).toContain('C7 threatens future shape: it gives you an anchor to extend from, not an immediate kill.');
+    expect(state.bubble.text).toContain('That Black group has 4 liberties: C8, C6, B7, and D7, so it has room to build.');
+    expect(state.bubble.text).toContain('On this board, turn the threat into: Make your stones work together.');
+    expect(state.chatMessages.at(-1)?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'practice:reading', label: 'Practice reading' },
+    ]);
+    expect(state.overlays.highlights).toEqual([{
+      id: 'local-threat-anchor-2,2',
+      point: { x: 2, y: 2 },
+      variant: 'neutral',
+      label: 'C7: current Black stone creating a future threat.',
+    }]);
+    expect(state.overlays.liberties).toEqual([{
+      id: 'local-threat-liberties-2,2',
+      point: { x: 2, y: 2 },
+      count: 4,
+      libertyPoints: [
+        { x: 2, y: 1 },
+        { x: 2, y: 3 },
+        { x: 1, y: 2 },
+        { x: 3, y: 2 },
+      ],
+    }]);
+    expect(state.overlays.groups[0]).toMatchObject({
+      id: 'local-threat-group-2,2',
+      stones: [{ x: 2, y: 2 }],
+      color: 'black',
+      liberties: 4,
+      label: 'Black group creating a future threat: 4 liberties at C8, C6, B7, and D7.',
+    });
+    expect(state.overlays.suggestions).toEqual([
+      {
+        id: 'local-threat-move-4,2',
+        point: { x: 4, y: 2 },
+        rank: 1,
+        reason: 'Try E7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-threat-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 2,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
+    expect(useConceptStore.getState().getMastery('reading').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('direction-of-play').encounterCount).toBeGreaterThan(0);
+  });
+
   it('reviews the guided game locally from the review control without fetching', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());

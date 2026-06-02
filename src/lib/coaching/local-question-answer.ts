@@ -177,6 +177,12 @@ function findLearnerCaptureTarget(game: GameState): Group | null {
     .sort(compareGroupsByAnchor)[0] ?? null;
 }
 
+function findLearnerPressureTarget(game: GameState): Group | null {
+  return getAllGroups(game.board)
+    .filter((group) => group.color === 'white' && group.liberties.length > 1 && group.liberties.length <= 2)
+    .sort((a, b) => a.liberties.length - b.liberties.length || compareGroupsByAnchor(a, b))[0] ?? null;
+}
+
 function findLearnerWeakGroup(game: GameState): Group | null {
   return getAllGroups(game.board)
     .filter((group) => group.color === 'black' && group.liberties.length > 0 && group.liberties.length <= 2)
@@ -305,6 +311,16 @@ function isWhiteReplyQuestion(q: string): boolean {
     || /\bwhere\s+(can|could|will|would|might)\s+(white|sensei|the\s+opponent)\s+play\b/.test(q)
     || /\bwhat\s+if\s+(white|sensei|the\s+opponent)\s+(answers|responds|attacks|plays)\b/.test(q)
     || /\bwhat\s+is\s+(white|sensei|the\s+opponent)\s+threatening\s+next\b/.test(q);
+}
+
+function isThreatQuestion(q: string): boolean {
+  return /\bwhat\s+(am\s+i|are\s+my\s+stones?|does\s+(that|this|my\s+move))\s+threaten(?:ing)?\b/.test(q)
+    || /\bwhat\s+(did|does)\s+(that|this|my\s+move)\s+threaten\b/.test(q)
+    || /\bdo\s+i\s+have\s+(a\s+)?(threat|attack)\b/.test(q)
+    || /\bam\s+i\s+(threatening|attacking)\s+anything\b/.test(q)
+    || /\bwhat\s+can\s+i\s+(attack|threaten|capture)\b/.test(q)
+    || /\bcan\s+i\s+(attack|capture)\s+(anything|something|a\s+stone|a\s+group)\b/.test(q)
+    || /\bis\s+(white|the\s+opponent)\s+(weak|in\s+trouble|under\s+attack)\b/.test(q);
 }
 
 function isGameReviewQuestion(q: string): boolean {
@@ -1595,6 +1611,183 @@ function buildWhiteReplyAnswer(game: GameState, teachingLevel: TeachingLevel): L
   };
 }
 
+function buildThreatAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
+  const captureTarget = findLearnerCaptureTarget(game);
+  const pressureTarget = captureTarget ? null : findLearnerPressureTarget(game);
+
+  if (captureTarget) {
+    const anchor = groupAnchor(captureTarget);
+    const anchorCoord = pointToCoord(anchor, game.board.size);
+    const capturePoint = captureTarget.liberties[0];
+    const captureCoord = pointToCoord(capturePoint, game.board.size);
+
+    return {
+      text: [
+        `Yes: White has a group at ${anchorCoord} in atari.`,
+        `Your threat is capture: Black can play ${captureCoord}, the group's final liberty.`,
+        'If White answers, it probably tries to add a liberty or capture first, so capture now when that matters.',
+        'I marked the White group, its last liberty, and the capture move.',
+      ].join(' '),
+      conceptIds: ['capture', 'atari', 'liberties', 'reading'],
+      boardFocus: {
+        liberties: [{
+          id: `local-threat-liberties-${pointKey(anchor)}`,
+          point: copyPoint(anchor),
+          count: captureTarget.liberties.length,
+          libertyPoints: captureTarget.liberties.map(copyPoint),
+        }],
+        groups: [{
+          id: `local-threat-group-${pointKey(anchor)}`,
+          stones: captureTarget.stones.map(copyPoint),
+          color: captureTarget.color,
+          liberties: captureTarget.liberties.length,
+          label: `White group in atari: capture by playing ${captureCoord}.`,
+        }],
+        suggestions: [{
+          id: `local-threat-capture-move-${pointKey(capturePoint)}`,
+          point: copyPoint(capturePoint),
+          rank: 1,
+          reason: `Capture White by filling its last liberty at ${captureCoord}.`,
+        }],
+      },
+      actions: [{ id: 'practice:capture', label: 'Practice capture' }],
+    };
+  }
+
+  if (pressureTarget) {
+    const anchor = groupAnchor(pressureTarget);
+    const anchorCoord = pointToCoord(anchor, game.board.size);
+    const libertyCoords = pressureTarget.liberties.map((liberty) => pointToCoord(liberty, game.board.size));
+    const libertyList = joinList(libertyCoords);
+    const suggestions = pressureTarget.liberties.slice(0, 4).map((liberty, index) => {
+      const coord = pointToCoord(liberty, game.board.size);
+
+      return {
+        id: `local-threat-pressure-move-${pointKey(liberty)}`,
+        point: copyPoint(liberty),
+        rank: index + 1,
+        reason: `Pressure White by playing its liberty at ${coord}.`,
+      };
+    });
+
+    return {
+      text: [
+        `White has a group at ${anchorCoord} with only ${pressureTarget.liberties.length} liberties: ${libertyList}.`,
+        'That is pressure, not a capture yet. Filling one liberty can make White answer, but count your own safety first.',
+        'I marked the pressured White group and the liberties you can read as attacking moves.',
+      ].join(' '),
+      conceptIds: ['reading', 'liberties', 'groups', 'capture'],
+      boardFocus: {
+        liberties: [{
+          id: `local-threat-pressure-liberties-${pointKey(anchor)}`,
+          point: copyPoint(anchor),
+          count: pressureTarget.liberties.length,
+          libertyPoints: pressureTarget.liberties.map(copyPoint),
+        }],
+        groups: [{
+          id: `local-threat-pressure-group-${pointKey(anchor)}`,
+          stones: pressureTarget.stones.map(copyPoint),
+          color: pressureTarget.color,
+          liberties: pressureTarget.liberties.length,
+          label: `White group under pressure: ${pressureTarget.liberties.length} liberties at ${libertyList}.`,
+        }],
+        suggestions,
+      },
+      actions: [
+        { id: 'hint', label: 'Show targets' },
+        { id: 'practice:capture', label: 'Practice capture' },
+      ],
+    };
+  }
+
+  const move = lastBlackPlacedMove(game);
+  const objective = getBeginnerObjective({
+    boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
+    moveCount: game.moveHistory.length,
+    currentPlayer: 'black',
+    teachingLevel,
+  });
+  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-threat-move') : [];
+  const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
+
+  if (!move) {
+    return {
+      text: [
+        'Not yet: you need a Black stone before there is a concrete threat to read.',
+        objective ? `Start with one useful board job: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}` : '',
+        suggestions.length > 0 ? 'I marked the first targets so your next move can create a real plan.' : '',
+      ].filter(Boolean).join(' '),
+      conceptIds: uniqueConceptIds(['direction-of-play', 'reading', ...(objective?.conceptIds ?? [])]),
+      ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
+      actions: [
+        ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+        { id: 'practice:reading', label: 'Practice reading' },
+      ],
+    };
+  }
+
+  const coord = pointToCoord(move.point, game.board.size);
+  const group = getGroup(game.board, move.point);
+  const libertyCoords = group?.liberties.map((liberty) => pointToCoord(liberty, game.board.size)) ?? [];
+  const libertyList = joinList(libertyCoords);
+  const libertyWord = group?.liberties.length === 1 ? 'liberty' : 'liberties';
+  const lines = [
+    'Not a capture threat yet.',
+    `${coord} threatens future shape: it gives you an anchor to extend from, not an immediate kill.`,
+  ];
+
+  if (group && libertyCoords.length > 0) {
+    lines.push(`That Black group has ${group.liberties.length} ${libertyWord}: ${libertyList}, so it has room to build.`);
+  }
+
+  lines.push('A useful beginner threat is a move White should respect because it builds territory, connection, safety, or pressure.');
+
+  if (objective) {
+    lines.push(`On this board, turn the threat into: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}`);
+  }
+
+  lines.push(suggestions.length > 0
+    ? `I highlighted ${coord} and marked the current targets so you can make the threat visible.`
+    : `I highlighted ${coord} so you can keep reading from the actual stone.`);
+
+  return {
+    text: lines.join(' '),
+    conceptIds: uniqueConceptIds(['direction-of-play', 'reading', 'liberties', ...(objective?.conceptIds ?? [])]),
+    boardFocus: {
+      highlights: [{
+        id: `local-threat-anchor-${pointKey(move.point)}`,
+        point: copyPoint(move.point),
+        variant: 'neutral',
+        label: `${coord}: current Black stone creating a future threat.`,
+      }],
+      ...(group
+        ? {
+          liberties: [{
+            id: `local-threat-liberties-${pointKey(move.point)}`,
+            point: copyPoint(move.point),
+            count: group.liberties.length,
+            libertyPoints: group.liberties.map(copyPoint),
+          }],
+          groups: [{
+            id: `local-threat-group-${pointKey(move.point)}`,
+            stones: group.stones.map(copyPoint),
+            color: group.color,
+            liberties: group.liberties.length,
+            label: `Black group creating a future threat: ${group.liberties.length} ${libertyWord} at ${libertyList}.`,
+          }],
+        }
+        : {}),
+      ...(suggestions.length > 0 ? { suggestions } : {}),
+    },
+    actions: [
+      ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+      { id: 'practice:reading', label: 'Practice reading' },
+    ],
+  };
+}
+
 function buildConnectionAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
   const objective = getBeginnerObjective({
     boardSize: game.board.size,
@@ -2354,6 +2547,10 @@ export function getLocalQuestionAnswer(
 
   if (isWhiteReplyQuestion(q)) {
     return buildWhiteReplyAnswer(game, teachingLevel);
+  }
+
+  if (isThreatQuestion(q)) {
+    return buildThreatAnswer(game, teachingLevel);
   }
 
   if (isUndoQuestion(q)) {
