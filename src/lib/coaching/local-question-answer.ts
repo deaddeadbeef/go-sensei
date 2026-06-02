@@ -1,9 +1,14 @@
 import { getAllGroups, getGroup, pointKey, pointToCoord } from '@/lib/go-engine';
 import type { BoardSize, GameState, Group, Move, Point } from '@/lib/go-engine/types';
 import type { TeachingLevel } from '@/lib/ai/system-prompt';
-import { formatObjectiveTargetText, getBeginnerObjective } from '@/lib/coaching/beginner-objectives';
+import {
+  formatObjectiveTargetText,
+  getBeginnerObjective,
+  getBeginnerObjectiveProgress,
+} from '@/lib/coaching/beginner-objectives';
 import { getBeginnerObjectiveLessonAction } from '@/lib/coaching/beginner-objective-actions';
 import type { BeginnerObjective } from '@/lib/coaching/beginner-objectives';
+import { getMoveInsight } from '@/lib/coaching/move-insight';
 import type { SenseiAction } from '@/lib/coaching/sensei-actions';
 
 export interface LocalLibertyFocus {
@@ -207,6 +212,14 @@ function isNextMoveQuestion(q: string): boolean {
     || /\bhint\b/.test(q);
 }
 
+function isMoveReviewQuestion(q: string): boolean {
+  return /\b(was|is)\s+(that|this|my\s+move)\s+(good|bad|ok|okay|right|wrong)\b/.test(q)
+    || /\bhow\s+(was|is)\s+(that|this|my\s+move)\b/.test(q)
+    || /\bdid\s+i\s+(make\s+a\s+mistake|play\s+(well|badly|good|right|wrong))\b/.test(q)
+    || /\bwhy\s+(was|is)\s+(that|this|my\s+move)\s+(good|bad|right|wrong)\b/.test(q)
+    || /\breview\s+(that|this|my)\s+move\b/.test(q);
+}
+
 function suggestionReason(objective: BeginnerObjective, point: Point, boardSize: BoardSize): string {
   const coord = pointToCoord(point, boardSize);
 
@@ -228,6 +241,60 @@ function objectiveSuggestions(objective: BeginnerObjective, boardSize: BoardSize
     rank: index + 1,
     reason: suggestionReason(objective, point, boardSize),
   }));
+}
+
+function buildMoveReviewAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
+  const progress = getBeginnerObjectiveProgress(game, teachingLevel);
+  const insight = getMoveInsight(game, teachingLevel);
+  const objective = getBeginnerObjective({
+    boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
+    moveCount: game.moveHistory.length,
+    currentPlayer: 'black',
+    teachingLevel,
+  });
+  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-review-next-move') : [];
+  const action = objective ? getBeginnerObjectiveLessonAction(objective) : null;
+
+  if (!progress && !insight) {
+    return {
+      text: 'Play a stone first, then I can review the move against the beginner goal and point to the next idea.',
+      conceptIds: objective?.conceptIds ?? [],
+      ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
+      ...(action ? { actions: [action] } : {}),
+    };
+  }
+
+  const lines: string[] = [];
+
+  if (progress) {
+    lines.push(progress.status === 'met'
+      ? `Yes. ${progress.text}`
+      : `Not for this beginner goal. ${progress.text}`);
+  }
+
+  if (insight) {
+    lines.push(insight.observation);
+    lines.push(`Next: ${insight.nextStep}`);
+  } else if (objective) {
+    const targetText = formatObjectiveTargetText(objective, game.board.size);
+    lines.push(`Next: ${objective.instruction}${targetText ? ` ${targetText}` : ''}`);
+  }
+
+  if (suggestions.length > 0) {
+    lines.push('I marked the next beginner targets on the board.');
+  }
+
+  return {
+    text: lines.join(' '),
+    conceptIds: uniqueConceptIds([
+      ...(insight?.conceptIds ?? []),
+      ...(objective?.conceptIds ?? []),
+    ]),
+    ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
+    ...(action ? { actions: [action] } : {}),
+  };
 }
 
 function buildObjectiveAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer | null {
@@ -333,6 +400,10 @@ export function getLocalQuestionAnswer(
 
   const q = normalizedQuestion(question);
   const lastMove = lastPlacedMove(game);
+
+  if (isMoveReviewQuestion(q)) {
+    return buildMoveReviewAnswer(game, teachingLevel);
+  }
 
   if (isNextMoveQuestion(q)) {
     const objectiveAnswer = buildObjectiveAnswer(game, teachingLevel);
