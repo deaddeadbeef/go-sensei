@@ -139,6 +139,41 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('influence').encounterCount).toBeGreaterThan(0);
   });
 
+  it('explains the game goal locally without fetching', () => {
+    act(() => {
+      useGameStore.getState().startGuidedIntroGame();
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('How do I win?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('To win Go, finish with more points than your opponent.');
+    expect(state.bubble.text).toContain("Points come from empty territory you surround, captured stones, and White's 6.5 komi bonus.");
+    expect(state.bubble.text).toContain('For this beginner board, translate that big goal into one job: Start with a corner.');
+    expect(state.bubble.text).toContain('I marked moves that turn the win condition into your next board decision.');
+    expect(state.chatMessages.at(-1)?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'lesson:territory', label: 'Review territory' },
+    ]);
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 2, y: 2 },
+      { x: 6, y: 2 },
+      { x: 2, y: 6 },
+      { x: 6, y: 6 },
+    ]);
+    expect(useConceptStore.getState().getMastery('scoring').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('territory').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('capture').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('liberties').encounterCount).toBeGreaterThan(0);
+  });
+
   it('keeps logged-out guided player moves local instead of fetching and warning about auth', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());

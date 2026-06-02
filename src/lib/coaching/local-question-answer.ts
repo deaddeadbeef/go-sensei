@@ -307,6 +307,15 @@ function isPositionQuestion(q: string): boolean {
     || /\bposition\s+(look|looks)\b/.test(q);
 }
 
+function isGameGoalQuestion(q: string): boolean {
+  return /\bhow\s+(do|can)\s+(i|you|we|black|white)\s+win\b/.test(q)
+    || /\bhow\s+(do|does)\s+(players?|someone)\s+win\b/.test(q)
+    || /\bwhat\s+(is|s)\s+the\s+(goal|objective|object|point)\s+(of\s+(go|this\s+game|the\s+game))?\b/.test(q)
+    || /\bwhat\s+am\s+i\s+trying\s+to\s+do\b/.test(q)
+    || /\bwhat\s+are\s+we\s+trying\s+to\s+do\b/.test(q)
+    || /\bwhat\s+should\s+i\s+be\s+trying\s+to\s+do\b/.test(q);
+}
+
 function isKomiQuestion(q: string): boolean {
   return /\bkomi\b/.test(q);
 }
@@ -809,6 +818,44 @@ function buildKomiAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQu
   };
 }
 
+function buildGameGoalAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
+  const objective = game.phase === 'playing'
+    ? getBeginnerObjective({
+      boardSize: game.board.size,
+      board: game.board,
+      moveHistory: game.moveHistory,
+      moveCount: game.moveHistory.length,
+      currentPlayer: 'black',
+      teachingLevel,
+    })
+    : null;
+  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-game-goal-move') : [];
+  const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
+  const lines = [
+    'To win Go, finish with more points than your opponent.',
+    `Points come from empty territory you surround, captured stones, and White's ${game.komi} komi bonus.`,
+    'Stones are the tools: they claim space, keep liberties, connect into strong groups, and make the opponent work harder to live.',
+  ];
+
+  if (objective) {
+    lines.push(`For this beginner board, translate that big goal into one job: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}`);
+  }
+
+  if (suggestions.length > 0) {
+    lines.push('I marked moves that turn the win condition into your next board decision.');
+  }
+
+  return {
+    text: lines.join(' '),
+    conceptIds: uniqueConceptIds(['scoring', 'territory', 'capture', 'liberties', ...(objective?.conceptIds ?? [])]),
+    ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
+    actions: [
+      ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+      { id: 'lesson:territory', label: 'Review territory' },
+    ],
+  };
+}
+
 function buildCoordinateAnswer(game: GameState, teachingLevel: TeachingLevel, q: string): LocalQuestionAnswer {
   const requestedPoint = mentionedCoordinate(q, game.board.size);
   const requestedCoord = requestedPoint ? pointToCoord(requestedPoint, game.board.size) : null;
@@ -1226,6 +1273,10 @@ export function getLocalQuestionAnswer(
 
   if (isKomiQuestion(q)) {
     return buildKomiAnswer(game, teachingLevel);
+  }
+
+  if (isGameGoalQuestion(q)) {
+    return buildGameGoalAnswer(game, teachingLevel);
   }
 
   if (isPositionQuestion(q)) {
