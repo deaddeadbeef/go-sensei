@@ -584,6 +584,55 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('shape').encounterCount).toBeGreaterThan(0);
   });
 
+  it('explains the latest White move locally without fetching', () => {
+    act(() => {
+      const result = useGameStore.getState().applyAiMove({ x: 3, y: 2 });
+      if (!result.success) throw new Error('test setup white move failed');
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('Why did White play there?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('White just played D7.');
+    expect(state.bubble.text).toContain('It touches your Black group at C7 and leaves it with 3 liberties: C8, C6, and B7.');
+    expect(state.bubble.text).toContain('Your reply should still be practical: Make your stones work together.');
+    expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+    expect(state.overlays.highlights).toEqual([{
+      id: 'local-opponent-move-3,2',
+      point: { x: 3, y: 2 },
+      variant: 'warning',
+      label: 'D7: latest White move pressures a Black group.',
+    }]);
+    expect(state.overlays.groups?.[0]).toMatchObject({
+      id: 'local-opponent-pressure-group-2,2',
+      color: 'black',
+      liberties: 3,
+    });
+    expect(state.overlays.liberties).toEqual([{
+      id: 'local-opponent-pressure-liberties-2,2',
+      point: { x: 2, y: 2 },
+      count: 3,
+      libertyPoints: [
+        { x: 2, y: 1 },
+        { x: 2, y: 3 },
+        { x: 1, y: 2 },
+      ],
+    }]);
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+    ]);
+    expect(useConceptStore.getState().getMastery('direction-of-play').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('liberties').encounterCount).toBeGreaterThan(0);
+  });
+
   it('explains numbered board targets locally without fetching', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());

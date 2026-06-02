@@ -3,6 +3,7 @@ import {
   coordToPoint,
   countStones,
   createGame,
+  getAdjacentPoints,
   getAllGroups,
   getGroup,
   getStone,
@@ -287,6 +288,14 @@ function isMoveImpactQuestion(q: string): boolean {
     || /\bhow\s+did\s+(that|this|my\s+move)\s+(help|change|matter)\b/.test(q)
     || /\bwhy\s+did\s+(that|this|my\s+move)\s+(help|matter|work)\b/.test(q)
     || /\bwhat\s+does\s+(that|this)\s+mean\s+for\s+(the\s+)?board\b/.test(q);
+}
+
+function isOpponentMoveQuestion(q: string): boolean {
+  return /\bwhy\s+did\s+(white|sensei|you|the\s+opponent)\s+(play|move)\b/.test(q)
+    || /\bwhy\s+does\s+(white|sensei|the\s+opponent)\s+(play|move)\b/.test(q)
+    || /\bwhat\s+(did|does)\s+(white|sensei|the\s+opponent)\s+(do|play|move|want|threaten)\b/.test(q)
+    || /\bwhat\s+is\s+(white|sensei|the\s+opponent)\s+(trying|threatening)\b/.test(q)
+    || /\bwhy\s+(there|that\s+move|this\s+move)\b/.test(q);
 }
 
 function isGameReviewQuestion(q: string): boolean {
@@ -1638,6 +1647,117 @@ function buildMoveImpactAnswer(game: GameState, teachingLevel: TeachingLevel): L
   };
 }
 
+function adjacentGroupsByColor(game: GameState, point: Point, color: 'black' | 'white'): Group[] {
+  const seen = new Set<string>();
+  const groups: Group[] = [];
+
+  for (const adjacent of getAdjacentPoints(game.board, point)) {
+    if (getStone(game.board, adjacent) !== color) continue;
+    const group = getGroup(game.board, adjacent);
+    if (!group) continue;
+    const key = pointKey(groupAnchor(group));
+    if (seen.has(key)) continue;
+    seen.add(key);
+    groups.push(group);
+  }
+
+  return groups.sort((a, b) => a.liberties.length - b.liberties.length || compareGroupsByAnchor(a, b));
+}
+
+function buildOpponentMoveAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer | null {
+  const move = latestMove(game);
+  if (move?.type !== 'place' || move.color !== 'white') return null;
+
+  const objective = game.phase === 'playing'
+    ? getBeginnerObjective({
+      boardSize: game.board.size,
+      board: game.board,
+      moveHistory: game.moveHistory,
+      moveCount: game.moveHistory.length,
+      currentPlayer: 'black',
+      teachingLevel,
+    })
+    : null;
+  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-opponent-response-move') : [];
+  const action = objective ? getBeginnerObjectiveLessonAction(objective) : null;
+  const coord = pointToCoord(move.point, game.board.size);
+  const whiteGroup = getGroup(game.board, move.point);
+  const pressuredGroups = adjacentGroupsByColor(game, move.point, 'black');
+  const pressuredGroup = pressuredGroups[0] ?? null;
+  const pressuredAnchor = pressuredGroup ? groupAnchor(pressuredGroup) : null;
+  const pressuredCoord = pressuredAnchor ? pointToCoord(pressuredAnchor, game.board.size) : null;
+  const libertyCoords = pressuredGroup?.liberties.map((liberty) => pointToCoord(liberty, game.board.size)) ?? [];
+  const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
+  const lines = [
+    `White just played ${coord}.`,
+  ];
+
+  if (move.captured.length > 0) {
+    const capturedCoords = move.captured.map((point) => pointToCoord(point, game.board.size));
+    lines.push(`That move captured ${joinList(capturedCoords)}, so its purpose was concrete: remove your stones by taking their last liberties.`);
+  } else if (pressuredGroup && pressuredCoord) {
+    const libertyWord = pressuredGroup.liberties.length === 1 ? 'liberty' : 'liberties';
+    lines.push(`It touches your Black group at ${pressuredCoord} and leaves it with ${pressuredGroup.liberties.length} ${libertyWord}: ${joinList(libertyCoords)}.`);
+    lines.push('That is pressure, not a mystery: White is making your group easier to attack if you ignore its liberties.');
+  } else if (whiteGroup) {
+    lines.push(`It starts or extends a White group with ${whiteGroup.liberties.length} ${whiteGroup.liberties.length === 1 ? 'liberty' : 'liberties'}, so it is trying to claim space without being captured immediately.`);
+  } else {
+    lines.push('Treat it as an opponent claim of space, then ask what it threatens before answering.');
+  }
+
+  if (objective) {
+    lines.push(`Your reply should still be practical: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}`);
+  } else {
+    lines.push('Your reply should ask which Black group needs room, which White group can be pressured, or which point claims easier territory.');
+  }
+
+  if (suggestions.length > 0) {
+    lines.push(`I highlighted White's move and marked Black's practical replies.`);
+  } else {
+    lines.push(`I highlighted White's move so you can re-read the threat on the board.`);
+  }
+
+  return {
+    text: lines.join(' '),
+    conceptIds: uniqueConceptIds([
+      'direction-of-play',
+      ...(move.captured.length > 0 ? ['capture', 'liberties'] : []),
+      ...(pressuredGroup ? ['groups', 'liberties'] : []),
+      ...(objective?.conceptIds ?? []),
+    ]),
+    boardFocus: {
+      highlights: [{
+        id: `local-opponent-move-${pointKey(move.point)}`,
+        point: copyPoint(move.point),
+        variant: move.captured.length > 0 || pressuredGroup ? 'warning' : 'neutral',
+        label: `${coord}: latest White move${move.captured.length > 0 ? ' captured your stone' : pressuredGroup ? ' pressures a Black group' : ''}.`,
+      }],
+      ...(pressuredGroup && pressuredAnchor
+        ? {
+          liberties: [{
+            id: `local-opponent-pressure-liberties-${pointKey(pressuredAnchor)}`,
+            point: copyPoint(pressuredAnchor),
+            count: pressuredGroup.liberties.length,
+            libertyPoints: pressuredGroup.liberties.map(copyPoint),
+          }],
+          groups: [{
+            id: `local-opponent-pressure-group-${pointKey(pressuredAnchor)}`,
+            stones: pressuredGroup.stones.map(copyPoint),
+            color: pressuredGroup.color,
+            liberties: pressuredGroup.liberties.length,
+            label: `Black group pressured by White's ${coord}: ${pressuredGroup.liberties.length} ${pressuredGroup.liberties.length === 1 ? 'liberty' : 'liberties'} at ${joinList(libertyCoords)}.`,
+          }],
+        }
+        : {}),
+      ...(suggestions.length > 0 ? { suggestions } : {}),
+    },
+    actions: [
+      ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+      ...(action ? [action] : []),
+    ],
+  };
+}
+
 function buildMoveReviewAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
   const progress = getBeginnerObjectiveProgress(game, teachingLevel);
   const insight = getMoveInsight(game, teachingLevel);
@@ -2040,6 +2160,11 @@ export function getLocalQuestionAnswer(
 
   if (isPassQuestion(q)) {
     return buildPassAnswer(game, teachingLevel, q);
+  }
+
+  if (isOpponentMoveQuestion(q)) {
+    const opponentAnswer = buildOpponentMoveAnswer(game, teachingLevel);
+    if (opponentAnswer) return opponentAnswer;
   }
 
   if (isUndoQuestion(q)) {
