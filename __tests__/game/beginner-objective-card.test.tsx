@@ -1192,6 +1192,105 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText('G7 applies the D7 read in the real game: C7 and E7 stayed safe in the variation, so Black can keep extending instead of answering a cut that has not happened.')).toBeTruthy();
   });
 
+  it('continues a restored defense sequence step from chat', () => {
+    act(() => {
+      useGameStore.getState().placeStone({ x: 2, y: 2 });
+      useGameStore.getState().placeStone({ x: 2, y: 1 });
+      useGameStore.getState().placeStone({ x: 4, y: 2 });
+      useGameStore.getState().pass();
+    });
+
+    render(
+      <>
+        <BeginnerObjectiveCard />
+        <SenseiChatLog />
+      </>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Recount C7 and E7 after D8' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Compare D6 against D8' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Try C6 defense for C7' }));
+
+    const defenseSequenceStep = screen.getByRole('button', { name: 'Show board highlights for step 5: Defend C7 at C6; C7 has 5 liberties.' });
+    fireEvent.click(defenseSequenceStep);
+    fireEvent.click(defenseSequenceStep);
+    expect(defenseSequenceStep.getAttribute('aria-pressed')).toBe('false');
+    expect(screen.queryByText('Next question')).toBeNull();
+
+    const focusActions = screen.getAllByRole('button', { name: 'Show step' });
+    fireEvent.click(focusActions[focusActions.length - 1]);
+
+    const restoredDefenseStep = screen.getByRole('button', { name: 'Show board highlights for step 5: Defend C7 at C6; C7 has 5 liberties.' });
+    expect(restoredDefenseStep.getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByText('Next question')).toBeTruthy();
+    expect(screen.getByText('After C6, which side is now shorter, and should the read continue there?')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Try E8 follow-up defense from here' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Try E6 follow-up defense from here' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Try F7 follow-up defense from here' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try E6 follow-up defense from here' }));
+
+    expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
+    expect(screen.getByText('Follow-up defense')).toBeTruthy();
+    expect(screen.getByText('After E6, C7 and E7 connect into one Black group with 8 liberties at E8, F7, E5, F6, D5, C5, B6, and B7. Both sides are one group now, so the local read is stable; return to the real game and choose an extension.')).toBeTruthy();
+    expect(screen.queryByText('Next question')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Try E6 follow-up defense from here' })).toBeNull();
+  });
+
+  it('hands off from a restored follow-up sequence step from chat', () => {
+    act(() => {
+      useGameStore.getState().placeStone({ x: 2, y: 2 });
+      useGameStore.getState().placeStone({ x: 2, y: 1 });
+      useGameStore.getState().placeStone({ x: 4, y: 2 });
+      useGameStore.getState().pass();
+    });
+
+    render(
+      <>
+        <BeginnerObjectiveCard />
+        <SenseiChatLog />
+      </>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Recount C7 and E7 after D8' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Compare D6 against D8' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Try C6 defense for C7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Try E6 follow-up defense for E7' }));
+
+    const followUpSequenceStep = screen.getByRole('button', { name: 'Show board highlights for step 6: Follow-up E6 connects C7 and E7 into one group.' });
+    fireEvent.click(followUpSequenceStep);
+    fireEvent.click(followUpSequenceStep);
+    expect(followUpSequenceStep.getAttribute('aria-pressed')).toBe('false');
+    expect(screen.queryByText('Next question')).toBeNull();
+
+    const focusActions = screen.getAllByRole('button', { name: 'Show step' });
+    fireEvent.click(focusActions[focusActions.length - 1]);
+
+    const restoredFollowUpStep = screen.getByRole('button', { name: 'Show board highlights for step 6: Follow-up E6 connects C7 and E7 into one group.' });
+    expect(restoredFollowUpStep.getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByText('Next question')).toBeTruthy();
+    expect(screen.getByText('Does E6 connect the stones strongly enough to leave the local fight?')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Play G7 from here' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Play G7 from here' }));
+
+    const state = useGameStore.getState();
+    expect(state.game.moveHistory).toHaveLength(5);
+    expect(state.game.moveHistory.at(-1)).toMatchObject({
+      type: 'place',
+      color: 'black',
+      point: { x: 6, y: 2 },
+    });
+    expect(state.lastPlayerMove).toEqual({ x: 6, y: 2 });
+    expect(state.game.currentPlayer).toBe('white');
+    expect(screen.queryByText('Next question')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Play G7 from here' })).toBeNull();
+  });
+
   it('reopens a pressure defense from chat with the selected short-side marker', () => {
     act(() => {
       useGameStore.getState().placeStone({ x: 2, y: 2 });
