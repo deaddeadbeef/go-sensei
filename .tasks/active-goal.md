@@ -55,6 +55,7 @@ Latest completed slice:
 - Let learners pin and unpin a read-sequence row's board highlights, so one reading position can stay visible while they study the branch.
 - Reflected pinned read-sequence rows in transcript replay actions, so a learner can reopen the same branch with the last studied sequence step still pressed and highlighted.
 - Added concise teaching summaries to sequence-focus transcript messages, so saved steps explain what to compare with the live branch or real-game handoff.
+- Added a replay-only "Next question" prompt under restored sequence-focus rows, so learners know what to inspect after reopening a saved step.
 
 Next investigation candidates:
-- Whether replayed sequence-focus messages should expose a compact "next question" prompt after restoring a saved step, so learners know what to inspect before clicking back into the branch.
+- Whether the pressure branch should offer a one-click "compare from here" action from restored sequence-focus rows, so learners can continue reading from the saved step instead of hunting for the right branch control.
