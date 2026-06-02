@@ -524,13 +524,15 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText('The read is stable, so turn it into a real move: play G7 for Make your stones work together.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Play G7 in the real game after the stable pressure read' })).toBeTruthy();
     expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
-    expect(useGameStore.getState().chatMessages.at(-1)).toMatchObject({
-      text: `Comparison read: ${d6RecountText} ${comparisonSummary}`,
-      variant: 'teaching',
-      actions: [
-        { id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1', label: 'Show comparison' },
-      ],
-    });
+    expect(useGameStore.getState().chatMessages).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        text: `Comparison read: ${d6RecountText} ${comparisonSummary}`,
+        variant: 'teaching',
+        actions: [
+          { id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1', label: 'Show comparison' },
+        ],
+      }),
+    ]));
     expect(useGameStore.getState().overlays.targetHints).toEqual([
       {
         id: 'read-pressure-anchor-2,2',
@@ -726,6 +728,80 @@ describe('BeginnerObjectiveCard', () => {
         point: { x: 1, y: 2 },
         variant: 'warning',
         label: 'B7: defend this C7 liberty before extending.',
+      },
+    ]);
+  });
+
+  it('reopens a pressure comparison from chat with the pinned sequence step restored', () => {
+    act(() => {
+      useGameStore.getState().placeStone({ x: 2, y: 2 });
+      useGameStore.getState().pass();
+      useGameStore.getState().placeStone({ x: 4, y: 2 });
+      useGameStore.getState().pass();
+    });
+
+    render(
+      <>
+        <BeginnerObjectiveCard />
+        <SenseiChatLog />
+      </>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Recount C7 and E7 after D8' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Compare D6 against D8' }));
+
+    const originalReplyStep = screen.getByRole('button', { name: 'Show board highlights for step 2: Black D8 attacks D7 from above.' });
+    fireEvent.click(originalReplyStep);
+
+    expect(useGameStore.getState().chatMessages.at(-1)).toMatchObject({
+      text: 'Read sequence focus: Step 2: Black D8 attacks D7 from above.',
+      variant: 'teaching',
+      actions: [
+        { id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1:pin:reply-3,1', label: 'Show step' },
+      ],
+    });
+
+    fireEvent.click(originalReplyStep);
+    expect(originalReplyStep.getAttribute('aria-pressed')).toBe('false');
+    expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).toContain('read-pressure-reply-3,3');
+
+    const focusActions = screen.getAllByRole('button', { name: 'Show step' });
+    fireEvent.click(focusActions[focusActions.length - 1]);
+
+    const restoredOriginalReplyStep = screen.getByRole('button', { name: 'Show board highlights for step 2: Black D8 attacks D7 from above.' });
+    expect(restoredOriginalReplyStep.getAttribute('aria-pressed')).toBe('true');
+    expect(useGameStore.getState().overlays.targetHints).toEqual([
+      {
+        id: 'read-pressure-anchor-2,2',
+        point: { x: 2, y: 2 },
+        variant: 'neutral',
+        label: 'C7: one side of the jump; check whether this side becomes short.',
+      },
+      {
+        id: 'read-pressure-stone-4,2',
+        point: { x: 4, y: 2 },
+        variant: 'neutral',
+        label: 'E7: one side of the jump; check whether this side becomes short.',
+      },
+      {
+        id: 'read-pressure-gap-3,2',
+        point: { x: 3, y: 2 },
+        variant: 'warning',
+        label: 'D7: imagined White pressure point.',
+      },
+      {
+        id: 'read-pressure-reply-3,1',
+        point: { x: 3, y: 1 },
+        variant: 'positive',
+        label: 'D8: selected first reply; attack the imagined cutting stone.',
+      },
+      {
+        id: 'read-pressure-reply-3,3',
+        point: { x: 3, y: 3 },
+        variant: 'neutral',
+        label: 'D6: alternate reply to compare in the branch.',
       },
     ]);
   });
