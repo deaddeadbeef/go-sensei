@@ -423,6 +423,72 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('direction-of-play').encounterCount).toBeGreaterThan(0);
   });
 
+  it('answers territory ownership from the current one-space jump framework without fetching', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendPlayerMove(false, 0);
+      const move = useGameStore.getState().placeStone({ x: 4, y: 2 });
+      if (!move.success) throw new Error('test setup extension move failed');
+      result.current.sendPlayerMove(false, 0);
+    });
+
+    act(() => {
+      result.current.sendMessage('Is this territory mine?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('C7 and E7 are starting to sketch a top-side framework');
+    expect(state.bubble.text).toContain('D7 is only a gap in that framework, not safe territory yet');
+    expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'lesson:territory', label: 'Review territory' }]);
+    expect(state.overlays.highlights).toEqual([
+      {
+        id: 'local-territory-framework-anchor-2,2',
+        point: { x: 2, y: 2 },
+        variant: 'positive',
+        label: 'C7: framework stone helping sketch territory.',
+      },
+      {
+        id: 'local-territory-framework-stone-4,2',
+        point: { x: 4, y: 2 },
+        variant: 'positive',
+        label: 'E7: one-space jump stone extending the framework.',
+      },
+      {
+        id: 'local-territory-gap-3,2',
+        point: { x: 3, y: 2 },
+        variant: 'neutral',
+        label: 'D7: open gap; useful shape, not settled territory.',
+      },
+    ]);
+    expect(state.overlays.suggestions).toEqual([
+      {
+        id: 'local-territory-move-6,2',
+        point: { x: 6, y: 2 },
+        rank: 1,
+        reason: 'Try G7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-territory-move-4,4',
+        point: { x: 4, y: 4 },
+        rank: 2,
+        reason: 'Try E5 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-territory-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 3,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
+    expect(useConceptStore.getState().getMastery('territory').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('shape').encounterCount).toBeGreaterThan(0);
+  });
+
   it('explains the local White pass without fetching', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());
