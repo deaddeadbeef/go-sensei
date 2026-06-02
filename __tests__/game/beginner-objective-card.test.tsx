@@ -648,6 +648,83 @@ describe('BeginnerObjectiveCard', () => {
     ]);
   });
 
+  it('lets the learner try a recommended short-side defense without changing the real game', () => {
+    act(() => {
+      useGameStore.getState().placeStone({ x: 2, y: 2 });
+      useGameStore.getState().placeStone({ x: 2, y: 1 });
+      useGameStore.getState().placeStone({ x: 4, y: 2 });
+      useGameStore.getState().pass();
+    });
+
+    render(<BeginnerObjectiveCard />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Recount C7 and E7 after D8' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Compare D6 against D8' }));
+
+    expect(screen.getByRole('button', { name: 'Try C6 defense for C7' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Try B7 defense for C7' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try C6 defense for C7' }));
+
+    const defenseText = 'C6 directly defends C7, the short side in this pressure line. Keep C7 breathing first; then recount before extending again.';
+    expect(screen.getByText('Defense read')).toBeTruthy();
+    expect(screen.getByText(defenseText)).toBeTruthy();
+    expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
+    expect(useGameStore.getState().chatMessages.at(-1)).toMatchObject({
+      text: `Defense read: ${defenseText}`,
+      variant: 'teaching',
+      actions: [
+        { id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1', label: 'Show comparison' },
+      ],
+    });
+    expect(useGameStore.getState().overlays.targetHints).toEqual([
+      {
+        id: 'read-pressure-anchor-2,2',
+        point: { x: 2, y: 2 },
+        variant: 'warning',
+        label: 'C7: short side with 2 liberties after D6: C6 and B7.',
+      },
+      {
+        id: 'read-pressure-stone-4,2',
+        point: { x: 4, y: 2 },
+        variant: 'positive',
+        label: 'E7: 3 liberties after D6: E8, E6, and F7.',
+      },
+      {
+        id: 'read-pressure-gap-3,2',
+        point: { x: 3, y: 2 },
+        variant: 'warning',
+        label: 'D7: imagined White pressure point to keep watching.',
+      },
+      {
+        id: 'read-pressure-reply-3,1',
+        point: { x: 3, y: 1 },
+        variant: 'neutral',
+        label: 'D8: alternate reply to compare later.',
+      },
+      {
+        id: 'read-pressure-reply-3,3',
+        point: { x: 3, y: 3 },
+        variant: 'positive',
+        label: 'D6: selected reply used for this recount.',
+      },
+      {
+        id: 'read-pressure-selected-defense-2,3',
+        point: { x: 2, y: 3 },
+        variant: 'positive',
+        label: 'C6: selected defense for C7; keep the short side breathing before extending.',
+      },
+      {
+        id: 'read-pressure-short-liberty-1,2',
+        point: { x: 1, y: 2 },
+        variant: 'warning',
+        label: 'B7: defend this C7 liberty before extending.',
+      },
+    ]);
+  });
+
   it('keeps the last missed objective visible without blocking the next try', () => {
     act(() => {
       useGameStore.getState().placeStone({ x: 4, y: 4 });

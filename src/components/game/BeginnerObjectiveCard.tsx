@@ -48,10 +48,18 @@ interface PressureRecount {
   stoneLiberties: Point[];
 }
 
+interface PressureDefenseRecommendation {
+  shortSide: Point;
+  shortSideCoord: string;
+  liberties: Point[];
+  text: string;
+}
+
 interface PressureComparisonSummary {
   rows: string[];
   text: string;
   recommendationText: string | null;
+  defenseRecommendation: PressureDefenseRecommendation | null;
 }
 
 function targetKey(point: Point): string {
@@ -369,17 +377,19 @@ function formatLibertyChange(coord: string, beforeCount: number, afterCount: num
   return `${coord} ${direction} ${formatLibertyCount(Math.abs(afterCount - beforeCount))}`;
 }
 
-function getPressureComparisonRecommendation(
+function getPressureDefenseRecommendation(
   prompt: OneSpaceJumpReadPrompt,
   recount: PressureRecount,
   board: BoardState,
-): string | null {
+): PressureDefenseRecommendation | null {
   const sides = [
     {
+      point: prompt.anchor,
       coord: pointToCoord(prompt.anchor, board.size),
       liberties: recount.anchorLiberties,
     },
     {
+      point: prompt.stone,
       coord: pointToCoord(prompt.stone, board.size),
       liberties: recount.stoneLiberties,
     },
@@ -389,7 +399,22 @@ function getPressureComparisonRecommendation(
   if (!shortSide || !roomySide || shortSide.liberties.length >= roomySide.liberties.length) return null;
 
   const libertyText = joinAndCoordinateList(shortSide.liberties.map((point) => pointToCoord(point, board.size)));
-  return `Recommendation: ${shortSide.coord} is the short side with ${formatLibertyCount(shortSide.liberties.length)} at ${libertyText}. Defend ${shortSide.coord} before extending again.`;
+  return {
+    shortSide: copyPoint(shortSide.point),
+    shortSideCoord: shortSide.coord,
+    liberties: shortSide.liberties.map(copyPoint),
+    text: `Recommendation: ${shortSide.coord} is the short side with ${formatLibertyCount(shortSide.liberties.length)} at ${libertyText}. Defend ${shortSide.coord} before extending again.`,
+  };
+}
+
+function getPressureDefenseReadText(
+  defense: PressureDefenseRecommendation,
+  point: Point,
+  board: BoardState,
+): string {
+  const coord = pointToCoord(point, board.size);
+
+  return `${coord} directly defends ${defense.shortSideCoord}, the short side in this pressure line. Keep ${defense.shortSideCoord} breathing first; then recount before extending again.`;
 }
 
 function getPressureComparisonSummary(
@@ -405,6 +430,7 @@ function getPressureComparisonSummary(
   const directionText = `${firstCoord} attacks ${prompt.gapCoord} from ${getReplyDirection(firstRecount.reply, prompt.gap)}, while ${secondCoord} attacks it from ${getReplyDirection(secondRecount.reply, prompt.gap)}.`;
   const hasSameCounts = firstRecount.anchorLiberties.length === secondRecount.anchorLiberties.length
     && firstRecount.stoneLiberties.length === secondRecount.stoneLiberties.length;
+  const defenseRecommendation = getPressureDefenseRecommendation(prompt, secondRecount, board);
 
   return {
     rows: [
@@ -414,7 +440,8 @@ function getPressureComparisonSummary(
     text: hasSameCounts
       ? `${firstCoord} and ${secondCoord} leave the same liberty counts: ${anchorCoord} has ${formatLibertyCount(secondRecount.anchorLiberties.length)} and ${stoneCoord} has ${formatLibertyCount(secondRecount.stoneLiberties.length)} either way. The difference is direction: ${directionText}`
       : `Compared with ${firstCoord}, ${secondCoord} changes the count: ${formatLibertyChange(anchorCoord, firstRecount.anchorLiberties.length, secondRecount.anchorLiberties.length)} and ${formatLibertyChange(stoneCoord, firstRecount.stoneLiberties.length, secondRecount.stoneLiberties.length)}. The direction also changes: ${directionText}`,
-    recommendationText: getPressureComparisonRecommendation(prompt, secondRecount, board),
+    recommendationText: defenseRecommendation?.text ?? null,
+    defenseRecommendation,
   };
 }
 
@@ -422,6 +449,7 @@ function buildOneSpaceJumpRecountHighlights(
   prompt: OneSpaceJumpReadPrompt,
   recount: PressureRecount,
   board: BoardState,
+  selectedDefense: Point | null = null,
 ): OverlayHighlight[] {
   const anchorCoord = pointToCoord(prompt.anchor, board.size);
   const stoneCoord = pointToCoord(prompt.stone, board.size);
@@ -430,6 +458,7 @@ function buildOneSpaceJumpRecountHighlights(
   const selectedReplyKey = targetKey(recount.reply);
   const anchorLibertyText = joinAndCoordinateList(recount.anchorLiberties.map((point) => pointToCoord(point, board.size)));
   const stoneLibertyText = joinAndCoordinateList(recount.stoneLiberties.map((point) => pointToCoord(point, board.size)));
+  const selectedDefenseKey = selectedDefense ? targetKey(selectedDefense) : null;
   const anchorIsShort = recount.anchorLiberties.length < recount.stoneLiberties.length;
   const stoneIsShort = recount.stoneLiberties.length < recount.anchorLiberties.length;
   const shortSide = anchorIsShort
@@ -477,12 +506,17 @@ function buildOneSpaceJumpRecountHighlights(
     ...(shortSide
       ? shortSide.liberties.map((point) => {
         const coord = pointToCoord(point, board.size);
+        const isSelectedDefense = selectedDefenseKey === targetKey(point);
 
         return {
-          id: `read-pressure-short-liberty-${targetKey(point)}`,
+          id: isSelectedDefense
+            ? `read-pressure-selected-defense-${targetKey(point)}`
+            : `read-pressure-short-liberty-${targetKey(point)}`,
           point: copyPoint(point),
-          variant: 'warning' as const,
-          label: `${coord}: defend this ${shortSide.coord} liberty before extending.`,
+          variant: isSelectedDefense ? 'positive' as const : 'warning' as const,
+          label: isSelectedDefense
+            ? `${coord}: selected defense for ${shortSide.coord}; keep the short side breathing before extending.`
+            : `${coord}: defend this ${shortSide.coord} liberty before extending.`,
         };
       })
       : []),
@@ -571,6 +605,7 @@ export function BeginnerObjectiveCard() {
   const [selectedReadReplyKey, setSelectedReadReplyKey] = useState<string | null>(null);
   const [recountReadReplyKey, setRecountReadReplyKey] = useState<string | null>(null);
   const [comparisonReadReplyKey, setComparisonReadReplyKey] = useState<string | null>(null);
+  const [defenseReadPointKey, setDefenseReadPointKey] = useState<string | null>(null);
   const processedReplayRequestId = useRef<number | null>(null);
 
   const objective = getBeginnerObjective({
@@ -608,6 +643,7 @@ export function BeginnerObjectiveCard() {
     setSelectedReadReplyKey(null);
     setRecountReadReplyKey(null);
     setComparisonReadReplyKey(null);
+    setDefenseReadPointKey(null);
     applyTargetHints(buildTargetHintHighlights(objective, point, game.board));
   }, [applyTargetHints, clearGuidedReadReplay, game.board, objective]);
 
@@ -619,6 +655,7 @@ export function BeginnerObjectiveCard() {
     setSelectedReadReplyKey(null);
     setRecountReadReplyKey(null);
     setComparisonReadReplyKey(null);
+    setDefenseReadPointKey(null);
     applyTargetHints(buildOneSpaceJumpPressureHighlights(prompt, game.board));
   }, [applyTargetHints, clearGuidedReadReplay, game.board, recordInteraction]);
 
@@ -632,6 +669,7 @@ export function BeginnerObjectiveCard() {
     setSelectedReadReplyKey(targetKey(reply));
     setRecountReadReplyKey(null);
     setComparisonReadReplyKey(null);
+    setDefenseReadPointKey(null);
     applyTargetHints(buildOneSpaceJumpPressureHighlights(prompt, game.board, reply));
     addChatMessage(`Branch choice: ${feedback}`, 'teaching', [getPressureReplayAction('branch', prompt, reply)]);
   }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game.board, recordInteraction]);
@@ -647,6 +685,7 @@ export function BeginnerObjectiveCard() {
     setSelectedReadReplyKey(targetKey(reply));
     setRecountReadReplyKey(targetKey(reply));
     setComparisonReadReplyKey(null);
+    setDefenseReadPointKey(null);
     applyTargetHints(buildOneSpaceJumpRecountHighlights(prompt, recount, game.board));
     addChatMessage(`Second read: ${recount.text}`, 'teaching', [getPressureReplayAction('recount', prompt, reply)]);
   }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game, recordInteraction]);
@@ -667,6 +706,7 @@ export function BeginnerObjectiveCard() {
     setSelectedReadReplyKey(targetKey(reply));
     setRecountReadReplyKey(targetKey(reply));
     setComparisonReadReplyKey(targetKey(comparedReply));
+    setDefenseReadPointKey(null);
     applyTargetHints(buildOneSpaceJumpRecountHighlights(prompt, recount, game.board));
     const comparisonText = [
       recount.text,
@@ -681,6 +721,31 @@ export function BeginnerObjectiveCard() {
     );
   }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game, recordInteraction]);
 
+  const tryReadPressureDefense = useCallback((
+    prompt: OneSpaceJumpReadPrompt,
+    recount: PressureRecount,
+    comparedReply: Point,
+    defense: PressureDefenseRecommendation,
+    point: Point,
+  ) => {
+    const defenseText = getPressureDefenseReadText(defense, point, game.board);
+
+    recordInteraction();
+    clearGuidedReadReplay();
+    setActiveTargetKey(null);
+    setActiveReadPromptKey(prompt.key);
+    setSelectedReadReplyKey(targetKey(recount.reply));
+    setRecountReadReplyKey(targetKey(recount.reply));
+    setComparisonReadReplyKey(targetKey(comparedReply));
+    setDefenseReadPointKey(targetKey(point));
+    applyTargetHints(buildOneSpaceJumpRecountHighlights(prompt, recount, game.board, point));
+    addChatMessage(
+      `Defense read: ${defenseText}`,
+      'teaching',
+      [getPressureComparisonReplayAction(prompt, recount.reply, comparedReply)],
+    );
+  }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game.board, recordInteraction]);
+
   const handleTargetClick = useCallback((point: Point) => {
     if (!canPlayTarget) return;
 
@@ -688,6 +753,7 @@ export function BeginnerObjectiveCard() {
     setSelectedReadReplyKey(null);
     setRecountReadReplyKey(null);
     setComparisonReadReplyKey(null);
+    setDefenseReadPointKey(null);
     clearGuidedReadReplay();
     clearTargetHelp();
     recordInteraction();
@@ -779,6 +845,14 @@ export function BeginnerObjectiveCard() {
     : null;
   const pressureComparisonSummary = readPrompt && comparedReadRecount && selectedReadRecount
     ? getPressureComparisonSummary(readPrompt, comparedReadRecount, selectedReadRecount, game.board)
+    : null;
+  const effectiveDefenseReadPointKey = replayedReadReplyKey ? null : defenseReadPointKey;
+  const pressureDefenseRecommendation = pressureComparisonSummary?.defenseRecommendation ?? null;
+  const selectedDefenseReadPoint = pressureDefenseRecommendation && effectiveDefenseReadPointKey
+    ? pressureDefenseRecommendation.liberties.find((point) => targetKey(point) === effectiveDefenseReadPointKey) ?? null
+    : null;
+  const selectedDefenseReadText = pressureDefenseRecommendation && selectedDefenseReadPoint
+    ? getPressureDefenseReadText(pressureDefenseRecommendation, selectedDefenseReadPoint, game.board)
     : null;
   const readPromptAnchorCoord = readPrompt ? pointToCoord(readPrompt.anchor, game.board.size) : null;
   const readPromptStoneCoord = readPrompt ? pointToCoord(readPrompt.stone, game.board.size) : null;
@@ -940,9 +1014,55 @@ export function BeginnerObjectiveCard() {
                             {pressureComparisonSummary.text}
                           </p>
                           {pressureComparisonSummary.recommendationText && (
-                            <p className="mt-1 text-xs font-semibold leading-relaxed" style={{ color: COLORS.overlay.warning }}>
-                              {pressureComparisonSummary.recommendationText}
-                            </p>
+                            <>
+                              <p className="mt-1 text-xs font-semibold leading-relaxed" style={{ color: COLORS.overlay.warning }}>
+                                {pressureComparisonSummary.recommendationText}
+                              </p>
+                              {pressureDefenseRecommendation && comparedReadReply && (
+                                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                                  <span className="text-[11px] font-semibold" style={{ color: COLORS.ui.textSecondary }}>
+                                    Try a defense:
+                                  </span>
+                                  {pressureDefenseRecommendation.liberties.map((point) => {
+                                    const coord = pointToCoord(point, game.board.size);
+                                    const isSelected = effectiveDefenseReadPointKey === targetKey(point);
+
+                                    return (
+                                      <button
+                                        key={`read-pressure-defense-${targetKey(point)}`}
+                                        type="button"
+                                        className="rounded border px-2 py-0.5 font-mono text-[11px] font-bold transition hover:bg-white/[0.07]"
+                                        style={{
+                                          borderColor: isSelected ? COLORS.overlay.positive : COLORS.overlay.warning,
+                                          color: COLORS.ui.textPrimary,
+                                          backgroundColor: isSelected ? `${COLORS.overlay.positive}24` : `${COLORS.overlay.warning}1f`,
+                                        }}
+                                        aria-label={`Try ${coord} defense for ${pressureDefenseRecommendation.shortSideCoord}`}
+                                        onClick={() => tryReadPressureDefense(
+                                          readPrompt,
+                                          selectedReadRecount,
+                                          comparedReadReply,
+                                          pressureDefenseRecommendation,
+                                          point,
+                                        )}
+                                      >
+                                        {coord}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                              {selectedDefenseReadText && (
+                                <div className="mt-2">
+                                  <div className="text-xs font-semibold" style={{ color: COLORS.ui.textPrimary }}>
+                                    Defense read
+                                  </div>
+                                  <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+                                    {selectedDefenseReadText}
+                                  </p>
+                                </div>
+                              )}
+                            </>
                           )}
                         </div>
                       )}
