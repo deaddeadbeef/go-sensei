@@ -448,6 +448,17 @@ function isCandidateComparisonQuestion(q: string, boardSize: BoardSize): boolean
   return /\b(or|vs|versus|compare|choose|which|better)\b/.test(q);
 }
 
+function isOneSpaceJumpGapQuestion(q: string): boolean {
+  if (/\b(white|opponent|sensei)\b/.test(q) && /\b(cut|attack|threaten|play|reply|answer)\b/.test(q)) {
+    return false;
+  }
+
+  return /\bgap\b/.test(q)
+    || /\bfill\s+(the\s+)?(gap|space)\b/.test(q)
+    || /\bplay\s+between\s+(them|my\s+stones|these\s+stones|the\s+stones)\b/.test(q)
+    || /\bbetween\s+them\b/.test(q);
+}
+
 function isPassQuestion(q: string): boolean {
   if (!/\bpass(ed|ing)?\b/.test(q)) return false;
 
@@ -1030,6 +1041,66 @@ function buildCandidateComparisonAnswer(game: GameState, teachingLevel: Teaching
     actions: [
       { id: 'hint', label: 'Show targets' },
       ...(action ? [action] : []),
+    ],
+  };
+}
+
+function buildOneSpaceJumpGapAnswer(game: GameState, teachingLevel: TeachingLevel, q: string): LocalQuestionAnswer | null {
+  const shape = findLearnerOneSpaceJumpShape(game);
+  if (!shape) return null;
+
+  const requestedPoint = mentionedCoordinate(q, game.board.size);
+  if (requestedPoint && !pointEquals(requestedPoint, shape.gap)) return null;
+
+  const objective = getBeginnerObjective({
+    boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
+    moveCount: game.moveHistory.length,
+    currentPlayer: 'black',
+    teachingLevel,
+  });
+  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-gap-move') : [];
+  const targetText = objective ? objectiveTargetCoordList(objective, game.board.size) : null;
+  const anchorCoord = pointToCoord(shape.anchor, game.board.size);
+  const stoneCoord = pointToCoord(shape.stone, game.board.size);
+  const gapCoord = pointToCoord(shape.gap, game.board.size);
+
+  return {
+    text: [
+      `${gapCoord} is the one-point gap between ${anchorCoord} and ${stoneCoord}.`,
+      'That gap is not automatically wrong; it is what makes the one-space jump reach farther than a solid connection.',
+      `Do not fill ${gapCoord} just because it is empty. Keep extending unless White attacks that gap or your stones become short on liberties.`,
+      targetText ? `For this board, I would prefer ${targetText}.` : '',
+      'I highlighted the two stones and the gap so you can see the shape.',
+    ].filter(Boolean).join(' '),
+    conceptIds: uniqueConceptIds(['shape', 'direction-of-play', 'liberties', ...(objective?.conceptIds ?? [])]),
+    boardFocus: {
+      highlights: [
+        {
+          id: `local-gap-anchor-${pointKey(shape.anchor)}`,
+          point: copyPoint(shape.anchor),
+          variant: 'positive',
+          label: `${anchorCoord}: one side of the one-space jump.`,
+        },
+        {
+          id: `local-gap-stone-${pointKey(shape.stone)}`,
+          point: copyPoint(shape.stone),
+          variant: 'positive',
+          label: `${stoneCoord}: one side of the one-space jump.`,
+        },
+        {
+          id: `local-gap-open-${pointKey(shape.gap)}`,
+          point: copyPoint(shape.gap),
+          variant: 'neutral',
+          label: `${gapCoord}: intentional gap; answer it if White attacks.`,
+        },
+      ],
+      ...(suggestions.length > 0 ? { suggestions } : {}),
+    },
+    actions: [
+      ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+      { id: 'lesson:groups', label: 'Review groups' },
     ],
   };
 }
@@ -3015,6 +3086,11 @@ export function getLocalQuestionAnswer(
 
   if (isPositionQuestion(q)) {
     return buildPositionAnswer(game, teachingLevel);
+  }
+
+  if (isOneSpaceJumpGapQuestion(q)) {
+    const gapAnswer = buildOneSpaceJumpGapAnswer(game, teachingLevel, q);
+    if (gapAnswer) return gapAnswer;
   }
 
   if (isCoordinateQuestion(q, game.board.size)) {
