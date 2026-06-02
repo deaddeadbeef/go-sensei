@@ -317,6 +317,39 @@ describe('BeginnerObjectiveCard', () => {
     ]);
   });
 
+  it('keeps pressure branch decisions in the chat transcript', () => {
+    act(() => {
+      useGameStore.getState().placeStone({ x: 2, y: 2 });
+      useGameStore.getState().pass();
+      useGameStore.getState().placeStone({ x: 4, y: 2 });
+      useGameStore.getState().pass();
+    });
+
+    render(<BeginnerObjectiveCard />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
+
+    const branchText = 'Branch choice: D8 is a good first read: it attacks the imagined White stone at D7 and asks whether that cutting stone can live. After that, recount C7 and E7 before extending again.';
+    expect(useGameStore.getState().chatMessages.at(-1)).toMatchObject({
+      text: branchText,
+      variant: 'teaching',
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Recount C7 and E7 after D8' }));
+
+    const recountText = 'Second read: After D8, recount the two Black sides: C7 has 3 liberties at C8, C6, and B7. E7 has 3 liberties at E8, E6, and F7. Neither side is short yet, so keep building while staying ready to answer D7.';
+    expect(useGameStore.getState().chatMessages.at(-1)).toMatchObject({
+      text: recountText,
+      variant: 'teaching',
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Recount C7 and E7 after D8' }));
+
+    expect(useGameStore.getState().chatMessages.filter((message) => message.text === recountText)).toHaveLength(1);
+    expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
+  });
+
   it('keeps the last missed objective visible without blocking the next try', () => {
     act(() => {
       useGameStore.getState().placeStone({ x: 4, y: 4 });
