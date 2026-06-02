@@ -255,6 +255,35 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('shape').encounterCount).toBeGreaterThan(0);
   });
 
+  it('explains the learner color and turn locally without fetching', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendPlayerMove(false, 0);
+    });
+    expect(useGameStore.getState().game.currentPlayer).toBe('black');
+
+    act(() => {
+      result.current.sendMessage('Why do I move again?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('You are playing Black in this guided beginner game.');
+    expect(state.bubble.text).toContain('White just passed locally so you can keep practicing right away');
+    expect(state.bubble.text).toContain('Your next move should follow the current goal: Make your stones work together.');
+    expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+    ]);
+    expect(useConceptStore.getState().getMastery('stones-and-board').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('shape').encounterCount).toBeGreaterThan(0);
+  });
+
   it('reviews the last beginner move locally without fetching', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());

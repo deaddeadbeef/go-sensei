@@ -412,6 +412,38 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
   });
 
+  it('explains the learner color and turn after the local White pass', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+
+    const answer = getLocalQuestionAnswer('Why do I move again?', afterWhitePass, 'guided');
+
+    expect(answer?.text).toContain('You are playing Black in this guided beginner game.');
+    expect(answer?.text).toContain('Black moves first; Sensei is White.');
+    expect(answer?.text).toContain('It is your turn now');
+    expect(answer?.text).toContain('White just passed locally so you can keep practicing right away');
+    expect(answer?.text).toContain('that teaching shortcut is why you move again');
+    expect(answer?.text).toContain('Your next move should follow the current goal: Make your stones work together. Play a one-space jump from one of your stones. Try E7 or C5.');
+    expect(answer?.text).toContain('I marked the next targets so the turn status connects to the board.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['stones-and-board', 'shape']));
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-turn-move-4,2',
+        point: { x: 4, y: 2 },
+        rank: 1,
+        reason: 'Try E7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-turn-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 2,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+  });
+
   it('answers liberty questions with current board context', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
