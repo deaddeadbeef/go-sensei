@@ -190,6 +190,18 @@ function findLearnerWeakGroup(game: GameState): Group | null {
     .sort((a, b) => a.liberties.length - b.liberties.length || compareGroupsByAnchor(a, b))[0] ?? null;
 }
 
+function findLearnerMostRestrictedGroup(game: GameState): Group | null {
+  return getAllGroups(game.board)
+    .filter((group) => group.color === 'black' && group.liberties.length > 0)
+    .sort((a, b) => a.liberties.length - b.liberties.length || compareGroupsByAnchor(a, b))[0] ?? null;
+}
+
+function groupTouchesColor(game: GameState, group: Group, color: 'black' | 'white'): boolean {
+  return group.stones.some((stone) => (
+    getAdjacentPoints(game.board, stone).some((adjacent) => getStone(game.board, adjacent) === color)
+  ));
+}
+
 function buildAtariContext(game: GameState, group: Group): LibertyContext {
   const anchor = groupAnchor(group);
   const anchorCoord = pointToCoord(anchor, game.board.size);
@@ -364,8 +376,12 @@ function isConnectionQuestion(q: string): boolean {
 function isWeakGroupQuestion(q: string): boolean {
   return /\bweak\s+groups?\b/.test(q)
     || /\bwhich\s+(stones?|groups?)\s+(is|are)\s+(weak|in\s+trouble|in\s+danger|short\s+on\s+liberties)\b/.test(q)
+    || /\b(is|are)\s+(my\s+)?(stones?|groups?)\s+(weak|safe|in\s+trouble|in\s+danger|short\s+on\s+liberties)\b/.test(q)
+    || /\bam\s+i\s+(safe|in\s+trouble|in\s+danger)\b/.test(q)
+    || /\bis\s+[a-hj-t]\d{1,2}\s+(weak|safe|in\s+trouble|in\s+danger|short\s+on\s+liberties)\b/.test(q)
     || /\bwhich\s+(stones?|groups?)\s+(need|needs)\s+(room|help|saving|liberties)\b/.test(q)
     || /\bhow\s+do\s+i\s+(save|defend|rescue|help)\s+(my\s+)?(stones?|groups?)\b/.test(q)
+    || /\b(should|do)\s+i\s+(need\s+to\s+)?(save|defend|rescue|help)\s+(my\s+)?(stones?|groups?|[a-hj-t]\d{1,2})\b/.test(q)
     || /\bwhat\s+(does|do|is)\s+give\s+weak\s+groups?\s+room\b/.test(q)
     || /\bshort\s+on\s+liberties\b/.test(q);
 }
@@ -2043,8 +2059,53 @@ function buildWeakGroupAnswer(game: GameState, teachingLevel: TeachingLevel): Lo
   });
 
   if (!weakGroup) {
+    const currentGroup = findLearnerMostRestrictedGroup(game);
     const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-weak-group-current-move') : [];
     const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
+
+    if (currentGroup) {
+      const anchor = groupAnchor(currentGroup);
+      const anchorCoord = pointToCoord(anchor, game.board.size);
+      const libertyCoords = currentGroup.liberties.map((liberty) => pointToCoord(liberty, game.board.size));
+      const libertyList = joinList(libertyCoords);
+      const libertyWord = currentGroup.liberties.length === 1 ? 'liberty' : 'liberties';
+      const isUnderPressure = groupTouchesColor(game, currentGroup, 'white');
+
+      return {
+        text: [
+          'A weak group is a connected group with very little room, usually one or two liberties.',
+          `Your Black group at ${anchorCoord} ${isUnderPressure ? 'is under pressure, but it is not in immediate danger' : 'is not in immediate danger'}: it has ${currentGroup.liberties.length} ${libertyWord}: ${libertyList}.`,
+          `Immediate danger usually starts at one or two liberties; with ${currentGroup.liberties.length} ${libertyWord}, keep building while you keep counting.`,
+          objective ? `Your current guided job is: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}` : '',
+          suggestions.length > 0
+            ? `I marked that group, its liberties, and the useful next ${suggestions.length === 1 ? 'target' : 'targets'} so the safety check is visible.`
+            : 'I marked that group and its liberties so the safety check is visible.',
+        ].filter(Boolean).join(' '),
+        conceptIds: uniqueConceptIds(['groups', 'liberties', ...(objective?.conceptIds ?? [])]),
+        boardFocus: {
+          liberties: [{
+            id: `local-weak-group-current-liberties-${pointKey(anchor)}`,
+            point: copyPoint(anchor),
+            count: currentGroup.liberties.length,
+            libertyPoints: currentGroup.liberties.map(copyPoint),
+          }],
+          groups: [{
+            id: `local-weak-group-current-${pointKey(anchor)}`,
+            stones: currentGroup.stones.map(copyPoint),
+            color: currentGroup.color,
+            liberties: currentGroup.liberties.length,
+            label: isUnderPressure
+              ? `Black group under pressure, not weak yet: ${currentGroup.liberties.length} ${libertyWord} at ${libertyList}.`
+              : `Black group with room: ${currentGroup.liberties.length} ${libertyWord} at ${libertyList}.`,
+          }],
+          ...(suggestions.length > 0 ? { suggestions } : {}),
+        },
+        actions: [
+          ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+          { id: 'lesson:liberties', label: 'Review liberties' },
+        ],
+      };
+    }
 
     return {
       text: [

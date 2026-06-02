@@ -976,6 +976,46 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('answers danger questions by counting pressure before calling a group weak', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+    const whiteMove = playMove(firstMove.newState, { x: 3, y: 2 });
+    if (!whiteMove.success) throw new Error('test setup white move failed');
+
+    const answer = getLocalQuestionAnswer('Is my group in danger?', whiteMove.newState, 'guided');
+
+    expect(answer?.text).toContain('A weak group is a connected group with very little room, usually one or two liberties.');
+    expect(answer?.text).toContain('Your Black group at C7 is under pressure, but it is not in immediate danger: it has 3 liberties: C8, C6, and B7.');
+    expect(answer?.text).toContain('Immediate danger usually starts at one or two liberties; with 3 liberties, keep building while you keep counting.');
+    expect(answer?.text).toContain('Your current guided job is: Make your stones work together. Play a one-space jump from one of your stones. Try C5.');
+    expect(answer?.text).toContain('I marked that group, its liberties, and the useful next target so the safety check is visible.');
+    expect(answer?.text).not.toContain('Diagonals do not connect.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['groups', 'liberties', 'shape', 'direction-of-play']));
+    expect(answer?.boardFocus?.liberties).toEqual([{
+      id: 'local-weak-group-current-liberties-2,2',
+      point: { x: 2, y: 2 },
+      count: 3,
+      libertyPoints: [
+        { x: 2, y: 1 },
+        { x: 2, y: 3 },
+        { x: 1, y: 2 },
+      ],
+    }]);
+    expect(answer?.boardFocus?.groups?.[0]).toMatchObject({
+      id: 'local-weak-group-current-2,2',
+      stones: [{ x: 2, y: 2 }],
+      color: 'black',
+      liberties: 3,
+      label: 'Black group under pressure, not weak yet: 3 liberties at C8, C6, and B7.',
+    });
+    expect(answer?.boardFocus?.suggestions).toEqual([{
+      id: 'local-weak-group-current-move-2,4',
+      point: { x: 2, y: 4 },
+      rank: 1,
+      reason: 'Try C5 as a one-space jump that works with your stones.',
+    }]);
+  });
+
   it('explains why a marked target move matters', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
