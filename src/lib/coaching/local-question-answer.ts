@@ -327,6 +327,19 @@ function isCoordinateQuestion(q: string, boardSize: BoardSize): boolean {
     || /\bwhich\s+way\s+do\s+numbers\s+go\b/.test(q);
 }
 
+function isTurnQuestion(q: string): boolean {
+  return /\bwhose\s+turn\b/.test(q)
+    || /\bwho\s+(plays|moves|goes)\s+(next|now)\b/.test(q)
+    || /\b(is\s+it|is\s+this)\s+(my|your|black|white)\s+turn\b/.test(q)
+    || /\bdo\s+i\s+(play|move|go)\s+(now|next|again)\b/.test(q)
+    || /\bwhy\s+do\s+i\s+(play|move|go)\s+again\b/.test(q)
+    || /\bam\s+i\s+(black|white)\b/.test(q)
+    || /\bam\s+i\s+playing\s+(black|white)\b/.test(q)
+    || /\bdo\s+i\s+play\s+(black|white)\b/.test(q)
+    || /\bwhich\s+colou?r\s+(am\s+i|do\s+i\s+play)\b/.test(q)
+    || /\bwhat\s+colou?r\s+(am\s+i|do\s+i\s+play)\b/.test(q);
+}
+
 function suggestionReason(objective: BeginnerObjective, point: Point, boardSize: BoardSize): string {
   const coord = pointToCoord(point, boardSize);
 
@@ -831,6 +844,70 @@ function buildCoordinateAnswer(game: GameState, teachingLevel: TeachingLevel, q:
   };
 }
 
+function buildTurnAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
+  const objective = game.phase === 'playing' && game.currentPlayer === 'black'
+    ? getBeginnerObjective({
+      boardSize: game.board.size,
+      board: game.board,
+      moveHistory: game.moveHistory,
+      moveCount: game.moveHistory.length,
+      currentPlayer: 'black',
+      teachingLevel,
+    })
+    : null;
+  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-turn-move') : [];
+  const action = objective ? getBeginnerObjectiveLessonAction(objective) : null;
+  const move = latestMove(game);
+  const lines = [
+    'You are playing Black in this guided beginner game. Black moves first; Sensei is White.',
+  ];
+
+  if (game.phase === 'scoring') {
+    lines.push('The game is in scoring now, so there is no normal move to play. Check dead stones and count territory.');
+  } else if (game.phase === 'finished') {
+    lines.push('The game is finished, so there is no turn to take.');
+  } else if (game.currentPlayer === 'black') {
+    lines.push('It is your turn now: place one black stone on an empty intersection.');
+
+    if (move?.type === 'pass' && move.color === 'white') {
+      lines.push('White just passed locally so you can keep practicing right away; that teaching shortcut is why you move again.');
+    } else if (move?.type === 'place' && move.color === 'white') {
+      lines.push(`White just played ${pointToCoord(move.point, game.board.size)}, so the turn returned to Black.`);
+    } else if (!move) {
+      lines.push('No moves have been played yet, so Black starts.');
+    }
+  } else {
+    lines.push("It is White's turn now, so wait for Sensei's response before playing another black stone.");
+
+    if (move?.type === 'place' && move.color === 'black') {
+      lines.push(`Your last move was ${pointToCoord(move.point, game.board.size)}; White should answer next.`);
+    } else if (move?.type === 'pass' && move.color === 'black') {
+      lines.push('You just passed, so White is to play.');
+    }
+  }
+
+  if (objective) {
+    const targetText = formatObjectiveTargetText(objective, game.board.size);
+    lines.push(`Your next move should follow the current goal: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}`);
+  } else if (game.phase === 'playing' && game.currentPlayer === 'black') {
+    lines.push('If no target is marked, look for a move that gives your stones room, connects, or claims easier territory.');
+  }
+
+  if (suggestions.length > 0) {
+    lines.push('I marked the next targets so the turn status connects to the board.');
+  }
+
+  return {
+    text: lines.join(' '),
+    conceptIds: uniqueConceptIds(['stones-and-board', ...(objective?.conceptIds ?? [])]),
+    ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
+    actions: [
+      ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+      ...(action ? [action] : []),
+    ],
+  };
+}
+
 function buildShapeAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
   const objective = getBeginnerObjective({
     boardSize: game.board.size,
@@ -1049,6 +1126,10 @@ export function getLocalQuestionAnswer(
 
   if (isCoordinateQuestion(q, game.board.size)) {
     return buildCoordinateAnswer(game, teachingLevel, q);
+  }
+
+  if (isTurnQuestion(q)) {
+    return buildTurnAnswer(game, teachingLevel);
   }
 
   if (isCandidateComparisonQuestion(q, game.board.size)) {
