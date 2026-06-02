@@ -923,6 +923,14 @@ describe('BeginnerObjectiveCard', () => {
     expect(state.lastPlayerMove).toEqual({ x: 6, y: 2 });
     expect(state.game.currentPlayer).toBe('white');
     expect(screen.queryByText('Follow-up defense')).toBeNull();
+
+    act(() => {
+      useGameStore.getState().pass();
+    });
+
+    expect(screen.getByText('Read applied')).toBeTruthy();
+    expect(screen.getByText('G7 applies the D7 read in the real game: C7 and E7 stayed safe in the variation, so Black can keep extending instead of answering a cut that has not happened.')).toBeTruthy();
+    expect(screen.getByText('What changed')).toBeTruthy();
   });
 
   it('reopens a pressure defense from chat with the selected short-side marker', () => {

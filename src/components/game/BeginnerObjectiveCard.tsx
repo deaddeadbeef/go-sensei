@@ -79,11 +79,18 @@ interface PressureFollowUpComparisonSummary {
   text: string;
 }
 
+interface PressureHandoffRecap {
+  point: Point;
+  coord: string;
+  text: string;
+}
+
 interface PressureExtensionHandoff {
   point: Point;
   coord: string;
   text: string;
   ariaLabel: string;
+  recap: PressureHandoffRecap;
 }
 
 function targetKey(point: Point): string {
@@ -703,20 +710,28 @@ function getStablePressureExtensionHandoff(
   objective: BeginnerObjective,
   targets: Point[],
   board: BoardState,
+  prompt: OneSpaceJumpReadPrompt | null,
   isStable: boolean,
 ): PressureExtensionHandoff | null {
-  if (!isStable || objective.id !== 'extend-from-stone') return null;
+  if (!isStable || objective.id !== 'extend-from-stone' || !prompt) return null;
 
   const point = targets.find((target) => getStone(board, target) === null);
   if (!point) return null;
 
   const coord = pointToCoord(point, board.size);
+  const anchorCoord = pointToCoord(prompt.anchor, board.size);
+  const stoneCoord = pointToCoord(prompt.stone, board.size);
 
   return {
     point: copyPoint(point),
     coord,
     text: `The read is stable, so turn it into a real move: play ${coord} for ${objective.title}.`,
     ariaLabel: `Play ${coord} in the real game after the stable pressure read`,
+    recap: {
+      point: copyPoint(point),
+      coord,
+      text: `${coord} applies the ${prompt.gapCoord} read in the real game: ${anchorCoord} and ${stoneCoord} stayed safe in the variation, so Black can keep extending instead of answering a cut that has not happened.`,
+    },
   };
 }
 
@@ -1076,7 +1091,7 @@ function buildTargetHintHighlights(objective: BeginnerObjective, point: Point, b
 interface StablePressureExtensionHandoffProps {
   handoff: PressureExtensionHandoff;
   canPlayTarget: boolean;
-  onPlay: (point: Point) => void;
+  onPlay: (handoff: PressureExtensionHandoff) => void;
 }
 
 function StablePressureExtensionHandoff({
@@ -1102,7 +1117,7 @@ function StablePressureExtensionHandoff({
         }}
         disabled={!canPlayTarget}
         aria-label={handoff.ariaLabel}
-        onClick={() => onPlay(handoff.point)}
+        onClick={() => onPlay(handoff)}
       >
         {handoff.coord}
       </button>
@@ -1116,6 +1131,7 @@ export function BeginnerObjectiveCard() {
   const phase = useGameStore((s) => s.phase);
   const isAiThinking = useGameStore((s) => s.isAiThinking);
   const placeStone = useGameStore((s) => s.placeStone);
+  const lastPlayerMove = useGameStore((s) => s.lastPlayerMove);
   const recordInteraction = useGameStore((s) => s.recordInteraction);
   const addChatMessage = useGameStore((s) => s.addChatMessage);
   const applyTargetHints = useGameStore((s) => s.applyTargetHints);
@@ -1129,6 +1145,7 @@ export function BeginnerObjectiveCard() {
   const [comparisonReadReplyKey, setComparisonReadReplyKey] = useState<string | null>(null);
   const [defenseReadPointKey, setDefenseReadPointKey] = useState<string | null>(null);
   const [followUpDefenseReadPointKey, setFollowUpDefenseReadPointKey] = useState<string | null>(null);
+  const [pressureHandoffRecap, setPressureHandoffRecap] = useState<PressureHandoffRecap | null>(null);
   const processedReplayRequestId = useRef<number | null>(null);
 
   const objective = getBeginnerObjective({
@@ -1325,8 +1342,8 @@ export function BeginnerObjectiveCard() {
     );
   }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game, recordInteraction]);
 
-  const handleTargetClick = useCallback((point: Point) => {
-    if (!canPlayTarget) return;
+  const playObjectiveTarget = useCallback((point: Point): boolean => {
+    if (!canPlayTarget) return false;
 
     setActiveReadPromptKey(null);
     setSelectedReadReplyKey(null);
@@ -1337,8 +1354,22 @@ export function BeginnerObjectiveCard() {
     clearGuidedReadReplay();
     clearTargetHelp();
     recordInteraction();
-    placeStone(point);
+    const result = placeStone(point);
+
+    return result.success;
   }, [canPlayTarget, clearGuidedReadReplay, clearTargetHelp, placeStone, recordInteraction]);
+
+  const handleTargetClick = useCallback((point: Point) => {
+    setPressureHandoffRecap(null);
+    playObjectiveTarget(point);
+  }, [playObjectiveTarget]);
+
+  const handlePressureHandoffClick = useCallback((handoff: PressureExtensionHandoff) => {
+    const played = playObjectiveTarget(handoff.point);
+    if (!played) return;
+
+    setPressureHandoffRecap(handoff.recap);
+  }, [playObjectiveTarget]);
 
   const replayedReadReplyKey = guidedReadReplayRequest?.type === 'read-pressure'
     && readPrompt
@@ -1562,12 +1593,14 @@ export function BeginnerObjectiveCard() {
     objective,
     playableTargets,
     game.board,
+    readPrompt,
     Boolean(pressureComparisonSummary && !pressureDefenseRecommendation),
   );
   const selectedDefenseExtensionHandoff = getStablePressureExtensionHandoff(
     objective,
     playableTargets,
     game.board,
+    readPrompt,
     Boolean(
       selectedDefenseReadOutcome
       && !pressureDefenseContinuationRecommendation
@@ -1578,6 +1611,7 @@ export function BeginnerObjectiveCard() {
     objective,
     playableTargets,
     game.board,
+    readPrompt,
     Boolean(
       selectedFollowUpDefenseReadOutcome
       && isStablePressureDefenseOutcome(selectedFollowUpDefenseReadOutcome),
@@ -1589,6 +1623,11 @@ export function BeginnerObjectiveCard() {
   const activeTarget = activeTargetKey
     ? playableTargets.find((point) => targetKey(point) === activeTargetKey) ?? null
     : null;
+  const activePressureHandoffRecap = pressureHandoffRecap
+    && lastPlayerMove
+    && targetKey(pressureHandoffRecap.point) === targetKey(lastPlayerMove)
+    ? pressureHandoffRecap
+    : null;
   const activeTargetCoord = activeTarget ? pointToCoord(activeTarget, game.board.size) : null;
   const activeTargetExplanation = activeTarget ? getTargetExplanation(objective, activeTarget, game.board) : null;
   const targetHelpId = 'beginner-objective-target-help';
@@ -1598,6 +1637,16 @@ export function BeginnerObjectiveCard() {
       className="mx-auto mb-3 w-full max-w-2xl rounded-lg border px-4 py-3 text-sm"
       style={{ backgroundColor: COLORS.ui.bgCard, borderColor: 'rgba(255,255,255,0.08)' }}
     >
+      {activePressureHandoffRecap && (
+        <div className="mb-2 border-b border-white/10 pb-2">
+          <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: COLORS.ui.textSecondary }}>
+            Read applied
+          </div>
+          <p className="mt-1 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+            {activePressureHandoffRecap.text}
+          </p>
+        </div>
+      )}
       {insight && (
         <div className="mb-2 border-b border-white/10 pb-2">
           <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: COLORS.ui.textSecondary }}>
@@ -1746,7 +1795,7 @@ export function BeginnerObjectiveCard() {
                             <StablePressureExtensionHandoff
                               handoff={pressureComparisonExtensionHandoff}
                               canPlayTarget={canPlayTarget}
-                              onPlay={handleTargetClick}
+                              onPlay={handlePressureHandoffClick}
                             />
                           )}
                           {pressureComparisonSummary.recommendationText && (
@@ -1805,7 +1854,7 @@ export function BeginnerObjectiveCard() {
                                     <StablePressureExtensionHandoff
                                       handoff={selectedDefenseExtensionHandoff}
                                       canPlayTarget={canPlayTarget}
-                                      onPlay={handleTargetClick}
+                                      onPlay={handlePressureHandoffClick}
                                     />
                                   )}
                                   {pressureDefenseContinuationRecommendation
@@ -1886,7 +1935,7 @@ export function BeginnerObjectiveCard() {
                                         <StablePressureExtensionHandoff
                                           handoff={selectedFollowUpExtensionHandoff}
                                           canPlayTarget={canPlayTarget}
-                                          onPlay={handleTargetClick}
+                                          onPlay={handlePressureHandoffClick}
                                         />
                                       )}
                                     </div>
