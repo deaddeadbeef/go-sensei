@@ -32,6 +32,7 @@ Latest completed slice:
 - Added hover/focus explanations for guided objective target buttons so learners can see why a specific coordinate is suggested before playing it.
 - Added transient board highlights for guided target explanations so hovering or focusing a coordinate also marks the target, anchor, gap, or weak group stones on the board.
 - Added a compact board-side "Read next" prompt after completed one-space jumps so learners know which open gap to read before extending again.
+- Added a quick "Show pressure" variation for completed one-space jumps so learners can compare attacking the cutter, defending a short side, or continuing outward without mutating the game.
 
 Next investigation candidates:
-- Whether the one-space-jump gap prompt should offer a quick White-in-the-gap variation so learners can compare connecting, defending, or continuing outward.
+- Whether the guided board should turn the pressure variation into a playable mini-branch where White enters the gap and the learner chooses between the marked replies.
