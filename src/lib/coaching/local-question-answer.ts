@@ -568,6 +568,44 @@ function objectiveSuggestions(objective: BeginnerObjective, boardSize: BoardSize
   }));
 }
 
+const ONE_SPACE_JUMP_DELTAS: Point[] = [
+  { x: 2, y: 0 },
+  { x: 0, y: 2 },
+  { x: -2, y: 0 },
+  { x: 0, y: -2 },
+];
+
+interface LearnerOneSpaceJumpShape {
+  anchor: Point;
+  stone: Point;
+  gap: Point;
+}
+
+function findLearnerOneSpaceJumpShape(game: GameState): LearnerOneSpaceJumpShape | null {
+  const move = lastBlackPlacedMove(game);
+  if (!move) return null;
+
+  for (const delta of ONE_SPACE_JUMP_DELTAS) {
+    const anchor = { x: move.point.x - delta.x, y: move.point.y - delta.y };
+    const gap = { x: move.point.x - delta.x / 2, y: move.point.y - delta.y / 2 };
+
+    if (getStone(game.board, anchor) !== 'black') continue;
+    if (getStone(game.board, gap) !== null) continue;
+
+    return { anchor, stone: move.point, gap };
+  }
+
+  return null;
+}
+
+function oneSpaceJumpFrameworkSide(shape: LearnerOneSpaceJumpShape, boardSize: BoardSize): string {
+  if (shape.anchor.y === shape.stone.y) {
+    return shape.stone.y < boardSize / 2 ? 'top-side' : 'bottom-side';
+  }
+
+  return shape.stone.x < boardSize / 2 ? 'left-side' : 'right-side';
+}
+
 function objectiveTargetCoordList(objective: BeginnerObjective, boardSize: BoardSize): string | null {
   const coords = objective.targetPoints.slice(0, 4).map((point) => pointToCoord(point, boardSize));
   if (coords.length === 0) return null;
@@ -2566,6 +2604,42 @@ function buildTerritoryContext(game: GameState, teachingLevel: TeachingLevel): T
 
   const suggestions = objectiveSuggestions(objective, game.board.size, 'local-territory-move');
   if (!suggestions.length) return null;
+
+  const shape = objective.id === 'extend-from-stone' ? findLearnerOneSpaceJumpShape(game) : null;
+  if (shape) {
+    const anchorCoord = pointToCoord(shape.anchor, game.board.size);
+    const stoneCoord = pointToCoord(shape.stone, game.board.size);
+    const gapCoord = pointToCoord(shape.gap, game.board.size);
+    const frameworkSide = oneSpaceJumpFrameworkSide(shape, game.board.size);
+
+    return {
+      sentence: `${anchorCoord} and ${stoneCoord} are starting to sketch a ${frameworkSide} framework, but ${gapCoord} is only a gap in that framework, not safe territory yet. Keep extending, or answer if White attacks the gap.`,
+      boardFocus: {
+        highlights: [
+          {
+            id: `local-territory-framework-anchor-${pointKey(shape.anchor)}`,
+            point: copyPoint(shape.anchor),
+            variant: 'positive',
+            label: `${anchorCoord}: framework stone helping sketch territory.`,
+          },
+          {
+            id: `local-territory-framework-stone-${pointKey(shape.stone)}`,
+            point: copyPoint(shape.stone),
+            variant: 'positive',
+            label: `${stoneCoord}: one-space jump stone extending the framework.`,
+          },
+          {
+            id: `local-territory-gap-${pointKey(shape.gap)}`,
+            point: copyPoint(shape.gap),
+            variant: 'neutral',
+            label: `${gapCoord}: open gap; useful shape, not settled territory.`,
+          },
+        ],
+        suggestions,
+      },
+      conceptIds: uniqueConceptIds([...objective.conceptIds, 'territory', 'shape', 'direction-of-play']),
+    };
+  }
 
   const sentence = objective.id === 'claim-corner'
     ? 'I marked the easiest territory starting points on this board: corners already have two edges helping you.'
