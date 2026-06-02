@@ -359,6 +359,15 @@ function isThreatQuestion(q: string): boolean {
     || /\bis\s+(white|the\s+opponent)\s+(weak|in\s+trouble|under\s+attack)\b/.test(q);
 }
 
+function isAttackDefenseDecisionQuestion(q: string): boolean {
+  return /\b(attack|fight|chase)\s+or\s+(defend|save|protect)\b/.test(q)
+    || /\b(defend|save|protect)\s+or\s+(attack|fight|chase)\b/.test(q)
+    || /\bshould\s+i\s+(attack|fight|chase)\s+or\s+(defend|save|protect)\b/.test(q)
+    || /\bshould\s+i\s+(defend|save|protect)\s+or\s+(attack|fight|chase)\b/.test(q)
+    || /\bcan\s+i\s+attack\s+instead\s+of\s+(defending|saving|protecting)\b/.test(q)
+    || /\bdo\s+i\s+(attack|fight|chase)\s+or\s+(defend|save|protect)\b/.test(q);
+}
+
 function isGameReviewQuestion(q: string): boolean {
   return /\bgame\s+review\b/.test(q)
     || /\breview\s+(this|the|my)\s+(game|board|position)\b/.test(q)
@@ -2352,6 +2361,227 @@ function buildWhiteReplyAnswer(game: GameState, teachingLevel: TeachingLevel): L
   };
 }
 
+function buildAttackDefenseDecisionAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
+  const weakGroup = findLearnerWeakGroup(game);
+
+  if (weakGroup) {
+    const anchor = groupAnchor(weakGroup);
+    const anchorCoord = pointToCoord(anchor, game.board.size);
+    const libertyCoords = weakGroup.liberties.map((liberty) => pointToCoord(liberty, game.board.size));
+    const libertyList = joinList(libertyCoords);
+    const libertyWord = weakGroup.liberties.length === 1 ? 'liberty' : 'liberties';
+    const suggestions = weakGroup.liberties.slice(0, 4).map((liberty, index) => {
+      const coord = pointToCoord(liberty, game.board.size);
+
+      return {
+        id: `local-attack-defense-defend-move-${pointKey(liberty)}`,
+        point: copyPoint(liberty),
+        rank: index + 1,
+        reason: weakGroup.liberties.length === 1
+          ? `Save the group by playing its last liberty at ${coord}.`
+          : `Give the short-on-room group another liberty at ${coord}.`,
+      };
+    });
+
+    return {
+      text: [
+        'Defend first.',
+        `Your Black group at ${anchorCoord} has only ${weakGroup.liberties.length} ${libertyWord}: ${libertyList}.`,
+        weakGroup.liberties.length === 1
+          ? 'That is atari, so this group can be captured if White fills the last liberty.'
+          : 'If you attack while it is short on room, White can answer by filling these liberties.',
+        weakGroup.liberties.length === 1
+          ? 'Play the marked liberty before looking for an attack.'
+          : 'Play one marked liberty to give it breathing room.',
+        'Attack later, after this group has room.',
+        'I marked the group, its liberties, and the defensive moves.',
+      ].join(' '),
+      conceptIds: uniqueConceptIds([
+        'reading',
+        'groups',
+        'liberties',
+        'capture',
+        ...(weakGroup.liberties.length === 1 ? ['atari'] : []),
+      ]),
+      boardFocus: {
+        liberties: [{
+          id: `local-attack-defense-weak-liberties-${pointKey(anchor)}`,
+          point: copyPoint(anchor),
+          count: weakGroup.liberties.length,
+          libertyPoints: weakGroup.liberties.map(copyPoint),
+        }],
+        groups: [{
+          id: `local-attack-defense-weak-group-${pointKey(anchor)}`,
+          stones: weakGroup.stones.map(copyPoint),
+          color: weakGroup.color,
+          liberties: weakGroup.liberties.length,
+          label: `Defend Black group first: ${weakGroup.liberties.length} ${libertyWord} at ${libertyList}.`,
+        }],
+        suggestions,
+      },
+      actions: [
+        { id: 'hint', label: 'Show targets' },
+        { id: 'lesson:liberties', label: 'Review liberties' },
+      ],
+    };
+  }
+
+  const captureTarget = findLearnerCaptureTarget(game);
+  if (captureTarget) {
+    const anchor = groupAnchor(captureTarget);
+    const anchorCoord = pointToCoord(anchor, game.board.size);
+    const capturePoint = captureTarget.liberties[0];
+    const captureCoord = pointToCoord(capturePoint, game.board.size);
+
+    return {
+      text: [
+        'Attack now.',
+        `White has a group at ${anchorCoord} in atari.`,
+        `Black can capture by playing ${captureCoord}.`,
+        'That is a concrete attack; play the final liberty before White gets more room.',
+        'I marked the White group, its final liberty, and the capture move.',
+      ].join(' '),
+      conceptIds: ['capture', 'atari', 'liberties', 'reading'],
+      boardFocus: {
+        liberties: [{
+          id: `local-attack-defense-capture-liberties-${pointKey(anchor)}`,
+          point: copyPoint(anchor),
+          count: captureTarget.liberties.length,
+          libertyPoints: captureTarget.liberties.map(copyPoint),
+        }],
+        groups: [{
+          id: `local-attack-defense-capture-group-${pointKey(anchor)}`,
+          stones: captureTarget.stones.map(copyPoint),
+          color: captureTarget.color,
+          liberties: captureTarget.liberties.length,
+          label: `Attack White group now: capture by playing ${captureCoord}.`,
+        }],
+        suggestions: [{
+          id: `local-attack-defense-capture-move-${pointKey(capturePoint)}`,
+          point: copyPoint(capturePoint),
+          rank: 1,
+          reason: `Capture White by filling its last liberty at ${captureCoord}.`,
+        }],
+      },
+      actions: [{ id: 'practice:capture', label: 'Practice capture' }],
+    };
+  }
+
+  const pressureTarget = findLearnerPressureTarget(game);
+  if (pressureTarget) {
+    const anchor = groupAnchor(pressureTarget);
+    const anchorCoord = pointToCoord(anchor, game.board.size);
+    const libertyCoords = pressureTarget.liberties.map((liberty) => pointToCoord(liberty, game.board.size));
+    const libertyList = joinList(libertyCoords);
+    const libertyWord = pressureTarget.liberties.length === 1 ? 'liberty' : 'liberties';
+    const suggestions = pressureTarget.liberties.slice(0, 4).map((liberty, index) => {
+      const coord = pointToCoord(liberty, game.board.size);
+
+      return {
+        id: `local-attack-defense-pressure-move-${pointKey(liberty)}`,
+        point: copyPoint(liberty),
+        rank: index + 1,
+        reason: `Pressure White by playing its liberty at ${coord}.`,
+      };
+    });
+
+    return {
+      text: [
+        'Attack carefully.',
+        `White has a group at ${anchorCoord} with only ${pressureTarget.liberties.length} ${libertyWord}: ${libertyList}.`,
+        'That is pressure, not a capture yet, so count your own liberties before chasing.',
+        'If your groups still have room, filling one of those liberties can make White answer.',
+        'I marked the pressured White group and the attacking points to read.',
+      ].join(' '),
+      conceptIds: ['reading', 'liberties', 'groups', 'capture'],
+      boardFocus: {
+        liberties: [{
+          id: `local-attack-defense-pressure-liberties-${pointKey(anchor)}`,
+          point: copyPoint(anchor),
+          count: pressureTarget.liberties.length,
+          libertyPoints: pressureTarget.liberties.map(copyPoint),
+        }],
+        groups: [{
+          id: `local-attack-defense-pressure-group-${pointKey(anchor)}`,
+          stones: pressureTarget.stones.map(copyPoint),
+          color: pressureTarget.color,
+          liberties: pressureTarget.liberties.length,
+          label: `Pressure White group: ${pressureTarget.liberties.length} ${libertyWord} at ${libertyList}.`,
+        }],
+        suggestions,
+      },
+      actions: [
+        { id: 'hint', label: 'Show targets' },
+        { id: 'practice:reading', label: 'Practice reading' },
+      ],
+    };
+  }
+
+  const objective = getBeginnerObjective({
+    boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
+    moveCount: game.moveHistory.length,
+    currentPlayer: 'black',
+    teachingLevel,
+  });
+  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-attack-defense-move') : [];
+  const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
+  const currentGroup = findLearnerMostRestrictedGroup(game);
+  const anchor = currentGroup ? groupAnchor(currentGroup) : null;
+  const anchorCoord = anchor ? pointToCoord(anchor, game.board.size) : null;
+  const libertyCoords = currentGroup?.liberties.map((liberty) => pointToCoord(liberty, game.board.size)) ?? [];
+  const libertyList = joinList(libertyCoords);
+  const libertyWord = currentGroup?.liberties.length === 1 ? 'liberty' : 'liberties';
+  const lines = [
+    'No emergency attack or defense yet.',
+  ];
+
+  if (currentGroup && anchorCoord) {
+    lines.push(`Your tightest Black group is at ${anchorCoord}, with ${currentGroup.liberties.length} ${libertyWord}: ${libertyList}.`);
+    lines.push('That is enough room for now, so make the next move serve a clear purpose instead of chasing randomly.');
+  }
+
+  if (objective) {
+    lines.push(`Use the current guided job as the priority: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}`);
+  } else {
+    lines.push('Pick the move that gives your stones more room, easier territory, or a concrete capture threat.');
+  }
+
+  lines.push(suggestions.length > 0
+    ? 'I marked the practical targets so you can turn the decision into a move.'
+    : 'I marked the current group so you can keep counting before choosing.');
+
+  return {
+    text: lines.join(' '),
+    conceptIds: uniqueConceptIds(['reading', 'direction-of-play', 'liberties', ...(objective?.conceptIds ?? [])]),
+    boardFocus: {
+      ...(currentGroup && anchor
+        ? {
+          liberties: [{
+            id: `local-attack-defense-current-liberties-${pointKey(anchor)}`,
+            point: copyPoint(anchor),
+            count: currentGroup.liberties.length,
+            libertyPoints: currentGroup.liberties.map(copyPoint),
+          }],
+          groups: [{
+            id: `local-attack-defense-current-group-${pointKey(anchor)}`,
+            stones: currentGroup.stones.map(copyPoint),
+            color: currentGroup.color,
+            liberties: currentGroup.liberties.length,
+            label: `Black group with room: ${currentGroup.liberties.length} ${libertyWord} at ${libertyList}.`,
+          }],
+        }
+        : {}),
+      ...(suggestions.length > 0 ? { suggestions } : {}),
+    },
+    actions: [
+      ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+      { id: 'practice:reading', label: 'Practice reading' },
+    ],
+  };
+}
+
 function buildThreatAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
   const captureTarget = findLearnerCaptureTarget(game);
   const pressureTarget = captureTarget ? null : findLearnerPressureTarget(game);
@@ -3527,6 +3757,10 @@ export function getLocalQuestionAnswer(
 
   if (isWhiteReplyQuestion(q)) {
     return buildWhiteReplyAnswer(game, teachingLevel);
+  }
+
+  if (isAttackDefenseDecisionQuestion(q)) {
+    return buildAttackDefenseDecisionAnswer(game, teachingLevel);
   }
 
   if (isThreatQuestion(q)) {
