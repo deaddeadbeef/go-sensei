@@ -631,6 +631,63 @@ describe('local question answer', () => {
     ]);
   });
 
+  it("reads White's likely reply from the learner's last stone", () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+
+    const answer = getLocalQuestionAnswer('What can White do?', firstMove.newState, 'guided');
+
+    expect(answer?.text).toContain('Read White from your Black stone at C7.');
+    expect(answer?.text).toContain("White's simplest reply is to play on one of its liberties: C8, C6, B7, or D7.");
+    expect(answer?.text).toContain("That would not capture C7 yet, but it would reduce Black's room; do not panic, count.");
+    expect(answer?.text).toContain('Your practical answer is: Make your stones work together. Play a one-space jump from one of your stones. Try E7 or C5.');
+    expect(answer?.text).toContain('Start by reading E7: if White touches C7, Black should still have room and a clearer shape.');
+    expect(answer?.text).toContain('I marked the reply anchor, its liberties, and the current targets so you can practice that reading on the board.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['reading', 'direction-of-play', 'liberties', 'groups', 'shape']));
+    expect(answer?.boardFocus?.highlights).toEqual([{
+      id: 'local-white-reply-anchor-2,2',
+      point: { x: 2, y: 2 },
+      variant: 'neutral',
+      label: "C7: read White's reply against this Black group.",
+    }]);
+    expect(answer?.boardFocus?.liberties).toEqual([{
+      id: 'local-white-reply-liberties-2,2',
+      point: { x: 2, y: 2 },
+      count: 4,
+      libertyPoints: [
+        { x: 2, y: 1 },
+        { x: 2, y: 3 },
+        { x: 1, y: 2 },
+        { x: 3, y: 2 },
+      ],
+    }]);
+    expect(answer?.boardFocus?.groups?.[0]).toMatchObject({
+      id: 'local-white-reply-group-2,2',
+      stones: [{ x: 2, y: 2 }],
+      color: 'black',
+      liberties: 4,
+      label: 'Black group White could pressure: 4 liberties at C8, C6, B7, and D7.',
+    });
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-white-reply-move-4,2',
+        point: { x: 4, y: 2 },
+        rank: 1,
+        reason: 'Try E7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-white-reply-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 2,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'practice:reading', label: 'Practice reading' },
+    ]);
+  });
+
   it('explains solid connection versus one-space jump shape', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');

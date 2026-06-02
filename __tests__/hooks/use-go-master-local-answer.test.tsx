@@ -770,6 +770,68 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('direction-of-play').encounterCount).toBeGreaterThan(0);
   });
 
+  it("reads White's likely reply locally without fetching", () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('What can White do?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('Read White from your Black stone at C7.');
+    expect(state.bubble.text).toContain("White's simplest reply is to play on one of its liberties: C8, C6, B7, or D7.");
+    expect(state.bubble.text).toContain('Your practical answer is: Make your stones work together.');
+    expect(state.bubble.text).toContain('Start by reading E7: if White touches C7, Black should still have room and a clearer shape.');
+    expect(state.chatMessages.at(-1)?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'practice:reading', label: 'Practice reading' },
+    ]);
+    expect(state.overlays.highlights).toEqual([{
+      id: 'local-white-reply-anchor-2,2',
+      point: { x: 2, y: 2 },
+      variant: 'neutral',
+      label: "C7: read White's reply against this Black group.",
+    }]);
+    expect(state.overlays.liberties).toEqual([{
+      id: 'local-white-reply-liberties-2,2',
+      point: { x: 2, y: 2 },
+      count: 4,
+      libertyPoints: [
+        { x: 2, y: 1 },
+        { x: 2, y: 3 },
+        { x: 1, y: 2 },
+        { x: 3, y: 2 },
+      ],
+    }]);
+    expect(state.overlays.groups[0]).toMatchObject({
+      id: 'local-white-reply-group-2,2',
+      stones: [{ x: 2, y: 2 }],
+      color: 'black',
+      liberties: 4,
+      label: 'Black group White could pressure: 4 liberties at C8, C6, B7, and D7.',
+    });
+    expect(state.overlays.suggestions).toEqual([
+      {
+        id: 'local-white-reply-move-4,2',
+        point: { x: 4, y: 2 },
+        rank: 1,
+        reason: 'Try E7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-white-reply-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 2,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
+    expect(useConceptStore.getState().getMastery('reading').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('liberties').encounterCount).toBeGreaterThan(0);
+  });
+
   it('reviews the guided game locally from the review control without fetching', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());
