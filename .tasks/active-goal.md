@@ -22,7 +22,8 @@ Latest completed slice:
 - Added occupied-cut guidance so a beginner sees both split Black groups, the White cutting stone, and the liberties to attack after White enters a one-space jump gap.
 - Added local snapback guidance so the tutor explains the concept without cloud fallback and marks the immediate recapture point after White captures into a cramped shape.
 - Added local late-fight follow-up routing so natural "what if White answers?" questions reuse the current snapback, occupied-cut, capture-race, or attack/defense board guidance instead of falling back to generic reply text.
+- Added a plan-style occupied-cut follow-up so "what should I read next after this cut?" becomes a three-step beginner sequence: attack the cutting stone, recount both Black groups, then defend or keep filling White liberties.
 
 Next investigation candidates:
-- More late guided positions where follow-up language should connect two or three tactical answers into a short plan rather than repeating the same first clue.
+- More late guided positions where capture-race or snapback follow-up language should connect two or three tactical answers into a short plan rather than repeating the same first clue.
 - Whether the guided 9x9 entry should preserve a paused guided board across app reloads more explicitly than the current session store does.

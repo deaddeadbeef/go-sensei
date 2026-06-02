@@ -1571,6 +1571,50 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('connect-and-cut').encounterCount).toBeGreaterThan(0);
   });
 
+  it('answers occupied-cut plan follow-ups locally from the guided chat', () => {
+    act(() => {
+      useGameStore.getState().startGuidedIntroGame();
+      useGameStore.getState().placeStone({ x: 2, y: 2 });
+      useGameStore.getState().pass();
+      useGameStore.getState().placeStone({ x: 4, y: 2 });
+      useGameStore.getState().placeStone({ x: 3, y: 2 });
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('What should I read next after this cut?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.text).toContain('Read the cut as a three-step plan.');
+    expect(state.bubble.text).toContain('Step 1: attack the White cutting stone at D7 by playing D8 or D6.');
+    expect(state.bubble.text).toContain('Step 2: after White answers, recount both Black groups: C7 has 3 liberties and E7 has 3 liberties.');
+    expect(state.bubble.text).toContain('Step 3: if one Black group drops to two liberties or fewer, defend it first; otherwise fill the next White liberty.');
+    expect(state.bubble.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'practice:reading', label: 'Practice reading' },
+    ]);
+    expect(state.chatMessages.at(-1)?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'practice:reading', label: 'Practice reading' },
+    ]);
+    expect(state.overlays.highlights).toEqual([{
+      id: 'local-occupied-cut-plan-stone-3,2',
+      point: { x: 3, y: 2 },
+      variant: 'danger',
+      label: 'D7: White cutting stone; start the reading plan here.',
+    }]);
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 3, y: 1 },
+      { x: 3, y: 3 },
+    ]);
+    expect(useConceptStore.getState().getMastery('connect-and-cut').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('reading').encounterCount).toBeGreaterThan(0);
+  });
+
   it('answers learner danger questions locally without fetching', () => {
     act(() => {
       const result = useGameStore.getState().applyAiMove({ x: 3, y: 2 });
