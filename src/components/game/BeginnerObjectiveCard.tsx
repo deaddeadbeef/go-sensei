@@ -277,6 +277,17 @@ function getPressureReplayAction(
   };
 }
 
+function getPressureComparisonReplayAction(
+  prompt: OneSpaceJumpReadPrompt,
+  reply: Point,
+  comparedReply: Point,
+): SenseiAction {
+  return {
+    id: `guided:read-pressure:comparison:${prompt.key}:${targetKey(reply)}:${targetKey(comparedReply)}`,
+    label: 'Show comparison',
+  };
+}
+
 function getPressureRecountFollowUp(
   prompt: OneSpaceJumpReadPrompt,
   anchorCoord: string,
@@ -666,7 +677,7 @@ export function BeginnerObjectiveCard() {
     addChatMessage(
       `Comparison read: ${comparisonText}`,
       'teaching',
-      [getPressureReplayAction('recount', prompt, reply)],
+      [getPressureComparisonReplayAction(prompt, reply, comparedReply)],
     );
   }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game, recordInteraction]);
 
@@ -689,13 +700,24 @@ export function BeginnerObjectiveCard() {
     && readPrompt.replyPoints.some((point) => targetKey(point) === guidedReadReplayRequest.replyKey)
     ? guidedReadReplayRequest.replyKey
     : null;
-  const replayedRecountReadReplyKey = replayedReadReplyKey && guidedReadReplayRequest?.mode === 'recount'
+  const replayedRecountReadReplyKey = replayedReadReplyKey
+    && (guidedReadReplayRequest?.mode === 'recount' || guidedReadReplayRequest?.mode === 'comparison')
     ? replayedReadReplyKey
+    : null;
+  const replayedComparisonReadReplyKey = replayedReadReplyKey
+    && guidedReadReplayRequest?.mode === 'comparison'
+    && guidedReadReplayRequest.comparedReplyKey
+    && readPrompt?.replyPoints.some((point) => (
+      targetKey(point) === guidedReadReplayRequest.comparedReplyKey
+      && targetKey(point) !== replayedReadReplyKey
+    ))
+    ? guidedReadReplayRequest.comparedReplyKey
     : null;
   const effectiveActiveReadPromptKey = replayedReadReplyKey && readPrompt ? readPrompt.key : activeReadPromptKey;
   const effectiveSelectedReadReplyKey = replayedReadReplyKey ?? selectedReadReplyKey;
   const effectiveRecountReadReplyKey = replayedRecountReadReplyKey ?? recountReadReplyKey;
-  const effectiveComparisonReadReplyKey = replayedReadReplyKey ? null : comparisonReadReplyKey;
+  const effectiveComparisonReadReplyKey = replayedComparisonReadReplyKey
+    ?? (replayedReadReplyKey ? null : comparisonReadReplyKey);
 
   useEffect(() => {
     if (!replayedReadReplyKey || !guidedReadReplayRequest || !readPrompt) return;
@@ -707,7 +729,7 @@ export function BeginnerObjectiveCard() {
     processedReplayRequestId.current = guidedReadReplayRequest.id;
     recordInteraction();
 
-    if (guidedReadReplayRequest.mode === 'recount') {
+    if (guidedReadReplayRequest.mode === 'recount' || guidedReadReplayRequest.mode === 'comparison') {
       const recount = getPressureRecount(game, readPrompt, reply);
       if (recount) {
         applyTargetHints(buildOneSpaceJumpRecountHighlights(readPrompt, recount, game.board));
