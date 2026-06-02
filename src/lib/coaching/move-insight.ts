@@ -1,5 +1,9 @@
-import { formatObjectiveTargetText, getBeginnerObjective } from '@/lib/coaching/beginner-objectives';
-import { getAllGroups, pointToCoord } from '@/lib/go-engine';
+import {
+  formatObjectiveTargetText,
+  getBeginnerObjective,
+  getBeginnerObjectiveProgress,
+} from '@/lib/coaching/beginner-objectives';
+import { getAllGroups, getStone, pointToCoord } from '@/lib/go-engine';
 import type { GameState, Move, Point } from '@/lib/go-engine/types';
 import type { TeachingLevel } from '@/lib/ai/system-prompt';
 
@@ -34,6 +38,13 @@ function isCenterArea(point: Point, boardSize: number): boolean {
   return Math.abs(point.x - center) <= 1 && Math.abs(point.y - center) <= 1;
 }
 
+const ONE_SPACE_JUMP_DELTAS: Point[] = [
+  { x: 2, y: 0 },
+  { x: 0, y: 2 },
+  { x: -2, y: 0 },
+  { x: 0, y: -2 },
+];
+
 function objectiveNextStep(game: GameState, teachingLevel: TeachingLevel): { text: string; concepts: string[] } {
   const objective = getBeginnerObjective({
     boardSize: game.board.size,
@@ -65,6 +76,20 @@ function weakBlackGroupInsight(game: GameState): { liberties: number; stones: Po
     .sort((a, b) => a.liberties.length - b.liberties.length || a.stones.length - b.stones.length)[0];
 
   return weakGroup ? { liberties: weakGroup.liberties.length, stones: weakGroup.stones } : null;
+}
+
+function findOneSpaceJumpAnchor(game: GameState, point: Point): { anchor: Point; gap: Point } | null {
+  for (const delta of ONE_SPACE_JUMP_DELTAS) {
+    const anchor = { x: point.x - delta.x, y: point.y - delta.y };
+    const gap = { x: point.x - delta.x / 2, y: point.y - delta.y / 2 };
+
+    if (getStone(game.board, anchor) !== 'black') continue;
+    if (getStone(game.board, gap) !== null) continue;
+
+    return { anchor, gap };
+  }
+
+  return null;
 }
 
 export function getMoveInsight(game: GameState, teachingLevel: TeachingLevel): MoveInsight | null {
@@ -112,6 +137,22 @@ export function getMoveInsight(game: GameState, teachingLevel: TeachingLevel): M
   }
 
   const coord = pointToCoord(move.point, game.board.size);
+  const progress = getBeginnerObjectiveProgress(game, teachingLevel);
+  const jumpShape = progress?.status === 'met' && progress.objectiveId === 'extend-from-stone'
+    ? findOneSpaceJumpAnchor(game, move.point)
+    : null;
+
+  if (jumpShape) {
+    const anchorCoord = pointToCoord(jumpShape.anchor, game.board.size);
+    const gapCoord = pointToCoord(jumpShape.gap, game.board.size);
+
+    return {
+      title: 'One-space jump shape',
+      observation: `${coord} is a one-space jump from ${anchorCoord}. The empty point at ${gapCoord} leaves room to grow while the two stones still work together.`,
+      nextStep: next.text,
+      conceptIds: ['shape', 'direction-of-play', ...next.concepts],
+    };
+  }
 
   if (isNearCorner(move.point, game.board.size)) {
     return {
