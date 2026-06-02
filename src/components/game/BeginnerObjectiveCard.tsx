@@ -64,6 +64,7 @@ interface PressureDefenseOutcome {
   otherSide: Point;
   otherSideCoord: string;
   otherLiberties: Point[];
+  connectedSides: boolean;
 }
 
 interface PressureComparisonSummary {
@@ -71,6 +72,11 @@ interface PressureComparisonSummary {
   text: string;
   recommendationText: string | null;
   defenseRecommendation: PressureDefenseRecommendation | null;
+}
+
+interface PressureFollowUpComparisonSummary {
+  rows: string[];
+  text: string;
 }
 
 function targetKey(point: Point): string {
@@ -506,6 +512,7 @@ function getPressureDefenseOutcome(
   const defendedBeforeCount = defendedIsAnchor ? recount.anchorLiberties.length : recount.stoneLiberties.length;
   const defendedAfterLiberties = defendedIsAnchor ? anchorGroup.liberties : stoneGroup.liberties;
   const otherAfterLiberties = defendedIsAnchor ? stoneGroup.liberties : anchorGroup.liberties;
+  const connectedSides = anchorGroup.stones.some((stone) => targetKey(stone) === targetKey(prompt.stone));
   const defendedLibertyText = joinAndCoordinateList(defendedAfterLiberties.map((liberty) => pointToCoord(liberty, boardSize)));
   const otherLibertyText = joinAndCoordinateList(otherAfterLiberties.map((liberty) => pointToCoord(liberty, boardSize)));
   const defendedChangeText = defendedAfterLiberties.length > defendedBeforeCount
@@ -526,6 +533,7 @@ function getPressureDefenseOutcome(
     otherSide: copyPoint(defendedIsAnchor ? prompt.stone : prompt.anchor),
     otherSideCoord: otherCoord,
     otherLiberties: otherAfterLiberties.map(copyPoint),
+    connectedSides,
   };
 }
 
@@ -602,8 +610,23 @@ function getPressureDefenseContinuationOutcome(
     : previousOutcome.otherLiberties.length;
   const defendedAfterLiberties = defendedIsAnchor ? anchorGroup.liberties : stoneGroup.liberties;
   const otherAfterLiberties = defendedIsAnchor ? stoneGroup.liberties : anchorGroup.liberties;
+  const connectedSides = anchorGroup.stones.some((stone) => targetKey(stone) === targetKey(prompt.stone));
   const defendedLibertyText = joinAndCoordinateList(defendedAfterLiberties.map((liberty) => pointToCoord(liberty, boardSize)));
   const otherLibertyText = joinAndCoordinateList(otherAfterLiberties.map((liberty) => pointToCoord(liberty, boardSize)));
+  if (connectedSides) {
+    return {
+      text: `After ${coord}, ${anchorCoord} and ${stoneCoord} connect into one Black group with ${formatLibertyCount(defendedAfterLiberties.length)} at ${defendedLibertyText}. Both sides are one group now, so the local read is stable; return to the real game and choose an extension.`,
+      defense: copyPoint(point),
+      defendedSide: copyPoint(defense.shortSide),
+      defendedSideCoord: defense.shortSideCoord,
+      defendedLiberties: defendedAfterLiberties.map(copyPoint),
+      otherSide: copyPoint(defendedIsAnchor ? prompt.stone : prompt.anchor),
+      otherSideCoord: otherCoord,
+      otherLiberties: otherAfterLiberties.map(copyPoint),
+      connectedSides,
+    };
+  }
+
   const defendedChangeText = defendedAfterLiberties.length > defendedBeforeCount
     ? `${defendedCoord} grows from ${defendedBeforeCount} to ${formatLibertyCount(defendedAfterLiberties.length)} at ${defendedLibertyText}.`
     : `${defendedCoord} has ${formatLibertyCount(defendedAfterLiberties.length)} at ${defendedLibertyText}.`;
@@ -622,7 +645,47 @@ function getPressureDefenseContinuationOutcome(
     otherSide: copyPoint(defendedIsAnchor ? prompt.stone : prompt.anchor),
     otherSideCoord: otherCoord,
     otherLiberties: otherAfterLiberties.map(copyPoint),
+    connectedSides,
   };
+}
+
+function getPressureDefenseContinuationComparisonSummary(
+  game: GameState,
+  prompt: OneSpaceJumpReadPrompt,
+  recount: PressureRecount,
+  previousOutcome: PressureDefenseOutcome,
+  defense: PressureDefenseRecommendation,
+): PressureFollowUpComparisonSummary | null {
+  const anchorCoord = pointToCoord(prompt.anchor, game.board.size);
+  const stoneCoord = pointToCoord(prompt.stone, game.board.size);
+  const compared = defense.liberties.flatMap((point) => {
+    const outcome = getPressureDefenseContinuationOutcome(game, prompt, recount, previousOutcome, defense, point);
+    if (!outcome) return [];
+
+    return [{ point, outcome }];
+  });
+  if (compared.length === 0) return null;
+
+  const rows = compared.map(({ point, outcome }) => {
+    const coord = pointToCoord(point, game.board.size);
+
+    return outcome.connectedSides
+      ? `${coord}: connects ${anchorCoord} and ${stoneCoord} into one group with ${formatLibertyCount(outcome.defendedLiberties.length)}.`
+      : `${coord}: ${outcome.defendedSideCoord} ${formatLibertyCount(outcome.defendedLiberties.length)}, ${outcome.otherSideCoord} ${formatLibertyCount(outcome.otherLiberties.length)}.`;
+  });
+  const connectionCoords = compared
+    .filter(({ outcome }) => outcome.connectedSides)
+    .map(({ point }) => pointToCoord(point, game.board.size));
+  const separateCoords = compared
+    .filter(({ outcome }) => !outcome.connectedSides)
+    .map(({ point }) => pointToCoord(point, game.board.size));
+  const text = connectionCoords.length > 0 && separateCoords.length > 0
+    ? `Connection note: ${joinAndCoordinateList(connectionCoords)} ${connectionCoords.length === 1 ? 'joins' : 'join'} ${anchorCoord} and ${stoneCoord} into one Black group; ${joinAndCoordinateList(separateCoords)} ${separateCoords.length === 1 ? 'keeps' : 'keep'} the sides separate.`
+    : connectionCoords.length > 0
+      ? `Connection note: ${joinAndCoordinateList(connectionCoords)} ${connectionCoords.length === 1 ? 'joins' : 'join'} ${anchorCoord} and ${stoneCoord} into one Black group.`
+      : `Connection note: ${joinAndCoordinateList(separateCoords)} keep the sides separate, so choose the direction that leaves the next extension clearest.`;
+
+  return { rows, text };
 }
 
 function getReplayPressureDefensePoint(
@@ -838,6 +901,7 @@ function buildOneSpaceJumpFollowUpDefenseOutcomeHighlights(
   const stoneLiberties = defendedIsAnchor ? outcome.otherLiberties : outcome.defendedLiberties;
   const anchorLibertyText = joinAndCoordinateList(anchorLiberties.map((point) => pointToCoord(point, board.size)));
   const stoneLibertyText = joinAndCoordinateList(stoneLiberties.map((point) => pointToCoord(point, board.size)));
+  const connectedLibertyText = joinAndCoordinateList(outcome.defendedLiberties.map((point) => pointToCoord(point, board.size)));
   const anchorIsShort = anchorLiberties.length < stoneLiberties.length;
   const stoneIsShort = stoneLiberties.length < anchorLiberties.length;
   const defendedStillShort = outcome.defendedLiberties.length < outcome.otherLiberties.length;
@@ -848,17 +912,21 @@ function buildOneSpaceJumpFollowUpDefenseOutcomeHighlights(
       id: `read-pressure-anchor-${targetKey(prompt.anchor)}`,
       point: copyPoint(prompt.anchor),
       variant: anchorIsShort ? 'warning' as const : 'positive' as const,
-      label: anchorIsShort
-        ? `${anchorCoord}: short side with ${formatLibertyCount(anchorLiberties.length)} after ${followUpCoord} follow-up: ${anchorLibertyText}.`
-        : `${anchorCoord}: ${formatLibertyCount(anchorLiberties.length)} after ${followUpCoord} follow-up: ${anchorLibertyText}.`,
+      label: outcome.connectedSides
+        ? `${anchorCoord}: connected group has ${formatLibertyCount(outcome.defendedLiberties.length)} after ${followUpCoord} follow-up: ${connectedLibertyText}.`
+        : anchorIsShort
+          ? `${anchorCoord}: short side with ${formatLibertyCount(anchorLiberties.length)} after ${followUpCoord} follow-up: ${anchorLibertyText}.`
+          : `${anchorCoord}: ${formatLibertyCount(anchorLiberties.length)} after ${followUpCoord} follow-up: ${anchorLibertyText}.`,
     },
     {
       id: `read-pressure-stone-${targetKey(prompt.stone)}`,
       point: copyPoint(prompt.stone),
       variant: stoneIsShort ? 'warning' as const : 'positive' as const,
-      label: stoneIsShort
-        ? `${stoneCoord}: short side with ${formatLibertyCount(stoneLiberties.length)} after ${followUpCoord} follow-up: ${stoneLibertyText}.`
-        : `${stoneCoord}: ${formatLibertyCount(stoneLiberties.length)} after ${followUpCoord} follow-up: ${stoneLibertyText}.`,
+      label: outcome.connectedSides
+        ? `${stoneCoord}: connected group has ${formatLibertyCount(outcome.defendedLiberties.length)} after ${followUpCoord} follow-up: ${connectedLibertyText}.`
+        : stoneIsShort
+          ? `${stoneCoord}: short side with ${formatLibertyCount(stoneLiberties.length)} after ${followUpCoord} follow-up: ${stoneLibertyText}.`
+          : `${stoneCoord}: ${formatLibertyCount(stoneLiberties.length)} after ${followUpCoord} follow-up: ${stoneLibertyText}.`,
     },
     {
       id: `read-pressure-gap-${targetKey(prompt.gap)}`,
@@ -889,7 +957,9 @@ function buildOneSpaceJumpFollowUpDefenseOutcomeHighlights(
       id: `read-pressure-follow-up-defense-${targetKey(outcome.defense)}`,
       point: copyPoint(outcome.defense),
       variant: 'positive',
-      label: `${followUpCoord}: follow-up defense; ${outcome.defendedSideCoord} now has ${formatLibertyCount(outcome.defendedLiberties.length)}.`,
+      label: outcome.connectedSides
+        ? `${followUpCoord}: follow-up defense; ${anchorCoord} and ${stoneCoord} connect with ${formatLibertyCount(outcome.defendedLiberties.length)}.`
+        : `${followUpCoord}: follow-up defense; ${outcome.defendedSideCoord} now has ${formatLibertyCount(outcome.defendedLiberties.length)}.`,
     },
     ...outcome.defendedLiberties.map((point) => {
       const coord = pointToCoord(point, board.size);
@@ -1406,6 +1476,19 @@ export function BeginnerObjectiveCard() {
       selectedFollowUpDefenseReadPoint,
     )
     : null;
+  const selectedFollowUpDefenseComparisonSummary = readPrompt
+    && selectedReadRecount
+    && selectedDefenseReadOutcome
+    && pressureDefenseContinuationRecommendation
+    && selectedFollowUpDefenseReadOutcome
+    ? getPressureDefenseContinuationComparisonSummary(
+      game,
+      readPrompt,
+      selectedReadRecount,
+      selectedDefenseReadOutcome,
+      pressureDefenseContinuationRecommendation,
+    )
+    : null;
   const readPromptAnchorCoord = readPrompt ? pointToCoord(readPrompt.anchor, game.board.size) : null;
   const readPromptStoneCoord = readPrompt ? pointToCoord(readPrompt.stone, game.board.size) : null;
   const selectedReadReplyCoord = selectedReadReply ? pointToCoord(selectedReadReply, game.board.size) : null;
@@ -1675,6 +1758,21 @@ export function BeginnerObjectiveCard() {
                                         <p className="mt-1 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
                                           {selectedFollowUpDefenseReadOutcome.text}
                                         </p>
+                                      )}
+                                      {selectedFollowUpDefenseComparisonSummary && (
+                                        <div className="mt-2">
+                                          <div className="text-xs font-semibold" style={{ color: COLORS.ui.textPrimary }}>
+                                            Follow-up comparison
+                                          </div>
+                                          <div className="mt-1 grid gap-x-3 gap-y-0.5 text-[11px] leading-relaxed sm:grid-cols-2" style={{ color: COLORS.ui.textSecondary }}>
+                                            {selectedFollowUpDefenseComparisonSummary.rows.map((row) => (
+                                              <div key={row}>{row}</div>
+                                            ))}
+                                          </div>
+                                          <p className="mt-1 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+                                            {selectedFollowUpDefenseComparisonSummary.text}
+                                          </p>
+                                        </div>
                                       )}
                                     </div>
                                   )}
