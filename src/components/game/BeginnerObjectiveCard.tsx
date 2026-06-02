@@ -48,6 +48,11 @@ interface PressureRecount {
   stoneLiberties: Point[];
 }
 
+interface PressureComparisonSummary {
+  rows: string[];
+  text: string;
+}
+
 function targetKey(point: Point): string {
   return `${point.x},${point.y}`;
 }
@@ -74,6 +79,15 @@ function joinAndCoordinateList(coords: string[]): string {
 
 function formatLibertyCount(count: number): string {
   return `${count} ${count === 1 ? 'liberty' : 'liberties'}`;
+}
+
+function getReplyDirection(reply: Point, gap: Point): string {
+  if (reply.y < gap.y) return 'above';
+  if (reply.y > gap.y) return 'below';
+  if (reply.x < gap.x) return 'the left';
+  if (reply.x > gap.x) return 'the right';
+
+  return 'next to it';
 }
 
 function getCornerTargetExplanation(point: Point, board: BoardState): string {
@@ -293,6 +307,52 @@ function getPressureRecount(game: GameState, prompt: OneSpaceJumpReadPrompt, rep
   };
 }
 
+function formatPressureComparisonRow(
+  prompt: OneSpaceJumpReadPrompt,
+  recount: PressureRecount,
+  board: BoardState,
+): string {
+  const replyCoord = pointToCoord(recount.reply, board.size);
+  const anchorCoord = pointToCoord(prompt.anchor, board.size);
+  const stoneCoord = pointToCoord(prompt.stone, board.size);
+
+  return `${replyCoord}: ${anchorCoord} ${formatLibertyCount(recount.anchorLiberties.length)}, ${stoneCoord} ${formatLibertyCount(recount.stoneLiberties.length)}.`;
+}
+
+function formatLibertyChange(coord: string, beforeCount: number, afterCount: number): string {
+  if (beforeCount === afterCount) {
+    return `${coord} stays at ${formatLibertyCount(afterCount)}`;
+  }
+
+  const direction = afterCount > beforeCount ? 'gains' : 'loses';
+  return `${coord} ${direction} ${formatLibertyCount(Math.abs(afterCount - beforeCount))}`;
+}
+
+function getPressureComparisonSummary(
+  prompt: OneSpaceJumpReadPrompt,
+  firstRecount: PressureRecount,
+  secondRecount: PressureRecount,
+  board: BoardState,
+): PressureComparisonSummary {
+  const firstCoord = pointToCoord(firstRecount.reply, board.size);
+  const secondCoord = pointToCoord(secondRecount.reply, board.size);
+  const anchorCoord = pointToCoord(prompt.anchor, board.size);
+  const stoneCoord = pointToCoord(prompt.stone, board.size);
+  const directionText = `${firstCoord} attacks ${prompt.gapCoord} from ${getReplyDirection(firstRecount.reply, prompt.gap)}, while ${secondCoord} attacks it from ${getReplyDirection(secondRecount.reply, prompt.gap)}.`;
+  const hasSameCounts = firstRecount.anchorLiberties.length === secondRecount.anchorLiberties.length
+    && firstRecount.stoneLiberties.length === secondRecount.stoneLiberties.length;
+
+  return {
+    rows: [
+      formatPressureComparisonRow(prompt, firstRecount, board),
+      formatPressureComparisonRow(prompt, secondRecount, board),
+    ],
+    text: hasSameCounts
+      ? `${firstCoord} and ${secondCoord} leave the same liberty counts: ${anchorCoord} has ${formatLibertyCount(secondRecount.anchorLiberties.length)} and ${stoneCoord} has ${formatLibertyCount(secondRecount.stoneLiberties.length)} either way. The difference is direction: ${directionText}`
+      : `Compared with ${firstCoord}, ${secondCoord} changes the count: ${formatLibertyChange(anchorCoord, firstRecount.anchorLiberties.length, secondRecount.anchorLiberties.length)} and ${formatLibertyChange(stoneCoord, firstRecount.stoneLiberties.length, secondRecount.stoneLiberties.length)}. The direction also changes: ${directionText}`,
+  };
+}
+
 function buildOneSpaceJumpRecountHighlights(
   prompt: OneSpaceJumpReadPrompt,
   recount: PressureRecount,
@@ -422,6 +482,7 @@ export function BeginnerObjectiveCard() {
   const [activeReadPromptKey, setActiveReadPromptKey] = useState<string | null>(null);
   const [selectedReadReplyKey, setSelectedReadReplyKey] = useState<string | null>(null);
   const [recountReadReplyKey, setRecountReadReplyKey] = useState<string | null>(null);
+  const [comparisonReadReplyKey, setComparisonReadReplyKey] = useState<string | null>(null);
   const processedReplayRequestId = useRef<number | null>(null);
 
   const objective = getBeginnerObjective({
@@ -458,6 +519,7 @@ export function BeginnerObjectiveCard() {
     setActiveReadPromptKey(null);
     setSelectedReadReplyKey(null);
     setRecountReadReplyKey(null);
+    setComparisonReadReplyKey(null);
     applyTargetHints(buildTargetHintHighlights(objective, point, game.board));
   }, [applyTargetHints, clearGuidedReadReplay, game.board, objective]);
 
@@ -468,6 +530,7 @@ export function BeginnerObjectiveCard() {
     setActiveReadPromptKey(prompt.key);
     setSelectedReadReplyKey(null);
     setRecountReadReplyKey(null);
+    setComparisonReadReplyKey(null);
     applyTargetHints(buildOneSpaceJumpPressureHighlights(prompt, game.board));
   }, [applyTargetHints, clearGuidedReadReplay, game.board, recordInteraction]);
 
@@ -480,6 +543,7 @@ export function BeginnerObjectiveCard() {
     setActiveReadPromptKey(prompt.key);
     setSelectedReadReplyKey(targetKey(reply));
     setRecountReadReplyKey(null);
+    setComparisonReadReplyKey(null);
     applyTargetHints(buildOneSpaceJumpPressureHighlights(prompt, game.board, reply));
     addChatMessage(`Branch choice: ${feedback}`, 'teaching', [getPressureReplayAction('branch', prompt, reply)]);
   }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game.board, recordInteraction]);
@@ -494,13 +558,19 @@ export function BeginnerObjectiveCard() {
     setActiveReadPromptKey(prompt.key);
     setSelectedReadReplyKey(targetKey(reply));
     setRecountReadReplyKey(targetKey(reply));
+    setComparisonReadReplyKey(null);
     applyTargetHints(buildOneSpaceJumpRecountHighlights(prompt, recount, game.board));
     addChatMessage(`Second read: ${recount.text}`, 'teaching', [getPressureReplayAction('recount', prompt, reply)]);
   }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game, recordInteraction]);
 
-  const compareReadPressureReply = useCallback((prompt: OneSpaceJumpReadPrompt, reply: Point) => {
+  const compareReadPressureReply = useCallback((prompt: OneSpaceJumpReadPrompt, comparedReply: Point, reply: Point) => {
+    const comparedRecount = getPressureRecount(game, prompt, comparedReply);
     const recount = getPressureRecount(game, prompt, reply);
     if (!recount) return;
+
+    const comparisonSummary = comparedRecount
+      ? getPressureComparisonSummary(prompt, comparedRecount, recount, game.board)
+      : null;
 
     recordInteraction();
     clearGuidedReadReplay();
@@ -508,8 +578,13 @@ export function BeginnerObjectiveCard() {
     setActiveReadPromptKey(prompt.key);
     setSelectedReadReplyKey(targetKey(reply));
     setRecountReadReplyKey(targetKey(reply));
+    setComparisonReadReplyKey(targetKey(comparedReply));
     applyTargetHints(buildOneSpaceJumpRecountHighlights(prompt, recount, game.board));
-    addChatMessage(`Comparison read: ${recount.text}`, 'teaching', [getPressureReplayAction('recount', prompt, reply)]);
+    addChatMessage(
+      `Comparison read: ${recount.text}${comparisonSummary ? ` ${comparisonSummary.text}` : ''}`,
+      'teaching',
+      [getPressureReplayAction('recount', prompt, reply)],
+    );
   }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game, recordInteraction]);
 
   const handleTargetClick = useCallback((point: Point) => {
@@ -518,6 +593,7 @@ export function BeginnerObjectiveCard() {
     setActiveReadPromptKey(null);
     setSelectedReadReplyKey(null);
     setRecountReadReplyKey(null);
+    setComparisonReadReplyKey(null);
     clearGuidedReadReplay();
     clearTargetHelp();
     recordInteraction();
@@ -536,6 +612,7 @@ export function BeginnerObjectiveCard() {
   const effectiveActiveReadPromptKey = replayedReadReplyKey && readPrompt ? readPrompt.key : activeReadPromptKey;
   const effectiveSelectedReadReplyKey = replayedReadReplyKey ?? selectedReadReplyKey;
   const effectiveRecountReadReplyKey = replayedRecountReadReplyKey ?? recountReadReplyKey;
+  const effectiveComparisonReadReplyKey = replayedReadReplyKey ? null : comparisonReadReplyKey;
 
   useEffect(() => {
     if (!replayedReadReplyKey || !guidedReadReplayRequest || !readPrompt) return;
@@ -586,6 +663,18 @@ export function BeginnerObjectiveCard() {
   const compareReadReplyPoints = readPrompt && selectedReadRecount
     ? readPrompt.replyPoints.filter((point) => targetKey(point) !== targetKey(selectedReadRecount.reply))
     : [];
+  const comparedReadReply = readPrompt && selectedReadRecount && effectiveComparisonReadReplyKey
+    ? readPrompt.replyPoints.find((point) => (
+      targetKey(point) === effectiveComparisonReadReplyKey
+      && targetKey(point) !== targetKey(selectedReadRecount.reply)
+    )) ?? null
+    : null;
+  const comparedReadRecount = readPrompt && comparedReadReply
+    ? getPressureRecount(game, readPrompt, comparedReadReply)
+    : null;
+  const pressureComparisonSummary = readPrompt && comparedReadRecount && selectedReadRecount
+    ? getPressureComparisonSummary(readPrompt, comparedReadRecount, selectedReadRecount, game.board)
+    : null;
   const readPromptAnchorCoord = readPrompt ? pointToCoord(readPrompt.anchor, game.board.size) : null;
   const readPromptStoneCoord = readPrompt ? pointToCoord(readPrompt.stone, game.board.size) : null;
   const selectedReadReplyCoord = selectedReadReply ? pointToCoord(selectedReadReply, game.board.size) : null;
@@ -724,12 +813,27 @@ export function BeginnerObjectiveCard() {
                                   backgroundColor: `${COLORS.ui.accent}1f`,
                                 }}
                                 aria-label={`Compare ${coord} against ${currentCoord}`}
-                                onClick={() => compareReadPressureReply(readPrompt, point)}
+                                onClick={() => compareReadPressureReply(readPrompt, selectedReadRecount.reply, point)}
                               >
                                 Compare {coord}
                               </button>
                             );
                           })}
+                        </div>
+                      )}
+                      {pressureComparisonSummary && (
+                        <div className="mt-2">
+                          <div className="text-xs font-semibold" style={{ color: COLORS.ui.textPrimary }}>
+                            Comparison summary
+                          </div>
+                          <div className="mt-1 grid gap-x-3 gap-y-0.5 text-[11px] leading-relaxed sm:grid-cols-2" style={{ color: COLORS.ui.textSecondary }}>
+                            {pressureComparisonSummary.rows.map((row) => (
+                              <div key={row}>{row}</div>
+                            ))}
+                          </div>
+                          <p className="mt-1 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+                            {pressureComparisonSummary.text}
+                          </p>
                         </div>
                       )}
                     </div>
