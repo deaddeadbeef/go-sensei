@@ -51,6 +51,7 @@ Latest completed slice:
 - Added a stable-read handoff that turns equal pressure comparisons and resolved follow-up defenses into a concrete real-game extension button.
 - Added a post-handoff "Read applied" recap that ties the real extension move back to the simulated pressure read before moving on to the next gap.
 - Added a compact read-sequence recap inside the pressure mini-branch, preserving the original reply, comparison reply, defense/follow-up, and real-game handoff as numbered steps.
+- Made read-sequence recap rows keyboard-focusable and hoverable, so each step can temporarily show its matching stones, liberties, defense, follow-up, or real-game handoff target on the board.
 
 Next investigation candidates:
-- Whether read-sequence rows should highlight the matching stones and liberties on hover/focus, so learners can connect the compact recap back to the board without replaying each button.
+- Whether the pressure mini-branch should let learners pin a sequence step's board highlights, so they can study one reading position without holding hover or keyboard focus.
