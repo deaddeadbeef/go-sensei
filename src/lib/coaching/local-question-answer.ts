@@ -238,6 +238,16 @@ function isConfusionQuestion(q: string): boolean {
     || /\bwhere\s+do\s+i\s+even\s+start\b/.test(q);
 }
 
+function isResignRestartQuestion(q: string): boolean {
+  return /\b(should|can|could|do)\s+i\s+resign\b/.test(q)
+    || /\bhow\s+do\s+i\s+resign\b/.test(q)
+    || /\bresign\s+(now|this|game)\b/.test(q)
+    || /\b(i\s+want\s+to|i\s+m\s+going\s+to|im\s+going\s+to|i\s+am\s+going\s+to)\s+(resign|give\s+up|quit|start\s+over|restart)\b/.test(q)
+    || /\b(should|can|could|do)\s+i\s+(give\s+up|quit|start\s+over|restart)\b/.test(q)
+    || /\bstart\s+(this\s+)?over\b/.test(q)
+    || /\brestart\s+(the\s+)?(game|board)\b/.test(q);
+}
+
 function isMoveReviewQuestion(q: string): boolean {
   return /\b(was|is)\s+(that|this|my\s+move)\s+(good|bad|ok|okay|right|wrong)\b/.test(q)
     || /\bhow\s+(was|is)\s+(that|this|my\s+move)\b/.test(q)
@@ -1551,6 +1561,41 @@ function buildConfusionAnswer(game: GameState, teachingLevel: TeachingLevel): Lo
   };
 }
 
+function buildResignRestartAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
+  const objective = game.phase === 'playing'
+    ? getBeginnerObjective({
+      boardSize: game.board.size,
+      board: game.board,
+      moveHistory: game.moveHistory,
+      moveCount: game.moveHistory.length,
+      currentPlayer: 'black',
+      teachingLevel,
+    })
+    : null;
+  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-resign-restart-move') : [];
+  const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
+  const actions: SenseiAction[] = [
+    ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+    { id: 'guided:intro', label: 'Start fresh guided game' },
+  ];
+  const lessonAction = objective ? getBeginnerObjectiveLessonAction(objective) : null;
+
+  if (lessonAction) actions.push(lessonAction);
+
+  return {
+    text: [
+      'Resigning or starting over is allowed, but do it deliberately: it ends this practice position instead of teaching from it.',
+      'For guided learning, first try to rescue one useful idea from the board.',
+      objective ? `Your current salvage job is: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}` : 'If the board feels unusable, start a fresh guided game and keep the first move simple.',
+      objective?.why ?? '',
+      suggestions.length > 0 ? 'I marked the current targets; play one of them before deciding to throw this board away.' : '',
+    ].filter(Boolean).join(' '),
+    conceptIds: uniqueConceptIds(['stones-and-board', 'direction-of-play', ...(objective?.conceptIds ?? [])]),
+    ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
+    actions,
+  };
+}
+
 interface TerritoryContext {
   sentence: string;
   boardFocus: LocalBoardFocus;
@@ -1635,6 +1680,10 @@ export function getLocalQuestionAnswer(
 
   if (isUndoQuestion(q)) {
     return buildUndoAnswer(game, teachingLevel);
+  }
+
+  if (isResignRestartQuestion(q)) {
+    return buildResignRestartAnswer(game, teachingLevel);
   }
 
   if (isKomiQuestion(q)) {
