@@ -61,6 +61,34 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText('Make your stones work together')).toBeTruthy();
   });
 
+  it('pins a compact recap near the board after the first guided move', () => {
+    act(() => {
+      useGameStore.getState().placeStone({ x: 2, y: 2 });
+      useGameStore.getState().pass();
+    });
+
+    render(<BeginnerObjectiveCard />);
+
+    expect(screen.getByText('What changed')).toBeTruthy();
+    expect(screen.getByText('Corner anchor')).toBeTruthy();
+    expect(screen.getByText('C7 is a useful anchor because the edge helps it surround space. Your next job is to make it work with another stone.')).toBeTruthy();
+  });
+
+  it('updates the board-side recap after the learner makes the extension shape', () => {
+    act(() => {
+      useGameStore.getState().placeStone({ x: 2, y: 2 });
+      useGameStore.getState().pass();
+      useGameStore.getState().placeStone({ x: 4, y: 2 });
+      useGameStore.getState().pass();
+    });
+
+    render(<BeginnerObjectiveCard />);
+
+    expect(screen.getByText('What changed')).toBeTruthy();
+    expect(screen.getByText('One-space jump shape')).toBeTruthy();
+    expect(screen.getByText('E7 is a one-space jump from C7. The empty point at D7 leaves room to grow while the two stones still work together.')).toBeTruthy();
+  });
+
   it('keeps the last missed objective visible without blocking the next try', () => {
     act(() => {
       useGameStore.getState().placeStone({ x: 4, y: 4 });
