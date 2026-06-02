@@ -52,6 +52,7 @@ Latest completed slice:
 - Added a post-handoff "Read applied" recap that ties the real extension move back to the simulated pressure read before moving on to the next gap.
 - Added a compact read-sequence recap inside the pressure mini-branch, preserving the original reply, comparison reply, defense/follow-up, and real-game handoff as numbered steps.
 - Made read-sequence recap rows keyboard-focusable and hoverable, so each step can temporarily show its matching stones, liberties, defense, follow-up, or real-game handoff target on the board.
+- Let learners pin and unpin a read-sequence row's board highlights, so one reading position can stay visible while they study the branch.
 
 Next investigation candidates:
-- Whether the pressure mini-branch should let learners pin a sequence step's board highlights, so they can study one reading position without holding hover or keyboard focus.
+- Whether the pinned read-sequence state should be reflected in the chat transcript action replay, so reopening a branch can restore the learner's last studied step.

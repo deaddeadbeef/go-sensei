@@ -482,7 +482,44 @@ describe('BeginnerObjectiveCard', () => {
       },
     ]);
 
+    fireEvent.click(originalReplyStep);
+    expect(originalReplyStep.getAttribute('aria-pressed')).toBe('true');
     fireEvent.mouseLeave(originalReplyStep);
+    expect(useGameStore.getState().overlays.targetHints).toEqual([
+      {
+        id: 'read-pressure-anchor-2,2',
+        point: { x: 2, y: 2 },
+        variant: 'neutral',
+        label: 'C7: one side of the jump; check whether this side becomes short.',
+      },
+      {
+        id: 'read-pressure-stone-4,2',
+        point: { x: 4, y: 2 },
+        variant: 'neutral',
+        label: 'E7: one side of the jump; check whether this side becomes short.',
+      },
+      {
+        id: 'read-pressure-gap-3,2',
+        point: { x: 3, y: 2 },
+        variant: 'warning',
+        label: 'D7: imagined White pressure point.',
+      },
+      {
+        id: 'read-pressure-reply-3,1',
+        point: { x: 3, y: 1 },
+        variant: 'positive',
+        label: 'D8: selected first reply; attack the imagined cutting stone.',
+      },
+      {
+        id: 'read-pressure-reply-3,3',
+        point: { x: 3, y: 3 },
+        variant: 'neutral',
+        label: 'D6: alternate reply to compare in the branch.',
+      },
+    ]);
+
+    fireEvent.click(originalReplyStep);
+    expect(originalReplyStep.getAttribute('aria-pressed')).toBe('false');
     expect(screen.getByText('Real-game handoff')).toBeTruthy();
     expect(screen.getByText('The read is stable, so turn it into a real move: play G7 for Make your stones work together.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Play G7 in the real game after the stable pressure read' })).toBeTruthy();
@@ -926,7 +963,20 @@ describe('BeginnerObjectiveCard', () => {
       },
     ]);
 
+    fireEvent.click(handoffSequenceStep);
+    expect(handoffSequenceStep.getAttribute('aria-pressed')).toBe('true');
     fireEvent.blur(handoffSequenceStep);
+    expect(useGameStore.getState().overlays.targetHints).toEqual([
+      {
+        id: 'read-pressure-handoff-6,2',
+        point: { x: 6, y: 2 },
+        variant: 'positive',
+        label: 'G7: real move to play after the stable pressure read.',
+      },
+    ]);
+
+    fireEvent.click(handoffSequenceStep);
+    expect(handoffSequenceStep.getAttribute('aria-pressed')).toBe('false');
     expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
       {
         id: 'read-pressure-anchor-2,2',
