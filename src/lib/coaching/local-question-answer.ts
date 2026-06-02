@@ -220,6 +220,16 @@ function isMoveReviewQuestion(q: string): boolean {
     || /\breview\s+(that|this|my)\s+move\b/.test(q);
 }
 
+function isShapeQuestion(q: string): boolean {
+  return /\bone[-\s]?(space|point)\s+jump\b/.test(q)
+    || /\bwhat\s+is\s+(good\s+)?shape\b/.test(q)
+    || /\bshape\s+(mean|means|work|works|matter|matters)\b/.test(q)
+    || /\bgood\s+shape\b/.test(q)
+    || /\bdirection\s+of\s+play\b/.test(q)
+    || /\bextension\b/.test(q)
+    || /\bmake\s+(my\s+)?stones\s+work\b/.test(q);
+}
+
 function suggestionReason(objective: BeginnerObjective, point: Point, boardSize: BoardSize): string {
   const coord = pointToCoord(point, boardSize);
 
@@ -241,6 +251,48 @@ function objectiveSuggestions(objective: BeginnerObjective, boardSize: BoardSize
     rank: index + 1,
     reason: suggestionReason(objective, point, boardSize),
   }));
+}
+
+function buildShapeAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
+  const objective = getBeginnerObjective({
+    boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
+    moveCount: game.moveHistory.length,
+    currentPlayer: 'black',
+    teachingLevel,
+  });
+  const lastMove = lastPlacedMove(game);
+  const suggestions = objective?.id === 'extend-from-stone'
+    ? objectiveSuggestions(objective, game.board.size, 'local-shape-move')
+    : [];
+  const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
+  const anchorText = lastMove ? pointToCoord(lastMove.point, game.board.size) : null;
+  const lines = [
+    'Shape means your stones are arranged so they help each other instead of crowding each other.',
+    'A one-space jump leaves one empty point between friendly stones. It reaches farther than touching, but stays close enough that the stones can still work together.',
+  ];
+
+  if (objective?.id === 'extend-from-stone') {
+    lines.push(anchorText
+      ? `On this board, ${anchorText} is your anchor. ${targetText ?? 'The marked points are useful.'} Those jump targets grow from it without piling stones too close.`
+      : `${targetText ?? 'The marked points are useful.'} Those jump targets grow from your stones without piling them too close.`);
+  } else if (objective && targetText) {
+    lines.push(`First make the current beginner goal clear: ${objective.instruction} ${targetText}`);
+  } else {
+    lines.push('A useful direction of play usually asks: which side gives this stone more room, easier territory, or a stronger connection?');
+  }
+
+  if (suggestions.length > 0) {
+    lines.push('I marked the current shape targets on the board.');
+  }
+
+  return {
+    text: lines.join(' '),
+    conceptIds: uniqueConceptIds(['shape', 'direction-of-play', ...(objective?.conceptIds ?? [])]),
+    ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
+    ...(suggestions.length > 0 ? { actions: [{ id: 'hint', label: 'Show targets' }] } : {}),
+  };
 }
 
 function buildMoveReviewAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
@@ -403,6 +455,10 @@ export function getLocalQuestionAnswer(
 
   if (isMoveReviewQuestion(q)) {
     return buildMoveReviewAnswer(game, teachingLevel);
+  }
+
+  if (isShapeQuestion(q)) {
+    return buildShapeAnswer(game, teachingLevel);
   }
 
   if (isNextMoveQuestion(q)) {
