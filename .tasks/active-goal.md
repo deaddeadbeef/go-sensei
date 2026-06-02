@@ -57,6 +57,7 @@ Latest completed slice:
 - Added concise teaching summaries to sequence-focus transcript messages, so saved steps explain what to compare with the live branch or real-game handoff.
 - Added a replay-only "Next question" prompt under restored sequence-focus rows, so learners know what to inspect after reopening a saved step.
 - Added a one-click "Compare from here" continuation under restored baseline sequence rows, so learners can return from a saved D8 step to the live D6 comparison without hunting for the older branch control.
+- Added a one-click "Play from here" continuation under restored handoff sequence rows, so a saved real-game handoff step can immediately become the actual extension move.
 
 Next investigation candidates:
-- Whether restored defense and follow-up sequence rows should offer similarly specific continuation actions, such as "Try the short-side defense from here" or "Play the handoff move from here", instead of only asking the next question.
+- Whether restored defense and follow-up sequence rows should offer similarly specific continuation actions, such as "Try the short-side defense from here", instead of only asking the next question.
