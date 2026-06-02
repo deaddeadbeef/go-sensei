@@ -751,6 +751,95 @@ describe('BeginnerObjectiveCard', () => {
     ]);
   });
 
+  it('continues a pressure defense from the side that becomes shorter', () => {
+    act(() => {
+      useGameStore.getState().placeStone({ x: 2, y: 2 });
+      useGameStore.getState().placeStone({ x: 2, y: 1 });
+      useGameStore.getState().placeStone({ x: 4, y: 2 });
+      useGameStore.getState().pass();
+    });
+
+    render(
+      <>
+        <BeginnerObjectiveCard />
+        <SenseiChatLog />
+      </>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Recount C7 and E7 after D8' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Compare D6 against D8' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Try C6 defense for C7' }));
+
+    expect(screen.getByText('Continue from E7')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Try E8 follow-up defense for E7' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Try E6 follow-up defense for E7' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Try F7 follow-up defense for E7' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try E8 follow-up defense for E7' }));
+
+    const followUpText = 'E8 now defends E7, the side that became shorter after C6. Keep E7 breathing before you return to extensions.';
+    const followUpOutcomeText = 'After E8, E7 grows from 3 to 5 liberties at E6, F7, E9, D8, and F8. C7 has 5 liberties at B7, C5, B6, D5, and E6. Both sides are level, so the local read is stable; return to the real game and choose an extension.';
+
+    expect(screen.getByText('Follow-up defense')).toBeTruthy();
+    expect(screen.getByText(followUpText)).toBeTruthy();
+    expect(screen.getByText(followUpOutcomeText)).toBeTruthy();
+    expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
+    expect(useGameStore.getState().chatMessages.at(-1)).toMatchObject({
+      text: `Follow-up defense: ${followUpText} ${followUpOutcomeText}`,
+      variant: 'teaching',
+      actions: [
+        { id: 'guided:read-pressure:follow-up-defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3:4,1', label: 'Show follow-up' },
+      ],
+    });
+    expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
+      {
+        id: 'read-pressure-anchor-2,2',
+        point: { x: 2, y: 2 },
+        variant: 'positive',
+        label: 'C7: 5 liberties after E8 follow-up: B7, C5, B6, D5, and E6.',
+      },
+      {
+        id: 'read-pressure-stone-4,2',
+        point: { x: 4, y: 2 },
+        variant: 'positive',
+        label: 'E7: 5 liberties after E8 follow-up: E6, F7, E9, D8, and F8.',
+      },
+      {
+        id: 'read-pressure-selected-defense-2,3',
+        point: { x: 2, y: 3 },
+        variant: 'positive',
+        label: 'C6: first simulated defense; C7 has 5 liberties.',
+      },
+      {
+        id: 'read-pressure-follow-up-defense-4,1',
+        point: { x: 4, y: 1 },
+        variant: 'positive',
+        label: 'E8: follow-up defense; E7 now has 5 liberties.',
+      },
+      {
+        id: 'read-pressure-follow-up-liberty-5,2',
+        point: { x: 5, y: 2 },
+        variant: 'positive',
+        label: 'F7: E7 liberty after E8 follow-up.',
+      },
+    ]));
+    expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).not.toContain('read-pressure-short-liberty-2,3');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
+    expect(screen.queryByText(followUpText)).toBeNull();
+    expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).not.toContain('read-pressure-follow-up-defense-4,1');
+
+    const followUpActions = screen.getAllByRole('button', { name: 'Show follow-up' });
+    fireEvent.click(followUpActions[followUpActions.length - 1]);
+
+    expect(screen.getByText('Follow-up defense')).toBeTruthy();
+    expect(screen.getByText(followUpText)).toBeTruthy();
+    expect(screen.getByText(followUpOutcomeText)).toBeTruthy();
+    expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).toContain('read-pressure-follow-up-defense-4,1');
+  });
+
   it('reopens a pressure defense from chat with the selected short-side marker', () => {
     act(() => {
       useGameStore.getState().placeStone({ x: 2, y: 2 });
