@@ -756,7 +756,7 @@ describe('BeginnerObjectiveCard', () => {
     fireEvent.click(originalReplyStep);
 
     expect(useGameStore.getState().chatMessages.at(-1)).toMatchObject({
-      text: 'Read sequence focus: Step 2: Black D8 attacks D7 from above.',
+      text: 'Read sequence focus: Step 2: Black D8 attacks D7 from above. Compare this saved first answer with the live D6 branch; the direction changes before the liberty counts are checked.',
       variant: 'teaching',
       actions: [
         { id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1:pin:reply-3,1', label: 'Show step' },
@@ -1041,6 +1041,13 @@ describe('BeginnerObjectiveCard', () => {
 
     fireEvent.click(handoffSequenceStep);
     expect(handoffSequenceStep.getAttribute('aria-pressed')).toBe('true');
+    expect(useGameStore.getState().chatMessages.at(-1)).toMatchObject({
+      text: 'Read sequence focus: Step 7: Real-game handoff: play G7 after the stable read. This is the real move unlocked by the completed read; play it after the simulated defenses show C7 and E7 are stable.',
+      variant: 'teaching',
+      actions: [
+        { id: 'guided:read-pressure:follow-up-defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3:4,3:pin:handoff-6,2', label: 'Show step' },
+      ],
+    });
     fireEvent.blur(handoffSequenceStep);
     expect(useGameStore.getState().overlays.targetHints).toEqual([
       {

@@ -54,6 +54,7 @@ Latest completed slice:
 - Made read-sequence recap rows keyboard-focusable and hoverable, so each step can temporarily show its matching stones, liberties, defense, follow-up, or real-game handoff target on the board.
 - Let learners pin and unpin a read-sequence row's board highlights, so one reading position can stay visible while they study the branch.
 - Reflected pinned read-sequence rows in transcript replay actions, so a learner can reopen the same branch with the last studied sequence step still pressed and highlighted.
+- Added concise teaching summaries to sequence-focus transcript messages, so saved steps explain what to compare with the live branch or real-game handoff.
 
 Next investigation candidates:
-- Whether sequence-focus transcript messages should summarize what changed between the pinned step and the live branch, so learners know why that step was worth saving.
+- Whether replayed sequence-focus messages should expose a compact "next question" prompt after restoring a saved step, so learners know what to inspect before clicking back into the branch.
