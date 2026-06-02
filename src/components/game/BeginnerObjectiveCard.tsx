@@ -6,6 +6,7 @@ import {
   getBeginnerObjectiveProgress,
 } from '@/lib/coaching/beginner-objectives';
 import type { BeginnerObjective } from '@/lib/coaching/beginner-objectives';
+import type { SenseiAction } from '@/lib/coaching/sensei-actions';
 import { getMoveInsight } from '@/lib/coaching/move-insight';
 import {
   getAdjacentPoints,
@@ -19,7 +20,7 @@ import type { BoardState, GameState, Group, Move, Point } from '@/lib/go-engine'
 import { useGameStore } from '@/stores/game-store';
 import type { OverlayHighlight } from '@/stores/game-store';
 import { COLORS } from '@/utils/colors';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 const ONE_SPACE_JUMP_DELTAS: Point[] = [
   { x: 2, y: 0 },
@@ -250,6 +251,17 @@ function getPressureChoiceFeedback(prompt: OneSpaceJumpReadPrompt, reply: Point,
   return `${replyCoord} is a good first read: it attacks the imagined White stone at ${prompt.gapCoord} and asks whether that cutting stone can live. After that, recount ${anchorCoord} and ${stoneCoord} before extending again.`;
 }
 
+function getPressureReplayAction(
+  mode: 'branch' | 'recount',
+  prompt: OneSpaceJumpReadPrompt,
+  reply: Point,
+): SenseiAction {
+  return {
+    id: `guided:read-pressure:${mode}:${prompt.key}:${targetKey(reply)}`,
+    label: mode === 'recount' ? 'Show recount' : 'Show branch',
+  };
+}
+
 function getPressureRecount(game: GameState, prompt: OneSpaceJumpReadPrompt, reply: Point): PressureRecount | null {
   const whitePressure = playMove({
     ...game,
@@ -403,11 +415,14 @@ export function BeginnerObjectiveCard() {
   const recordInteraction = useGameStore((s) => s.recordInteraction);
   const addChatMessage = useGameStore((s) => s.addChatMessage);
   const applyTargetHints = useGameStore((s) => s.applyTargetHints);
+  const guidedReadReplayRequest = useGameStore((s) => s.guidedReadReplayRequest);
+  const clearGuidedReadReplay = useGameStore((s) => s.clearGuidedReadReplay);
   const canPlayTarget = phase === 'playing' && game.currentPlayer === 'black' && !isAiThinking;
   const [activeTargetKey, setActiveTargetKey] = useState<string | null>(null);
   const [activeReadPromptKey, setActiveReadPromptKey] = useState<string | null>(null);
   const [selectedReadReplyKey, setSelectedReadReplyKey] = useState<string | null>(null);
   const [recountReadReplyKey, setRecountReadReplyKey] = useState<string | null>(null);
+  const processedReplayRequestId = useRef<number | null>(null);
 
   const objective = getBeginnerObjective({
     boardSize: game.board.size,
@@ -438,46 +453,50 @@ export function BeginnerObjectiveCard() {
   const showTargetHelp = useCallback((point: Point) => {
     if (!objective) return;
 
+    clearGuidedReadReplay();
     setActiveTargetKey(targetKey(point));
     setActiveReadPromptKey(null);
     setSelectedReadReplyKey(null);
     setRecountReadReplyKey(null);
     applyTargetHints(buildTargetHintHighlights(objective, point, game.board));
-  }, [applyTargetHints, game.board, objective]);
+  }, [applyTargetHints, clearGuidedReadReplay, game.board, objective]);
 
   const showReadPressure = useCallback((prompt: OneSpaceJumpReadPrompt) => {
     recordInteraction();
+    clearGuidedReadReplay();
     setActiveTargetKey(null);
     setActiveReadPromptKey(prompt.key);
     setSelectedReadReplyKey(null);
     setRecountReadReplyKey(null);
     applyTargetHints(buildOneSpaceJumpPressureHighlights(prompt, game.board));
-  }, [applyTargetHints, game.board, recordInteraction]);
+  }, [applyTargetHints, clearGuidedReadReplay, game.board, recordInteraction]);
 
   const chooseReadPressureReply = useCallback((prompt: OneSpaceJumpReadPrompt, reply: Point) => {
     const feedback = getPressureChoiceFeedback(prompt, reply, game.board);
 
     recordInteraction();
+    clearGuidedReadReplay();
     setActiveTargetKey(null);
     setActiveReadPromptKey(prompt.key);
     setSelectedReadReplyKey(targetKey(reply));
     setRecountReadReplyKey(null);
     applyTargetHints(buildOneSpaceJumpPressureHighlights(prompt, game.board, reply));
-    addChatMessage(`Branch choice: ${feedback}`, 'teaching');
-  }, [addChatMessage, applyTargetHints, game.board, recordInteraction]);
+    addChatMessage(`Branch choice: ${feedback}`, 'teaching', [getPressureReplayAction('branch', prompt, reply)]);
+  }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game.board, recordInteraction]);
 
   const recountReadPressureReply = useCallback((prompt: OneSpaceJumpReadPrompt, reply: Point) => {
     const recount = getPressureRecount(game, prompt, reply);
     if (!recount) return;
 
     recordInteraction();
+    clearGuidedReadReplay();
     setActiveTargetKey(null);
     setActiveReadPromptKey(prompt.key);
     setSelectedReadReplyKey(targetKey(reply));
     setRecountReadReplyKey(targetKey(reply));
     applyTargetHints(buildOneSpaceJumpRecountHighlights(prompt, recount, game.board));
-    addChatMessage(`Second read: ${recount.text}`, 'teaching');
-  }, [addChatMessage, applyTargetHints, game, recordInteraction]);
+    addChatMessage(`Second read: ${recount.text}`, 'teaching', [getPressureReplayAction('recount', prompt, reply)]);
+  }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game, recordInteraction]);
 
   const handleTargetClick = useCallback((point: Point) => {
     if (!canPlayTarget) return;
@@ -485,10 +504,53 @@ export function BeginnerObjectiveCard() {
     setActiveReadPromptKey(null);
     setSelectedReadReplyKey(null);
     setRecountReadReplyKey(null);
+    clearGuidedReadReplay();
     clearTargetHelp();
     recordInteraction();
     placeStone(point);
-  }, [canPlayTarget, clearTargetHelp, placeStone, recordInteraction]);
+  }, [canPlayTarget, clearGuidedReadReplay, clearTargetHelp, placeStone, recordInteraction]);
+
+  const replayedReadReplyKey = guidedReadReplayRequest?.type === 'read-pressure'
+    && readPrompt
+    && guidedReadReplayRequest.promptKey === readPrompt.key
+    && readPrompt.replyPoints.some((point) => targetKey(point) === guidedReadReplayRequest.replyKey)
+    ? guidedReadReplayRequest.replyKey
+    : null;
+  const replayedRecountReadReplyKey = replayedReadReplyKey && guidedReadReplayRequest?.mode === 'recount'
+    ? replayedReadReplyKey
+    : null;
+  const effectiveActiveReadPromptKey = replayedReadReplyKey && readPrompt ? readPrompt.key : activeReadPromptKey;
+  const effectiveSelectedReadReplyKey = replayedReadReplyKey ?? selectedReadReplyKey;
+  const effectiveRecountReadReplyKey = replayedRecountReadReplyKey ?? recountReadReplyKey;
+
+  useEffect(() => {
+    if (!replayedReadReplyKey || !guidedReadReplayRequest || !readPrompt) return;
+    if (processedReplayRequestId.current === guidedReadReplayRequest.id) return;
+
+    const reply = readPrompt.replyPoints.find((point) => targetKey(point) === guidedReadReplayRequest.replyKey);
+    if (!reply) return;
+
+    processedReplayRequestId.current = guidedReadReplayRequest.id;
+    recordInteraction();
+
+    if (guidedReadReplayRequest.mode === 'recount') {
+      const recount = getPressureRecount(game, readPrompt, reply);
+      if (recount) {
+        applyTargetHints(buildOneSpaceJumpRecountHighlights(readPrompt, recount, game.board));
+      } else {
+        applyTargetHints(buildOneSpaceJumpPressureHighlights(readPrompt, game.board, reply));
+      }
+    } else {
+      applyTargetHints(buildOneSpaceJumpPressureHighlights(readPrompt, game.board, reply));
+    }
+  }, [
+    applyTargetHints,
+    game,
+    guidedReadReplayRequest,
+    readPrompt,
+    recordInteraction,
+    replayedReadReplyKey,
+  ]);
 
   if (!objective) return null;
 
@@ -497,14 +559,14 @@ export function BeginnerObjectiveCard() {
   const playableTargets = objective.targetPoints.slice(0, 4);
   const hasLearnerMove = game.moveHistory.some((move) => move.color === 'black');
   const insight = hasLearnerMove ? getMoveInsight(game, teachingLevel) : null;
-  const showReadPressureDetail = readPrompt !== null && activeReadPromptKey === readPrompt.key;
-  const selectedReadReply = showReadPressureDetail && selectedReadReplyKey
-    ? readPrompt.replyPoints.find((point) => targetKey(point) === selectedReadReplyKey) ?? null
+  const showReadPressureDetail = readPrompt !== null && effectiveActiveReadPromptKey === readPrompt.key;
+  const selectedReadReply = showReadPressureDetail && effectiveSelectedReadReplyKey
+    ? readPrompt.replyPoints.find((point) => targetKey(point) === effectiveSelectedReadReplyKey) ?? null
     : null;
   const selectedReadReplyFeedback = readPrompt && selectedReadReply
     ? getPressureChoiceFeedback(readPrompt, selectedReadReply, game.board)
     : null;
-  const selectedReadRecount = readPrompt && selectedReadReply && recountReadReplyKey === targetKey(selectedReadReply)
+  const selectedReadRecount = readPrompt && selectedReadReply && effectiveRecountReadReplyKey === targetKey(selectedReadReply)
     ? getPressureRecount(game, readPrompt, selectedReadReply)
     : null;
   const readPromptAnchorCoord = readPrompt ? pointToCoord(readPrompt.anchor, game.board.size) : null;
@@ -576,7 +638,7 @@ export function BeginnerObjectiveCard() {
                   </span>
                   {readPrompt.replyPoints.map((point) => {
                     const coord = pointToCoord(point, game.board.size);
-                    const isSelected = selectedReadReplyKey === targetKey(point);
+                    const isSelected = effectiveSelectedReadReplyKey === targetKey(point);
 
                     return (
                       <button

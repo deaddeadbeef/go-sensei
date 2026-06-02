@@ -36,6 +36,7 @@ Latest completed slice:
 - Added a non-mutating playable mini-branch inside the pressure variation so learners can choose a first reply and get immediate feedback while the real guided game stays intact.
 - Added a second-step recount inside the pressure mini-branch so learners can simulate White entering the gap, choose a reply, then count liberties on both Black sides before returning to the real game.
 - Preserved pressure mini-branch choices and second-read recounts in the chat transcript so the sidebar remembers the same teaching moments shown beside the board.
+- Added transcript actions that reopen the exact pressure branch or second-read recount on the board, so earlier reading work is recoverable after the learner switches replies or scrolls the chat.
 
 Next investigation candidates:
-- Whether chat transcript entries for mini-branches should expose follow-up actions that can restore the same board-side branch view after the learner scrolls away or revisits the board.
+- Whether the pressure mini-branch should offer a direct "compare the other reply" loop that shows how both answers change the two Black sides' liberties.

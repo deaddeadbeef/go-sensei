@@ -102,7 +102,16 @@ export interface ChatMessage {
   actions?: SenseiAction[];
 }
 
+export interface GuidedReadReplayRequest {
+  id: number;
+  type: 'read-pressure';
+  mode: 'branch' | 'recount';
+  promptKey: string;
+  replyKey: string;
+}
+
 const MAX_CHAT_MESSAGES = 80;
+let guidedReadReplayRequestSequence = 0;
 
 function chatMessageKey(message: ChatMessage): string {
   const actionKey = message.actions?.map((action) => `${action.id}:${action.label}`).join('|') ?? '';
@@ -244,6 +253,9 @@ interface GameStore {
   // Chat messages (accumulated log)
   chatMessages: ChatMessage[];
 
+  // Transient request from chat actions back to the board-side guided read UI
+  guidedReadReplayRequest: GuidedReadReplayRequest | null;
+
   // Lesson mode
   lesson: LessonState;
 
@@ -316,6 +328,8 @@ interface GameStore {
 
   // Chat
   addChatMessage: (text: string, variant: string, actions?: SenseiAction[]) => void;
+  requestGuidedReadReplay: (request: Omit<GuidedReadReplayRequest, 'id'>) => void;
+  clearGuidedReadReplay: (id?: number) => void;
 
   // Overlays
   clearOverlays: () => void;
@@ -625,6 +639,8 @@ export const useGameStore = create<GameStore>()(
 
   chatMessages: [],
 
+  guidedReadReplayRequest: null,
+
   lesson: { ...defaultLesson },
 
   lessonInteraction: { ...defaultLessonInteraction },
@@ -868,6 +884,22 @@ export const useGameStore = create<GameStore>()(
     set((s) => ({
       chatMessages: appendChatMessage(s.chatMessages, nextMessage),
     }));
+  },
+
+  requestGuidedReadReplay(request) {
+    set({
+      guidedReadReplayRequest: {
+        ...request,
+        id: guidedReadReplayRequestSequence += 1,
+      },
+    });
+  },
+
+  clearGuidedReadReplay(id?: number) {
+    set((s) => {
+      if (id !== undefined && s.guidedReadReplayRequest?.id !== id) return {};
+      return { guidedReadReplayRequest: null };
+    });
   },
 
   // Overlays
@@ -1158,6 +1190,7 @@ export const useGameStore = create<GameStore>()(
         pendingCaptures: [],
         bubble: buildGuidedResumeBubble(restoredGame, passedForWhite, resumeObjective),
         chatMessages: [],
+        guidedReadReplayRequest: null,
         lesson: { ...defaultLesson },
         lessonInteraction: { ...defaultLessonInteraction },
         scorecard: null,
@@ -1227,6 +1260,7 @@ export const useGameStore = create<GameStore>()(
       pendingCaptures: [],
       bubble: { ...defaultBubble },
       chatMessages: [],
+      guidedReadReplayRequest: null,
       lesson: { ...defaultLesson },
       lessonInteraction: { ...defaultLessonInteraction },
       territory: null,
@@ -1279,6 +1313,7 @@ export const useGameStore = create<GameStore>()(
       overlays: { ...defaultOverlays },
       pendingCaptures: [],
       chatMessages: [],
+      guidedReadReplayRequest: null,
       lesson: { ...defaultLesson },
       lessonInteraction: { ...defaultLessonInteraction },
       scorecard: null,
