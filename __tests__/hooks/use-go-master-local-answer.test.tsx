@@ -1323,6 +1323,35 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('groups').encounterCount).toBeGreaterThan(0);
   });
 
+  it('answers empty-point safety questions as candidate checks without fetching', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('Is D7 safe?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('D7 touches C7 directly.');
+    expect(state.bubble.text).toContain('For this board, I would prefer E7 or C5.');
+    expect(state.bubble.text).not.toContain('D7 is not one of your Black groups');
+    expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+    expect(state.overlays.highlights).toEqual([{
+      id: 'local-candidate-question-3,2',
+      point: { x: 3, y: 2 },
+      variant: 'warning',
+      label: 'D7: open, but not the current beginner target.',
+    }]);
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+    ]);
+    expect(useConceptStore.getState().getMastery('direction-of-play').encounterCount).toBeGreaterThan(0);
+  });
+
   it('explains marked target choices locally without fetching', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());
