@@ -34,6 +34,7 @@ Latest completed slice:
 - Added a compact board-side "Read next" prompt after completed one-space jumps so learners know which open gap to read before extending again.
 - Added a quick "Show pressure" variation for completed one-space jumps so learners can compare attacking the cutter, defending a short side, or continuing outward without mutating the game.
 - Added a non-mutating playable mini-branch inside the pressure variation so learners can choose a first reply and get immediate feedback while the real guided game stays intact.
+- Added a second-step recount inside the pressure mini-branch so learners can simulate White entering the gap, choose a reply, then count liberties on both Black sides before returning to the real game.
 
 Next investigation candidates:
-- Whether the pressure mini-branch should include a second-step recount after the chosen reply so learners practice checking both Black sides before continuing.
+- Whether the guided board should preserve the learner's latest mini-branch choice in the chat transcript so the sidebar and board-side prompt stay in sync.

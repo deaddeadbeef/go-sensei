@@ -12,6 +12,7 @@ import {
   getGroup,
   getStone,
   isOnBoard,
+  playMove,
   pointToCoord,
 } from '@/lib/go-engine';
 import type { BoardState, GameState, Group, Move, Point } from '@/lib/go-engine';
@@ -39,6 +40,13 @@ interface OneSpaceJumpReadPrompt {
   gapCoord: string;
 }
 
+interface PressureRecount {
+  text: string;
+  reply: Point;
+  anchorLiberties: Point[];
+  stoneLiberties: Point[];
+}
+
 function targetKey(point: Point): string {
   return `${point.x},${point.y}`;
 }
@@ -53,6 +61,18 @@ function joinCoordinateList(coords: string[]): string {
   if (coords.length === 2) return `${coords[0]} or ${coords[1]}`;
 
   return `${coords.slice(0, -1).join(', ')}, or ${coords[coords.length - 1]}`;
+}
+
+function joinAndCoordinateList(coords: string[]): string {
+  if (coords.length === 0) return '';
+  if (coords.length === 1) return coords[0];
+  if (coords.length === 2) return `${coords[0]} and ${coords[1]}`;
+
+  return `${coords.slice(0, -1).join(', ')}, and ${coords[coords.length - 1]}`;
+}
+
+function formatLibertyCount(count: number): string {
+  return `${count} ${count === 1 ? 'liberty' : 'liberties'}`;
 }
 
 function getCornerTargetExplanation(point: Point, board: BoardState): string {
@@ -230,6 +250,85 @@ function getPressureChoiceFeedback(prompt: OneSpaceJumpReadPrompt, reply: Point,
   return `${replyCoord} is a good first read: it attacks the imagined White stone at ${prompt.gapCoord} and asks whether that cutting stone can live. After that, recount ${anchorCoord} and ${stoneCoord} before extending again.`;
 }
 
+function getPressureRecount(game: GameState, prompt: OneSpaceJumpReadPrompt, reply: Point): PressureRecount | null {
+  const whitePressure = playMove({
+    ...game,
+    currentPlayer: 'white',
+    phase: 'playing',
+    positionHistory: new Set(game.positionHistory),
+  }, prompt.gap);
+  if (!whitePressure.success) return null;
+
+  const blackReply = playMove(whitePressure.newState, reply);
+  if (!blackReply.success) return null;
+
+  const anchorGroup = getGroup(blackReply.newState.board, prompt.anchor);
+  const stoneGroup = getGroup(blackReply.newState.board, prompt.stone);
+  if (!anchorGroup || !stoneGroup) return null;
+
+  const boardSize = game.board.size;
+  const replyCoord = pointToCoord(reply, boardSize);
+  const anchorCoord = pointToCoord(prompt.anchor, boardSize);
+  const stoneCoord = pointToCoord(prompt.stone, boardSize);
+  const anchorLibertyText = joinAndCoordinateList(anchorGroup.liberties.map((point) => pointToCoord(point, boardSize)));
+  const stoneLibertyText = joinAndCoordinateList(stoneGroup.liberties.map((point) => pointToCoord(point, boardSize)));
+
+  return {
+    text: `After ${replyCoord}, recount the two Black sides: ${anchorCoord} has ${formatLibertyCount(anchorGroup.liberties.length)} at ${anchorLibertyText}. ${stoneCoord} has ${formatLibertyCount(stoneGroup.liberties.length)} at ${stoneLibertyText}. Neither side is short yet, so keep building while staying ready to answer ${prompt.gapCoord}.`,
+    reply: copyPoint(reply),
+    anchorLiberties: anchorGroup.liberties.map(copyPoint),
+    stoneLiberties: stoneGroup.liberties.map(copyPoint),
+  };
+}
+
+function buildOneSpaceJumpRecountHighlights(
+  prompt: OneSpaceJumpReadPrompt,
+  recount: PressureRecount,
+  board: BoardState,
+): OverlayHighlight[] {
+  const anchorCoord = pointToCoord(prompt.anchor, board.size);
+  const stoneCoord = pointToCoord(prompt.stone, board.size);
+  const gapCoord = pointToCoord(prompt.gap, board.size);
+  const replyCoord = pointToCoord(recount.reply, board.size);
+  const selectedReplyKey = targetKey(recount.reply);
+  const anchorLibertyText = joinAndCoordinateList(recount.anchorLiberties.map((point) => pointToCoord(point, board.size)));
+  const stoneLibertyText = joinAndCoordinateList(recount.stoneLiberties.map((point) => pointToCoord(point, board.size)));
+
+  return [
+    {
+      id: `read-pressure-anchor-${targetKey(prompt.anchor)}`,
+      point: copyPoint(prompt.anchor),
+      variant: 'positive',
+      label: `${anchorCoord}: ${formatLibertyCount(recount.anchorLiberties.length)} after ${replyCoord}: ${anchorLibertyText}.`,
+    },
+    {
+      id: `read-pressure-stone-${targetKey(prompt.stone)}`,
+      point: copyPoint(prompt.stone),
+      variant: 'positive',
+      label: `${stoneCoord}: ${formatLibertyCount(recount.stoneLiberties.length)} after ${replyCoord}: ${stoneLibertyText}.`,
+    },
+    {
+      id: `read-pressure-gap-${targetKey(prompt.gap)}`,
+      point: copyPoint(prompt.gap),
+      variant: 'warning',
+      label: `${gapCoord}: imagined White pressure point to keep watching.`,
+    },
+    ...prompt.replyPoints.map((point) => {
+      const coord = pointToCoord(point, board.size);
+      const isSelected = targetKey(point) === selectedReplyKey;
+
+      return {
+        id: `read-pressure-reply-${targetKey(point)}`,
+        point: copyPoint(point),
+        variant: isSelected ? 'positive' as const : 'neutral' as const,
+        label: isSelected
+          ? `${coord}: selected reply used for this recount.`
+          : `${coord}: alternate reply to compare later.`,
+      };
+    }),
+  ];
+}
+
 function buildTargetHintHighlights(objective: BeginnerObjective, point: Point, board: BoardState): OverlayHighlight[] {
   const coord = pointToCoord(point, board.size);
 
@@ -307,6 +406,7 @@ export function BeginnerObjectiveCard() {
   const [activeTargetKey, setActiveTargetKey] = useState<string | null>(null);
   const [activeReadPromptKey, setActiveReadPromptKey] = useState<string | null>(null);
   const [selectedReadReplyKey, setSelectedReadReplyKey] = useState<string | null>(null);
+  const [recountReadReplyKey, setRecountReadReplyKey] = useState<string | null>(null);
 
   const objective = getBeginnerObjective({
     boardSize: game.board.size,
@@ -340,6 +440,7 @@ export function BeginnerObjectiveCard() {
     setActiveTargetKey(targetKey(point));
     setActiveReadPromptKey(null);
     setSelectedReadReplyKey(null);
+    setRecountReadReplyKey(null);
     applyTargetHints(buildTargetHintHighlights(objective, point, game.board));
   }, [applyTargetHints, game.board, objective]);
 
@@ -348,6 +449,7 @@ export function BeginnerObjectiveCard() {
     setActiveTargetKey(null);
     setActiveReadPromptKey(prompt.key);
     setSelectedReadReplyKey(null);
+    setRecountReadReplyKey(null);
     applyTargetHints(buildOneSpaceJumpPressureHighlights(prompt, game.board));
   }, [applyTargetHints, game.board, recordInteraction]);
 
@@ -356,14 +458,28 @@ export function BeginnerObjectiveCard() {
     setActiveTargetKey(null);
     setActiveReadPromptKey(prompt.key);
     setSelectedReadReplyKey(targetKey(reply));
+    setRecountReadReplyKey(null);
     applyTargetHints(buildOneSpaceJumpPressureHighlights(prompt, game.board, reply));
   }, [applyTargetHints, game.board, recordInteraction]);
+
+  const recountReadPressureReply = useCallback((prompt: OneSpaceJumpReadPrompt, reply: Point) => {
+    const recount = getPressureRecount(game, prompt, reply);
+    if (!recount) return;
+
+    recordInteraction();
+    setActiveTargetKey(null);
+    setActiveReadPromptKey(prompt.key);
+    setSelectedReadReplyKey(targetKey(reply));
+    setRecountReadReplyKey(targetKey(reply));
+    applyTargetHints(buildOneSpaceJumpRecountHighlights(prompt, recount, game.board));
+  }, [applyTargetHints, game, recordInteraction]);
 
   const handleTargetClick = useCallback((point: Point) => {
     if (!canPlayTarget) return;
 
     setActiveReadPromptKey(null);
     setSelectedReadReplyKey(null);
+    setRecountReadReplyKey(null);
     clearTargetHelp();
     recordInteraction();
     placeStone(point);
@@ -383,6 +499,12 @@ export function BeginnerObjectiveCard() {
   const selectedReadReplyFeedback = readPrompt && selectedReadReply
     ? getPressureChoiceFeedback(readPrompt, selectedReadReply, game.board)
     : null;
+  const selectedReadRecount = readPrompt && selectedReadReply && recountReadReplyKey === targetKey(selectedReadReply)
+    ? getPressureRecount(game, readPrompt, selectedReadReply)
+    : null;
+  const readPromptAnchorCoord = readPrompt ? pointToCoord(readPrompt.anchor, game.board.size) : null;
+  const readPromptStoneCoord = readPrompt ? pointToCoord(readPrompt.stone, game.board.size) : null;
+  const selectedReadReplyCoord = selectedReadReply ? pointToCoord(selectedReadReply, game.board.size) : null;
   const activeTarget = activeTargetKey
     ? playableTargets.find((point) => targetKey(point) === activeTargetKey) ?? null
     : null;
@@ -478,6 +600,31 @@ export function BeginnerObjectiveCard() {
                   <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
                     {selectedReadReplyFeedback}
                   </p>
+                  {selectedReadReply && selectedReadReplyCoord && readPromptAnchorCoord && readPromptStoneCoord && (
+                    <button
+                      type="button"
+                      className="mt-2 rounded border px-2 py-0.5 text-[11px] font-semibold transition hover:bg-white/[0.07]"
+                      style={{
+                        borderColor: selectedReadRecount ? COLORS.overlay.positive : COLORS.ui.accent,
+                        color: COLORS.ui.textPrimary,
+                        backgroundColor: selectedReadRecount ? `${COLORS.overlay.positive}24` : `${COLORS.ui.accent}1f`,
+                      }}
+                      aria-label={`Recount ${readPromptAnchorCoord} and ${readPromptStoneCoord} after ${selectedReadReplyCoord}`}
+                      onClick={() => recountReadPressureReply(readPrompt, selectedReadReply)}
+                    >
+                      Recount sides
+                    </button>
+                  )}
+                  {selectedReadRecount && (
+                    <div className="mt-2">
+                      <div className="text-xs font-semibold" style={{ color: COLORS.ui.textPrimary }}>
+                        Second read
+                      </div>
+                      <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+                        {selectedReadRecount.text}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
