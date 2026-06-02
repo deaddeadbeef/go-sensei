@@ -1239,6 +1239,52 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.queryByRole('button', { name: 'Try E6 follow-up defense from here' })).toBeNull();
   });
 
+  it('tries a defense from a restored comparison sequence step from chat', () => {
+    act(() => {
+      useGameStore.getState().placeStone({ x: 2, y: 2 });
+      useGameStore.getState().placeStone({ x: 2, y: 1 });
+      useGameStore.getState().placeStone({ x: 4, y: 2 });
+      useGameStore.getState().pass();
+    });
+
+    render(
+      <>
+        <BeginnerObjectiveCard />
+        <SenseiChatLog />
+      </>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Recount C7 and E7 after D8' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Compare D6 against D8' }));
+
+    const comparisonSequenceStep = screen.getByRole('button', { name: 'Show board highlights for step 4: Compare D6: C7 2 liberties; E7 3 liberties.' });
+    fireEvent.click(comparisonSequenceStep);
+    fireEvent.click(comparisonSequenceStep);
+    expect(comparisonSequenceStep.getAttribute('aria-pressed')).toBe('false');
+    expect(screen.queryByText('Next question')).toBeNull();
+
+    const focusActions = screen.getAllByRole('button', { name: 'Show step' });
+    fireEvent.click(focusActions[focusActions.length - 1]);
+
+    const restoredComparisonStep = screen.getByRole('button', { name: 'Show board highlights for step 4: Compare D6: C7 2 liberties; E7 3 liberties.' });
+    expect(restoredComparisonStep.getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByText('Next question')).toBeTruthy();
+    expect(screen.getByText('After D6, which side changed, and does that force a defense before extending?')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Try C6 defense from here' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Try B7 defense from here' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try C6 defense from here' }));
+
+    expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
+    expect(screen.getByText('Defense read')).toBeTruthy();
+    expect(screen.getByText('C6 directly defends C7, the short side in this pressure line. Keep C7 breathing first; then recount before extending again.')).toBeTruthy();
+    expect(screen.getByText('After C6, C7 grows from 2 to 5 liberties at B7, C5, B6, D5, and E6. E7 has 3 liberties at E8, E6, and F7. C7 is no longer the short side, so the defense did its job; now recount the whole position before extending again.')).toBeTruthy();
+    expect(screen.queryByText('Next question')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Try C6 defense from here' })).toBeNull();
+  });
+
   it('hands off from a restored follow-up sequence step from chat', () => {
     act(() => {
       useGameStore.getState().placeStone({ x: 2, y: 2 });
