@@ -39,7 +39,7 @@ import { useProgressStore } from './progress-store';
 // Overlay types
 // ---------------------------------------------------------------------------
 
-interface OverlayHighlight {
+export interface OverlayHighlight {
   id: string;
   point: Point;
   variant: 'positive' | 'warning' | 'danger' | 'neutral';
@@ -227,6 +227,7 @@ interface GameStore {
   // Overlay layers
   overlays: {
     highlights: OverlayHighlight[];
+    targetHints: OverlayHighlight[];
     liberties: OverlayLiberty[];
     suggestions: OverlaySuggestion[];
     arrows: OverlayArrow[];
@@ -300,6 +301,7 @@ interface GameStore {
   // AI actions
   setAiThinking: (thinking: boolean) => void;
   applyHighlights: (highlights: OverlayHighlight[]) => void;
+  applyTargetHints: (targetHints: OverlayHighlight[]) => void;
   applyLibertyOverlay: (overlay: OverlayLiberty) => void;
   applySuggestions: (suggestions: OverlaySuggestion[]) => void;
   applyArrows: (arrows: OverlayArrow[]) => void;
@@ -514,6 +516,7 @@ const defaultProblemInteraction: ProblemInteraction = {
 
 const defaultOverlays = {
   highlights: [] as OverlayHighlight[],
+  targetHints: [] as OverlayHighlight[],
   liberties: [] as OverlayLiberty[],
   suggestions: [] as OverlaySuggestion[],
   arrows: [] as OverlayArrow[],
@@ -577,6 +580,7 @@ function buildGuidedResumeOverlays(
 
   return {
     highlights,
+    targetHints: [],
     liberties: [],
     suggestions,
     arrows: [],
@@ -795,6 +799,10 @@ export const useGameStore = create<GameStore>()(
     set((s) => ({ overlays: { ...s.overlays, highlights } }));
   },
 
+  applyTargetHints(targetHints: OverlayHighlight[]) {
+    set((s) => ({ overlays: { ...s.overlays, targetHints } }));
+  },
+
   applyLibertyOverlay(overlay: OverlayLiberty) {
     set((s) => ({
       overlays: {
@@ -867,6 +875,7 @@ export const useGameStore = create<GameStore>()(
     set({
       overlays: {
         highlights: [],
+        targetHints: [],
         liberties: [],
         suggestions: [],
         arrows: [],
@@ -1214,7 +1223,7 @@ export const useGameStore = create<GameStore>()(
       lastPlayerMove: null,
       lastAiMove: null,
       isAiThinking: false,
-      overlays: { highlights: [], liberties: [], suggestions: [], arrows: [], influence: [], groups: [] },
+      overlays: { highlights: [], targetHints: [], liberties: [], suggestions: [], arrows: [], influence: [], groups: [] },
       pendingCaptures: [],
       bubble: { ...defaultBubble },
       chatMessages: [],

@@ -47,10 +47,17 @@ describe('BeginnerObjectiveCard', () => {
 
     expect(screen.getByText('Why C7')).toBeTruthy();
     expect(screen.getByText('C7 leans on the top and left edges, so Black needs fewer stones to sketch territory there.')).toBeTruthy();
+    expect(useGameStore.getState().overlays.targetHints).toEqual([{
+      id: 'target-hint-target-2,2',
+      point: { x: 2, y: 2 },
+      variant: 'positive',
+      label: 'C7: suggested corner target.',
+    }]);
 
     fireEvent.mouseLeave(target);
 
     expect(screen.queryByText('Why C7')).toBeNull();
+    expect(useGameStore.getState().overlays.targetHints).toEqual([]);
   });
 
   it('names extension targets after the learner claims a corner', () => {
@@ -78,10 +85,31 @@ describe('BeginnerObjectiveCard', () => {
 
     expect(screen.getByText('Why E7')).toBeTruthy();
     expect(screen.getByText('E7 is a one-space jump from C7; D7 stays open so the two stones can work together without clumping.')).toBeTruthy();
+    expect(useGameStore.getState().overlays.targetHints).toEqual([
+      {
+        id: 'target-hint-target-4,2',
+        point: { x: 4, y: 2 },
+        variant: 'positive',
+        label: 'E7: suggested one-space jump.',
+      },
+      {
+        id: 'target-hint-anchor-2,2',
+        point: { x: 2, y: 2 },
+        variant: 'neutral',
+        label: 'C7: anchor stone for the jump.',
+      },
+      {
+        id: 'target-hint-gap-3,2',
+        point: { x: 3, y: 2 },
+        variant: 'warning',
+        label: 'D7: open gap that keeps the jump flexible.',
+      },
+    ]);
 
     fireEvent.blur(target);
 
     expect(screen.queryByText('Why E7')).toBeNull();
+    expect(useGameStore.getState().overlays.targetHints).toEqual([]);
   });
 
   it('shows progress when the learner completes the previous objective', () => {

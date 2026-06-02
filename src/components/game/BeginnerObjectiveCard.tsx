@@ -16,8 +16,9 @@ import {
 } from '@/lib/go-engine';
 import type { BoardState, Group, Point } from '@/lib/go-engine';
 import { useGameStore } from '@/stores/game-store';
+import type { OverlayHighlight } from '@/stores/game-store';
 import { COLORS } from '@/utils/colors';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 const ONE_SPACE_JUMP_DELTAS: Point[] = [
   { x: 2, y: 0 },
@@ -98,6 +99,71 @@ function getTargetExplanation(objective: BeginnerObjective, point: Point, board:
   }
 }
 
+function buildTargetHintHighlights(objective: BeginnerObjective, point: Point, board: BoardState): OverlayHighlight[] {
+  const coord = pointToCoord(point, board.size);
+
+  switch (objective.id) {
+    case 'claim-corner':
+      return [{
+        id: `target-hint-target-${targetKey(point)}`,
+        point: { ...point },
+        variant: 'positive',
+        label: `${coord}: suggested corner target.`,
+      }];
+    case 'extend-from-stone': {
+      const anchor = getExtensionAnchor(board, point);
+      const hints: OverlayHighlight[] = [{
+        id: `target-hint-target-${targetKey(point)}`,
+        point: { ...point },
+        variant: 'positive',
+        label: `${coord}: suggested one-space jump.`,
+      }];
+
+      if (anchor) {
+        const anchorCoord = pointToCoord(anchor.anchor, board.size);
+        const gapCoord = pointToCoord(anchor.gap, board.size);
+
+        hints.push(
+          {
+            id: `target-hint-anchor-${targetKey(anchor.anchor)}`,
+            point: { ...anchor.anchor },
+            variant: 'neutral',
+            label: `${anchorCoord}: anchor stone for the jump.`,
+          },
+          {
+            id: `target-hint-gap-${targetKey(anchor.gap)}`,
+            point: { ...anchor.gap },
+            variant: 'warning',
+            label: `${gapCoord}: open gap that keeps the jump flexible.`,
+          },
+        );
+      }
+
+      return hints;
+    }
+    case 'look-for-weak-groups': {
+      const group = findWeakGroupTouchingLiberty(board, point);
+      const hints: OverlayHighlight[] = [{
+        id: `target-hint-target-${targetKey(point)}`,
+        point: { ...point },
+        variant: 'positive',
+        label: `${coord}: liberty to help this group breathe.`,
+      }];
+
+      if (group) {
+        hints.push(...group.stones.map((stone) => ({
+          id: `target-hint-group-${targetKey(stone)}`,
+          point: { ...stone },
+          variant: 'warning' as const,
+          label: `${pointToCoord(stone, board.size)}: stone helped by ${coord}.`,
+        })));
+      }
+
+      return hints;
+    }
+  }
+}
+
 export function BeginnerObjectiveCard() {
   const game = useGameStore((s) => s.game);
   const teachingLevel = useGameStore((s) => s.teachingLevel);
@@ -105,15 +171,9 @@ export function BeginnerObjectiveCard() {
   const isAiThinking = useGameStore((s) => s.isAiThinking);
   const placeStone = useGameStore((s) => s.placeStone);
   const recordInteraction = useGameStore((s) => s.recordInteraction);
+  const applyTargetHints = useGameStore((s) => s.applyTargetHints);
   const canPlayTarget = phase === 'playing' && game.currentPlayer === 'black' && !isAiThinking;
   const [activeTargetKey, setActiveTargetKey] = useState<string | null>(null);
-
-  const handleTargetClick = useCallback((point: Point) => {
-    if (!canPlayTarget) return;
-
-    recordInteraction();
-    placeStone(point);
-  }, [canPlayTarget, placeStone, recordInteraction]);
 
   const objective = getBeginnerObjective({
     boardSize: game.board.size,
@@ -123,6 +183,28 @@ export function BeginnerObjectiveCard() {
     currentPlayer: game.currentPlayer,
     teachingLevel,
   });
+
+  const clearTargetHelp = useCallback(() => {
+    setActiveTargetKey(null);
+    applyTargetHints([]);
+  }, [applyTargetHints]);
+
+  useEffect(() => () => applyTargetHints([]), [applyTargetHints]);
+
+  const showTargetHelp = useCallback((point: Point) => {
+    if (!objective) return;
+
+    setActiveTargetKey(targetKey(point));
+    applyTargetHints(buildTargetHintHighlights(objective, point, game.board));
+  }, [applyTargetHints, game.board, objective]);
+
+  const handleTargetClick = useCallback((point: Point) => {
+    if (!canPlayTarget) return;
+
+    clearTargetHelp();
+    recordInteraction();
+    placeStone(point);
+  }, [canPlayTarget, clearTargetHelp, placeStone, recordInteraction]);
 
   if (!objective) return null;
 
@@ -187,13 +269,13 @@ export function BeginnerObjectiveCard() {
                 disabled={!canPlayTarget}
                 aria-label={`Play ${coord} target for ${objective.title}`}
                 aria-describedby={activeTargetKey === targetKey(point) ? targetHelpId : undefined}
-                onPointerEnter={() => setActiveTargetKey(targetKey(point))}
-                onPointerMove={() => setActiveTargetKey(targetKey(point))}
-                onMouseEnter={() => setActiveTargetKey(targetKey(point))}
-                onMouseLeave={() => setActiveTargetKey(null)}
-                onFocus={() => setActiveTargetKey(targetKey(point))}
-                onBlur={() => setActiveTargetKey(null)}
-                onKeyDown={() => setActiveTargetKey(targetKey(point))}
+                onPointerEnter={() => showTargetHelp(point)}
+                onPointerMove={() => showTargetHelp(point)}
+                onMouseEnter={() => showTargetHelp(point)}
+                onMouseLeave={clearTargetHelp}
+                onFocus={() => showTargetHelp(point)}
+                onBlur={clearTargetHelp}
+                onKeyDown={() => showTargetHelp(point)}
                 onClick={() => handleTargetClick(point)}
               >
                 {coord}
