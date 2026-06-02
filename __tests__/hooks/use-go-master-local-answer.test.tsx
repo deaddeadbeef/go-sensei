@@ -1353,6 +1353,117 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('liberties').encounterCount).toBeGreaterThan(0);
   });
 
+  it('answers capture-race questions by defending the Black group that is behind on liberties', () => {
+    act(() => {
+      useGameStore.getState().startGuidedIntroGame();
+      playStoreSequence([
+        { x: 2, y: 2 },
+        { x: 2, y: 1 },
+        { x: 4, y: 4 },
+        { x: 1, y: 2 },
+      ]);
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('Who gets captured first?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('This is a capture race, and Black is behind on liberties.');
+    expect(state.bubble.text).toContain('Your Black group at C7 has 2 liberties: C6 and D7.');
+    expect(state.bubble.text).toContain('White group at C8 has 3 liberties: C9, B8, and D8.');
+    expect(state.bubble.text).toContain('Defend first by playing one of the marked Black liberties.');
+    expect(state.bubble.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'lesson:liberties', label: 'Review liberties' },
+    ]);
+    expect(state.chatMessages.at(-1)?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'lesson:liberties', label: 'Review liberties' },
+    ]);
+    expect(state.overlays.groups).toEqual([
+      {
+        id: 'local-capture-race-black-group-2,2',
+        stones: [{ x: 2, y: 2 }],
+        color: 'black',
+        liberties: 2,
+        label: 'Black group in the race: 2 liberties at C6 and D7.',
+      },
+      {
+        id: 'local-capture-race-white-group-2,1',
+        stones: [{ x: 2, y: 1 }],
+        color: 'white',
+        liberties: 3,
+        label: 'White group in the race: 3 liberties at C9, B8, and D8.',
+      },
+    ]);
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 2, y: 3 },
+      { x: 3, y: 2 },
+    ]);
+    expect(useConceptStore.getState().getMastery('reading').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('liberties').encounterCount).toBeGreaterThan(0);
+  });
+
+  it('keeps even capture-race questions grounded in the current guided objective', () => {
+    act(() => {
+      useGameStore.getState().startGuidedIntroGame();
+      playStoreSequence([
+        { x: 2, y: 2 },
+        { x: 3, y: 2 },
+      ]);
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('Who wins this fight?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('This is a capture race, but it is even on liberties right now.');
+    expect(state.bubble.text).toContain('Both groups have 3 liberties.');
+    expect(state.bubble.text).toContain('No one gets captured immediately.');
+    expect(state.bubble.text).toContain('Use the current guided job as the priority: Make your stones work together.');
+    expect(state.bubble.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'practice:reading', label: 'Practice reading' },
+    ]);
+    expect(state.chatMessages.at(-1)?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'practice:reading', label: 'Practice reading' },
+    ]);
+    expect(state.overlays.groups).toEqual([
+      {
+        id: 'local-capture-race-black-group-2,2',
+        stones: [{ x: 2, y: 2 }],
+        color: 'black',
+        liberties: 3,
+        label: 'Black group in the race: 3 liberties at C8, C6, and B7.',
+      },
+      {
+        id: 'local-capture-race-white-group-3,2',
+        stones: [{ x: 3, y: 2 }],
+        color: 'white',
+        liberties: 3,
+        label: 'White group in the race: 3 liberties at D8, D6, and E7.',
+      },
+    ]);
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 2, y: 4 },
+    ]);
+    expect(useConceptStore.getState().getMastery('reading').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('direction-of-play').encounterCount).toBeGreaterThan(0);
+  });
+
   it('answers learner danger questions locally without fetching', () => {
     act(() => {
       const result = useGameStore.getState().applyAiMove({ x: 3, y: 2 });
