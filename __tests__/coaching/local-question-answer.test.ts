@@ -967,8 +967,24 @@ describe('local question answer', () => {
     const answer = getLocalQuestionAnswer('Why E7?', whiteReply.newState, 'guided');
 
     expect(answer?.text).toContain('E7 is not one of the current marked beginner targets.');
+    expect(answer?.text).toContain('E7 would normally be a one-space jump from C7, but White is already on D7, the gap between them.');
+    expect(answer?.text).toContain('That gap is what lets the shape work, so E7 is not a clean teamwork target now.');
     expect(answer?.text).toContain('C5 is marked because it is a one-space jump from C7');
     expect(answer?.text).not.toContain('one-space jump from D7');
+    expect(answer?.boardFocus?.highlights).toEqual([
+      {
+        id: 'local-target-reason-blocked-target-4,2',
+        point: { x: 4, y: 2 },
+        variant: 'warning',
+        label: 'E7: not a clean jump while D7 is occupied.',
+      },
+      {
+        id: 'local-target-reason-blocked-gap-3,2',
+        point: { x: 3, y: 2 },
+        variant: 'danger',
+        label: 'D7: White occupies the one-space jump gap.',
+      },
+    ]);
     expect(answer?.boardFocus?.suggestions).toEqual([{
       id: 'local-target-reason-move-2,4',
       point: { x: 2, y: 4 },

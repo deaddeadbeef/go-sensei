@@ -1271,6 +1271,49 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('direction-of-play').encounterCount).toBeGreaterThan(0);
   });
 
+  it('explains when a candidate jump is blocked by White in the gap without fetching', () => {
+    act(() => {
+      const result = useGameStore.getState().applyAiMove({ x: 3, y: 2 });
+      if (!result.success) throw new Error('test setup white move failed');
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('What about E7?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('E7 would normally be a one-space jump from C7, but White is already on D7, the gap between them.');
+    expect(state.bubble.text).toContain('That gap is what lets the shape work, so E7 is not a clean teamwork target now.');
+    expect(state.bubble.text).toContain('For this board, I would prefer C5.');
+    expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+    expect(state.overlays.highlights).toEqual([
+      {
+        id: 'local-candidate-move-blocked-target-4,2',
+        point: { x: 4, y: 2 },
+        variant: 'warning',
+        label: 'E7: not a clean jump while D7 is occupied.',
+      },
+      {
+        id: 'local-candidate-move-blocked-gap-3,2',
+        point: { x: 3, y: 2 },
+        variant: 'danger',
+        label: 'D7: White occupies the one-space jump gap.',
+      },
+    ]);
+    expect(state.overlays.suggestions).toEqual([{
+      id: 'local-candidate-move-2,4',
+      point: { x: 2, y: 4 },
+      rank: 1,
+      reason: 'Try C5 as a one-space jump that works with your stones.',
+    }]);
+    expect(useConceptStore.getState().getMastery('direction-of-play').encounterCount).toBeGreaterThan(0);
+  });
+
   it('compares marked target moves locally without fetching', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());
