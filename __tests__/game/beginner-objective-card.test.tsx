@@ -441,6 +441,12 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText('D8: C7 3 liberties, E7 3 liberties.')).toBeTruthy();
     expect(screen.getByText('D6: C7 3 liberties, E7 3 liberties.')).toBeTruthy();
     expect(screen.getByText(comparisonSummary)).toBeTruthy();
+    expect(screen.getByText('Read sequence')).toBeTruthy();
+    expect(screen.getByText('1. White D7 tests the gap between C7 and E7.')).toBeTruthy();
+    expect(screen.getByText('2. Black D8 attacks D7 from above.')).toBeTruthy();
+    expect(screen.getByText('3. Recount: C7 3 liberties; E7 3 liberties.')).toBeTruthy();
+    expect(screen.getByText('4. Compare D6: C7 3 liberties; E7 3 liberties.')).toBeTruthy();
+    expect(screen.getByText('5. Real-game handoff: play G7 after the stable read.')).toBeTruthy();
     expect(screen.getByText('Real-game handoff')).toBeTruthy();
     expect(screen.getByText('The read is stable, so turn it into a real move: play G7 for Make your stones work together.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Play G7 in the real game after the stable pressure read' })).toBeTruthy();
@@ -869,6 +875,10 @@ describe('BeginnerObjectiveCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Try E6 follow-up defense for E7' }));
 
     expect(screen.getByText('After E6, C7 and E7 connect into one Black group with 8 liberties at E8, F7, E5, F6, D5, C5, B6, and B7. Both sides are one group now, so the local read is stable; return to the real game and choose an extension.')).toBeTruthy();
+    expect(screen.getByText('Read sequence')).toBeTruthy();
+    expect(screen.getByText('5. Defend C7 at C6; C7 has 5 liberties.')).toBeTruthy();
+    expect(screen.getByText('6. Follow-up E6 connects C7 and E7 into one group.')).toBeTruthy();
+    expect(screen.getByText('7. Real-game handoff: play G7 after the stable read.')).toBeTruthy();
     expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
       {
         id: 'read-pressure-anchor-2,2',
