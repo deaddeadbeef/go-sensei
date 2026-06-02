@@ -735,6 +735,74 @@ function getStablePressureExtensionHandoff(
   };
 }
 
+function formatPressureSequenceLibertyStep(
+  prompt: OneSpaceJumpReadPrompt,
+  recount: PressureRecount,
+  board: BoardState,
+): string {
+  const anchorCoord = pointToCoord(prompt.anchor, board.size);
+  const stoneCoord = pointToCoord(prompt.stone, board.size);
+
+  return `${anchorCoord} ${formatLibertyCount(recount.anchorLiberties.length)}; ${stoneCoord} ${formatLibertyCount(recount.stoneLiberties.length)}`;
+}
+
+function getPressureReadSequenceRows(
+  board: BoardState,
+  prompt: OneSpaceJumpReadPrompt | null,
+  selectedReply: Point | null,
+  selectedRecount: PressureRecount | null,
+  comparedRecount: PressureRecount | null,
+  selectedDefenseOutcome: PressureDefenseOutcome | null,
+  selectedFollowUpDefenseOutcome: PressureDefenseOutcome | null,
+  extensionHandoff: PressureExtensionHandoff | null,
+): string[] {
+  if (!prompt || (!selectedReply && !selectedRecount && !comparedRecount)) return [];
+
+  const anchorCoord = pointToCoord(prompt.anchor, board.size);
+  const stoneCoord = pointToCoord(prompt.stone, board.size);
+  const primaryRecount = comparedRecount ?? selectedRecount;
+  const comparisonRecount = comparedRecount && selectedRecount ? selectedRecount : null;
+  const firstReply = primaryRecount?.reply ?? selectedReply;
+  const rows = [
+    `White ${prompt.gapCoord} tests the gap between ${anchorCoord} and ${stoneCoord}.`,
+  ];
+
+  if (firstReply) {
+    const firstReplyCoord = pointToCoord(firstReply, board.size);
+    rows.push(`Black ${firstReplyCoord} attacks ${prompt.gapCoord} from ${getReplyDirection(firstReply, prompt.gap)}.`);
+  }
+
+  if (primaryRecount) {
+    rows.push(`Recount: ${formatPressureSequenceLibertyStep(prompt, primaryRecount, board)}.`);
+  }
+
+  if (comparisonRecount) {
+    const comparisonCoord = pointToCoord(comparisonRecount.reply, board.size);
+    rows.push(`Compare ${comparisonCoord}: ${formatPressureSequenceLibertyStep(prompt, comparisonRecount, board)}.`);
+  }
+
+  if (selectedDefenseOutcome) {
+    const defenseCoord = pointToCoord(selectedDefenseOutcome.defense, board.size);
+    rows.push(
+      `Defend ${selectedDefenseOutcome.defendedSideCoord} at ${defenseCoord}; ${selectedDefenseOutcome.defendedSideCoord} has ${formatLibertyCount(selectedDefenseOutcome.defendedLiberties.length)}.`,
+    );
+  }
+
+  if (selectedFollowUpDefenseOutcome) {
+    const followUpCoord = pointToCoord(selectedFollowUpDefenseOutcome.defense, board.size);
+
+    rows.push(selectedFollowUpDefenseOutcome.connectedSides
+      ? `Follow-up ${followUpCoord} connects ${anchorCoord} and ${stoneCoord} into one group.`
+      : `Follow-up ${followUpCoord}: ${selectedFollowUpDefenseOutcome.defendedSideCoord} has ${formatLibertyCount(selectedFollowUpDefenseOutcome.defendedLiberties.length)}; ${selectedFollowUpDefenseOutcome.otherSideCoord} has ${formatLibertyCount(selectedFollowUpDefenseOutcome.otherLiberties.length)}.`);
+  }
+
+  if (extensionHandoff) {
+    rows.push(`Real-game handoff: play ${extensionHandoff.coord} after the stable read.`);
+  }
+
+  return rows;
+}
+
 function getReplayPressureDefensePoint(
   prompt: OneSpaceJumpReadPrompt,
   recount: PressureRecount,
@@ -1617,6 +1685,19 @@ export function BeginnerObjectiveCard() {
       && isStablePressureDefenseOutcome(selectedFollowUpDefenseReadOutcome),
     ),
   );
+  const activePressureExtensionHandoff = selectedFollowUpExtensionHandoff
+    ?? selectedDefenseExtensionHandoff
+    ?? pressureComparisonExtensionHandoff;
+  const pressureReadSequenceRows = getPressureReadSequenceRows(
+    game.board,
+    readPrompt,
+    selectedReadReply,
+    selectedReadRecount,
+    comparedReadRecount,
+    selectedDefenseReadOutcome,
+    selectedFollowUpDefenseReadOutcome,
+    activePressureExtensionHandoff,
+  );
   const readPromptAnchorCoord = readPrompt ? pointToCoord(readPrompt.anchor, game.board.size) : null;
   const readPromptStoneCoord = readPrompt ? pointToCoord(readPrompt.stone, game.board.size) : null;
   const selectedReadReplyCoord = selectedReadReply ? pointToCoord(selectedReadReply, game.board.size) : null;
@@ -1946,6 +2027,18 @@ export function BeginnerObjectiveCard() {
                           )}
                         </div>
                       )}
+                    </div>
+                  )}
+                  {pressureReadSequenceRows.length > 0 && (
+                    <div className="mt-2 border-t border-white/10 pt-2">
+                      <div className="text-xs font-semibold" style={{ color: COLORS.ui.textPrimary }}>
+                        Read sequence
+                      </div>
+                      <div className="mt-1 space-y-0.5 text-[11px] leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+                        {pressureReadSequenceRows.map((row, index) => (
+                          <div key={`${index}-${row}`}>{index + 1}. {row}</div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
