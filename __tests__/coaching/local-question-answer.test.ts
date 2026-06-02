@@ -1236,6 +1236,27 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('answers what is wrong with an off-goal coordinate locally', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+
+    const answer = getLocalQuestionAnswer('What is wrong with D7?', firstMove.newState, 'guided');
+
+    expect(answer?.text).toContain('D7 touches C7 directly.');
+    expect(answer?.text).toContain('For this board, I would prefer E7 or C5.');
+    expect(answer?.text).toContain('I highlighted D7 and re-marked the better beginner targets.');
+    expect(answer?.boardFocus?.highlights).toEqual([{
+      id: 'local-candidate-question-3,2',
+      point: { x: 3, y: 2 },
+      variant: 'warning',
+      label: 'D7: open, but not the current beginner target.',
+    }]);
+    expect(answer?.boardFocus?.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+    ]);
+  });
+
   it('compares two marked target moves locally', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
@@ -1283,6 +1304,36 @@ describe('local question answer', () => {
     expect(answer?.boardFocus?.suggestions.map((suggestion) => suggestion.point)).toEqual([
       { x: 4, y: 2 },
       { x: 2, y: 4 },
+    ]);
+  });
+
+  it('does not call occupied comparison points open', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup first move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+    const extensionMove = playMove(afterWhitePass, { x: 4, y: 2 });
+    if (!extensionMove.success) throw new Error('test setup extension move failed');
+    const game = passMove(extensionMove.newState);
+
+    const answer = getLocalQuestionAnswer('Why is E7 better than D7?', game, 'guided');
+
+    expect(answer?.text).toContain('Neither mentioned point is one of the current marked beginner targets.');
+    expect(answer?.text).toContain('E7 is already occupied by your Black stone, so do not evaluate it as a new move to play now.');
+    expect(answer?.text).toContain('D7 touches E7 directly.');
+    expect(answer?.text).not.toContain('E7 is open');
+    expect(answer?.boardFocus?.highlights).toEqual([
+      {
+        id: 'local-candidate-comparison-4,2',
+        point: { x: 4, y: 2 },
+        variant: 'danger',
+        label: 'E7: already occupied.',
+      },
+      {
+        id: 'local-candidate-comparison-3,2',
+        point: { x: 3, y: 2 },
+        variant: 'warning',
+        label: 'D7: open, but not the current beginner target.',
+      },
     ]);
   });
 
@@ -1874,6 +1925,31 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([
       { id: 'hint', label: 'Show targets' },
       { id: 'lesson:groups', label: 'Review groups' },
+    ]);
+  });
+
+  it('explains solid-connection phrasing for an open one-space jump gap', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup first move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+    const extensionMove = playMove(afterWhitePass, { x: 4, y: 2 });
+    if (!extensionMove.success) throw new Error('test setup extension move failed');
+    const game = passMove(extensionMove.newState);
+
+    const answer = getLocalQuestionAnswer('Should I connect solidly at D7?', game, 'guided');
+
+    expect(answer?.text).toContain('D7 is the one-point gap between C7 and E7.');
+    expect(answer?.text).toContain('That gap is not automatically wrong; it is what makes the one-space jump reach farther than a solid connection.');
+    expect(answer?.text).toContain('Do not fill D7 just because it is empty.');
+    expect(answer?.boardFocus?.highlights.map((highlight) => highlight.point)).toEqual([
+      { x: 2, y: 2 },
+      { x: 4, y: 2 },
+      { x: 3, y: 2 },
+    ]);
+    expect(answer?.boardFocus?.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 6, y: 2 },
+      { x: 4, y: 4 },
+      { x: 2, y: 4 },
     ]);
   });
 
