@@ -37,6 +37,22 @@ describe('BeginnerObjectiveCard', () => {
     expect(state.game.currentPlayer).toBe('white');
   });
 
+  it('explains why a hovered opening target is useful before it is played', () => {
+    render(<BeginnerObjectiveCard />);
+
+    const target = screen.getByRole('button', { name: 'Play C7 target for Start with a corner' });
+    expect(screen.queryByText('Why C7')).toBeNull();
+
+    fireEvent.mouseEnter(target);
+
+    expect(screen.getByText('Why C7')).toBeTruthy();
+    expect(screen.getByText('C7 leans on the top and left edges, so Black needs fewer stones to sketch territory there.')).toBeTruthy();
+
+    fireEvent.mouseLeave(target);
+
+    expect(screen.queryByText('Why C7')).toBeNull();
+  });
+
   it('names extension targets after the learner claims a corner', () => {
     act(() => {
       useGameStore.getState().placeStone({ x: 2, y: 2 });
@@ -47,6 +63,25 @@ describe('BeginnerObjectiveCard', () => {
 
     expect(screen.getByText('Make your stones work together')).toBeTruthy();
     expect(screen.getByText('Try E7 or C5.')).toBeTruthy();
+  });
+
+  it('explains the anchor and gap for a focused extension target', () => {
+    act(() => {
+      useGameStore.getState().placeStone({ x: 2, y: 2 });
+      useGameStore.getState().pass();
+    });
+
+    render(<BeginnerObjectiveCard />);
+
+    const target = screen.getByRole('button', { name: 'Play E7 target for Make your stones work together' });
+    fireEvent.focus(target);
+
+    expect(screen.getByText('Why E7')).toBeTruthy();
+    expect(screen.getByText('E7 is a one-space jump from C7; D7 stays open so the two stones can work together without clumping.')).toBeTruthy();
+
+    fireEvent.blur(target);
+
+    expect(screen.queryByText('Why E7')).toBeNull();
   });
 
   it('shows progress when the learner completes the previous objective', () => {
