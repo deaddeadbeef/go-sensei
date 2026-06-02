@@ -8,7 +8,11 @@ import { CONCEPTS } from '@/lib/concepts/concept-data';
 import { getLearningRecommendation } from '@/lib/learning-path/recommendations';
 import { formatObjectiveTargetText, getBeginnerObjective } from '@/lib/coaching/beginner-objectives';
 import { getLocalGuidedFallback } from '@/lib/coaching/local-guided-fallback';
-import { getLocalQuestionAnswer, type LocalQuestionAnswer } from '@/lib/coaching/local-question-answer';
+import {
+  getLocalGameReviewAnswer,
+  getLocalQuestionAnswer,
+  type LocalQuestionAnswer,
+} from '@/lib/coaching/local-question-answer';
 import { getLocalStudyPlanAnswer } from '@/lib/coaching/local-study-plan-answer';
 import { coordToPoint } from '@/lib/go-engine';
 import {
@@ -558,9 +562,16 @@ export function useGoMaster() {
   }, [applyLocalAnswer, send]);
 
   const requestReview = useCallback(() => {
-    const g = useGameStore.getState().game;
-    send(formatReviewRequest(g));
-  }, [send]);
+    const state = useGameStore.getState();
+    const localReview = getLocalGameReviewAnswer(state.game, state.teachingLevel);
+
+    if (localReview) {
+      applyLocalAnswer(localReview);
+      return;
+    }
+
+    send(formatReviewRequest(state.game));
+  }, [applyLocalAnswer, send]);
 
   return { sendPlayerMove, sendMessage, requestHint, requestReview };
 }

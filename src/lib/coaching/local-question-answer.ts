@@ -1,4 +1,18 @@
-import { calculateTerritory, coordToPoint, countStones, getAllGroups, getGroup, getStone, pointEquals, pointKey, pointToCoord } from '@/lib/go-engine';
+import {
+  calculateTerritory,
+  coordToPoint,
+  countStones,
+  createGame,
+  getAllGroups,
+  getGroup,
+  getStone,
+  passMove,
+  playMove,
+  pointEquals,
+  pointKey,
+  pointToCoord,
+  resignGame,
+} from '@/lib/go-engine';
 import type { BoardSize, GameState, Group, Move, Point } from '@/lib/go-engine/types';
 import type { TeachingLevel } from '@/lib/ai/system-prompt';
 import {
@@ -254,6 +268,13 @@ function isMoveReviewQuestion(q: string): boolean {
     || /\bdid\s+i\s+(make\s+a\s+mistake|play\s+(well|badly|good|right|wrong))\b/.test(q)
     || /\bwhy\s+(was|is)\s+(that|this|my\s+move)\s+(good|bad|right|wrong)\b/.test(q)
     || /\breview\s+(that|this|my)\s+move\b/.test(q);
+}
+
+function isGameReviewQuestion(q: string): boolean {
+  return /\bgame\s+review\b/.test(q)
+    || /\breview\s+(this|the|my)\s+(game|board|position)\b/.test(q)
+    || /\b(analyze|analyse)\s+(this|the|my)\s+(game|board|position)\b/.test(q)
+    || /\bhow\s+did\s+i\s+do\s+(in\s+)?(this|the)\s+game\b/.test(q);
 }
 
 function isShapeQuestion(q: string): boolean {
@@ -1602,6 +1623,165 @@ interface TerritoryContext {
   conceptIds: string[];
 }
 
+interface ReviewedBeginnerMove {
+  moveNumber: number;
+  point: Point;
+  coord: string;
+  objective: BeginnerObjective;
+  metObjective: boolean;
+  targetText: string | null;
+}
+
+function getReviewedBeginnerMoves(game: GameState, teachingLevel: TeachingLevel): ReviewedBeginnerMove[] {
+  if (!isLocalAnswerLevel(teachingLevel) || game.board.size !== 9) return [];
+
+  let replay = createGame(game.board.size, game.komi);
+  const reviewedMoves: ReviewedBeginnerMove[] = [];
+
+  for (let index = 0; index < game.moveHistory.length; index += 1) {
+    const move = game.moveHistory[index];
+
+    if (move.type === 'place') {
+      if (move.color === 'black') {
+        const objective = getBeginnerObjective({
+          boardSize: replay.board.size,
+          board: replay.board,
+          moveHistory: replay.moveHistory,
+          moveCount: replay.moveHistory.length,
+          currentPlayer: 'black',
+          teachingLevel,
+        });
+
+        if (objective && objective.targetPoints.length > 0) {
+          reviewedMoves.push({
+            moveNumber: index + 1,
+            point: copyPoint(move.point),
+            coord: pointToCoord(move.point, game.board.size),
+            objective,
+            metObjective: objective.targetPoints.some((target) => pointEquals(target, move.point)),
+            targetText: formatObjectiveTargetText(objective, game.board.size),
+          });
+        }
+      }
+
+      const result = playMove(replay, move.point);
+      if (!result.success) break;
+      replay = result.newState;
+      continue;
+    }
+
+    if (move.type === 'pass') {
+      replay = passMove(replay);
+      continue;
+    }
+
+    replay = resignGame(replay);
+    break;
+  }
+
+  return reviewedMoves;
+}
+
+function formatReviewedMove(move: ReviewedBeginnerMove): string {
+  return `Move ${move.moveNumber} ${move.coord}`;
+}
+
+export function getLocalGameReviewAnswer(
+  game: GameState,
+  teachingLevel: TeachingLevel,
+): LocalQuestionAnswer | null {
+  if (!isLocalAnswerLevel(teachingLevel)) return null;
+
+  const reviewedMoves = getReviewedBeginnerMoves(game, teachingLevel);
+  const currentObjective = getBeginnerObjective({
+    boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
+    moveCount: game.moveHistory.length,
+    currentPlayer: 'black',
+    teachingLevel,
+  });
+  const suggestions = currentObjective
+    ? objectiveSuggestions(currentObjective, game.board.size, 'local-game-review-next-move')
+    : [];
+  const currentTargetText = currentObjective ? formatObjectiveTargetText(currentObjective, game.board.size) : null;
+  const lessonAction = currentObjective ? getBeginnerObjectiveLessonAction(currentObjective) : null;
+
+  if (reviewedMoves.length === 0) {
+    return {
+      text: [
+        'Local beginner review: there are no Black moves to review yet.',
+        currentObjective
+          ? `Start with one useful board job: ${currentObjective.title}. ${currentObjective.instruction}${currentTargetText ? ` ${currentTargetText}` : ''}`
+          : 'Start a guided 9x9 game, play one move, then ask for review again.',
+        suggestions.length > 0 ? 'I marked the first review targets on the board.' : '',
+      ].filter(Boolean).join(' '),
+      conceptIds: uniqueConceptIds(['stones-and-board', ...(currentObjective?.conceptIds ?? [])]),
+      ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
+      actions: [
+        ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+        { id: 'guided:intro', label: 'Start fresh guided game' },
+        ...(lessonAction ? [lessonAction] : []),
+      ],
+    };
+  }
+
+  const bestMoves = reviewedMoves.filter((move) => move.metObjective);
+  const missedMoves = reviewedMoves.filter((move) => !move.metObjective);
+  const bestMove = bestMoves[0] ?? null;
+  const missedMove = missedMoves[0] ?? null;
+  const latestMove = reviewedMoves[reviewedMoves.length - 1];
+  const highlightMoves = [
+    ...(bestMove ? [{
+      id: `local-game-review-best-${pointKey(bestMove.point)}`,
+      point: copyPoint(bestMove.point),
+      variant: 'positive' as const,
+      label: `${formatReviewedMove(bestMove)} followed: ${bestMove.objective.title}.`,
+    }] : []),
+    ...(missedMove ? [{
+      id: `local-game-review-fix-${pointKey(missedMove.point)}`,
+      point: copyPoint(missedMove.point),
+      variant: 'warning' as const,
+      label: `${formatReviewedMove(missedMove)} missed: ${missedMove.objective.title}.`,
+    }] : []),
+  ];
+
+  const reviewLines = [
+    'Local beginner review: here are the board moments I can verify without cloud help.',
+    bestMove
+      ? `Best move: ${formatReviewedMove(bestMove)} followed "${bestMove.objective.title}". ${bestMove.objective.why}`
+      : `Best habit to keep: you played ${reviewedMoves.length} Black move${reviewedMoves.length === 1 ? '' : 's'} and can now turn the review into one clearer target.`,
+    missedMove
+      ? `Main fix: ${formatReviewedMove(missedMove)} missed "${missedMove.objective.title}". Next time, ${missedMove.objective.instruction}${missedMove.targetText ? ` ${missedMove.targetText}` : ''}`
+      : `Main fix: after ${formatReviewedMove(latestMove)}, do not stop at "good"; ask what the stone helps next.`,
+    currentObjective
+      ? `Next practice target: ${currentObjective.title}. ${currentObjective.instruction}${currentTargetText ? ` ${currentTargetText}` : ''}`
+      : 'Next practice target: start a fresh guided 9x9 and keep each move tied to one visible job.',
+    game.phase === 'playing'
+      ? 'I marked the review point and the next targets so you can continue from this board.'
+      : 'I marked the review point; start a fresh guided game when you want to apply the fix immediately.',
+  ];
+
+  return {
+    text: reviewLines.join(' '),
+    conceptIds: uniqueConceptIds([
+      'stones-and-board',
+      ...(bestMove?.objective.conceptIds ?? []),
+      ...(missedMove?.objective.conceptIds ?? []),
+      ...(currentObjective?.conceptIds ?? []),
+    ]),
+    boardFocus: {
+      ...(highlightMoves.length > 0 ? { highlights: highlightMoves } : {}),
+      ...(suggestions.length > 0 ? { suggestions } : {}),
+    },
+    actions: [
+      ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+      { id: 'guided:intro', label: 'Start fresh guided game' },
+      ...(lessonAction ? [lessonAction] : []),
+    ],
+  };
+}
+
 function buildTerritoryContext(game: GameState, teachingLevel: TeachingLevel): TerritoryContext | null {
   const objective = getBeginnerObjective({
     boardSize: game.board.size,
@@ -1669,6 +1849,10 @@ export function getLocalQuestionAnswer(
 
   const q = normalizedQuestion(question);
   const lastMove = lastPlacedMove(game);
+
+  if (isGameReviewQuestion(q)) {
+    return getLocalGameReviewAnswer(game, teachingLevel);
+  }
 
   if (isMoveReviewQuestion(q)) {
     return buildMoveReviewAnswer(game, teachingLevel);

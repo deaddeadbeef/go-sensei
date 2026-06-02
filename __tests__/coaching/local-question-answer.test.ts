@@ -1,4 +1,4 @@
-import { getLocalQuestionAnswer } from '@/lib/coaching/local-question-answer';
+import { getLocalGameReviewAnswer, getLocalQuestionAnswer } from '@/lib/coaching/local-question-answer';
 import { createGame, passMove, playMove } from '@/lib/go-engine';
 import type { GameState, Point } from '@/lib/go-engine';
 
@@ -373,6 +373,91 @@ describe('local question answer', () => {
       { x: 6, y: 2 },
       { x: 2, y: 6 },
       { x: 6, y: 6 },
+    ]);
+  });
+
+  it('builds a local beginner game review from objective progress', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+
+    const answer = getLocalGameReviewAnswer(firstMove.newState, 'guided');
+
+    expect(answer?.text).toContain('Local beginner review: here are the board moments I can verify without cloud help.');
+    expect(answer?.text).toContain('Best move: Move 1 C7 followed "Start with a corner".');
+    expect(answer?.text).toContain('Main fix: after Move 1 C7, do not stop at "good"; ask what the stone helps next.');
+    expect(answer?.text).toContain('Next practice target: Make your stones work together. Play a one-space jump from one of your stones. Try E7 or C5.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['stones-and-board', 'corner-opening', 'territory', 'shape']));
+    expect(answer?.boardFocus?.highlights).toEqual([{
+      id: 'local-game-review-best-2,2',
+      point: { x: 2, y: 2 },
+      variant: 'positive',
+      label: 'Move 1 C7 followed: Start with a corner.',
+    }]);
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-game-review-next-move-4,2',
+        point: { x: 4, y: 2 },
+        rank: 1,
+        reason: 'Try E7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-game-review-next-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 2,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'guided:intro', label: 'Start fresh guided game' },
+    ]);
+  });
+
+  it('answers typed game-review requests locally', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+
+    const answer = getLocalQuestionAnswer('Review this game', firstMove.newState, 'guided');
+
+    expect(answer?.text).toContain('Local beginner review');
+    expect(answer?.text).toContain('Best move: Move 1 C7 followed "Start with a corner".');
+    expect(answer?.boardFocus?.highlights?.[0]).toMatchObject({
+      point: { x: 2, y: 2 },
+      variant: 'positive',
+    });
+    expect(answer?.boardFocus?.suggestions?.map((suggestion) => suggestion.point)).toEqual([
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+    ]);
+  });
+
+  it('turns a local beginner game review miss into a concrete replay target', () => {
+    const firstMove = playMove(createGame(9), { x: 4, y: 4 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+
+    const answer = getLocalGameReviewAnswer(firstMove.newState, 'guided');
+
+    expect(answer?.text).toContain('Best habit to keep: you played 1 Black move');
+    expect(answer?.text).toContain('Main fix: Move 1 E5 missed "Start with a corner".');
+    expect(answer?.text).toContain('Next time, Place your next stone near an empty corner. Try C7, G7, C3, or G3.');
+    expect(answer?.text).toContain('Next practice target: Start with a corner.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['stones-and-board', 'corner-opening', 'territory']));
+    expect(answer?.boardFocus?.highlights).toEqual([{
+      id: 'local-game-review-fix-4,4',
+      point: { x: 4, y: 4 },
+      variant: 'warning',
+      label: 'Move 1 E5 missed: Start with a corner.',
+    }]);
+    expect(answer?.boardFocus?.suggestions?.map((suggestion) => suggestion.point)).toEqual([
+      { x: 2, y: 2 },
+      { x: 6, y: 2 },
+      { x: 2, y: 6 },
+      { x: 6, y: 6 },
+    ]);
+    expect(answer?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'guided:intro', label: 'Start fresh guided game' },
+      { id: 'lesson:territory', label: 'Review territory' },
     ]);
   });
 
