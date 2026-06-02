@@ -56,6 +56,7 @@ Latest completed slice:
 - Reflected pinned read-sequence rows in transcript replay actions, so a learner can reopen the same branch with the last studied sequence step still pressed and highlighted.
 - Added concise teaching summaries to sequence-focus transcript messages, so saved steps explain what to compare with the live branch or real-game handoff.
 - Added a replay-only "Next question" prompt under restored sequence-focus rows, so learners know what to inspect after reopening a saved step.
+- Added a one-click "Compare from here" continuation under restored baseline sequence rows, so learners can return from a saved D8 step to the live D6 comparison without hunting for the older branch control.
 
 Next investigation candidates:
-- Whether the pressure branch should offer a one-click "compare from here" action from restored sequence-focus rows, so learners can continue reading from the saved step instead of hunting for the right branch control.
+- Whether restored defense and follow-up sequence rows should offer similarly specific continuation actions, such as "Try the short-side defense from here" or "Play the handoff move from here", instead of only asking the next question.
