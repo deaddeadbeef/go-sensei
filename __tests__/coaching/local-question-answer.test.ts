@@ -1,5 +1,5 @@
 import { getLocalQuestionAnswer } from '@/lib/coaching/local-question-answer';
-import { createGame, playMove } from '@/lib/go-engine';
+import { createGame, passMove, playMove } from '@/lib/go-engine';
 import type { GameState, Point } from '@/lib/go-engine';
 
 function playSequence(points: Point[]): GameState {
@@ -279,6 +279,38 @@ describe('local question answer', () => {
       { x: 4, y: 2 },
       { x: 2, y: 4 },
     ]);
+  });
+
+  it('explains a local guided White pass without cloud help', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+
+    const answer = getLocalQuestionAnswer('Why did White pass?', afterWhitePass, 'guided');
+
+    expect(answer?.text).toContain('White passed because I am keeping this guided practice moving locally');
+    expect(answer?.text).toContain('you get the next turn right away');
+    expect(answer?.text).toContain('In a real game, players usually pass near the end');
+    expect(answer?.text).toContain('two passes in a row move the game to scoring');
+    expect(answer?.text).toContain("do not treat White's pass as endgame strategy");
+    expect(answer?.text).toContain('Your next focus is: Make your stones work together.');
+    expect(answer?.text).toContain('I marked the next beginner targets on the board.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['stones-and-board', 'scoring', 'shape']));
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-pass-explanation-move-4,2',
+        point: { x: 4, y: 2 },
+        rank: 1,
+        reason: 'Try E7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-pass-explanation-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 2,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
   });
 
   it('answers liberty questions with current board context', () => {

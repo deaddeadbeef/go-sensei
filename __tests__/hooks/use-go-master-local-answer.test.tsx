@@ -130,6 +130,35 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('shape').encounterCount).toBeGreaterThan(0);
   });
 
+  it('explains the local White pass without fetching', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendPlayerMove(false, 0);
+    });
+    expect(useGameStore.getState().game.currentPlayer).toBe('black');
+
+    act(() => {
+      result.current.sendMessage('Why did White pass?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('White passed because I am keeping this guided practice moving locally');
+    expect(state.bubble.text).toContain('In a real game, players usually pass near the end');
+    expect(state.bubble.text).toContain('two passes in a row move the game to scoring');
+    expect(state.bubble.text).toContain('Your next focus is: Make your stones work together.');
+    expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+    ]);
+    expect(useConceptStore.getState().getMastery('scoring').encounterCount).toBeGreaterThan(0);
+  });
+
   it('reviews the last beginner move locally without fetching', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());

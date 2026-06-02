@@ -67,6 +67,10 @@ function lastPlacedMove(game: GameState): Extract<Move, { type: 'place' }> | nul
   return null;
 }
 
+function latestMove(game: GameState): Move | null {
+  return game.moveHistory[game.moveHistory.length - 1] ?? null;
+}
+
 function joinList(items: string[]): string {
   if (items.length === 0) return '';
   if (items.length === 1) return items[0];
@@ -281,6 +285,16 @@ function isCandidateComparisonQuestion(q: string, boardSize: BoardSize): boolean
   if (mentionedCoordinates(q, boardSize).length < 2) return false;
 
   return /\b(or|vs|versus|compare|choose|which|better)\b/.test(q);
+}
+
+function isPassQuestion(q: string): boolean {
+  if (!/\bpass(ed|ing)?\b/.test(q)) return false;
+
+  return /\bwhy\b/.test(q)
+    || /\bwhat\s+(is|does|did)\b/.test(q)
+    || /\bdid\s+(white|sensei|you)\s+pass\b/.test(q)
+    || /\bshould\s+i\s+pass\b/.test(q)
+    || /\bwhose\s+turn\b/.test(q);
 }
 
 function suggestionReason(objective: BeginnerObjective, point: Point, boardSize: BoardSize): string {
@@ -586,6 +600,50 @@ function buildCandidateComparisonAnswer(game: GameState, teachingLevel: Teaching
   };
 }
 
+function buildPassAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
+  const objective = getBeginnerObjective({
+    boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
+    moveCount: game.moveHistory.length,
+    currentPlayer: 'black',
+    teachingLevel,
+  });
+  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-pass-explanation-move') : [];
+  const action = objective ? getBeginnerObjectiveLessonAction(objective) : null;
+  const move = latestMove(game);
+  const lines: string[] = [];
+
+  if (move?.type === 'pass' && move.color === 'white' && game.currentPlayer === 'black') {
+    lines.push('White passed because I am keeping this guided practice moving locally: you get the next turn right away so you can try the next beginner idea.');
+  } else if (move?.type === 'pass') {
+    lines.push(`${move.color === 'black' ? 'Black' : 'White'} passed, which means that player chose not to place a stone on that turn.`);
+  } else {
+    lines.push('A pass means a player chooses not to place a stone on that turn.');
+  }
+
+  lines.push('In a real game, players usually pass near the end when they believe there are no valuable moves left; two passes in a row move the game to scoring.');
+
+  if (objective) {
+    const targetText = formatObjectiveTargetText(objective, game.board.size);
+    lines.push(`Here, do not treat White's pass as endgame strategy. Your next focus is: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}`);
+  }
+
+  if (suggestions.length > 0) {
+    lines.push('I marked the next beginner targets on the board.');
+  }
+
+  return {
+    text: lines.join(' '),
+    conceptIds: uniqueConceptIds(['stones-and-board', 'scoring', ...(objective?.conceptIds ?? [])]),
+    ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
+    actions: [
+      ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+      ...(action ? [action] : []),
+    ],
+  };
+}
+
 function buildShapeAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
   const objective = getBeginnerObjective({
     boardSize: game.board.size,
@@ -788,6 +846,10 @@ export function getLocalQuestionAnswer(
 
   if (isMoveReviewQuestion(q)) {
     return buildMoveReviewAnswer(game, teachingLevel);
+  }
+
+  if (isPassQuestion(q)) {
+    return buildPassAnswer(game, teachingLevel);
   }
 
   if (isCandidateComparisonQuestion(q, game.board.size)) {
