@@ -1,4 +1,4 @@
-import { getAllGroups, getGroup, pointKey, pointToCoord } from '@/lib/go-engine';
+import { coordToPoint, getAllGroups, getGroup, pointEquals, pointKey, pointToCoord } from '@/lib/go-engine';
 import type { BoardSize, GameState, Group, Move, Point } from '@/lib/go-engine/types';
 import type { TeachingLevel } from '@/lib/ai/system-prompt';
 import {
@@ -230,6 +230,23 @@ function isShapeQuestion(q: string): boolean {
     || /\bmake\s+(my\s+)?stones\s+work\b/.test(q);
 }
 
+function mentionedCoordinate(q: string, boardSize: BoardSize): Point | null {
+  for (const token of q.split(/\s+/)) {
+    if (!/^[a-hj-t]\d{1,2}$/i.test(token)) continue;
+    const point = coordToPoint(token, boardSize);
+    if (point) return point;
+  }
+
+  return null;
+}
+
+function isTargetReasonQuestion(q: string, boardSize: BoardSize): boolean {
+  if (!/\bwhy\b/.test(q)) return false;
+  if (mentionedCoordinate(q, boardSize)) return true;
+
+  return /\b(there|that\s+point|this\s+point|that\s+move|this\s+move|marked\s+(move|point|target))\b/.test(q);
+}
+
 function suggestionReason(objective: BeginnerObjective, point: Point, boardSize: BoardSize): string {
   const coord = pointToCoord(point, boardSize);
 
@@ -251,6 +268,77 @@ function objectiveSuggestions(objective: BeginnerObjective, boardSize: BoardSize
     rank: index + 1,
     reason: suggestionReason(objective, point, boardSize),
   }));
+}
+
+function targetReason(
+  objective: BeginnerObjective,
+  point: Point,
+  boardSize: BoardSize,
+  anchor: Point | null,
+): string {
+  const coord = pointToCoord(point, boardSize);
+
+  if (objective.id === 'claim-corner') {
+    return `${coord} is marked because a corner already has two board edges helping it become territory. You need fewer stones there than in the open center.`;
+  }
+
+  if (objective.id === 'extend-from-stone') {
+    const anchorCoord = anchor ? pointToCoord(anchor, boardSize) : 'your anchor stone';
+    return `${coord} is marked because it is a one-space jump from ${anchorCoord}: close enough to work with that stone, but far enough away to grow territory instead of clumping.`;
+  }
+
+  return `${coord} is marked because it is a liberty for a group that is short on breathing room. Playing there gives the group more ways to escape.`;
+}
+
+function buildTargetReasonAnswer(game: GameState, teachingLevel: TeachingLevel, q: string): LocalQuestionAnswer | null {
+  const objective = getBeginnerObjective({
+    boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
+    moveCount: game.moveHistory.length,
+    currentPlayer: 'black',
+    teachingLevel,
+  });
+
+  if (!objective || objective.targetPoints.length === 0) return null;
+
+  const requestedPoint = mentionedCoordinate(q, game.board.size);
+  const targetPoint = requestedPoint && objective.targetPoints.some((point) => pointEquals(point, requestedPoint))
+    ? requestedPoint
+    : objective.targetPoints[0];
+  const requestedCoord = requestedPoint ? pointToCoord(requestedPoint, game.board.size) : null;
+  const targetCoord = pointToCoord(targetPoint, game.board.size);
+  const suggestions = objectiveSuggestions(objective, game.board.size, 'local-target-reason-move');
+  const action = getBeginnerObjectiveLessonAction(objective);
+  const lastMove = lastPlacedMove(game);
+  const lines: string[] = [];
+
+  if (requestedPoint && !pointEquals(requestedPoint, targetPoint)) {
+    lines.push(`${requestedCoord} is not one of the current marked beginner targets.`);
+  }
+
+  lines.push(targetReason(objective, targetPoint, game.board.size, lastMove?.point ?? null));
+
+  const otherTargets = objective.targetPoints
+    .filter((point) => !pointEquals(point, targetPoint))
+    .slice(0, 3)
+    .map((point) => pointToCoord(point, game.board.size));
+
+  if (otherTargets.length > 0) {
+    lines.push(`${otherTargets.join(' or ')} works for the same beginner goal.`);
+  }
+
+  lines.push(`I marked the current targets again; ${targetCoord} is the one I explained.`);
+
+  return {
+    text: lines.join(' '),
+    conceptIds: objective.conceptIds,
+    boardFocus: { suggestions },
+    actions: [
+      { id: 'hint', label: 'Show targets' },
+      ...(action ? [action] : []),
+    ],
+  };
 }
 
 function buildShapeAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
@@ -455,6 +543,11 @@ export function getLocalQuestionAnswer(
 
   if (isMoveReviewQuestion(q)) {
     return buildMoveReviewAnswer(game, teachingLevel);
+  }
+
+  if (isTargetReasonQuestion(q, game.board.size)) {
+    const targetAnswer = buildTargetReasonAnswer(game, teachingLevel, q);
+    if (targetAnswer) return targetAnswer;
   }
 
   if (isShapeQuestion(q)) {
