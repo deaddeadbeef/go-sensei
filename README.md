@@ -2,7 +2,7 @@
 
 An AI-powered Go teaching app that plays against you and teaches you the game in real-time. Built for complete beginners.
 
-![Go Sensei](https://img.shields.io/badge/Model-GPT--5.4-blue) ![Next.js](https://img.shields.io/badge/Next.js-16-black) ![Tests](https://img.shields.io/badge/Tests-431%20passing-green) ![License](https://img.shields.io/badge/License-MIT-yellow)
+![Go Sensei](https://img.shields.io/badge/Model-GPT--5.4-blue) ![Next.js](https://img.shields.io/badge/Next.js-16-black) ![Tests](https://img.shields.io/badge/Tests-433%20passing-green) ![License](https://img.shields.io/badge/License-MIT-yellow)
 
 ## What is this?
 
@@ -30,7 +30,7 @@ The learning loop now starts complete beginners with a guided 9×9 game, then co
 - 🧠 **Concept mastery tracking** — lessons, problems, and review sessions update per-concept evidence
 - 📋 **Post-game review** — full game analysis at the end of each game
 - 🔐 **GitHub OAuth** — login with your GitHub account (Device Flow), no API keys needed
-- 🧪 **431 tests** — engine, lesson, problem, review, prompt, and state-management coverage
+- 🧪 **433 tests** — engine, lesson, problem, review, prompt, and state-management coverage
 
 ## Quick Start
 
@@ -87,7 +87,7 @@ npm run dev
 | AI Protocol | OpenAI Responses API | Agentic tool loop |
 | Auth | GitHub OAuth Device Flow | No secrets, no redirects |
 | Engine | Pure TypeScript | Zero dependencies, isomorphic |
-| Tests | Vitest | 431 tests |
+| Tests | Vitest | 433 tests |
 
 ### Go Engine
 

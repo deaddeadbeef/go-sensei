@@ -196,6 +196,13 @@ function findLearnerMostRestrictedGroup(game: GameState): Group | null {
     .sort((a, b) => a.liberties.length - b.liberties.length || compareGroupsByAnchor(a, b))[0] ?? null;
 }
 
+function findLearnerGroupAtPoint(game: GameState, point: Point | null): Group | null {
+  if (!point) return null;
+  if (getStone(game.board, point) !== 'black') return null;
+
+  return getGroup(game.board, point);
+}
+
 function groupTouchesColor(game: GameState, group: Group, color: 'black' | 'white'): boolean {
   return group.stones.some((stone) => (
     getAdjacentPoints(game.board, stone).some((adjacent) => getStone(game.board, adjacent) === color)
@@ -2047,8 +2054,12 @@ function buildConnectionAnswer(game: GameState, teachingLevel: TeachingLevel): L
   };
 }
 
-function buildWeakGroupAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
-  const weakGroup = findLearnerWeakGroup(game);
+function buildWeakGroupAnswer(game: GameState, teachingLevel: TeachingLevel, q: string): LocalQuestionAnswer {
+  const requestedPoint = mentionedCoordinate(q, game.board.size);
+  const requestedGroup = findLearnerGroupAtPoint(game, requestedPoint);
+  const weakGroup = requestedGroup && requestedGroup.liberties.length <= 2
+    ? requestedGroup
+    : findLearnerWeakGroup(game);
   const objective = getBeginnerObjective({
     boardSize: game.board.size,
     board: game.board,
@@ -2059,9 +2070,37 @@ function buildWeakGroupAnswer(game: GameState, teachingLevel: TeachingLevel): Lo
   });
 
   if (!weakGroup) {
-    const currentGroup = findLearnerMostRestrictedGroup(game);
+    const currentGroup = requestedGroup ?? findLearnerMostRestrictedGroup(game);
     const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-weak-group-current-move') : [];
     const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
+
+    if (requestedPoint && !requestedGroup) {
+      const coord = pointToCoord(requestedPoint, game.board.size);
+      const occupant = getStone(game.board, requestedPoint);
+
+      return {
+        text: [
+          `${coord} is not one of your Black groups${occupant === 'white' ? '; White has a stone there' : '; it is empty'}.`,
+          'To check safety, point to one of your Black stones and count that group\'s liberties.',
+          objective ? `Your current guided job is: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}` : '',
+          suggestions.length > 0 ? 'I marked the current beginner targets so you can keep building safely.' : '',
+        ].filter(Boolean).join(' '),
+        conceptIds: uniqueConceptIds(['groups', 'liberties', ...(objective?.conceptIds ?? [])]),
+        boardFocus: {
+          highlights: [{
+            id: `local-weak-group-requested-${pointKey(requestedPoint)}`,
+            point: copyPoint(requestedPoint),
+            variant: occupant === 'white' ? 'danger' : 'neutral',
+            label: `${coord}: not one of your Black groups.`,
+          }],
+          ...(suggestions.length > 0 ? { suggestions } : {}),
+        },
+        actions: [
+          ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+          { id: 'lesson:liberties', label: 'Review liberties' },
+        ],
+      };
+    }
 
     if (currentGroup) {
       const anchor = groupAnchor(currentGroup);
@@ -2987,7 +3026,7 @@ export function getLocalQuestionAnswer(
   }
 
   if (isWeakGroupQuestion(q)) {
-    return buildWeakGroupAnswer(game, teachingLevel);
+    return buildWeakGroupAnswer(game, teachingLevel, q);
   }
 
   if (isConnectionQuestion(q)) {
