@@ -483,6 +483,39 @@ describe('BeginnerObjectiveCard', () => {
     ]);
   });
 
+  it('recommends defending the short side after an asymmetric pressure comparison', () => {
+    act(() => {
+      useGameStore.getState().placeStone({ x: 2, y: 2 });
+      useGameStore.getState().placeStone({ x: 2, y: 1 });
+      useGameStore.getState().placeStone({ x: 4, y: 2 });
+      useGameStore.getState().pass();
+    });
+
+    render(<BeginnerObjectiveCard />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Recount C7 and E7 after D8' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Compare D6 against D8' }));
+
+    const comparisonSummary = 'D8 and D6 leave the same liberty counts: C7 has 2 liberties and E7 has 3 liberties either way. The difference is direction: D8 attacks D7 from above, while D6 attacks it from below.';
+    const recommendation = 'Recommendation: C7 is the short side with 2 liberties at C6 and B7. Defend C7 before extending again.';
+
+    expect(screen.getByText('Comparison summary')).toBeTruthy();
+    expect(screen.getByText('D8: C7 2 liberties, E7 3 liberties.')).toBeTruthy();
+    expect(screen.getByText('D6: C7 2 liberties, E7 3 liberties.')).toBeTruthy();
+    expect(screen.getByText(comparisonSummary)).toBeTruthy();
+    expect(screen.getByText(recommendation)).toBeTruthy();
+    expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
+    expect(useGameStore.getState().chatMessages.at(-1)).toMatchObject({
+      text: `Comparison read: After D6, recount the two Black sides: C7 has 2 liberties at C6 and B7. E7 has 3 liberties at E8, E6, and F7. C7 is the short side now, so defend it before extending again. ${comparisonSummary} ${recommendation}`,
+      variant: 'teaching',
+      actions: [
+        { id: 'guided:read-pressure:recount:read-pressure-2,2-4,2-3,2:3,3', label: 'Show recount' },
+      ],
+    });
+  });
+
   it('keeps the last missed objective visible without blocking the next try', () => {
     act(() => {
       useGameStore.getState().placeStone({ x: 4, y: 4 });
