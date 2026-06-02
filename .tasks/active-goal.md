@@ -31,6 +31,7 @@ Latest completed slice:
 - Added a compact board-side "What changed" recap after guided learner moves so the last-move lesson stays visible near the stones instead of only in the sidebar or chat.
 - Added hover/focus explanations for guided objective target buttons so learners can see why a specific coordinate is suggested before playing it.
 - Added transient board highlights for guided target explanations so hovering or focusing a coordinate also marks the target, anchor, gap, or weak group stones on the board.
+- Added a compact board-side "Read next" prompt after completed one-space jumps so learners know which open gap to read before extending again.
 
 Next investigation candidates:
-- Whether the guided board should show a compact "read this gap next" follow-up after a one-space-jump target is chosen and White passes.
+- Whether the one-space-jump gap prompt should offer a quick White-in-the-gap variation so learners can compare connecting, defending, or continuing outward.
