@@ -840,6 +840,54 @@ describe('BeginnerObjectiveCard', () => {
     expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).toContain('read-pressure-follow-up-defense-4,1');
   });
 
+  it('compares follow-up defenses and names connecting the two sides', () => {
+    act(() => {
+      useGameStore.getState().placeStone({ x: 2, y: 2 });
+      useGameStore.getState().placeStone({ x: 2, y: 1 });
+      useGameStore.getState().placeStone({ x: 4, y: 2 });
+      useGameStore.getState().pass();
+    });
+
+    render(<BeginnerObjectiveCard />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Recount C7 and E7 after D8' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Compare D6 against D8' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Try C6 defense for C7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Try E8 follow-up defense for E7' }));
+
+    expect(screen.getByText('Follow-up comparison')).toBeTruthy();
+    expect(screen.getByText('E8: E7 5 liberties, C7 5 liberties.')).toBeTruthy();
+    expect(screen.getByText('E6: connects C7 and E7 into one group with 8 liberties.')).toBeTruthy();
+    expect(screen.getByText('F7: E7 5 liberties, C7 5 liberties.')).toBeTruthy();
+    expect(screen.getByText('Connection note: E6 joins C7 and E7 into one Black group; E8 and F7 keep the sides separate.')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try E6 follow-up defense for E7' }));
+
+    expect(screen.getByText('After E6, C7 and E7 connect into one Black group with 8 liberties at E8, F7, E5, F6, D5, C5, B6, and B7. Both sides are one group now, so the local read is stable; return to the real game and choose an extension.')).toBeTruthy();
+    expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
+      {
+        id: 'read-pressure-anchor-2,2',
+        point: { x: 2, y: 2 },
+        variant: 'positive',
+        label: 'C7: connected group has 8 liberties after E6 follow-up: E8, F7, E5, F6, D5, C5, B6, and B7.',
+      },
+      {
+        id: 'read-pressure-stone-4,2',
+        point: { x: 4, y: 2 },
+        variant: 'positive',
+        label: 'E7: connected group has 8 liberties after E6 follow-up: E8, F7, E5, F6, D5, C5, B6, and B7.',
+      },
+      {
+        id: 'read-pressure-follow-up-defense-4,3',
+        point: { x: 4, y: 3 },
+        variant: 'positive',
+        label: 'E6: follow-up defense; C7 and E7 connect with 8 liberties.',
+      },
+    ]));
+  });
+
   it('reopens a pressure defense from chat with the selected short-side marker', () => {
     act(() => {
       useGameStore.getState().placeStone({ x: 2, y: 2 });

@@ -47,6 +47,7 @@ Latest completed slice:
 - Added a post-defense recount to the non-mutating defense trial, so learners see how the chosen liberty changes the short-side liberty count before returning to the real game.
 - Switched defense-trial board markers to the post-defense recount, so the board shows the stabilized side's actual liberties and flags the newly shorter side instead of stale pre-defense warnings.
 - Added a replayable follow-up defense continuation when a successful defense makes the other side shorter, so learners can keep reading the new weak side without mutating the real game.
+- Added a follow-up defense comparison summary that contrasts E8, E6, and F7 and explicitly names E6 as the move that connects both Black sides into one group.
 
 Next investigation candidates:
-- Whether the pressure mini-branch should compare follow-up defenses like E8, E6, and F7 side by side, especially when one move connects both sides into a single group.
+- Whether a stable pressure read should hand learners back to a concrete real-game extension choice, so the simulated branch closes with an actionable next move.
