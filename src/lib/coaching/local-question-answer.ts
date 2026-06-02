@@ -316,6 +316,16 @@ function isGameGoalQuestion(q: string): boolean {
     || /\bwhat\s+should\s+i\s+be\s+trying\s+to\s+do\b/.test(q);
 }
 
+function isRulesQuestion(q: string): boolean {
+  return /\bwhat\s+(are|re)\s+the\s+(basic\s+)?rules\b/.test(q)
+    || /\bhow\s+(do|does)\s+(i|we|you)\s+play\s+(go|this\s+game)?\b/.test(q)
+    || /\bhow\s+is\s+go\s+played\b/.test(q)
+    || /\bhow\s+does\s+go\s+work\b/.test(q)
+    || /\bteach\s+me\s+the\s+(rules|basics)\b/.test(q)
+    || /\bexplain\s+the\s+(rules|basics)\b/.test(q)
+    || /\bi\s+do\s+not\s+know\s+how\s+to\s+play\b/.test(q);
+}
+
 function isKomiQuestion(q: string): boolean {
   return /\bkomi\b/.test(q);
 }
@@ -856,6 +866,53 @@ function buildGameGoalAnswer(game: GameState, teachingLevel: TeachingLevel): Loc
   };
 }
 
+function buildRulesAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
+  const objective = game.phase === 'playing'
+    ? getBeginnerObjective({
+      boardSize: game.board.size,
+      board: game.board,
+      moveHistory: game.moveHistory,
+      moveCount: game.moveHistory.length,
+      currentPlayer: 'black',
+      teachingLevel,
+    })
+    : null;
+  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-rules-move') : [];
+  const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
+  const lines = [
+    'The basic rules of Go are small: players alternate placing Black and White stones on empty intersections, not squares.',
+    'Stones that touch up, down, left, or right become one group; empty points touching that group are liberties.',
+    'If a group loses every liberty, it is captured and removed from the board.',
+    `When both players pass, the board is scored: surrounded territory, captures, and White's ${game.komi} komi decide who has more points.`,
+  ];
+
+  if (objective) {
+    lines.push(`In this guided game, use those rules by following one concrete job: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}`);
+  }
+
+  if (suggestions.length > 0) {
+    lines.push('I marked the legal beginner targets so the rules connect to your next move.');
+  }
+
+  return {
+    text: lines.join(' '),
+    conceptIds: uniqueConceptIds([
+      'stones-and-board',
+      'groups',
+      'liberties',
+      'capture',
+      'territory',
+      'scoring',
+      ...(objective?.conceptIds ?? []),
+    ]),
+    ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
+    actions: [
+      ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+      { id: 'lesson:liberties', label: 'Review liberties' },
+    ],
+  };
+}
+
 function buildCoordinateAnswer(game: GameState, teachingLevel: TeachingLevel, q: string): LocalQuestionAnswer {
   const requestedPoint = mentionedCoordinate(q, game.board.size);
   const requestedCoord = requestedPoint ? pointToCoord(requestedPoint, game.board.size) : null;
@@ -1277,6 +1334,10 @@ export function getLocalQuestionAnswer(
 
   if (isGameGoalQuestion(q)) {
     return buildGameGoalAnswer(game, teachingLevel);
+  }
+
+  if (isRulesQuestion(q)) {
+    return buildRulesAnswer(game, teachingLevel);
   }
 
   if (isPositionQuestion(q)) {

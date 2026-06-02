@@ -174,6 +174,42 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('liberties').encounterCount).toBeGreaterThan(0);
   });
 
+  it('explains the basic rules locally without fetching', () => {
+    act(() => {
+      useGameStore.getState().startGuidedIntroGame();
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('What are the rules?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('The basic rules of Go are small: players alternate placing Black and White stones on empty intersections, not squares.');
+    expect(state.bubble.text).toContain('Stones that touch up, down, left, or right become one group; empty points touching that group are liberties.');
+    expect(state.bubble.text).toContain('If a group loses every liberty, it is captured and removed from the board.');
+    expect(state.bubble.text).toContain('In this guided game, use those rules by following one concrete job: Start with a corner.');
+    expect(state.chatMessages.at(-1)?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'lesson:liberties', label: 'Review liberties' },
+    ]);
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 2, y: 2 },
+      { x: 6, y: 2 },
+      { x: 2, y: 6 },
+      { x: 6, y: 6 },
+    ]);
+    expect(useConceptStore.getState().getMastery('stones-and-board').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('groups').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('liberties').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('capture').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('territory').encounterCount).toBeGreaterThan(0);
+  });
+
   it('keeps logged-out guided player moves local instead of fetching and warning about auth', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());

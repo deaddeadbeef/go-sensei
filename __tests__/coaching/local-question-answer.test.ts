@@ -134,6 +134,57 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('explains the basic rules with current board targets', () => {
+    const answer = getLocalQuestionAnswer('What are the rules?', createGame(9), 'guided');
+
+    expect(answer?.text).toContain('The basic rules of Go are small: players alternate placing Black and White stones on empty intersections, not squares.');
+    expect(answer?.text).toContain('Stones that touch up, down, left, or right become one group; empty points touching that group are liberties.');
+    expect(answer?.text).toContain('If a group loses every liberty, it is captured and removed from the board.');
+    expect(answer?.text).toContain("surrounded territory, captures, and White's 6.5 komi decide who has more points.");
+    expect(answer?.text).toContain('In this guided game, use those rules by following one concrete job: Start with a corner.');
+    expect(answer?.text).toContain('Try C7, G7, C3, or G3.');
+    expect(answer?.text).toContain('I marked the legal beginner targets so the rules connect to your next move.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining([
+      'stones-and-board',
+      'groups',
+      'liberties',
+      'capture',
+      'territory',
+      'scoring',
+      'corner-opening',
+    ]));
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-rules-move-2,2',
+        point: { x: 2, y: 2 },
+        rank: 1,
+        reason: 'Start at C7: the board edge helps this stone make territory.',
+      },
+      {
+        id: 'local-rules-move-6,2',
+        point: { x: 6, y: 2 },
+        rank: 2,
+        reason: 'Start at G7: the board edge helps this stone make territory.',
+      },
+      {
+        id: 'local-rules-move-2,6',
+        point: { x: 2, y: 6 },
+        rank: 3,
+        reason: 'Start at C3: the board edge helps this stone make territory.',
+      },
+      {
+        id: 'local-rules-move-6,6',
+        point: { x: 6, y: 6 },
+        rank: 4,
+        reason: 'Start at G3: the board edge helps this stone make territory.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'lesson:liberties', label: 'Review liberties' },
+    ]);
+  });
+
   it('answers next-move questions by pointing weak groups at liberties', () => {
     const game = playSequence([
       { x: 2, y: 2 },
