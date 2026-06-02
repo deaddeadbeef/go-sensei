@@ -435,10 +435,15 @@ describe('BeginnerObjectiveCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Compare D6 against D8' }));
 
     const d6RecountText = 'After D6, recount the two Black sides: C7 has 3 liberties at C8, C6, and B7. E7 has 3 liberties at E8, E6, and F7. Neither side is short yet, so keep building while staying ready to answer D7.';
+    const comparisonSummary = 'D8 and D6 leave the same liberty counts: C7 has 3 liberties and E7 has 3 liberties either way. The difference is direction: D8 attacks D7 from above, while D6 attacks it from below.';
     expect(screen.getByText(d6RecountText)).toBeTruthy();
+    expect(screen.getByText('Comparison summary')).toBeTruthy();
+    expect(screen.getByText('D8: C7 3 liberties, E7 3 liberties.')).toBeTruthy();
+    expect(screen.getByText('D6: C7 3 liberties, E7 3 liberties.')).toBeTruthy();
+    expect(screen.getByText(comparisonSummary)).toBeTruthy();
     expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
     expect(useGameStore.getState().chatMessages.at(-1)).toMatchObject({
-      text: `Comparison read: ${d6RecountText}`,
+      text: `Comparison read: ${d6RecountText} ${comparisonSummary}`,
       variant: 'teaching',
       actions: [
         { id: 'guided:read-pressure:recount:read-pressure-2,2-4,2-3,2:3,3', label: 'Show recount' },
