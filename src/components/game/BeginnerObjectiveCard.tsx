@@ -5,6 +5,7 @@ import {
   getBeginnerObjective,
   getBeginnerObjectiveProgress,
 } from '@/lib/coaching/beginner-objectives';
+import { getMoveInsight } from '@/lib/coaching/move-insight';
 import { pointToCoord } from '@/lib/go-engine';
 import type { Point } from '@/lib/go-engine';
 import { useGameStore } from '@/stores/game-store';
@@ -42,12 +43,27 @@ export function BeginnerObjectiveCard() {
   const progress = getBeginnerObjectiveProgress(game, teachingLevel);
   const progressColor = progress?.status === 'met' ? COLORS.overlay.positive : COLORS.overlay.warning;
   const playableTargets = objective.targetPoints.slice(0, 4);
+  const hasLearnerMove = game.moveHistory.some((move) => move.color === 'black');
+  const insight = hasLearnerMove ? getMoveInsight(game, teachingLevel) : null;
 
   return (
     <div
       className="mx-auto mb-3 w-full max-w-2xl rounded-lg border px-4 py-3 text-sm"
       style={{ backgroundColor: COLORS.ui.bgCard, borderColor: 'rgba(255,255,255,0.08)' }}
     >
+      {insight && (
+        <div className="mb-2 border-b border-white/10 pb-2">
+          <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: COLORS.ui.textSecondary }}>
+            What changed
+          </div>
+          <div className="mt-1 text-xs font-semibold" style={{ color: COLORS.ui.textPrimary }}>
+            {insight.title}
+          </div>
+          <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+            {insight.observation}
+          </p>
+        </div>
+      )}
       <div className="font-semibold" style={{ color: COLORS.ui.textPrimary }}>
         {objective.title}
       </div>

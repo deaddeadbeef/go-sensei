@@ -28,6 +28,7 @@ Latest completed slice:
 - Added a plan-style snapback follow-up so "what should I read next after this snapback?" teaches capture-count-continue, marks every White group the snapback removes, and shows the post-capture liberty count.
 - Added durable guided-board snapshots so the learning path can restore a paused guided 9x9 after session storage is lost, with learner-facing resume coaching.
 - Made restored guided boards immediately playable and actionable by locally passing an interrupted White turn, restoring ranked board-analysis suggestions, and highlighting the last learner move.
+- Added a compact board-side "What changed" recap after guided learner moves so the last-move lesson stays visible near the stones instead of only in the sidebar or chat.
 
 Next investigation candidates:
-- Whether guided learners should get a compact "what changed after my last move" recap pinned near the board after each objective step, instead of relying on the chat transcript.
+- Whether the guided objective card should surface a tiny "why this target" explanation when a learner hovers or focuses a specific suggested coordinate.
