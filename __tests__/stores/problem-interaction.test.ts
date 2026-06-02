@@ -1,5 +1,6 @@
 import { act } from '@testing-library/react';
 import { getRestorableAppPhase, useGameStore } from '@/stores/game-store';
+import { useProgressStore } from '@/stores/progress-store';
 import { PROBLEMS } from '@/lib/problems/problem-data';
 import type { Problem } from '@/lib/problems/types';
 import type { ValidationResult } from '@/lib/problems/validator';
@@ -189,6 +190,43 @@ describe('problem interaction store', () => {
     expect(state.hasStartedIntroGame).toBe(true);
     expect(state.bubble.visible).toBe(true);
     expect(state.bubble.text).toContain('9x9');
+  });
+
+  it('openGuidedGame restores guided 9x9 when progress points at a stale normal game', () => {
+    act(() => useGameStore.getState().startGuidedIntroGame());
+    act(() => useGameStore.getState().startNewGame(19));
+    act(() => useGameStore.getState().setTeachingLevel('beginner'));
+
+    expect(useGameStore.getState().game.board.size).toBe(19);
+    expect(useGameStore.getState().teachingLevel).toBe('beginner');
+    expect(useProgressStore.getState().hasStartedIntroGame).toBe(true);
+
+    act(() => useGameStore.getState().openGuidedGame());
+
+    const state = useGameStore.getState();
+    expect(state.appPhase).toBe('game');
+    expect(state.phase).toBe('playing');
+    expect(state.game.board.size).toBe(9);
+    expect(state.game.moveHistory).toHaveLength(0);
+    expect(state.teachingLevel).toBe('guided');
+    expect(state.bubble.text).toContain('Your first job is: Start with a corner.');
+  });
+
+  it('openGuidedGame resumes the current guided 9x9 board without clearing moves', () => {
+    act(() => useGameStore.getState().startGuidedIntroGame());
+    act(() => {
+      const result = useGameStore.getState().placeStone({ x: 2, y: 2 });
+      expect(result.success).toBe(true);
+    });
+    act(() => useGameStore.getState().showLearningPath());
+
+    act(() => useGameStore.getState().openGuidedGame());
+
+    const state = useGameStore.getState();
+    expect(state.appPhase).toBe('game');
+    expect(state.game.board.size).toBe(9);
+    expect(state.teachingLevel).toBe('guided');
+    expect(state.game.moveHistory.length).toBeGreaterThan(0);
   });
 
   it('starts guided intro with concrete first-target coaching', () => {

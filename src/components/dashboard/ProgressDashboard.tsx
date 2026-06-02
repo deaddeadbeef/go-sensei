@@ -175,6 +175,7 @@ export function ProgressDashboard() {
     [getReviewStats, reviewCards, reviewHistory],
   );
   const returnToGame = useGameStore((s) => s.returnToGame);
+  const openGuidedGame = useGameStore((s) => s.openGuidedGame);
   const startGuidedIntroGame = useGameStore((s) => s.startGuidedIntroGame);
   const startLesson = useGameStore((s) => s.startLesson);
   const showLessons = useGameStore((s) => s.showLessons);
@@ -217,7 +218,7 @@ export function ProgressDashboard() {
         showReview();
         break;
       case 'guided_game':
-        returnToGame();
+        openGuidedGame();
         break;
     }
   };
