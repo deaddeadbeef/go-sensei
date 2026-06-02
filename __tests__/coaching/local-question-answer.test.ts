@@ -1016,6 +1016,46 @@ describe('local question answer', () => {
     }]);
   });
 
+  it('answers safety questions about a named Black group coordinate', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup first move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+    const secondMove = playMove(afterWhitePass, { x: 4, y: 2 });
+    if (!secondMove.success) throw new Error('test setup second move failed');
+
+    const answer = getLocalQuestionAnswer('Is E7 safe?', secondMove.newState, 'guided');
+
+    expect(answer?.text).toContain('A weak group is a connected group with very little room, usually one or two liberties.');
+    expect(answer?.text).toContain('Your Black group at E7 is not in immediate danger: it has 4 liberties: E8, E6, D7, and F7.');
+    expect(answer?.text).toContain('Immediate danger usually starts at one or two liberties; with 4 liberties, keep building while you keep counting.');
+    expect(answer?.text).toContain('Your current guided job is: Make your stones work together. Play a one-space jump from one of your stones. Try G7, E5, or C5.');
+    expect(answer?.text).not.toContain('Your Black group at C7');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['groups', 'liberties', 'shape', 'direction-of-play']));
+    expect(answer?.boardFocus?.liberties).toEqual([{
+      id: 'local-weak-group-current-liberties-4,2',
+      point: { x: 4, y: 2 },
+      count: 4,
+      libertyPoints: [
+        { x: 4, y: 1 },
+        { x: 4, y: 3 },
+        { x: 3, y: 2 },
+        { x: 5, y: 2 },
+      ],
+    }]);
+    expect(answer?.boardFocus?.groups?.[0]).toMatchObject({
+      id: 'local-weak-group-current-4,2',
+      stones: [{ x: 4, y: 2 }],
+      color: 'black',
+      liberties: 4,
+      label: 'Black group with room: 4 liberties at E8, E6, D7, and F7.',
+    });
+    expect(answer?.boardFocus?.suggestions?.map((suggestion) => suggestion.point)).toEqual([
+      { x: 6, y: 2 },
+      { x: 4, y: 4 },
+      { x: 2, y: 4 },
+    ]);
+  });
+
   it('explains why a marked target move matters', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
