@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { BeginnerObjectiveCard } from '@/components/game/BeginnerObjectiveCard';
 import { useGameStore } from '@/stores/game-store';
@@ -19,6 +19,22 @@ describe('BeginnerObjectiveCard', () => {
 
     expect(screen.getByText('Start with a corner')).toBeTruthy();
     expect(screen.getByText('Try C7, G7, C3, or G3.')).toBeTruthy();
+  });
+
+  it('plays a named target from the objective card', () => {
+    render(<BeginnerObjectiveCard />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Play C7 target for Start with a corner' }));
+
+    const state = useGameStore.getState();
+    const lastMove = state.game.moveHistory.at(-1);
+    expect(lastMove).toMatchObject({
+      type: 'place',
+      color: 'black',
+      point: { x: 2, y: 2 },
+    });
+    expect(state.lastPlayerMove).toEqual({ x: 2, y: 2 });
+    expect(state.game.currentPlayer).toBe('white');
   });
 
   it('names extension targets after the learner claims a corner', () => {
