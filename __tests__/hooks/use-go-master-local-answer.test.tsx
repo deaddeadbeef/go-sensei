@@ -374,6 +374,55 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('shape').encounterCount).toBeGreaterThan(0);
   });
 
+  it('explains the second guided move as one-space jump shape without fetching', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendPlayerMove(false, 0);
+      const move = useGameStore.getState().placeStone({ x: 4, y: 2 });
+      if (!move.success) throw new Error('test setup extension move failed');
+      result.current.sendPlayerMove(false, 0);
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.game.currentPlayer).toBe('black');
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('Good: E7 made a one-space jump from your stone.');
+    expect(state.bubble.text).toContain('Lesson: E7 is a one-space jump from C7. The empty point at D7 leaves room to grow');
+    expect(state.bubble.text).toContain('Try G7, E5, or C5.');
+    expect(state.overlays.highlights).toEqual([{
+      id: 'local-fallback-learned-4,2',
+      point: { x: 4, y: 2 },
+      variant: 'positive',
+      label: 'E7: move to learn from - beginner job met.',
+    }]);
+    expect(state.overlays.suggestions).toEqual([
+      {
+        id: 'local-fallback-move-6,2',
+        point: { x: 6, y: 2 },
+        rank: 1,
+        reason: 'Try G7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-fallback-move-4,4',
+        point: { x: 4, y: 4 },
+        rank: 2,
+        reason: 'Try E5 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-fallback-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 3,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
+    expect(useConceptStore.getState().getMastery('shape').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('direction-of-play').encounterCount).toBeGreaterThan(0);
+  });
+
   it('explains the local White pass without fetching', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());
