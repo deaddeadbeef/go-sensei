@@ -305,6 +305,19 @@ function isLearnerPassDecisionQuestion(q: string): boolean {
     || /\bpass\s+now\b/.test(q);
 }
 
+function isUndoQuestion(q: string): boolean {
+  return /\b(can|could|should|do)\s+i\s+(undo|take\s+back)\b/.test(q)
+    || /\b(can|could|should|do)\s+i\s+take\s+(that|this|my\s+move|move)\s+back\b/.test(q)
+    || /\bhow\s+do\s+i\s+(undo|take\s+back)\b/.test(q)
+    || /\bhow\s+do\s+i\s+take\s+(that|this|my\s+move|move)\s+back\b/.test(q)
+    || /\bundo\s+(that|this|my\s+move|move)\b/.test(q)
+    || /\btake\s+(that|this|my\s+move|move)\s+back\b/.test(q)
+    || /\btake\s+back\s+(that|this|my\s+move|move)\b/.test(q)
+    || /\bfix\s+(that|this|my\s+move|mistake)\b/.test(q)
+    || /\bi\s+made\s+a\s+mistake\b/.test(q)
+    || /\bmisclicked\b/.test(q);
+}
+
 function isPositionQuestion(q: string): boolean {
   return /\b(am\s+i|are\s+we|is\s+black|is\s+white)\s+(winning|ahead|behind|losing)\b/.test(q)
     || /\bwho\s+(is|s)\s+(winning|ahead|behind)\b/.test(q)
@@ -736,6 +749,60 @@ function buildPassAnswer(game: GameState, teachingLevel: TeachingLevel, q: strin
   return {
     text: lines.join(' '),
     conceptIds: uniqueConceptIds(['stones-and-board', 'scoring', ...(objective?.conceptIds ?? [])]),
+    ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
+    actions: [
+      ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+      ...(action ? [action] : []),
+    ],
+  };
+}
+
+function buildUndoAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
+  const objective = game.phase === 'playing'
+    ? getBeginnerObjective({
+      boardSize: game.board.size,
+      board: game.board,
+      moveHistory: game.moveHistory,
+      moveCount: game.moveHistory.length,
+      currentPlayer: 'black',
+      teachingLevel,
+    })
+    : null;
+  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-undo-move') : [];
+  const action = objective ? getBeginnerObjectiveLessonAction(objective) : null;
+  const move = latestMove(game);
+  const lines: string[] = [];
+
+  if (!move) {
+    lines.push('There is nothing to undo yet; no stones have been played.');
+  } else if (move.type === 'pass' && move.color === 'white' && game.currentPlayer === 'black') {
+    lines.push('Yes. The Undo button will take back the local White pass and your previous Black move, returning you to the choice before that turn.');
+    lines.push('Use it for misclicks, then replay one of the marked targets.');
+  } else if (move.color === 'white') {
+    lines.push("Yes. The Undo button will take back White's last move and your previous Black move, returning you to your last decision.");
+    lines.push('Use it for misclicks; for learning, also ask me to review the move so you know what changed.');
+  } else if (move.type === 'place') {
+    const coord = pointToCoord(move.point, game.board.size);
+    lines.push(`Yes. Use Undo to take back your last move at ${coord} and try again.`);
+    lines.push('That is fine for misclicks; for learning, also ask me to review the move so you know what changed.');
+  } else {
+    lines.push('Yes. Use Undo to take back the last move and return to the previous board position.');
+    lines.push('That is fine for misclicks; for learning, also ask me to review the move so you know what changed.');
+  }
+
+  if (objective) {
+    const targetText = formatObjectiveTargetText(objective, game.board.size);
+    const prefix = move ? 'Your current guided target is' : 'In guided practice, your next useful move is';
+    lines.push(`${prefix}: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}`);
+  }
+
+  if (suggestions.length > 0) {
+    lines.push(move ? 'I marked the current targets again.' : 'I marked the first targets again.');
+  }
+
+  return {
+    text: lines.join(' '),
+    conceptIds: uniqueConceptIds(['stones-and-board', ...(objective?.conceptIds ?? [])]),
     ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
     actions: [
       ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
@@ -1343,6 +1410,10 @@ export function getLocalQuestionAnswer(
 
   if (isPassQuestion(q)) {
     return buildPassAnswer(game, teachingLevel, q);
+  }
+
+  if (isUndoQuestion(q)) {
+    return buildUndoAnswer(game, teachingLevel);
   }
 
   if (isKomiQuestion(q)) {
