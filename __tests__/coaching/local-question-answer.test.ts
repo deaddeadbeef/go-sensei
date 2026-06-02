@@ -313,6 +313,37 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
   });
 
+  it('answers early score questions without pretending territory is settled', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+
+    const answer = getLocalQuestionAnswer('Am I winning?', afterWhitePass, 'guided');
+
+    expect(answer?.text).toContain('It is too early for a real score');
+    expect(answer?.text).toContain('Black has 1 stone on the board and 0 captures');
+    expect(answer?.text).toContain('White has 0 stones and 0 captures, plus 6.5 komi');
+    expect(answer?.text).toContain('A better beginner position check is');
+    expect(answer?.text).toContain('your next useful test is: Make your stones work together.');
+    expect(answer?.text).toContain('I marked the next targets so you can improve the position instead of only counting it.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['scoring', 'territory', 'shape']));
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-position-move-4,2',
+        point: { x: 4, y: 2 },
+        rank: 1,
+        reason: 'Try E7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-position-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 2,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+  });
+
   it('answers liberty questions with current board context', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
