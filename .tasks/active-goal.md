@@ -50,6 +50,7 @@ Latest completed slice:
 - Added a follow-up defense comparison summary that contrasts E8, E6, and F7 and explicitly names E6 as the move that connects both Black sides into one group.
 - Added a stable-read handoff that turns equal pressure comparisons and resolved follow-up defenses into a concrete real-game extension button.
 - Added a post-handoff "Read applied" recap that ties the real extension move back to the simulated pressure read before moving on to the next gap.
+- Added a compact read-sequence recap inside the pressure mini-branch, preserving the original reply, comparison reply, defense/follow-up, and real-game handoff as numbered steps.
 
 Next investigation candidates:
-- Whether the pressure mini-branch should preserve and compare whole sequences in a compact timeline, so learners can review the reading path without replaying each button.
+- Whether read-sequence rows should highlight the matching stones and liberties on hover/focus, so learners can connect the compact recap back to the board without replaying each button.
