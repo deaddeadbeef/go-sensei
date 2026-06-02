@@ -964,6 +964,22 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
   });
 
+  it('explains marked targets from the latest Black anchor after White replies', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup first move failed');
+    const whiteReply = playMove(firstMove.newState, { x: 3, y: 2 });
+    if (!whiteReply.success) throw new Error('test setup white reply failed');
+
+    const answer = getLocalQuestionAnswer('Why E7?', whiteReply.newState, 'guided');
+
+    expect(answer?.text).toContain('E7 is marked because it is a one-space jump from C7');
+    expect(answer?.text).not.toContain('one-space jump from D7');
+    expect(answer?.boardFocus?.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+    ]);
+  });
+
   it('affirms a marked candidate move before the learner plays it', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
@@ -1249,6 +1265,8 @@ describe('local question answer', () => {
     expect(answer?.text).toContain('Letters run left to right across the board and skip I');
     expect(answer?.text).toContain('row 9 is the top edge and row 1 is the bottom edge');
     expect(answer?.text).toContain('E7 means column E, row 7.');
+    expect(answer?.text).toContain('E7 is also one of the marked targets for Make your stones work together.');
+    expect(answer?.text).toContain('E7 is marked because it is a one-space jump from C7');
     expect(answer?.text).toContain('I highlighted E7 on the board.');
     expect(answer?.text).toContain('For the current beginner goal, Try E7 or C5.');
     expect(answer?.text).toContain('I kept the current target points marked');
@@ -1256,8 +1274,8 @@ describe('local question answer', () => {
     expect(answer?.boardFocus?.highlights).toEqual([{
       id: 'local-coordinate-4,2',
       point: { x: 4, y: 2 },
-      variant: 'neutral',
-      label: 'E7: column E, row 7.',
+      variant: 'positive',
+      label: 'E7: marked target for Make your stones work together.',
     }]);
     expect(answer?.boardFocus?.suggestions).toEqual([
       {
@@ -1274,6 +1292,28 @@ describe('local question answer', () => {
       },
     ]);
     expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+  });
+
+  it('explains when a requested coordinate is already occupied by the learner', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+
+    const answer = getLocalQuestionAnswer('Where is C7?', afterWhitePass, 'guided');
+
+    expect(answer?.text).toContain('C7 means column C, row 7.');
+    expect(answer?.text).toContain('C7 currently has your Black stone');
+    expect(answer?.text).toContain('use it as an anchor for the next idea');
+    expect(answer?.boardFocus?.highlights).toEqual([{
+      id: 'local-coordinate-2,2',
+      point: { x: 2, y: 2 },
+      variant: 'positive',
+      label: 'C7: your Black stone.',
+    }]);
+    expect(answer?.boardFocus?.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+    ]);
   });
 
   it('explains the learner color and turn after the local White pass', () => {

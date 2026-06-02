@@ -663,13 +663,15 @@ describe('useGoMaster local answers', () => {
     expect(state.bubble.variant).toBe('teaching');
     expect(state.bubble.text).toContain('Go coordinates name intersections, not squares.');
     expect(state.bubble.text).toContain('E7 means column E, row 7.');
+    expect(state.bubble.text).toContain('E7 is also one of the marked targets for Make your stones work together.');
+    expect(state.bubble.text).toContain('E7 is marked because it is a one-space jump from C7');
     expect(state.bubble.text).toContain('For the current beginner goal, Try E7 or C5.');
     expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
     expect(state.overlays.highlights).toEqual([{
       id: 'local-coordinate-4,2',
       point: { x: 4, y: 2 },
-      variant: 'neutral',
-      label: 'E7: column E, row 7.',
+      variant: 'positive',
+      label: 'E7: marked target for Make your stones work together.',
     }]);
     expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
       { x: 4, y: 2 },
