@@ -613,6 +613,53 @@ function objectiveTargetCoordList(objective: BeginnerObjective, boardSize: Board
   return joinOrList(coords);
 }
 
+interface BlockedOneSpaceJumpContext {
+  sentence: string;
+  highlights: LocalHighlightFocus[];
+}
+
+function blockedOneSpaceJumpContext(
+  board: GameState['board'],
+  point: Point,
+  anchor: Point | null,
+  idPrefix: string,
+): BlockedOneSpaceJumpContext | null {
+  if (!anchor) return null;
+
+  const dx = point.x - anchor.x;
+  const dy = point.y - anchor.y;
+  const isOneSpaceJump = (Math.abs(dx) === 2 && dy === 0) || (Math.abs(dy) === 2 && dx === 0);
+  if (!isOneSpaceJump) return null;
+
+  const gap = { x: anchor.x + dx / 2, y: anchor.y + dy / 2 };
+  const gapStone = getStone(board, gap);
+  if (gapStone !== 'black' && gapStone !== 'white') return null;
+
+  const coord = pointToCoord(point, board.size);
+  const anchorCoord = pointToCoord(anchor, board.size);
+  const gapCoord = pointToCoord(gap, board.size);
+  const occupantText = gapStone === 'white' ? 'White is' : 'your Black stone is';
+  const occupantLabel = gapStone === 'white' ? 'White' : 'Black';
+
+  return {
+    sentence: `${coord} would normally be a one-space jump from ${anchorCoord}, but ${occupantText} already on ${gapCoord}, the gap between them. That gap is what lets the shape work, so ${coord} is not a clean teamwork target now.`,
+    highlights: [
+      {
+        id: `${idPrefix}-blocked-target-${pointKey(point)}`,
+        point: copyPoint(point),
+        variant: 'warning',
+        label: `${coord}: not a clean jump while ${gapCoord} is occupied.`,
+      },
+      {
+        id: `${idPrefix}-blocked-gap-${pointKey(gap)}`,
+        point: copyPoint(gap),
+        variant: gapStone === 'white' ? 'danger' : 'neutral',
+        label: `${gapCoord}: ${occupantLabel} occupies the one-space jump gap.`,
+      },
+    ],
+  };
+}
+
 function targetReason(
   objective: BeginnerObjective,
   point: Point,
@@ -655,9 +702,13 @@ function buildTargetReasonAnswer(game: GameState, teachingLevel: TeachingLevel, 
   const action = getBeginnerObjectiveLessonAction(objective);
   const anchorMove = lastBlackPlacedMove(game);
   const lines: string[] = [];
+  const blockedContext = requestedPoint && !pointEquals(requestedPoint, targetPoint)
+    ? blockedOneSpaceJumpContext(game.board, requestedPoint, anchorMove?.point ?? null, 'local-target-reason')
+    : null;
 
   if (requestedPoint && !pointEquals(requestedPoint, targetPoint)) {
     lines.push(`${requestedCoord} is not one of the current marked beginner targets.`);
+    if (blockedContext) lines.push(blockedContext.sentence);
   }
 
   lines.push(targetReason(objective, targetPoint, game.board.size, anchorMove?.point ?? null));
@@ -676,7 +727,10 @@ function buildTargetReasonAnswer(game: GameState, teachingLevel: TeachingLevel, 
   return {
     text: lines.join(' '),
     conceptIds: objective.conceptIds,
-    boardFocus: { suggestions },
+    boardFocus: {
+      ...(blockedContext ? { highlights: blockedContext.highlights } : {}),
+      suggestions,
+    },
     actions: [
       { id: 'hint', label: 'Show targets' },
       ...(action ? [action] : []),
@@ -689,6 +743,7 @@ function candidateMissReason(
   point: Point,
   boardSize: BoardSize,
   anchor: Point | null,
+  board?: GameState['board'],
 ): string {
   const coord = pointToCoord(point, boardSize);
 
@@ -698,6 +753,9 @@ function candidateMissReason(
 
   if (objective.id === 'extend-from-stone') {
     if (anchor) {
+      const blockedContext = board ? blockedOneSpaceJumpContext(board, point, anchor, 'local-candidate-move') : null;
+      if (blockedContext) return blockedContext.sentence;
+
       const anchorCoord = pointToCoord(anchor, boardSize);
       const distance = Math.abs(point.x - anchor.x) + Math.abs(point.y - anchor.y);
       if (distance === 1) {
@@ -734,6 +792,9 @@ function buildCandidateMoveAnswer(game: GameState, teachingLevel: TeachingLevel,
   const targetCoordText = objectiveTargetCoordList(objective, game.board.size);
   const isMarkedTarget = objective.targetPoints.some((point) => pointEquals(point, requestedPoint));
   const anchorMove = lastBlackPlacedMove(game);
+  const blockedContext = !isMarkedTarget
+    ? blockedOneSpaceJumpContext(game.board, requestedPoint, anchorMove?.point ?? null, 'local-candidate-move')
+    : null;
 
   if (getStone(game.board, requestedPoint) !== null) {
     return {
@@ -765,13 +826,13 @@ function buildCandidateMoveAnswer(game: GameState, teachingLevel: TeachingLevel,
 
   return {
     text: [
-      candidateMissReason(objective, requestedPoint, game.board.size, anchorMove?.point ?? null),
+      candidateMissReason(objective, requestedPoint, game.board.size, anchorMove?.point ?? null, game.board),
       targetCoordText ? `For this board, I would prefer ${targetCoordText}.` : objective.instruction,
       `I highlighted ${coord} and re-marked the better beginner targets.`,
     ].join(' '),
     conceptIds: objective.conceptIds,
     boardFocus: {
-      highlights: [{
+      highlights: blockedContext?.highlights ?? [{
         id: `local-candidate-question-${pointKey(requestedPoint)}`,
         point: copyPoint(requestedPoint),
         variant: 'warning',
@@ -857,7 +918,7 @@ function buildCandidateComparisonAnswer(game: GameState, teachingLevel: Teaching
     lines.push(`I would choose ${preferredCoord} for this beginner goal.`);
     lines.push(targetReason(objective, preferred, game.board.size, anchorMove?.point ?? null));
     for (const point of unmarkedPoints.slice(0, 2)) {
-      lines.push(candidateMissReason(objective, point, game.board.size, anchorMove?.point ?? null));
+      lines.push(candidateMissReason(objective, point, game.board.size, anchorMove?.point ?? null, game.board));
     }
     lines.push(`I highlighted the off-goal option${unmarkedPoints.length === 1 ? '' : 's'} and re-marked the better beginner target.`);
   } else {
@@ -868,7 +929,7 @@ function buildCandidateComparisonAnswer(game: GameState, teachingLevel: Teaching
       lines.push(objective.instruction);
     }
     for (const point of unmarkedPoints.slice(0, 2)) {
-      lines.push(candidateMissReason(objective, point, game.board.size, anchorMove?.point ?? null));
+      lines.push(candidateMissReason(objective, point, game.board.size, anchorMove?.point ?? null, game.board));
     }
   }
 
