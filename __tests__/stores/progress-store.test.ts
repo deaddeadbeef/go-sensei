@@ -1,5 +1,6 @@
 import { act } from '@testing-library/react';
 import { useProgressStore } from '@/stores/progress-store';
+import { createGame } from '@/lib/go-engine';
 
 describe('progress store', () => {
   it('deduplicates completed lessons', () => {
@@ -35,5 +36,19 @@ describe('progress store', () => {
         timestamp: 123,
       },
     ]);
+  });
+
+  it('stores a durable guided game snapshot with position history', () => {
+    const game = createGame(9);
+
+    act(() => useProgressStore.getState().saveGuidedGameSnapshot(game));
+
+    expect(useProgressStore.getState().guidedGameSnapshot?.board.size).toBe(9);
+    expect(useProgressStore.getState().guidedGameSnapshot?.positionHistory).toBeInstanceOf(Set);
+    expect(localStorage.getItem('go-sensei-progress')).toContain('"__type":"Set"');
+
+    act(() => useProgressStore.getState().resetAll());
+
+    expect(useProgressStore.getState().guidedGameSnapshot).toBeNull();
   });
 });

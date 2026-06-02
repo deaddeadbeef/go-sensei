@@ -229,6 +229,33 @@ describe('problem interaction store', () => {
     expect(state.game.moveHistory.length).toBeGreaterThan(0);
   });
 
+  it('openGuidedGame restores a durable paused guided board when session game state is missing', () => {
+    act(() => useGameStore.getState().startGuidedIntroGame());
+    act(() => {
+      const result = useGameStore.getState().placeStone({ x: 2, y: 2 });
+      expect(result.success).toBe(true);
+    });
+    const pausedHistory = useGameStore.getState().game.moveHistory;
+
+    act(() => useGameStore.getState().startNewGame(19));
+    act(() => useGameStore.getState().setTeachingLevel('beginner'));
+
+    expect(useGameStore.getState().game.board.size).toBe(19);
+    expect(useProgressStore.getState().hasStartedIntroGame).toBe(true);
+
+    act(() => useGameStore.getState().openGuidedGame());
+
+    const state = useGameStore.getState();
+    expect(state.appPhase).toBe('game');
+    expect(state.phase).toBe('playing');
+    expect(state.teachingLevel).toBe('guided');
+    expect(state.game.board.size).toBe(9);
+    expect(state.game.moveHistory).toEqual(pausedHistory);
+    expect(state.bubble.text).toContain('Welcome back to your guided 9x9.');
+    expect(state.bubble.text).toContain('I restored your paused board with 1 move.');
+    expect(state.bubble.text).toContain('Your next job is: Make your stones work together.');
+  });
+
   it('starts guided intro with concrete first-target coaching', () => {
     act(() => useGameStore.getState().startGuidedIntroGame());
 
