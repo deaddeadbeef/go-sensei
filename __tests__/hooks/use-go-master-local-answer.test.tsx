@@ -263,6 +263,41 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('scoring').encounterCount).toBeGreaterThan(0);
   });
 
+  it('discourages early learner passes locally without fetching', () => {
+    act(() => {
+      useGameStore.getState().startGuidedIntroGame();
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('Should I pass?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('Not yet. Passing is usually an endgame decision');
+    expect(state.bubble.text).toContain('Early in this guided game, passing would skip useful practice and hand the turn away.');
+    expect(state.bubble.text).toContain('Your better move is: Start with a corner.');
+    expect(state.bubble.text).toContain('I marked the moves that keep the game useful right now.');
+    expect(state.bubble.text).not.toContain("do not treat White's pass as endgame strategy");
+    expect(state.chatMessages.at(-1)?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'lesson:territory', label: 'Review territory' },
+    ]);
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 2, y: 2 },
+      { x: 6, y: 2 },
+      { x: 2, y: 6 },
+      { x: 6, y: 6 },
+    ]);
+    expect(useConceptStore.getState().getMastery('scoring').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('territory').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('corner-opening').encounterCount).toBeGreaterThan(0);
+  });
+
   it('answers early position questions locally without fetching', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());

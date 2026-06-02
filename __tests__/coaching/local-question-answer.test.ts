@@ -447,6 +447,48 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
   });
 
+  it('discourages early learner passes and marks a better target', () => {
+    const answer = getLocalQuestionAnswer('Should I pass?', createGame(9), 'guided');
+
+    expect(answer?.text).toContain('Not yet. Passing is usually an endgame decision');
+    expect(answer?.text).toContain('Early in this guided game, passing would skip useful practice and hand the turn away.');
+    expect(answer?.text).toContain('Your better move is: Start with a corner.');
+    expect(answer?.text).toContain('Try C7, G7, C3, or G3.');
+    expect(answer?.text).toContain('I marked the moves that keep the game useful right now.');
+    expect(answer?.text).not.toContain("do not treat White's pass as endgame strategy");
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['stones-and-board', 'scoring', 'corner-opening', 'territory']));
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-pass-explanation-move-2,2',
+        point: { x: 2, y: 2 },
+        rank: 1,
+        reason: 'Start at C7: the board edge helps this stone make territory.',
+      },
+      {
+        id: 'local-pass-explanation-move-6,2',
+        point: { x: 6, y: 2 },
+        rank: 2,
+        reason: 'Start at G7: the board edge helps this stone make territory.',
+      },
+      {
+        id: 'local-pass-explanation-move-2,6',
+        point: { x: 2, y: 6 },
+        rank: 3,
+        reason: 'Start at C3: the board edge helps this stone make territory.',
+      },
+      {
+        id: 'local-pass-explanation-move-6,6',
+        point: { x: 6, y: 6 },
+        rank: 4,
+        reason: 'Start at G3: the board edge helps this stone make territory.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'lesson:territory', label: 'Review territory' },
+    ]);
+  });
+
   it('answers early score questions without pretending territory is settled', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
