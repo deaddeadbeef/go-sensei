@@ -298,6 +298,15 @@ function isOpponentMoveQuestion(q: string): boolean {
     || /\bwhy\s+(there|that\s+move|this\s+move)\b/.test(q);
 }
 
+function isWhiteReplyQuestion(q: string): boolean {
+  return /\bwhat\s+(can|could|will|would|might)\s+(white|sensei|the\s+opponent)\s+(do|play|try|threaten)\b/.test(q)
+    || /\bwhat\s+would\s+happen\s+if\s+(white|sensei|the\s+opponent)\s+(plays|replies|responds|attacks)\b/.test(q)
+    || /\bhow\s+(can|could|will|would|might)\s+(white|sensei|the\s+opponent)\s+(answer|respond|reply|attack|punish)\b/.test(q)
+    || /\bwhere\s+(can|could|will|would|might)\s+(white|sensei|the\s+opponent)\s+play\b/.test(q)
+    || /\bwhat\s+if\s+(white|sensei|the\s+opponent)\s+(answers|responds|attacks|plays)\b/.test(q)
+    || /\bwhat\s+is\s+(white|sensei|the\s+opponent)\s+threatening\s+next\b/.test(q);
+}
+
 function isGameReviewQuestion(q: string): boolean {
   return /\bgame\s+review\b/.test(q)
     || /\breview\s+(this|the|my)\s+(game|board|position)\b/.test(q)
@@ -1485,6 +1494,107 @@ function buildReadingRoutineAnswer(game: GameState, teachingLevel: TeachingLevel
   };
 }
 
+function buildWhiteReplyAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
+  const move = lastBlackPlacedMove(game);
+  const objective = getBeginnerObjective({
+    boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
+    moveCount: game.moveHistory.length,
+    currentPlayer: 'black',
+    teachingLevel,
+  });
+  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-white-reply-move') : [];
+  const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
+
+  if (!move) {
+    return {
+      text: [
+        'Play a Black stone first, then ask what White can do and I will read the reply from that stone.',
+        objective ? `For now, your first useful job is: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}` : '',
+        suggestions.length > 0 ? 'I marked the first targets so the reply question has a real anchor.' : '',
+      ].filter(Boolean).join(' '),
+      conceptIds: uniqueConceptIds(['reading', 'direction-of-play', ...(objective?.conceptIds ?? [])]),
+      ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
+      actions: [
+        ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+        { id: 'practice:reading', label: 'Practice reading' },
+      ],
+    };
+  }
+
+  const group = getGroup(game.board, move.point);
+  const coord = pointToCoord(move.point, game.board.size);
+  const libertyCoords = group?.liberties.map((liberty) => pointToCoord(liberty, game.board.size)) ?? [];
+  const libertyList = joinOrList(libertyCoords);
+  const libertyWord = group?.liberties.length === 1 ? 'liberty' : 'liberties';
+  const firstSuggestion = suggestions[0];
+  const firstSuggestionCoord = firstSuggestion ? pointToCoord(firstSuggestion.point, game.board.size) : null;
+  const lines = [
+    `Read White from your Black stone at ${coord}.`,
+  ];
+
+  if (group && libertyCoords.length > 0) {
+    lines.push(`White's simplest reply is to play on one of its ${libertyWord}: ${libertyList}.`);
+    lines.push(group.liberties.length <= 2
+      ? `That is urgent: ${coord} is already short on room, so count before expanding.`
+      : `That would not capture ${coord} yet, but it would reduce Black's room; do not panic, count.`);
+  } else {
+    lines.push('White usually starts by touching a nearby liberty, cutting a loose gap, or taking the easier territory point.');
+  }
+
+  if (objective) {
+    lines.push(`Your practical answer is: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}`);
+  } else {
+    lines.push('Your practical answer should ask which Black group needs room, which connection can be strengthened, or which White group can be pressured.');
+  }
+
+  if (firstSuggestionCoord) {
+    lines.push(`Start by reading ${firstSuggestionCoord}: if White touches ${coord}, Black should still have room and a clearer shape.`);
+  }
+
+  if (suggestions.length > 0) {
+    lines.push('I marked the reply anchor, its liberties, and the current targets so you can practice that reading on the board.');
+  } else {
+    lines.push('I marked the reply anchor so you can practice reading White from the actual stone.');
+  }
+
+  return {
+    text: lines.join(' '),
+    conceptIds: uniqueConceptIds(['reading', 'direction-of-play', 'liberties', 'groups', ...(objective?.conceptIds ?? [])]),
+    boardFocus: {
+      highlights: [{
+        id: `local-white-reply-anchor-${pointKey(move.point)}`,
+        point: copyPoint(move.point),
+        variant: group && group.liberties.length <= 2 ? 'warning' : 'neutral',
+        label: `${coord}: read White's reply against this Black group.`,
+      }],
+      ...(group
+        ? {
+          liberties: [{
+            id: `local-white-reply-liberties-${pointKey(move.point)}`,
+            point: copyPoint(move.point),
+            count: group.liberties.length,
+            libertyPoints: group.liberties.map(copyPoint),
+          }],
+          groups: [{
+            id: `local-white-reply-group-${pointKey(move.point)}`,
+            stones: group.stones.map(copyPoint),
+            color: group.color,
+            liberties: group.liberties.length,
+            label: `Black group White could pressure: ${group.liberties.length} ${libertyWord} at ${joinList(libertyCoords)}.`,
+          }],
+        }
+        : {}),
+      ...(suggestions.length > 0 ? { suggestions } : {}),
+    },
+    actions: [
+      ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+      { id: 'practice:reading', label: 'Practice reading' },
+    ],
+  };
+}
+
 function buildConnectionAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
   const objective = getBeginnerObjective({
     boardSize: game.board.size,
@@ -2240,6 +2350,10 @@ export function getLocalQuestionAnswer(
   if (isOpponentMoveQuestion(q)) {
     const opponentAnswer = buildOpponentMoveAnswer(game, teachingLevel);
     if (opponentAnswer) return opponentAnswer;
+  }
+
+  if (isWhiteReplyQuestion(q)) {
+    return buildWhiteReplyAnswer(game, teachingLevel);
   }
 
   if (isUndoQuestion(q)) {
