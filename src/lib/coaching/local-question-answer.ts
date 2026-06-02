@@ -395,6 +395,17 @@ function isFightFollowUpQuestion(q: string): boolean {
     || /\bdoes\s+(white|sensei|the\s+opponent)\s+have\s+(an?\s+)?(answer|reply|escape)\b/.test(q);
 }
 
+function isFightPlanQuestion(q: string): boolean {
+  return /\bwhat\s+should\s+i\s+read\s+next\b/.test(q)
+    || /\bwhat\s+is\s+the\s+(next\s+)?follow[-\s]?up\b/.test(q)
+    || /\bwhat\s+is\s+the\s+plan\b/.test(q)
+    || /\bwhat\s+is\s+my\s+plan\b/.test(q)
+    || /\breading\s+plan\b/.test(q)
+    || /\bread(?:ing)?\s+sequence\b/.test(q)
+    || /\bwhat\s+should\s+i\s+do\s+next\s+in\s+this\s+(fight|cut|race)\b/.test(q)
+    || /\bafter\s+this\s+(fight|cut|race)\b/.test(q);
+}
+
 function isGameReviewQuestion(q: string): boolean {
   return /\bgame\s+review\b/.test(q)
     || /\breview\s+(this|the|my)\s+(game|board|position)\b/.test(q)
@@ -1349,6 +1360,78 @@ function buildOccupiedOneSpaceJumpCutAnswer(game: GameState, q: string): LocalQu
         },
         {
           id: `local-occupied-cut-white-${pointKey(cut.gap)}`,
+          stones: cut.cuttingGroup.stones.map(copyPoint),
+          color: cut.cuttingGroup.color,
+          liberties: cut.cuttingGroup.liberties.length,
+          label: `White cutting stone at ${gapCoord}: ${libertyCountPhrase(cut.cuttingGroup.liberties.length)} at ${joinList(cutLibertyCoords)}.`,
+        },
+      ],
+      suggestions,
+    },
+    actions: [
+      { id: 'hint', label: 'Show targets' },
+      { id: 'practice:reading', label: 'Practice reading' },
+    ],
+  };
+}
+
+function buildOccupiedOneSpaceJumpCutPlanAnswer(game: GameState, q: string): LocalQuestionAnswer | null {
+  const cut = findOccupiedOneSpaceJumpCut(game, mentionedCoordinate(q, game.board.size));
+  if (!cut) return null;
+
+  const anchorCoord = pointToCoord(cut.anchor, game.board.size);
+  const stoneCoord = pointToCoord(cut.stone, game.board.size);
+  const gapCoord = pointToCoord(cut.gap, game.board.size);
+  const cutLibertyCoords = cut.cuttingGroup.liberties.map((liberty) => pointToCoord(liberty, game.board.size));
+  const firstLiberties = cut.cuttingGroup.liberties.slice(0, 2);
+  const firstLibertyCoords = cutLibertyCoords.slice(0, 2);
+  const suggestions = firstLiberties.map((liberty, index) => {
+    const coord = pointToCoord(liberty, game.board.size);
+
+    return {
+      id: `local-occupied-cut-plan-${index + 1}-${pointKey(liberty)}`,
+      point: copyPoint(liberty),
+      rank: index + 1,
+      reason: index === 0
+        ? `Step 1: attack the cutting stone at ${coord}.`
+        : `Step 1 backup: attack the cutting stone at ${coord}.`,
+    };
+  });
+
+  return {
+    text: [
+      'Read the cut as a three-step plan.',
+      `Step 1: attack the White cutting stone at ${gapCoord} by playing ${joinOrList(firstLibertyCoords)}.`,
+      `Step 2: after White answers, recount both Black groups: ${anchorCoord} has ${libertyCountPhrase(cut.anchorGroup.liberties.length)} and ${stoneCoord} has ${libertyCountPhrase(cut.stoneGroup.liberties.length)}.`,
+      'Step 3: if one Black group drops to two liberties or fewer, defend it first; otherwise fill the next White liberty.',
+      `The cutting stone still has ${libertyCountPhrase(cut.cuttingGroup.liberties.length)}: ${joinList(cutLibertyCoords)}.`,
+      'I marked the cut, both Black groups, and the two first reading points so the plan stays visible.',
+    ].join(' '),
+    conceptIds: ['connect-and-cut', 'reading', 'liberties', 'groups', 'capture'],
+    boardFocus: {
+      highlights: [{
+        id: `local-occupied-cut-plan-stone-${pointKey(cut.gap)}`,
+        point: copyPoint(cut.gap),
+        variant: 'danger',
+        label: `${gapCoord}: White cutting stone; start the reading plan here.`,
+      }],
+      groups: [
+        {
+          id: `local-occupied-cut-plan-black-left-${pointKey(cut.anchor)}`,
+          stones: cut.anchorGroup.stones.map(copyPoint),
+          color: cut.anchorGroup.color,
+          liberties: cut.anchorGroup.liberties.length,
+          label: `Recount ${anchorCoord} after White answers: ${libertyCountPhrase(cut.anchorGroup.liberties.length)}.`,
+        },
+        {
+          id: `local-occupied-cut-plan-black-right-${pointKey(cut.stone)}`,
+          stones: cut.stoneGroup.stones.map(copyPoint),
+          color: cut.stoneGroup.color,
+          liberties: cut.stoneGroup.liberties.length,
+          label: `Recount ${stoneCoord} after White answers: ${libertyCountPhrase(cut.stoneGroup.liberties.length)}.`,
+        },
+        {
+          id: `local-occupied-cut-plan-white-${pointKey(cut.gap)}`,
           stones: cut.cuttingGroup.stones.map(copyPoint),
           color: cut.cuttingGroup.color,
           liberties: cut.cuttingGroup.liberties.length,
@@ -2999,6 +3082,11 @@ function buildAttackDefenseDecisionAnswer(game: GameState, teachingLevel: Teachi
 
 function buildFightFollowUpAnswer(game: GameState, teachingLevel: TeachingLevel, q: string): LocalQuestionAnswer | null {
   if (findSnapbackContext(game)) return buildSnapbackAnswer(game);
+
+  if (isFightPlanQuestion(q)) {
+    const occupiedCutPlanAnswer = buildOccupiedOneSpaceJumpCutPlanAnswer(game, q);
+    if (occupiedCutPlanAnswer) return occupiedCutPlanAnswer;
+  }
 
   const occupiedCutAnswer = buildOccupiedOneSpaceJumpCutAnswer(game, q);
   if (occupiedCutAnswer) return occupiedCutAnswer;

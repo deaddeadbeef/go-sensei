@@ -2330,6 +2330,46 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('turns occupied-cut plan questions into a short reading sequence', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup first move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+    const extensionMove = playMove(afterWhitePass, { x: 4, y: 2 });
+    if (!extensionMove.success) throw new Error('test setup extension move failed');
+    const whiteCut = playMove(extensionMove.newState, { x: 3, y: 2 });
+    if (!whiteCut.success) throw new Error('test setup white cut failed');
+
+    const answer = getLocalQuestionAnswer('What should I read next after this cut?', whiteCut.newState, 'guided');
+
+    expect(answer?.text).toContain('Read the cut as a three-step plan.');
+    expect(answer?.text).toContain('Step 1: attack the White cutting stone at D7 by playing D8 or D6.');
+    expect(answer?.text).toContain('Step 2: after White answers, recount both Black groups: C7 has 3 liberties and E7 has 3 liberties.');
+    expect(answer?.text).toContain('Step 3: if one Black group drops to two liberties or fewer, defend it first; otherwise fill the next White liberty.');
+    expect(answer?.text).toContain('I marked the cut, both Black groups, and the two first reading points so the plan stays visible.');
+    expect(answer?.text).not.toContain('Read White from your Black stone');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['connect-and-cut', 'reading', 'liberties', 'groups', 'capture']));
+    expect(answer?.boardFocus?.highlights).toEqual([{
+      id: 'local-occupied-cut-plan-stone-3,2',
+      point: { x: 3, y: 2 },
+      variant: 'danger',
+      label: 'D7: White cutting stone; start the reading plan here.',
+    }]);
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-occupied-cut-plan-1-3,1',
+        point: { x: 3, y: 1 },
+        rank: 1,
+        reason: 'Step 1: attack the cutting stone at D8.',
+      },
+      {
+        id: 'local-occupied-cut-plan-2-3,3',
+        point: { x: 3, y: 3 },
+        rank: 2,
+        reason: 'Step 1 backup: attack the cutting stone at D6.',
+      },
+    ]);
+  });
+
   it('answers how to respond if White attacks the one-space jump gap', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup first move failed');
