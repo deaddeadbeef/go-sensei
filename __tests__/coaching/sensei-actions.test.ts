@@ -27,6 +27,20 @@ describe('getSenseiActionRoute', () => {
     });
   });
 
+  it('routes pressure follow-up defense replay actions with both defense keys', () => {
+    expect(getSenseiActionRoute(
+      'guided:read-pressure:follow-up-defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3:4,1',
+    )).toEqual({
+      type: 'guided_read_pressure',
+      mode: 'follow-up-defense',
+      promptKey: 'read-pressure-2,2-4,2-3,2',
+      replyKey: '3,3',
+      comparedReplyKey: '3,1',
+      defensePointKey: '2,3',
+      followUpDefensePointKey: '4,1',
+    });
+  });
+
   it('rejects malformed pressure comparison replay actions', () => {
     expect(getSenseiActionRoute('guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3')).toBeNull();
     expect(getSenseiActionRoute('guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,3')).toBeNull();
@@ -35,5 +49,7 @@ describe('getSenseiActionRoute', () => {
   it('rejects malformed pressure defense replay actions', () => {
     expect(getSenseiActionRoute('guided:read-pressure:defense:read-pressure-2,2-4,2-3,2:3,3:3,1')).toBeNull();
     expect(getSenseiActionRoute('guided:read-pressure:defense:read-pressure-2,2-4,2-3,2:3,3:3,3:2,3')).toBeNull();
+    expect(getSenseiActionRoute('guided:read-pressure:follow-up-defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3')).toBeNull();
+    expect(getSenseiActionRoute('guided:read-pressure:follow-up-defense:read-pressure-2,2-4,2-3,2:3,3:3,3:2,3:4,1')).toBeNull();
   });
 });

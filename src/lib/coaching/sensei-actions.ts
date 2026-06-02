@@ -13,11 +13,12 @@ export type SenseiActionRoute =
   | { type: 'guided_game' }
   | {
       type: 'guided_read_pressure';
-      mode: 'branch' | 'recount' | 'comparison' | 'defense';
+      mode: 'branch' | 'recount' | 'comparison' | 'defense' | 'follow-up-defense';
       promptKey: string;
       replyKey: string;
       comparedReplyKey?: string;
       defensePointKey?: string;
+      followUpDefensePointKey?: string;
     }
   | { type: 'practice'; category: ProblemCategory }
   | { type: 'lesson'; lessonId: string };
@@ -53,16 +54,35 @@ export function getSenseiActionRoute(actionId: string): SenseiActionRoute | null
   }
 
   if (actionId.startsWith('guided:read-pressure:')) {
-    const [, , mode, promptKey, replyKey, comparedReplyKey, defensePointKey] = actionId.split(':');
+    const [, , mode, promptKey, replyKey, comparedReplyKey, defensePointKey, followUpDefensePointKey] = actionId.split(':');
     if (
-      (mode !== 'branch' && mode !== 'recount' && mode !== 'comparison' && mode !== 'defense')
+      (
+        mode !== 'branch'
+        && mode !== 'recount'
+        && mode !== 'comparison'
+        && mode !== 'defense'
+        && mode !== 'follow-up-defense'
+      )
       || !promptKey
       || !replyKey
     ) return null;
-    if (mode === 'comparison' || mode === 'defense') {
+    if (mode === 'comparison' || mode === 'defense' || mode === 'follow-up-defense') {
       if (!comparedReplyKey || comparedReplyKey === replyKey) return null;
-      if (mode === 'defense') {
+      if (mode === 'defense' || mode === 'follow-up-defense') {
         if (!defensePointKey) return null;
+        if (mode === 'follow-up-defense') {
+          if (!followUpDefensePointKey) return null;
+
+          return {
+            type: 'guided_read_pressure',
+            mode,
+            promptKey,
+            replyKey,
+            comparedReplyKey,
+            defensePointKey,
+            followUpDefensePointKey,
+          };
+        }
 
         return {
           type: 'guided_read_pressure',
