@@ -339,6 +339,58 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('identifies the current weak group and marks rescue liberties', () => {
+    const game = playSequence([
+      { x: 2, y: 2 },
+      { x: 2, y: 1 },
+      { x: 4, y: 4 },
+      { x: 1, y: 2 },
+    ]);
+
+    const answer = getLocalQuestionAnswer('Which group is weak?', game, 'guided');
+
+    expect(answer?.text).toContain('The weak group is your Black group at C7.');
+    expect(answer?.text).toContain('It has only 2 liberties: C6 and D7.');
+    expect(answer?.text).toContain('if White fills those liberties, it will be captured.');
+    expect(answer?.text).toContain('Play one marked liberty to give it breathing room.');
+    expect(answer?.text).toContain('I marked the weak group, its liberties, and the rescue moves.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['groups', 'liberties', 'capture']));
+    expect(answer?.boardFocus?.liberties).toEqual([{
+      id: 'local-weak-group-liberties-2,2',
+      point: { x: 2, y: 2 },
+      count: 2,
+      libertyPoints: [
+        { x: 2, y: 3 },
+        { x: 3, y: 2 },
+      ],
+    }]);
+    expect(answer?.boardFocus?.groups?.[0]).toMatchObject({
+      id: 'local-weak-group-2,2',
+      stones: [{ x: 2, y: 2 }],
+      color: 'black',
+      liberties: 2,
+      label: 'Weak Black group: 2 liberties at C6 and D7.',
+    });
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-weak-group-move-2,3',
+        point: { x: 2, y: 3 },
+        rank: 1,
+        reason: 'Give the weak group another liberty by playing C6.',
+      },
+      {
+        id: 'local-weak-group-move-3,2',
+        point: { x: 3, y: 2 },
+        rank: 2,
+        reason: 'Give the weak group another liberty by playing D7.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'lesson:liberties', label: 'Review liberties' },
+    ]);
+  });
+
   it('explains why a marked target move matters', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');

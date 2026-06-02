@@ -153,6 +153,12 @@ function findLearnerCaptureTarget(game: GameState): Group | null {
     .sort(compareGroupsByAnchor)[0] ?? null;
 }
 
+function findLearnerWeakGroup(game: GameState): Group | null {
+  return getAllGroups(game.board)
+    .filter((group) => group.color === 'black' && group.liberties.length > 0 && group.liberties.length <= 2)
+    .sort((a, b) => a.liberties.length - b.liberties.length || compareGroupsByAnchor(a, b))[0] ?? null;
+}
+
 function buildAtariContext(game: GameState, group: Group): LibertyContext {
   const anchor = groupAnchor(group);
   const anchorCoord = pointToCoord(anchor, game.board.size);
@@ -252,6 +258,15 @@ function isConnectionQuestion(q: string): boolean {
     || /\bhow\s+do\s+i\s+connect\b/.test(q)
     || /\bdo\s+diagonal\s+stones\s+connect\b/.test(q)
     || (mentionsConnection && /\b(stones?|groups?|diagonal(?:ly|s)?|cuts?|cutting|solid|jump)\b/.test(q));
+}
+
+function isWeakGroupQuestion(q: string): boolean {
+  return /\bweak\s+groups?\b/.test(q)
+    || /\bwhich\s+(stones?|groups?)\s+(is|are)\s+(weak|in\s+trouble|in\s+danger|short\s+on\s+liberties)\b/.test(q)
+    || /\bwhich\s+(stones?|groups?)\s+(need|needs)\s+(room|help|saving|liberties)\b/.test(q)
+    || /\bhow\s+do\s+i\s+(save|defend|rescue|help)\s+(my\s+)?(stones?|groups?)\b/.test(q)
+    || /\bwhat\s+(does|do|is)\s+give\s+weak\s+groups?\s+room\b/.test(q)
+    || /\bshort\s+on\s+liberties\b/.test(q);
 }
 
 function mentionedCoordinates(q: string, boardSize: BoardSize): Point[] {
@@ -1316,6 +1331,98 @@ function buildConnectionAnswer(game: GameState, teachingLevel: TeachingLevel): L
   };
 }
 
+function buildWeakGroupAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
+  const weakGroup = findLearnerWeakGroup(game);
+  const objective = getBeginnerObjective({
+    boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
+    moveCount: game.moveHistory.length,
+    currentPlayer: 'black',
+    teachingLevel,
+  });
+
+  if (!weakGroup) {
+    const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-weak-group-current-move') : [];
+    const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
+
+    return {
+      text: [
+        'A weak group is a connected group with very little room, usually one or two liberties.',
+        'I do not see one of your Black groups in immediate danger right now.',
+        objective ? `Your current guided job is: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}` : '',
+        suggestions.length > 0 ? 'I marked the current beginner targets so you can keep building safely.' : '',
+      ].filter(Boolean).join(' '),
+      conceptIds: uniqueConceptIds(['groups', 'liberties', ...(objective?.conceptIds ?? [])]),
+      ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
+      actions: [
+        ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+        { id: 'lesson:liberties', label: 'Review liberties' },
+      ],
+    };
+  }
+
+  const anchor = groupAnchor(weakGroup);
+  const anchorCoord = pointToCoord(anchor, game.board.size);
+  const libertyCoords = weakGroup.liberties.map((liberty) => pointToCoord(liberty, game.board.size));
+  const libertyList = joinList(libertyCoords);
+  const libertyWord = weakGroup.liberties.length === 1 ? 'liberty' : 'liberties';
+  const suggestions = weakGroup.liberties.slice(0, 4).map((liberty, index) => {
+    const coord = pointToCoord(liberty, game.board.size);
+
+    return {
+      id: `local-weak-group-move-${pointKey(liberty)}`,
+      point: copyPoint(liberty),
+      rank: index + 1,
+      reason: weakGroup.liberties.length === 1
+        ? `Save the group by playing its last liberty at ${coord}.`
+        : `Give the weak group another liberty by playing ${coord}.`,
+    };
+  });
+  const lines = [
+    `The weak group is your Black group at ${anchorCoord}.`,
+    `It has only ${weakGroup.liberties.length} ${libertyWord}: ${libertyList}.`,
+    weakGroup.liberties.length === 1
+      ? 'That is atari: if White fills that last liberty, the group will be captured.'
+      : 'A weak group is not lost, but it is short on room; if White fills those liberties, it will be captured.',
+    weakGroup.liberties.length === 1
+      ? 'Play the marked liberty to give it breathing room.'
+      : 'Play one marked liberty to give it breathing room.',
+    'I marked the weak group, its liberties, and the rescue moves.',
+  ];
+
+  return {
+    text: lines.join(' '),
+    conceptIds: uniqueConceptIds([
+      'groups',
+      'liberties',
+      'capture',
+      ...(weakGroup.liberties.length === 1 ? ['atari'] : []),
+      ...(objective?.conceptIds ?? []),
+    ]),
+    boardFocus: {
+      liberties: [{
+        id: `local-weak-group-liberties-${pointKey(anchor)}`,
+        point: copyPoint(anchor),
+        count: weakGroup.liberties.length,
+        libertyPoints: weakGroup.liberties.map(copyPoint),
+      }],
+      groups: [{
+        id: `local-weak-group-${pointKey(anchor)}`,
+        stones: weakGroup.stones.map(copyPoint),
+        color: weakGroup.color,
+        liberties: weakGroup.liberties.length,
+        label: `Weak Black group: ${weakGroup.liberties.length} ${libertyWord} at ${libertyList}.`,
+      }],
+      suggestions,
+    },
+    actions: [
+      { id: 'hint', label: 'Show targets' },
+      { id: 'lesson:liberties', label: 'Review liberties' },
+    ],
+  };
+}
+
 function buildMoveReviewAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
   const progress = getBeginnerObjectiveProgress(game, teachingLevel);
   const insight = getMoveInsight(game, teachingLevel);
@@ -1527,6 +1634,10 @@ export function getLocalQuestionAnswer(
 
   if (isCornerOpeningQuestion(q)) {
     return buildCornerOpeningAnswer(game, teachingLevel);
+  }
+
+  if (isWeakGroupQuestion(q)) {
+    return buildWeakGroupAnswer(game, teachingLevel);
   }
 
   if (isConnectionQuestion(q)) {
