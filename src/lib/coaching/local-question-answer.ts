@@ -340,6 +340,16 @@ function isTurnQuestion(q: string): boolean {
     || /\bwhat\s+colou?r\s+(am\s+i|do\s+i\s+play)\b/.test(q);
 }
 
+function isBoardMarkerQuestion(q: string): boolean {
+  return /\bwhat\s+are\s+(these|the)\s+(numbered\s+)?(targets|suggestions|markers|dots|circles)\b/.test(q)
+    || /\bwhat\s+do\s+(these|the)\s+(numbered\s+)?(targets|suggestions|markers|dots|circles)\s+(mean|do)\b/.test(q)
+    || /\bwhat\s+are\s+(the\s+)?marked\s+(points|moves|targets)\b/.test(q)
+    || /\bwhat\s+do\s+(the\s+)?marked\s+(points|moves|targets)\s+(mean|do)\b/.test(q)
+    || /\bhow\s+do\s+i\s+(use|read|understand)\s+(the\s+)?(targets|suggestions|markers|dots|circles|board\s+analysis)\b/.test(q)
+    || /\bwhat\s+(is|does)\s+(show\s+targets|board\s+analysis)\s+(mean|do)\b/.test(q)
+    || /\bwhy\s+are\s+(there\s+)?(numbers|targets|suggestions|markers|dots|circles)\s+on\s+(the\s+)?board\b/.test(q);
+}
+
 function suggestionReason(objective: BeginnerObjective, point: Point, boardSize: BoardSize): string {
   const coord = pointToCoord(point, boardSize);
 
@@ -908,6 +918,56 @@ function buildTurnAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQu
   };
 }
 
+function markerObjectiveReason(objective: BeginnerObjective, boardSize: BoardSize): string {
+  if (objective.id === 'claim-corner') {
+    return 'These targets are corner starts: the board edge helps you make territory with fewer stones.';
+  }
+
+  if (objective.id === 'extend-from-stone') {
+    const coords = objective.targetPoints.slice(0, 4).map((point) => pointToCoord(point, boardSize));
+    return `${joinList(coords)} are marked because they are one-space jumps: they keep your stones working together without clumping.`;
+  }
+
+  return 'These targets are liberties for a group that is short on breathing room; playing one gives that group more ways to escape.';
+}
+
+function buildBoardMarkerAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer | null {
+  const objective = game.phase === 'playing'
+    ? getBeginnerObjective({
+      boardSize: game.board.size,
+      board: game.board,
+      moveHistory: game.moveHistory,
+      moveCount: game.moveHistory.length,
+      currentPlayer: 'black',
+      teachingLevel,
+    })
+    : null;
+
+  if (!objective || objective.targetPoints.length === 0) return null;
+
+  const suggestions = objectiveSuggestions(objective, game.board.size, 'local-marker-guide-move');
+  const action = getBeginnerObjectiveLessonAction(objective);
+  const targetText = formatObjectiveTargetText(objective, game.board.size);
+  const lines = [
+    'The glowing numbered circles are suggested moves, not stones already on the board.',
+    'The number is the suggestion rank: #1 is the first idea to try, and higher numbers are other good options for the same beginner goal.',
+    `Right now the marked target goal is: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}`,
+    markerObjectiveReason(objective, game.board.size),
+    'Click one marked intersection to play there, or use Show targets to restore the markers if they disappear.',
+    'I marked the targets again and kept the reasons in Board Analysis.',
+  ];
+
+  return {
+    text: lines.join(' '),
+    conceptIds: uniqueConceptIds(['stones-and-board', ...(objective?.conceptIds ?? [])]),
+    boardFocus: { suggestions },
+    actions: [
+      { id: 'hint', label: 'Show targets' },
+      ...(action ? [action] : []),
+    ],
+  };
+}
+
 function buildShapeAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
   const objective = getBeginnerObjective({
     boardSize: game.board.size,
@@ -1140,6 +1200,11 @@ export function getLocalQuestionAnswer(
   if (isTargetReasonQuestion(q, game.board.size)) {
     const targetAnswer = buildTargetReasonAnswer(game, teachingLevel, q);
     if (targetAnswer) return targetAnswer;
+  }
+
+  if (isBoardMarkerQuestion(q)) {
+    const markerAnswer = buildBoardMarkerAnswer(game, teachingLevel);
+    if (markerAnswer) return markerAnswer;
   }
 
   if (isCandidateMoveQuestion(q, game.board.size)) {

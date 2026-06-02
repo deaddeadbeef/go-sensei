@@ -444,6 +444,37 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
   });
 
+  it('explains what the numbered board targets mean', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+
+    const answer = getLocalQuestionAnswer('What are these numbered targets?', afterWhitePass, 'guided');
+
+    expect(answer?.text).toContain('The glowing numbered circles are suggested moves, not stones already on the board.');
+    expect(answer?.text).toContain('The number is the suggestion rank: #1 is the first idea to try');
+    expect(answer?.text).toContain('Right now the marked target goal is: Make your stones work together. Play a one-space jump from one of your stones. Try E7 or C5.');
+    expect(answer?.text).toContain('E7 and C5 are marked because they are one-space jumps');
+    expect(answer?.text).toContain('Click one marked intersection to play there');
+    expect(answer?.text).toContain('I marked the targets again and kept the reasons in Board Analysis.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['stones-and-board', 'shape']));
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-marker-guide-move-4,2',
+        point: { x: 4, y: 2 },
+        rank: 1,
+        reason: 'Try E7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-marker-guide-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 2,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+  });
+
   it('answers liberty questions with current board context', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
