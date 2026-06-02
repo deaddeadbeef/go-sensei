@@ -685,14 +685,14 @@ describe('BeginnerObjectiveCard', () => {
       {
         id: 'read-pressure-anchor-2,2',
         point: { x: 2, y: 2 },
-        variant: 'warning',
-        label: 'C7: short side with 2 liberties after D6: C6 and B7.',
+        variant: 'positive',
+        label: 'C7: 5 liberties after C6 defense: B7, C5, B6, D5, and E6.',
       },
       {
         id: 'read-pressure-stone-4,2',
         point: { x: 4, y: 2 },
-        variant: 'positive',
-        label: 'E7: 3 liberties after D6: E8, E6, and F7.',
+        variant: 'warning',
+        label: 'E7: short side with 3 liberties after C6 defense: E8, E6, and F7.',
       },
       {
         id: 'read-pressure-gap-3,2',
@@ -710,19 +710,43 @@ describe('BeginnerObjectiveCard', () => {
         id: 'read-pressure-reply-3,3',
         point: { x: 3, y: 3 },
         variant: 'positive',
-        label: 'D6: selected reply used for this recount.',
+        label: 'D6: selected reply before this defense.',
       },
       {
         id: 'read-pressure-selected-defense-2,3',
         point: { x: 2, y: 3 },
         variant: 'positive',
-        label: 'C6: selected defense for C7; keep the short side breathing before extending.',
+        label: 'C6: simulated defense; C7 now has 5 liberties.',
       },
       {
-        id: 'read-pressure-short-liberty-1,2',
+        id: 'read-pressure-defense-liberty-1,2',
         point: { x: 1, y: 2 },
-        variant: 'warning',
-        label: 'B7: defend this C7 liberty before extending.',
+        variant: 'positive',
+        label: 'B7: C7 liberty after C6 defense.',
+      },
+      {
+        id: 'read-pressure-defense-liberty-2,4',
+        point: { x: 2, y: 4 },
+        variant: 'positive',
+        label: 'C5: C7 liberty after C6 defense.',
+      },
+      {
+        id: 'read-pressure-defense-liberty-1,3',
+        point: { x: 1, y: 3 },
+        variant: 'positive',
+        label: 'B6: C7 liberty after C6 defense.',
+      },
+      {
+        id: 'read-pressure-defense-liberty-3,4',
+        point: { x: 3, y: 4 },
+        variant: 'positive',
+        label: 'D5: C7 liberty after C6 defense.',
+      },
+      {
+        id: 'read-pressure-defense-liberty-4,3',
+        point: { x: 4, y: 3 },
+        variant: 'positive',
+        label: 'E6: C7 liberty after C6 defense.',
       },
     ]);
   });
@@ -773,16 +797,18 @@ describe('BeginnerObjectiveCard', () => {
         id: 'read-pressure-selected-defense-2,3',
         point: { x: 2, y: 3 },
         variant: 'positive',
-        label: 'C6: selected defense for C7; keep the short side breathing before extending.',
+        label: 'C6: simulated defense; C7 now has 5 liberties.',
       },
       {
-        id: 'read-pressure-short-liberty-1,2',
+        id: 'read-pressure-defense-liberty-1,2',
         point: { x: 1, y: 2 },
-        variant: 'warning',
-        label: 'B7: defend this C7 liberty before extending.',
+        variant: 'positive',
+        label: 'B7: C7 liberty after C6 defense.',
       },
     ]));
+    expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).toContain('read-pressure-defense-liberty-4,3');
     expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).not.toContain('read-pressure-short-liberty-2,3');
+    expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).not.toContain('read-pressure-short-liberty-1,2');
   });
 
   it('keeps the last missed objective visible without blocking the next try', () => {
