@@ -388,7 +388,7 @@ function isFightFollowUpQuestion(q: string): boolean {
     || /\bwhat\s+now\b/.test(q)
     || /\bwhat\s+should\s+i\s+read\s+next\b/.test(q)
     || /\bwhat\s+is\s+the\s+(next\s+)?follow[-\s]?up\b/.test(q)
-    || /\bwhat\s+should\s+i\s+do\s+next\s+in\s+this\s+(fight|cut|race)\b/.test(q)
+    || /\bwhat\s+should\s+i\s+do\s+next\s+in\s+this\s+(fight|cut|race|snapback)\b/.test(q)
     || /\bwhat\s+happens\s+if\s+(white|sensei|the\s+opponent)\s+(answers|responds|replies|runs|escapes|connects|extends|captures|adds\s+a\s+liberty)\b/.test(q)
     || /\bwhat\s+if\s+(white|sensei|the\s+opponent)\s+(runs|escapes|connects|extends|captures|adds\s+a\s+liberty)\b/.test(q)
     || /\b(after|once)\s+(white|sensei|the\s+opponent)\s+(answers|responds|replies|runs|escapes|connects|extends|captures|adds\s+a\s+liberty)\b/.test(q)
@@ -402,8 +402,8 @@ function isFightPlanQuestion(q: string): boolean {
     || /\bwhat\s+is\s+my\s+plan\b/.test(q)
     || /\breading\s+plan\b/.test(q)
     || /\bread(?:ing)?\s+sequence\b/.test(q)
-    || /\bwhat\s+should\s+i\s+do\s+next\s+in\s+this\s+(fight|cut|race)\b/.test(q)
-    || /\bafter\s+this\s+(fight|cut|race)\b/.test(q);
+    || /\bwhat\s+should\s+i\s+do\s+next\s+in\s+this\s+(fight|cut|race|snapback)\b/.test(q)
+    || /\bafter\s+this\s+(fight|cut|race|snapback)\b/.test(q);
 }
 
 function isGameReviewQuestion(q: string): boolean {
@@ -2858,6 +2858,30 @@ interface SnapbackContext {
   whiteGroup: Group;
   snapbackPoint: Point;
   recaptured: Point[];
+  postRecaptureLiberties: Point[];
+}
+
+interface SnapbackRecapturedGroup {
+  keyPoint: Point;
+  group: Group;
+}
+
+function findSnapbackRecapturedGroups(game: GameState, recaptured: Point[]): SnapbackRecapturedGroup[] {
+  const seen = new Set<string>();
+  const groups: SnapbackRecapturedGroup[] = [];
+
+  for (const point of recaptured) {
+    const group = getGroup(game.board, point);
+    if (!group || group.color !== 'white') continue;
+
+    const key = group.stones.map(pointKey).sort().join('|');
+    if (seen.has(key)) continue;
+
+    seen.add(key);
+    groups.push({ keyPoint: point, group });
+  }
+
+  return groups;
 }
 
 function findSnapbackContext(game: GameState): SnapbackContext | null {
@@ -2870,12 +2894,15 @@ function findSnapbackContext(game: GameState): SnapbackContext | null {
   const snapbackPoint = whiteGroup.liberties[0];
   const recapture = playMove(game, snapbackPoint);
   if (!recapture.success || recapture.captured.length === 0) return null;
+  const postRecaptureGroup = getGroup(recapture.newState.board, snapbackPoint);
+  if (!postRecaptureGroup || postRecaptureGroup.color !== 'black') return null;
 
   return {
     whiteMove: move,
     whiteGroup,
     snapbackPoint,
     recaptured: recapture.captured,
+    postRecaptureLiberties: postRecaptureGroup.liberties,
   };
 }
 
@@ -2930,6 +2957,83 @@ function buildSnapbackAnswer(game: GameState): LocalQuestionAnswer {
       { id: 'hint', label: 'Show targets' },
       { id: 'lesson:snapback', label: 'Review snapback' },
       { id: 'practice:tesuji', label: 'Practice tesuji' },
+    ],
+  };
+}
+
+function buildSnapbackPlanAnswer(game: GameState): LocalQuestionAnswer | null {
+  const context = findSnapbackContext(game);
+  if (!context) return null;
+
+  const whiteCoord = pointToCoord(context.whiteMove.point, game.board.size);
+  const snapbackCoord = pointToCoord(context.snapbackPoint, game.board.size);
+  const recapturedCoords = context.recaptured.map((point) => pointToCoord(point, game.board.size));
+  const postRecaptureLibertyCoords = context.postRecaptureLiberties.map((liberty) => pointToCoord(liberty, game.board.size));
+  const recapturedGroups = findSnapbackRecapturedGroups(game, context.recaptured);
+
+  return {
+    text: [
+      'Read this snapback as capture, count, continue.',
+      `Step 1: snap back at ${snapbackCoord} and remove ${joinList(recapturedCoords)}.`,
+      `Step 2: after those stones come off, Black's new stone at ${snapbackCoord} has ${libertyCountPhrase(context.postRecaptureLiberties.length)}: ${joinList(postRecaptureLibertyCoords)}.`,
+      'Step 3: if White keeps fighting nearby, use that count before choosing the next forcing move; if White plays away, the snapback already won this local tactic.',
+      'I marked the captured White stones, the recapture point, and the post-capture liberties so the follow-up is visible.',
+    ].join(' '),
+    conceptIds: ['snapback', 'tesuji', 'capture', 'reading', 'liberties'],
+    boardFocus: {
+      highlights: [
+        {
+          id: `local-snapback-plan-white-capture-${pointKey(context.whiteMove.point)}`,
+          point: copyPoint(context.whiteMove.point),
+          variant: 'danger',
+          label: `${whiteCoord}: White captured into the snapback shape.`,
+        },
+        {
+          id: `local-snapback-plan-recapture-point-${pointKey(context.snapbackPoint)}`,
+          point: copyPoint(context.snapbackPoint),
+          variant: 'positive',
+          label: `${snapbackCoord}: Step 1 snapback and remove the cramped White stones.`,
+        },
+      ],
+      liberties: [
+        {
+          id: `local-snapback-plan-white-liberties-${pointKey(context.whiteMove.point)}`,
+          point: copyPoint(context.whiteMove.point),
+          count: context.whiteGroup.liberties.length,
+          libertyPoints: context.whiteGroup.liberties.map(copyPoint),
+        },
+        {
+          id: `local-snapback-plan-black-after-${pointKey(context.snapbackPoint)}`,
+          point: copyPoint(context.snapbackPoint),
+          count: context.postRecaptureLiberties.length,
+          libertyPoints: context.postRecaptureLiberties.map(copyPoint),
+        },
+      ],
+      groups: recapturedGroups.map(({ keyPoint, group }) => {
+        const stoneCoords = group.stones.map((stone) => pointToCoord(stone, game.board.size));
+        const libertyCoords = group.liberties.map((liberty) => pointToCoord(liberty, game.board.size));
+        const stoneWord = group.stones.length === 1 ? 'stone' : 'stones';
+
+        return {
+          id: `local-snapback-plan-white-group-${pointKey(keyPoint)}`,
+          stones: group.stones.map(copyPoint),
+          color: group.color,
+          liberties: group.liberties.length,
+          label: `White ${stoneWord} to remove at ${joinList(stoneCoords)}: ${libertyCountPhrase(group.liberties.length)} at ${joinList(libertyCoords)}.`,
+        };
+      }),
+      suggestions: [
+        {
+          id: `local-snapback-plan-recapture-${pointKey(context.snapbackPoint)}`,
+          point: copyPoint(context.snapbackPoint),
+          rank: 1,
+          reason: `Step 1: snap back at ${snapbackCoord} and remove ${joinList(recapturedCoords)}.`,
+        },
+      ],
+    },
+    actions: [
+      { id: 'hint', label: 'Show targets' },
+      { id: 'practice:reading', label: 'Practice reading' },
     ],
   };
 }
@@ -3156,15 +3260,18 @@ function buildAttackDefenseDecisionAnswer(game: GameState, teachingLevel: Teachi
 }
 
 function buildFightFollowUpAnswer(game: GameState, teachingLevel: TeachingLevel, q: string): LocalQuestionAnswer | null {
-  if (findSnapbackContext(game)) return buildSnapbackAnswer(game);
-
   if (isFightPlanQuestion(q)) {
+    const snapbackPlanAnswer = buildSnapbackPlanAnswer(game);
+    if (snapbackPlanAnswer) return snapbackPlanAnswer;
+
     const occupiedCutPlanAnswer = buildOccupiedOneSpaceJumpCutPlanAnswer(game, q);
     if (occupiedCutPlanAnswer) return occupiedCutPlanAnswer;
 
     const captureRacePlanAnswer = buildCaptureRacePlanAnswer(game);
     if (captureRacePlanAnswer) return captureRacePlanAnswer;
   }
+
+  if (findSnapbackContext(game)) return buildSnapbackAnswer(game);
 
   const occupiedCutAnswer = buildOccupiedOneSpaceJumpCutAnswer(game, q);
   if (occupiedCutAnswer) return occupiedCutAnswer;
