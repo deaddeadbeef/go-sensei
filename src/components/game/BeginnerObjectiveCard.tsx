@@ -498,6 +498,20 @@ export function BeginnerObjectiveCard() {
     addChatMessage(`Second read: ${recount.text}`, 'teaching', [getPressureReplayAction('recount', prompt, reply)]);
   }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game, recordInteraction]);
 
+  const compareReadPressureReply = useCallback((prompt: OneSpaceJumpReadPrompt, reply: Point) => {
+    const recount = getPressureRecount(game, prompt, reply);
+    if (!recount) return;
+
+    recordInteraction();
+    clearGuidedReadReplay();
+    setActiveTargetKey(null);
+    setActiveReadPromptKey(prompt.key);
+    setSelectedReadReplyKey(targetKey(reply));
+    setRecountReadReplyKey(targetKey(reply));
+    applyTargetHints(buildOneSpaceJumpRecountHighlights(prompt, recount, game.board));
+    addChatMessage(`Comparison read: ${recount.text}`, 'teaching', [getPressureReplayAction('recount', prompt, reply)]);
+  }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game, recordInteraction]);
+
   const handleTargetClick = useCallback((point: Point) => {
     if (!canPlayTarget) return;
 
@@ -569,6 +583,9 @@ export function BeginnerObjectiveCard() {
   const selectedReadRecount = readPrompt && selectedReadReply && effectiveRecountReadReplyKey === targetKey(selectedReadReply)
     ? getPressureRecount(game, readPrompt, selectedReadReply)
     : null;
+  const compareReadReplyPoints = readPrompt && selectedReadRecount
+    ? readPrompt.replyPoints.filter((point) => targetKey(point) !== targetKey(selectedReadRecount.reply))
+    : [];
   const readPromptAnchorCoord = readPrompt ? pointToCoord(readPrompt.anchor, game.board.size) : null;
   const readPromptStoneCoord = readPrompt ? pointToCoord(readPrompt.stone, game.board.size) : null;
   const selectedReadReplyCoord = selectedReadReply ? pointToCoord(selectedReadReply, game.board.size) : null;
@@ -690,6 +707,31 @@ export function BeginnerObjectiveCard() {
                       <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
                         {selectedReadRecount.text}
                       </p>
+                      {compareReadReplyPoints.length > 0 && (
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                          {compareReadReplyPoints.map((point) => {
+                            const coord = pointToCoord(point, game.board.size);
+                            const currentCoord = pointToCoord(selectedReadRecount.reply, game.board.size);
+
+                            return (
+                              <button
+                                key={`read-pressure-compare-${targetKey(point)}`}
+                                type="button"
+                                className="rounded border px-2 py-0.5 text-[11px] font-semibold transition hover:bg-white/[0.07]"
+                                style={{
+                                  borderColor: COLORS.ui.accent,
+                                  color: COLORS.ui.textPrimary,
+                                  backgroundColor: `${COLORS.ui.accent}1f`,
+                                }}
+                                aria-label={`Compare ${coord} against ${currentCoord}`}
+                                onClick={() => compareReadPressureReply(readPrompt, point)}
+                              >
+                                Compare {coord}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

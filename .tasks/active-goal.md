@@ -37,6 +37,7 @@ Latest completed slice:
 - Added a second-step recount inside the pressure mini-branch so learners can simulate White entering the gap, choose a reply, then count liberties on both Black sides before returning to the real game.
 - Preserved pressure mini-branch choices and second-read recounts in the chat transcript so the sidebar remembers the same teaching moments shown beside the board.
 - Added transcript actions that reopen the exact pressure branch or second-read recount on the board, so earlier reading work is recoverable after the learner switches replies or scrolls the chat.
+- Added a direct compare-other-reply loop in the pressure mini-branch so learners can switch from one recounted answer to the alternate reply and immediately see the new liberty counts without changing the real game.
 
 Next investigation candidates:
-- Whether the pressure mini-branch should offer a direct "compare the other reply" loop that shows how both answers change the two Black sides' liberties.
+- Whether compared pressure reads should end with a side-by-side summary that names what changed between the two replies.
