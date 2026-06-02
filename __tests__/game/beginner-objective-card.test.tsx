@@ -1133,6 +1133,65 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText('What changed')).toBeTruthy();
   });
 
+  it('plays a restored handoff sequence step from chat', () => {
+    act(() => {
+      useGameStore.getState().placeStone({ x: 2, y: 2 });
+      useGameStore.getState().placeStone({ x: 2, y: 1 });
+      useGameStore.getState().placeStone({ x: 4, y: 2 });
+      useGameStore.getState().pass();
+    });
+
+    render(
+      <>
+        <BeginnerObjectiveCard />
+        <SenseiChatLog />
+      </>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Recount C7 and E7 after D8' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Compare D6 against D8' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Try C6 defense for C7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Try E6 follow-up defense for E7' }));
+
+    const handoffSequenceStep = screen.getByRole('button', { name: 'Show board highlights for step 7: Real-game handoff: play G7 after the stable read.' });
+    fireEvent.click(handoffSequenceStep);
+    fireEvent.click(handoffSequenceStep);
+    expect(handoffSequenceStep.getAttribute('aria-pressed')).toBe('false');
+    expect(screen.queryByText('Next question')).toBeNull();
+
+    const focusActions = screen.getAllByRole('button', { name: 'Show step' });
+    fireEvent.click(focusActions[focusActions.length - 1]);
+
+    const restoredHandoffStep = screen.getByRole('button', { name: 'Show board highlights for step 7: Real-game handoff: play G7 after the stable read.' });
+    expect(restoredHandoffStep.getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByText('Next question')).toBeTruthy();
+    expect(screen.getByText('What real move can you play now that C7 and E7 survived the simulation?')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Play G7 from here' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Play G7 from here' }));
+
+    const state = useGameStore.getState();
+    expect(state.game.moveHistory).toHaveLength(5);
+    expect(state.game.moveHistory.at(-1)).toMatchObject({
+      type: 'place',
+      color: 'black',
+      point: { x: 6, y: 2 },
+    });
+    expect(state.lastPlayerMove).toEqual({ x: 6, y: 2 });
+    expect(state.game.currentPlayer).toBe('white');
+    expect(screen.queryByText('Next question')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Play G7 from here' })).toBeNull();
+
+    act(() => {
+      useGameStore.getState().pass();
+    });
+
+    expect(screen.getByText('Read applied')).toBeTruthy();
+    expect(screen.getByText('G7 applies the D7 read in the real game: C7 and E7 stayed safe in the variation, so Black can keep extending instead of answering a cut that has not happened.')).toBeTruthy();
+  });
+
   it('reopens a pressure defense from chat with the selected short-side marker', () => {
     act(() => {
       useGameStore.getState().placeStone({ x: 2, y: 2 });

@@ -2016,6 +2016,12 @@ export function BeginnerObjectiveCard() {
       prompt: readPrompt,
     }
     : null;
+  const replayedPressureSequenceHandoffFromHere = activePressureReplayRequestId !== null
+    && pinnedPressureSequenceRow
+    && activePressureExtensionHandoff
+    && pinnedPressureSequenceRow.replayKey === `handoff-${targetKey(activePressureExtensionHandoff.point)}`
+    ? activePressureExtensionHandoff
+    : null;
   const readPromptAnchorCoord = readPrompt ? pointToCoord(readPrompt.anchor, game.board.size) : null;
   const readPromptStoneCoord = readPrompt ? pointToCoord(readPrompt.stone, game.board.size) : null;
   const selectedReadReplyCoord = selectedReadReply ? pointToCoord(selectedReadReply, game.board.size) : null;
@@ -2450,6 +2456,22 @@ export function BeginnerObjectiveCard() {
                               )}
                             >
                               Compare {replayedPressureSequenceCompareFromHere.comparisonCoord} from here
+                            </button>
+                          )}
+                          {replayedPressureSequenceHandoffFromHere && (
+                            <button
+                              type="button"
+                              className="mt-2 rounded border px-2 py-0.5 font-mono text-[11px] font-bold transition hover:bg-white/[0.07] disabled:cursor-default disabled:opacity-70 disabled:hover:bg-transparent"
+                              style={{
+                                borderColor: COLORS.ui.accent,
+                                color: COLORS.ui.textPrimary,
+                                backgroundColor: `${COLORS.ui.accent}1f`,
+                              }}
+                              disabled={!canPlayTarget}
+                              aria-label={`Play ${replayedPressureSequenceHandoffFromHere.coord} from here`}
+                              onClick={() => handlePressureHandoffClick(replayedPressureSequenceHandoffFromHere)}
+                            >
+                              Play {replayedPressureSequenceHandoffFromHere.coord} from here
                             </button>
                           )}
                         </div>
