@@ -173,10 +173,15 @@ function getOneSpaceJumpReadPrompt(game: GameState): OneSpaceJumpReadPrompt | nu
   };
 }
 
-function buildOneSpaceJumpPressureHighlights(prompt: OneSpaceJumpReadPrompt, board: BoardState): OverlayHighlight[] {
+function buildOneSpaceJumpPressureHighlights(
+  prompt: OneSpaceJumpReadPrompt,
+  board: BoardState,
+  selectedReply: Point | null = null,
+): OverlayHighlight[] {
   const anchorCoord = pointToCoord(prompt.anchor, board.size);
   const stoneCoord = pointToCoord(prompt.stone, board.size);
   const gapCoord = pointToCoord(prompt.gap, board.size);
+  const selectedReplyKey = selectedReply ? targetKey(selectedReply) : null;
 
   return [
     {
@@ -195,19 +200,34 @@ function buildOneSpaceJumpPressureHighlights(prompt: OneSpaceJumpReadPrompt, boa
       id: `read-pressure-gap-${targetKey(prompt.gap)}`,
       point: copyPoint(prompt.gap),
       variant: 'warning',
-      label: `${gapCoord}: imagine White tests the open gap here.`,
+      label: selectedReply
+        ? `${gapCoord}: imagined White pressure point.`
+        : `${gapCoord}: imagine White tests the open gap here.`,
     },
     ...prompt.replyPoints.map((point) => {
       const coord = pointToCoord(point, board.size);
+      const isSelected = selectedReplyKey === targetKey(point);
 
       return {
         id: `read-pressure-reply-${targetKey(point)}`,
         point: copyPoint(point),
-        variant: 'positive' as const,
-        label: `${coord}: first reply to read against the cutting stone.`,
+        variant: selectedReply ? (isSelected ? 'positive' as const : 'neutral' as const) : 'positive' as const,
+        label: selectedReply
+          ? isSelected
+            ? `${coord}: selected first reply; attack the imagined cutting stone.`
+            : `${coord}: alternate reply to compare in the branch.`
+          : `${coord}: first reply to read against the cutting stone.`,
       };
     }),
   ];
+}
+
+function getPressureChoiceFeedback(prompt: OneSpaceJumpReadPrompt, reply: Point, board: BoardState): string {
+  const replyCoord = pointToCoord(reply, board.size);
+  const anchorCoord = pointToCoord(prompt.anchor, board.size);
+  const stoneCoord = pointToCoord(prompt.stone, board.size);
+
+  return `${replyCoord} is a good first read: it attacks the imagined White stone at ${prompt.gapCoord} and asks whether that cutting stone can live. After that, recount ${anchorCoord} and ${stoneCoord} before extending again.`;
 }
 
 function buildTargetHintHighlights(objective: BeginnerObjective, point: Point, board: BoardState): OverlayHighlight[] {
@@ -286,6 +306,7 @@ export function BeginnerObjectiveCard() {
   const canPlayTarget = phase === 'playing' && game.currentPlayer === 'black' && !isAiThinking;
   const [activeTargetKey, setActiveTargetKey] = useState<string | null>(null);
   const [activeReadPromptKey, setActiveReadPromptKey] = useState<string | null>(null);
+  const [selectedReadReplyKey, setSelectedReadReplyKey] = useState<string | null>(null);
 
   const objective = getBeginnerObjective({
     boardSize: game.board.size,
@@ -318,6 +339,7 @@ export function BeginnerObjectiveCard() {
 
     setActiveTargetKey(targetKey(point));
     setActiveReadPromptKey(null);
+    setSelectedReadReplyKey(null);
     applyTargetHints(buildTargetHintHighlights(objective, point, game.board));
   }, [applyTargetHints, game.board, objective]);
 
@@ -325,13 +347,23 @@ export function BeginnerObjectiveCard() {
     recordInteraction();
     setActiveTargetKey(null);
     setActiveReadPromptKey(prompt.key);
+    setSelectedReadReplyKey(null);
     applyTargetHints(buildOneSpaceJumpPressureHighlights(prompt, game.board));
+  }, [applyTargetHints, game.board, recordInteraction]);
+
+  const chooseReadPressureReply = useCallback((prompt: OneSpaceJumpReadPrompt, reply: Point) => {
+    recordInteraction();
+    setActiveTargetKey(null);
+    setActiveReadPromptKey(prompt.key);
+    setSelectedReadReplyKey(targetKey(reply));
+    applyTargetHints(buildOneSpaceJumpPressureHighlights(prompt, game.board, reply));
   }, [applyTargetHints, game.board, recordInteraction]);
 
   const handleTargetClick = useCallback((point: Point) => {
     if (!canPlayTarget) return;
 
     setActiveReadPromptKey(null);
+    setSelectedReadReplyKey(null);
     clearTargetHelp();
     recordInteraction();
     placeStone(point);
@@ -345,6 +377,12 @@ export function BeginnerObjectiveCard() {
   const hasLearnerMove = game.moveHistory.some((move) => move.color === 'black');
   const insight = hasLearnerMove ? getMoveInsight(game, teachingLevel) : null;
   const showReadPressureDetail = readPrompt !== null && activeReadPromptKey === readPrompt.key;
+  const selectedReadReply = showReadPressureDetail && selectedReadReplyKey
+    ? readPrompt.replyPoints.find((point) => targetKey(point) === selectedReadReplyKey) ?? null
+    : null;
+  const selectedReadReplyFeedback = readPrompt && selectedReadReply
+    ? getPressureChoiceFeedback(readPrompt, selectedReadReply, game.board)
+    : null;
   const activeTarget = activeTargetKey
     ? playableTargets.find((point) => targetKey(point) === activeTargetKey) ?? null
     : null;
@@ -404,6 +442,44 @@ export function BeginnerObjectiveCard() {
               <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
                 {readPrompt.variationText}
               </p>
+              {readPrompt.replyPoints.length > 0 && (
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  <span className="text-[11px] font-semibold" style={{ color: COLORS.ui.textSecondary }}>
+                    Choose a first read:
+                  </span>
+                  {readPrompt.replyPoints.map((point) => {
+                    const coord = pointToCoord(point, game.board.size);
+                    const isSelected = selectedReadReplyKey === targetKey(point);
+
+                    return (
+                      <button
+                        key={`read-pressure-choice-${targetKey(point)}`}
+                        type="button"
+                        className="rounded border px-2 py-0.5 font-mono text-[11px] font-bold transition hover:bg-white/[0.07]"
+                        style={{
+                          borderColor: isSelected ? COLORS.overlay.positive : COLORS.ui.accent,
+                          color: COLORS.ui.textPrimary,
+                          backgroundColor: isSelected ? `${COLORS.overlay.positive}24` : `${COLORS.ui.accent}1f`,
+                        }}
+                        aria-label={`Choose ${coord} as the first reply to ${readPrompt.gapCoord}`}
+                        onClick={() => chooseReadPressureReply(readPrompt, point)}
+                      >
+                        {coord}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {selectedReadReplyFeedback && (
+                <div className="mt-2">
+                  <div className="text-xs font-semibold" style={{ color: COLORS.ui.textPrimary }}>
+                    Branch choice
+                  </div>
+                  <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+                    {selectedReadReplyFeedback}
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
