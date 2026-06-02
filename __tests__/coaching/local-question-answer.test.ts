@@ -841,7 +841,7 @@ describe('local question answer', () => {
     expect(answer?.text).toContain('White just played D7.');
     expect(answer?.text).toContain('It touches your Black group at C7 and leaves it with 3 liberties: C8, C6, and B7.');
     expect(answer?.text).toContain('That is pressure, not a mystery: White is making your group easier to attack if you ignore its liberties.');
-    expect(answer?.text).toContain('Your reply should still be practical: Make your stones work together. Play a one-space jump from one of your stones. Try E7 or C5.');
+    expect(answer?.text).toContain('Your reply should still be practical: Make your stones work together. Play a one-space jump from one of your stones. Try C5.');
     expect(answer?.text).toContain("I highlighted White's move and marked Black's practical replies.");
     expect(answer?.conceptIds).toEqual(expect.arrayContaining(['direction-of-play', 'groups', 'liberties', 'shape']));
     expect(answer?.boardFocus?.highlights).toEqual([{
@@ -869,15 +869,9 @@ describe('local question answer', () => {
     });
     expect(answer?.boardFocus?.suggestions).toEqual([
       {
-        id: 'local-opponent-response-move-4,2',
-        point: { x: 4, y: 2 },
-        rank: 1,
-        reason: 'Try E7 as a one-space jump that works with your stones.',
-      },
-      {
         id: 'local-opponent-response-move-2,4',
         point: { x: 2, y: 4 },
-        rank: 2,
+        rank: 1,
         reason: 'Try C5 as a one-space jump that works with your stones.',
       },
     ]);
@@ -964,7 +958,7 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
   });
 
-  it('explains marked targets from the latest Black anchor after White replies', () => {
+  it('does not explain a target through a White-occupied one-space jump gap', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup first move failed');
     const whiteReply = playMove(firstMove.newState, { x: 3, y: 2 });
@@ -972,12 +966,15 @@ describe('local question answer', () => {
 
     const answer = getLocalQuestionAnswer('Why E7?', whiteReply.newState, 'guided');
 
-    expect(answer?.text).toContain('E7 is marked because it is a one-space jump from C7');
+    expect(answer?.text).toContain('E7 is not one of the current marked beginner targets.');
+    expect(answer?.text).toContain('C5 is marked because it is a one-space jump from C7');
     expect(answer?.text).not.toContain('one-space jump from D7');
-    expect(answer?.boardFocus?.suggestions.map((suggestion) => suggestion.point)).toEqual([
-      { x: 4, y: 2 },
-      { x: 2, y: 4 },
-    ]);
+    expect(answer?.boardFocus?.suggestions).toEqual([{
+      id: 'local-target-reason-move-2,4',
+      point: { x: 2, y: 4 },
+      rank: 1,
+      reason: 'Try C5 as a one-space jump that works with your stones.',
+    }]);
   });
 
   it('affirms a marked candidate move before the learner plays it', () => {
