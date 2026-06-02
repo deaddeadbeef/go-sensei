@@ -20,7 +20,8 @@ Latest completed slice:
 - Added local attack-vs-defense decisions so guided learners get a board-specific priority call during simple fights.
 - Added local capture-race guidance so beginner fight questions compare adjacent group liberties before giving a priority.
 - Added occupied-cut guidance so a beginner sees both split Black groups, the White cutting stone, and the liberties to attack after White enters a one-space jump gap.
+- Added local snapback guidance so the tutor explains the concept without cloud fallback and marks the immediate recapture point after White captures into a cramped shape.
 
 Next investigation candidates:
-- Later guided positions where snapback-like pressure or late fight follow-ups should be explained in natural beginner language.
+- Later guided positions where late fight follow-ups should be explained in natural beginner language after the first cut, capture race, or snapback clue.
 - Whether the guided 9x9 entry should preserve a paused guided board across app reloads more explicitly than the current session store does.

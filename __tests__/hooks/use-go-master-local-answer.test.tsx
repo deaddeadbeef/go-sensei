@@ -351,6 +351,32 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('territory').encounterCount).toBeGreaterThan(0);
   });
 
+  it('answers snapback concept questions locally without fetching', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('What is snapback?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('A snapback is a capture trick');
+    expect(state.bubble.text).toContain('you let the opponent capture one stone, then immediately recapture the whole cramped group');
+    expect(state.bubble.actions).toEqual([
+      { id: 'lesson:snapback', label: 'Review snapback' },
+      { id: 'practice:tesuji', label: 'Practice tesuji' },
+    ]);
+    expect(state.chatMessages.at(-1)?.actions).toEqual([
+      { id: 'lesson:snapback', label: 'Review snapback' },
+      { id: 'practice:tesuji', label: 'Practice tesuji' },
+    ]);
+    expect(useConceptStore.getState().getMastery('snapback').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('tesuji').encounterCount).toBeGreaterThan(0);
+  });
+
   it('keeps logged-out guided player moves local instead of fetching and warning about auth', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());
