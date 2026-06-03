@@ -73,6 +73,7 @@ Latest completed slice:
 - Added a board-side restored-read cue after replaying pressure transcript actions, so saved chat context is visibly separate from the live branch and clears when the learner starts a fresh read.
 - Delayed target hover/focus help just enough that a learner's first click on a guided target still plays the move instead of only opening the explanation.
 - Added a one-click "Return to live read" control inside restored pressure reads, so learners can leave saved chat context and recover the live branch's text and board highlights.
+- Added a compact transcript note after returning from restored pressure reads, so chat records when the learner leaves saved context and which live branch they returned to.
 
 Next investigation candidates:
-- Whether returning from a restored read should also add a tiny transcript note, so the chat history records when the learner left saved context for the live branch.
+- Whether live/read transcript notes should offer a small shortcut back to the most recent restored read without cluttering the chat action row.
