@@ -72,6 +72,7 @@ Latest completed slice:
 - Added hover/focus board previews for pressure replay transcript actions, so Show branch, Show recount, Show comparison, Show defense, and Show follow-up reveal their restored markers before the learner clicks.
 - Added a board-side restored-read cue after replaying pressure transcript actions, so saved chat context is visibly separate from the live branch and clears when the learner starts a fresh read.
 - Delayed target hover/focus help just enough that a learner's first click on a guided target still plays the move instead of only opening the explanation.
+- Added a one-click "Return to live read" control inside restored pressure reads, so learners can leave saved chat context and recover the live branch's text and board highlights.
 
 Next investigation candidates:
-- Whether the pressure replay cue should offer an explicit one-click "Return to live read" control when learners are studying older transcript context.
+- Whether returning from a restored read should also add a tiny transcript note, so the chat history records when the learner left saved context for the live branch.
