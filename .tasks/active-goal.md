@@ -69,6 +69,7 @@ Latest completed slice:
 - Added a deterministic pre-mount app shell so persisted lesson, review, auth, and game state cannot cause a server/client hydration mismatch before the browser chooses the learner's actual path.
 - Added hover/focus board previews for recommended transcript shortcuts, so direct C6 and E6 chat actions now show the same simulated markers as the board-side continuation controls before the learner commits.
 - Added hover/focus board previews for saved sequence-focus transcript actions, so Show step chat shortcuts reveal their exact D8, defense, or handoff markers before reopening a saved read.
+- Added hover/focus board previews for pressure replay transcript actions, so Show branch, Show recount, Show comparison, Show defense, and Show follow-up reveal their restored markers before the learner clicks.
 
 Next investigation candidates:
-- Whether non-sequence transcript actions such as Show comparison, Show defense, and Show follow-up should also preview their restored branch markers before click.
+- Whether replayed transcript actions should add a concise "restored read" note or visual state cue after click, so learners can tell old transcript context from the live branch they are currently exploring.
