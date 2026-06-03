@@ -2505,7 +2505,7 @@ export function BeginnerObjectiveCard() {
           continuationSummary,
         ].filter((text): text is string => Boolean(text)).join(' '),
         'teaching',
-        [replayAction, ...continuationActions],
+        [{ ...replayAction, previewHighlights: row.highlights }, ...continuationActions],
       );
     }
   };

@@ -68,6 +68,7 @@ Latest completed slice:
 - Marked direct transcript continuations as recommended and appended the simulated reason, so learners see why C6 or E6 is the safest next click instead of treating the shortcut as an unexplained command.
 - Added a deterministic pre-mount app shell so persisted lesson, review, auth, and game state cannot cause a server/client hydration mismatch before the browser chooses the learner's actual path.
 - Added hover/focus board previews for recommended transcript shortcuts, so direct C6 and E6 chat actions now show the same simulated markers as the board-side continuation controls before the learner commits.
+- Added hover/focus board previews for saved sequence-focus transcript actions, so Show step chat shortcuts reveal their exact D8, defense, or handoff markers before reopening a saved read.
 
 Next investigation candidates:
-- Whether transcript shortcut preview metadata should be preserved for more replay action types, such as handoff and compare-from-here controls, when they already imply a concrete board marker.
+- Whether non-sequence transcript actions such as Show comparison, Show defense, and Show follow-up should also preview their restored branch markers before click.
