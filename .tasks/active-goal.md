@@ -71,6 +71,7 @@ Latest completed slice:
 - Added hover/focus board previews for saved sequence-focus transcript actions, so Show step chat shortcuts reveal their exact D8, defense, or handoff markers before reopening a saved read.
 - Added hover/focus board previews for pressure replay transcript actions, so Show branch, Show recount, Show comparison, Show defense, and Show follow-up reveal their restored markers before the learner clicks.
 - Added a board-side restored-read cue after replaying pressure transcript actions, so saved chat context is visibly separate from the live branch and clears when the learner starts a fresh read.
+- Delayed target hover/focus help just enough that a learner's first click on a guided target still plays the move instead of only opening the explanation.
 
 Next investigation candidates:
 - Whether the pressure replay cue should offer an explicit one-click "Return to live read" control when learners are studying older transcript context.
