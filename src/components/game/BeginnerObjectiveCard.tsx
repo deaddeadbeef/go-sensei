@@ -107,6 +107,7 @@ interface ReplaySequenceDefenseChoice {
   point: Point;
   coord: string;
   hint: string | null;
+  highlights: OverlayHighlight[] | null;
 }
 
 function targetKey(point: Point): string {
@@ -1425,6 +1426,8 @@ interface ReplaySequenceContinuationButtonProps {
   className?: string;
   hint?: string | null;
   hintId?: string;
+  onPreview?: () => void;
+  onPreviewEnd?: () => void;
 }
 
 function ReplaySequenceContinuationButton({
@@ -1437,6 +1440,8 @@ function ReplaySequenceContinuationButton({
   className,
   hint,
   hintId,
+  onPreview,
+  onPreviewEnd,
 }: ReplaySequenceContinuationButtonProps) {
   const toneColor = tone === 'warning' ? COLORS.overlay.warning : COLORS.ui.accent;
 
@@ -1458,6 +1463,12 @@ function ReplaySequenceContinuationButton({
       disabled={disabled}
       aria-label={ariaLabel}
       aria-describedby={hint && hintId ? hintId : undefined}
+      onPointerEnter={onPreview}
+      onPointerMove={onPreview}
+      onMouseEnter={onPreview}
+      onMouseLeave={onPreviewEnd}
+      onFocus={onPreview}
+      onBlur={onPreviewEnd}
       onClick={onClick}
     >
       <span>{children}</span>
@@ -2148,6 +2159,9 @@ export function BeginnerObjectiveCard() {
           point,
           coord,
           hint: outcome ? getPressureDefenseChoiceHint(readPrompt, outcome, game.board, coord) : null,
+          highlights: outcome
+            ? buildOneSpaceJumpDefenseOutcomeHighlights(readPrompt, selectedReadRecount, game.board, outcome)
+            : null,
         };
       }),
       defense: pressureDefenseRecommendation,
@@ -2182,6 +2196,15 @@ export function BeginnerObjectiveCard() {
           point,
           coord,
           hint: outcome ? getPressureDefenseChoiceHint(readPrompt, outcome, game.board, coord) : null,
+          highlights: outcome
+            ? buildOneSpaceJumpFollowUpDefenseOutcomeHighlights(
+              readPrompt,
+              selectedReadRecount,
+              game.board,
+              selectedDefenseReadOutcome,
+              outcome,
+            )
+            : null,
         };
       }),
       firstDefense: pressureDefenseRecommendation,
@@ -2225,6 +2248,12 @@ export function BeginnerObjectiveCard() {
   const showPressureReadSequenceRow = (row: PressureReadSequenceRow) => {
     setActiveTargetKey(null);
     applyTargetHints(row.highlights);
+  };
+  const showPressureReadSequenceContinuation = (highlights: OverlayHighlight[] | null) => {
+    if (!highlights) return;
+
+    setActiveTargetKey(null);
+    applyTargetHints(highlights);
   };
   const restorePressureReadHighlights = () => {
     applyTargetHints(pinnedPressureSequenceRow?.highlights ?? activePressureReadHighlights);
@@ -2640,7 +2669,7 @@ export function BeginnerObjectiveCard() {
                           )}
                           {replayedPressureSequenceDefensesFromHere && (
                             <ReplaySequenceContinuationRow label="Defend from here:">
-                              {replayedPressureSequenceDefensesFromHere.choices.map(({ point, coord, hint }) => (
+                              {replayedPressureSequenceDefensesFromHere.choices.map(({ point, coord, hint, highlights }) => (
                                 <ReplaySequenceContinuationButton
                                   key={`read-pressure-replayed-defense-${targetKey(point)}`}
                                   tone="warning"
@@ -2648,6 +2677,8 @@ export function BeginnerObjectiveCard() {
                                   hint={hint}
                                   hintId={`read-pressure-replayed-defense-hint-${targetKey(point)}`}
                                   ariaLabel={`Try ${coord} defense from here`}
+                                  onPreview={() => showPressureReadSequenceContinuation(highlights)}
+                                  onPreviewEnd={restorePressureReadHighlights}
                                   onClick={() => tryReadPressureDefense(
                                     replayedPressureSequenceDefensesFromHere.prompt,
                                     replayedPressureSequenceDefensesFromHere.recount,
@@ -2663,13 +2694,15 @@ export function BeginnerObjectiveCard() {
                           )}
                           {replayedPressureSequenceFollowUpDefensesFromHere && (
                             <ReplaySequenceContinuationRow label="Continue from here:">
-                              {replayedPressureSequenceFollowUpDefensesFromHere.choices.map(({ point, coord, hint }) => (
+                              {replayedPressureSequenceFollowUpDefensesFromHere.choices.map(({ point, coord, hint, highlights }) => (
                                 <ReplaySequenceContinuationButton
                                   key={`read-pressure-replayed-follow-up-${targetKey(point)}`}
                                   mono
                                   hint={hint}
                                   hintId={`read-pressure-replayed-follow-up-hint-${targetKey(point)}`}
                                   ariaLabel={`Try ${coord} follow-up defense from here`}
+                                  onPreview={() => showPressureReadSequenceContinuation(highlights)}
+                                  onPreviewEnd={restorePressureReadHighlights}
                                   onClick={() => tryReadPressureFollowUpDefense(
                                     replayedPressureSequenceFollowUpDefensesFromHere.prompt,
                                     replayedPressureSequenceFollowUpDefensesFromHere.recount,

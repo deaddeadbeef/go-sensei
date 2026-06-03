@@ -1227,13 +1227,33 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText('Next question')).toBeTruthy();
     expect(screen.getByText('After C6, which side is now shorter, and should the read continue there?')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Try E8 follow-up defense from here' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Try E6 follow-up defense from here' })).toBeTruthy();
+    const e6FollowUpFromHere = screen.getByRole('button', { name: 'Try E6 follow-up defense from here' });
+    expect(e6FollowUpFromHere).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Try F7 follow-up defense from here' })).toBeTruthy();
     expect(screen.getByText('E8 levels E7 with C7 at 5 liberties.')).toBeTruthy();
     expect(screen.getByText('E6 connects C7 and E7 into one group with 8 liberties.')).toBeTruthy();
     expect(screen.getByText('F7 levels E7 with C7 at 5 liberties.')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Try E6 follow-up defense from here' }));
+    fireEvent.focus(e6FollowUpFromHere);
+    expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
+      {
+        id: 'read-pressure-follow-up-defense-4,3',
+        point: { x: 4, y: 3 },
+        variant: 'positive',
+        label: 'E6: follow-up defense; C7 and E7 connect with 8 liberties.',
+      },
+      {
+        id: 'read-pressure-anchor-2,2',
+        point: { x: 2, y: 2 },
+        variant: 'positive',
+        label: 'C7: connected group has 8 liberties after E6 follow-up: E8, F7, E5, F6, D5, C5, B6, and B7.',
+      },
+    ]));
+    fireEvent.blur(e6FollowUpFromHere);
+    expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).toContain('read-pressure-selected-defense-2,3');
+    expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).not.toContain('read-pressure-follow-up-defense-4,3');
+
+    fireEvent.click(e6FollowUpFromHere);
 
     expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
     expect(screen.getByText('Follow-up defense')).toBeTruthy();
@@ -1275,12 +1295,32 @@ describe('BeginnerObjectiveCard', () => {
     expect(restoredComparisonStep.getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByText('Next question')).toBeTruthy();
     expect(screen.getByText('After D6, which side changed, and does that force a defense before extending?')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Try C6 defense from here' })).toBeTruthy();
+    const c6DefenseFromHere = screen.getByRole('button', { name: 'Try C6 defense from here' });
+    expect(c6DefenseFromHere).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Try B7 defense from here' })).toBeTruthy();
     expect(screen.getByText('C6 grows C7 to 5 liberties; E7 becomes the next read.')).toBeTruthy();
     expect(screen.getByText('B7 grows C7 to 4 liberties; E7 becomes the next read.')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Try C6 defense from here' }));
+    fireEvent.focus(c6DefenseFromHere);
+    expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
+      {
+        id: 'read-pressure-selected-defense-2,3',
+        point: { x: 2, y: 3 },
+        variant: 'positive',
+        label: 'C6: simulated defense; C7 now has 5 liberties.',
+      },
+      {
+        id: 'read-pressure-stone-4,2',
+        point: { x: 4, y: 2 },
+        variant: 'warning',
+        label: 'E7: short side with 3 liberties after C6 defense: E8, E6, and F7.',
+      },
+    ]));
+    fireEvent.blur(c6DefenseFromHere);
+    expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).toContain('read-pressure-short-liberty-2,3');
+    expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).not.toContain('read-pressure-selected-defense-2,3');
+
+    fireEvent.click(c6DefenseFromHere);
 
     expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
     expect(screen.getByText('Defense read')).toBeTruthy();
