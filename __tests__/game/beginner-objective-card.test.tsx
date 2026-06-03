@@ -16,7 +16,12 @@ describe('BeginnerObjectiveCard', () => {
   afterEach(() => cleanup());
 
   it('names the marked opening points for coordinate learners', () => {
-    render(<BeginnerObjectiveCard />);
+    render(
+      <>
+        <BeginnerObjectiveCard />
+        <SenseiChatLog />
+      </>,
+    );
 
     expect(screen.getByText('Start with a corner')).toBeTruthy();
     expect(screen.getByText('Try C7, G7, C3, or G3.')).toBeTruthy();
@@ -759,7 +764,18 @@ describe('BeginnerObjectiveCard', () => {
       text: 'Read sequence focus: Step 2: Black D8 attacks D7 from above. Compare this saved first answer with the live D6 branch; the direction changes before the liberty counts are checked.',
       variant: 'teaching',
       actions: [
-        { id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1:pin:reply-3,1', label: 'Show step' },
+        expect.objectContaining({
+          id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1:pin:reply-3,1',
+          label: 'Show step',
+          previewHighlights: expect.arrayContaining([
+            {
+              id: 'read-pressure-reply-3,1',
+              point: { x: 3, y: 1 },
+              variant: 'positive',
+              label: 'D8: selected first reply; attack the imagined cutting stone.',
+            },
+          ]),
+        }),
       ],
     });
 
@@ -769,7 +785,28 @@ describe('BeginnerObjectiveCard', () => {
     expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).toContain('read-pressure-reply-3,3');
 
     const focusActions = screen.getAllByRole('button', { name: 'Show step' });
-    fireEvent.click(focusActions[focusActions.length - 1]);
+    const transcriptStepAction = focusActions[focusActions.length - 1];
+    fireEvent.focus(transcriptStepAction);
+    expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
+      {
+        id: 'read-pressure-reply-3,1',
+        point: { x: 3, y: 1 },
+        variant: 'positive',
+        label: 'D8: selected first reply; attack the imagined cutting stone.',
+      },
+    ]));
+    fireEvent.blur(transcriptStepAction);
+    expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).toContain('read-pressure-reply-3,3');
+    expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
+      {
+        id: 'read-pressure-reply-3,1',
+        point: { x: 3, y: 1 },
+        variant: 'neutral',
+        label: 'D8: alternate reply to compare later.',
+      },
+    ]));
+
+    fireEvent.click(transcriptStepAction);
 
     const restoredOriginalReplyStep = screen.getByRole('button', { name: 'Show board highlights for step 2: Black D8 attacks D7 from above.' });
     expect(restoredOriginalReplyStep.getAttribute('aria-pressed')).toBe('true');
@@ -823,7 +860,12 @@ describe('BeginnerObjectiveCard', () => {
       useGameStore.getState().pass();
     });
 
-    render(<BeginnerObjectiveCard />);
+    render(
+      <>
+        <BeginnerObjectiveCard />
+        <SenseiChatLog />
+      </>,
+    );
 
     fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for D7' }));
     fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
@@ -1015,7 +1057,12 @@ describe('BeginnerObjectiveCard', () => {
       useGameStore.getState().pass();
     });
 
-    render(<BeginnerObjectiveCard />);
+    render(
+      <>
+        <BeginnerObjectiveCard />
+        <SenseiChatLog />
+      </>,
+    );
 
     fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for D7' }));
     fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
@@ -1054,7 +1101,18 @@ describe('BeginnerObjectiveCard', () => {
       text: 'Read sequence focus: Step 7: Real-game handoff: play G7 after the stable read. This is the real move unlocked by the completed read; play it after the simulated defenses show C7 and E7 are stable.',
       variant: 'teaching',
       actions: [
-        { id: 'guided:read-pressure:follow-up-defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3:4,3:pin:handoff-6,2', label: 'Show step' },
+        expect.objectContaining({
+          id: 'guided:read-pressure:follow-up-defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3:4,3:pin:handoff-6,2',
+          label: 'Show step',
+          previewHighlights: [
+            {
+              id: 'read-pressure-handoff-6,2',
+              point: { x: 6, y: 2 },
+              variant: 'positive',
+              label: 'G7: real move to play after the stable pressure read.',
+            },
+          ],
+        }),
       ],
     });
     fireEvent.blur(handoffSequenceStep);
@@ -1082,6 +1140,27 @@ describe('BeginnerObjectiveCard', () => {
         variant: 'positive',
         label: 'E7: connected group has 8 liberties after E6 follow-up: E8, F7, E5, F6, D5, C5, B6, and B7.',
       },
+      {
+        id: 'read-pressure-follow-up-defense-4,3',
+        point: { x: 4, y: 3 },
+        variant: 'positive',
+        label: 'E6: follow-up defense; C7 and E7 connect with 8 liberties.',
+      },
+    ]));
+
+    const focusActions = screen.getAllByRole('button', { name: 'Show step' });
+    const transcriptHandoffAction = focusActions[focusActions.length - 1];
+    fireEvent.focus(transcriptHandoffAction);
+    expect(useGameStore.getState().overlays.targetHints).toEqual([
+      {
+        id: 'read-pressure-handoff-6,2',
+        point: { x: 6, y: 2 },
+        variant: 'positive',
+        label: 'G7: real move to play after the stable pressure read.',
+      },
+    ]);
+    fireEvent.blur(transcriptHandoffAction);
+    expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
       {
         id: 'read-pressure-follow-up-defense-4,3',
         point: { x: 4, y: 3 },
@@ -1217,7 +1296,18 @@ describe('BeginnerObjectiveCard', () => {
     fireEvent.click(defenseSequenceStep);
     expect(useGameStore.getState().chatMessages.at(-1)?.text).toBe('Read sequence focus: Step 5: Defend C7 at C6; C7 has 5 liberties. This shows how C6 changes the short side before the next read; compare it with the warning markers from the branch. Next choices: E8 levels E7 with C7 at 5 liberties. E6 connects C7 and E7 into one group with 8 liberties. F7 levels E7 with C7 at 5 liberties. Recommended: E6 connects C7 and E7 into one group with 8 liberties.');
     expect(useGameStore.getState().chatMessages.at(-1)?.actions).toEqual([
-      { id: 'guided:read-pressure:defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3:pin:defense-2,3', label: 'Show step' },
+      expect.objectContaining({
+        id: 'guided:read-pressure:defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3:pin:defense-2,3',
+        label: 'Show step',
+        previewHighlights: expect.arrayContaining([
+          {
+            id: 'read-pressure-selected-defense-2,3',
+            point: { x: 2, y: 3 },
+            variant: 'positive',
+            label: 'C6: simulated defense; C7 now has 5 liberties.',
+          },
+        ]),
+      }),
       expect.objectContaining({
         id: 'guided:read-pressure:follow-up-defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3:4,3:pin:follow-up-4,3',
         label: 'Recommended: E6',
@@ -1303,7 +1393,18 @@ describe('BeginnerObjectiveCard', () => {
     fireEvent.click(comparisonSequenceStep);
     expect(useGameStore.getState().chatMessages.at(-1)?.text).toBe('Read sequence focus: Step 4: Compare D6: C7 2 liberties; E7 3 liberties. This is the live comparison against D8; use it to see whether the reply direction or liberty count changed. Next choices: C6 grows C7 to 5 liberties; E7 becomes the next read. B7 grows C7 to 4 liberties; E7 becomes the next read. Recommended: C6 grows C7 to 5 liberties; E7 becomes the next read.');
     expect(useGameStore.getState().chatMessages.at(-1)?.actions).toEqual([
-      { id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1:pin:compare-3,3', label: 'Show step' },
+      expect.objectContaining({
+        id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1:pin:compare-3,3',
+        label: 'Show step',
+        previewHighlights: expect.arrayContaining([
+          {
+            id: 'read-pressure-short-liberty-2,3',
+            point: { x: 2, y: 3 },
+            variant: 'warning',
+            label: 'C6: defend this C7 liberty before extending.',
+          },
+        ]),
+      }),
       expect.objectContaining({
         id: 'guided:read-pressure:defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3:pin:defense-2,3',
         label: 'Recommended: C6',
