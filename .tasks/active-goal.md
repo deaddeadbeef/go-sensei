@@ -61,6 +61,7 @@ Latest completed slice:
 - Added one-click continuation controls under restored defense and follow-up sequence rows, so saved defensive reads can keep reading the new short side or hand off to the real extension without hunting through the full panel.
 - Added direct "defense from here" controls under restored comparison sequence rows that reveal a short side, so a saved comparison can immediately become the defensive read it asks for.
 - Refactored restored replay continuation controls into shared compact row and button helpers, keeping future replay actions easier to add without changing the learner-facing labels or behavior.
+- Added concise tactical hints to restored multi-choice defense continuations, so saved comparison and follow-up reads explain whether each option grows liberties, levels the sides, or connects both stones before the learner clicks.
 
 Next investigation candidates:
-- Whether restored replay continuation labels should explain why each button is preferred when multiple defensive choices exist.
+- Whether restored replay continuation hints should also update board highlights on hover/focus before the learner commits to a branch.

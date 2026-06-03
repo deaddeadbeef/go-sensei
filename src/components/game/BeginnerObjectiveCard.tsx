@@ -103,6 +103,12 @@ interface PressureReadSequenceRow {
   highlights: OverlayHighlight[];
 }
 
+interface ReplaySequenceDefenseChoice {
+  point: Point;
+  coord: string;
+  hint: string | null;
+}
+
 function targetKey(point: Point): string {
   return `${point.x},${point.y}`;
 }
@@ -734,6 +740,30 @@ function getPressureDefenseContinuationOutcome(
     otherLiberties: otherAfterLiberties.map(copyPoint),
     connectedSides,
   };
+}
+
+function getPressureDefenseChoiceHint(
+  prompt: OneSpaceJumpReadPrompt,
+  outcome: PressureDefenseOutcome,
+  board: BoardState,
+  coord: string,
+): string {
+  if (outcome.connectedSides) {
+    const anchorCoord = pointToCoord(prompt.anchor, board.size);
+    const stoneCoord = pointToCoord(prompt.stone, board.size);
+
+    return `${coord} connects ${anchorCoord} and ${stoneCoord} into one group with ${formatLibertyCount(outcome.defendedLiberties.length)}.`;
+  }
+
+  if (outcome.defendedLiberties.length === outcome.otherLiberties.length) {
+    return `${coord} levels ${outcome.defendedSideCoord} with ${outcome.otherSideCoord} at ${formatLibertyCount(outcome.defendedLiberties.length)}.`;
+  }
+
+  if (outcome.defendedLiberties.length > outcome.otherLiberties.length) {
+    return `${coord} grows ${outcome.defendedSideCoord} to ${formatLibertyCount(outcome.defendedLiberties.length)}; ${outcome.otherSideCoord} becomes the next read.`;
+  }
+
+  return `${coord} grows ${outcome.defendedSideCoord} to ${formatLibertyCount(outcome.defendedLiberties.length)}, but it stays shorter than ${outcome.otherSideCoord}.`;
 }
 
 function getPressureDefenseContinuationComparisonSummary(
@@ -1393,6 +1423,8 @@ interface ReplaySequenceContinuationButtonProps {
   mono?: boolean;
   disabled?: boolean;
   className?: string;
+  hint?: string | null;
+  hintId?: string;
 }
 
 function ReplaySequenceContinuationButton({
@@ -1403,6 +1435,8 @@ function ReplaySequenceContinuationButton({
   mono = false,
   disabled = false,
   className,
+  hint,
+  hintId,
 }: ReplaySequenceContinuationButtonProps) {
   const toneColor = tone === 'warning' ? COLORS.overlay.warning : COLORS.ui.accent;
 
@@ -1412,6 +1446,7 @@ function ReplaySequenceContinuationButton({
       className={[
         className,
         'rounded border px-2 py-0.5 text-[11px] transition hover:bg-white/[0.07]',
+        hint ? 'inline-flex max-w-[14rem] flex-col items-start text-left leading-tight' : null,
         mono ? 'font-mono font-bold' : 'font-semibold',
         disabled ? 'disabled:cursor-default disabled:opacity-70 disabled:hover:bg-transparent' : null,
       ].filter(Boolean).join(' ')}
@@ -1422,9 +1457,19 @@ function ReplaySequenceContinuationButton({
       }}
       disabled={disabled}
       aria-label={ariaLabel}
+      aria-describedby={hint && hintId ? hintId : undefined}
       onClick={onClick}
     >
-      {children}
+      <span>{children}</span>
+      {hint && (
+        <span
+          id={hintId}
+          className="mt-0.5 whitespace-normal font-sans text-[10px] font-medium leading-snug"
+          style={{ color: COLORS.ui.textSecondary }}
+        >
+          {hint}
+        </span>
+      )}
     </button>
   );
 }
@@ -2089,6 +2134,22 @@ export function BeginnerObjectiveCard() {
     && pinnedPressureSequenceRow.replayKey === `compare-${targetKey(selectedReadRecount.reply)}`
     ? {
       comparedReply: comparedReadReply,
+      choices: pressureDefenseRecommendation.liberties.map((point): ReplaySequenceDefenseChoice => {
+        const coord = pointToCoord(point, game.board.size);
+        const outcome = getPressureDefenseOutcome(
+          game,
+          readPrompt,
+          selectedReadRecount,
+          pressureDefenseRecommendation,
+          point,
+        );
+
+        return {
+          point,
+          coord,
+          hint: outcome ? getPressureDefenseChoiceHint(readPrompt, outcome, game.board, coord) : null,
+        };
+      }),
       defense: pressureDefenseRecommendation,
       prompt: readPrompt,
       recount: selectedReadRecount,
@@ -2106,6 +2167,23 @@ export function BeginnerObjectiveCard() {
     && pinnedPressureSequenceRow.replayKey === `defense-${targetKey(selectedDefenseReadPoint)}`
     ? {
       comparedReply: comparedReadReply,
+      choices: pressureDefenseContinuationRecommendation.liberties.map((point): ReplaySequenceDefenseChoice => {
+        const coord = pointToCoord(point, game.board.size);
+        const outcome = getPressureDefenseContinuationOutcome(
+          game,
+          readPrompt,
+          selectedReadRecount,
+          selectedDefenseReadOutcome,
+          pressureDefenseContinuationRecommendation,
+          point,
+        );
+
+        return {
+          point,
+          coord,
+          hint: outcome ? getPressureDefenseChoiceHint(readPrompt, outcome, game.board, coord) : null,
+        };
+      }),
       firstDefense: pressureDefenseRecommendation,
       firstDefensePoint: selectedDefenseReadPoint,
       followUpDefense: pressureDefenseContinuationRecommendation,
@@ -2562,53 +2640,49 @@ export function BeginnerObjectiveCard() {
                           )}
                           {replayedPressureSequenceDefensesFromHere && (
                             <ReplaySequenceContinuationRow label="Defend from here:">
-                              {replayedPressureSequenceDefensesFromHere.defense.liberties.map((point) => {
-                                const coord = pointToCoord(point, game.board.size);
-
-                                return (
-                                  <ReplaySequenceContinuationButton
-                                    key={`read-pressure-replayed-defense-${targetKey(point)}`}
-                                    tone="warning"
-                                    mono
-                                    ariaLabel={`Try ${coord} defense from here`}
-                                    onClick={() => tryReadPressureDefense(
-                                      replayedPressureSequenceDefensesFromHere.prompt,
-                                      replayedPressureSequenceDefensesFromHere.recount,
-                                      replayedPressureSequenceDefensesFromHere.comparedReply,
-                                      replayedPressureSequenceDefensesFromHere.defense,
-                                      point,
-                                    )}
-                                  >
-                                    Try {coord} from here
-                                  </ReplaySequenceContinuationButton>
-                                );
-                              })}
+                              {replayedPressureSequenceDefensesFromHere.choices.map(({ point, coord, hint }) => (
+                                <ReplaySequenceContinuationButton
+                                  key={`read-pressure-replayed-defense-${targetKey(point)}`}
+                                  tone="warning"
+                                  mono
+                                  hint={hint}
+                                  hintId={`read-pressure-replayed-defense-hint-${targetKey(point)}`}
+                                  ariaLabel={`Try ${coord} defense from here`}
+                                  onClick={() => tryReadPressureDefense(
+                                    replayedPressureSequenceDefensesFromHere.prompt,
+                                    replayedPressureSequenceDefensesFromHere.recount,
+                                    replayedPressureSequenceDefensesFromHere.comparedReply,
+                                    replayedPressureSequenceDefensesFromHere.defense,
+                                    point,
+                                  )}
+                                >
+                                  Try {coord} from here
+                                </ReplaySequenceContinuationButton>
+                              ))}
                             </ReplaySequenceContinuationRow>
                           )}
                           {replayedPressureSequenceFollowUpDefensesFromHere && (
                             <ReplaySequenceContinuationRow label="Continue from here:">
-                              {replayedPressureSequenceFollowUpDefensesFromHere.followUpDefense.liberties.map((point) => {
-                                const coord = pointToCoord(point, game.board.size);
-
-                                return (
-                                  <ReplaySequenceContinuationButton
-                                    key={`read-pressure-replayed-follow-up-${targetKey(point)}`}
-                                    mono
-                                    ariaLabel={`Try ${coord} follow-up defense from here`}
-                                    onClick={() => tryReadPressureFollowUpDefense(
-                                      replayedPressureSequenceFollowUpDefensesFromHere.prompt,
-                                      replayedPressureSequenceFollowUpDefensesFromHere.recount,
-                                      replayedPressureSequenceFollowUpDefensesFromHere.comparedReply,
-                                      replayedPressureSequenceFollowUpDefensesFromHere.firstDefense,
-                                      replayedPressureSequenceFollowUpDefensesFromHere.firstDefensePoint,
-                                      replayedPressureSequenceFollowUpDefensesFromHere.followUpDefense,
-                                      point,
-                                    )}
-                                  >
-                                    Try {coord} from here
-                                  </ReplaySequenceContinuationButton>
-                                );
-                              })}
+                              {replayedPressureSequenceFollowUpDefensesFromHere.choices.map(({ point, coord, hint }) => (
+                                <ReplaySequenceContinuationButton
+                                  key={`read-pressure-replayed-follow-up-${targetKey(point)}`}
+                                  mono
+                                  hint={hint}
+                                  hintId={`read-pressure-replayed-follow-up-hint-${targetKey(point)}`}
+                                  ariaLabel={`Try ${coord} follow-up defense from here`}
+                                  onClick={() => tryReadPressureFollowUpDefense(
+                                    replayedPressureSequenceFollowUpDefensesFromHere.prompt,
+                                    replayedPressureSequenceFollowUpDefensesFromHere.recount,
+                                    replayedPressureSequenceFollowUpDefensesFromHere.comparedReply,
+                                    replayedPressureSequenceFollowUpDefensesFromHere.firstDefense,
+                                    replayedPressureSequenceFollowUpDefensesFromHere.firstDefensePoint,
+                                    replayedPressureSequenceFollowUpDefensesFromHere.followUpDefense,
+                                    point,
+                                  )}
+                                >
+                                  Try {coord} from here
+                                </ReplaySequenceContinuationButton>
+                              ))}
                             </ReplaySequenceContinuationRow>
                           )}
                           {replayedPressureSequenceHandoffFromHere && (
