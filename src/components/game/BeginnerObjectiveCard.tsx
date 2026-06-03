@@ -18,7 +18,7 @@ import {
 } from '@/lib/go-engine';
 import type { BoardState, GameState, Group, Move, Point } from '@/lib/go-engine';
 import { useGameStore } from '@/stores/game-store';
-import type { OverlayHighlight } from '@/stores/game-store';
+import type { GuidedReadReplayRequest, OverlayHighlight } from '@/stores/game-store';
 import { COLORS } from '@/utils/colors';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -321,6 +321,42 @@ function getPressureChoiceFeedback(prompt: OneSpaceJumpReadPrompt, reply: Point,
   const stoneCoord = pointToCoord(prompt.stone, board.size);
 
   return `${replyCoord} is a good first read: it attacks the imagined White stone at ${prompt.gapCoord} and asks whether that cutting stone can live. After that, recount ${anchorCoord} and ${stoneCoord} before extending again.`;
+}
+
+function getRestoredPressureReadCue(
+  request: GuidedReadReplayRequest,
+  board: BoardState,
+  selectedReply: Point | null,
+  comparedReply: Point | null,
+  selectedDefense: Point | null,
+  selectedFollowUpDefense: Point | null,
+): string | null {
+  if (!selectedReply) return null;
+
+  const replyCoord = pointToCoord(selectedReply, board.size);
+  const suffix = 'Continue from here, or choose another branch to return to live reading.';
+
+  if (request.mode === 'branch') {
+    return `Showing the saved ${replyCoord} first-read branch from chat. ${suffix}`;
+  }
+
+  if (request.mode === 'recount') {
+    return `Showing the saved ${replyCoord} recount from chat. ${suffix}`;
+  }
+
+  if (request.mode === 'comparison' && comparedReply) {
+    return `Showing the saved ${replyCoord} comparison against ${pointToCoord(comparedReply, board.size)} from chat. ${suffix}`;
+  }
+
+  if (request.mode === 'defense' && selectedDefense) {
+    return `Showing the saved ${pointToCoord(selectedDefense, board.size)} defense from chat. ${suffix}`;
+  }
+
+  if (request.mode === 'follow-up-defense' && selectedFollowUpDefense) {
+    return `Showing the saved ${pointToCoord(selectedFollowUpDefense, board.size)} follow-up defense from chat. ${suffix}`;
+  }
+
+  return `Showing a saved read from chat. ${suffix}`;
 }
 
 function getPressureReplayAction(
@@ -2350,6 +2386,16 @@ export function BeginnerObjectiveCard() {
   const activePressureReplayRequestId = replayedReadReplyKey && guidedReadReplayRequest?.type === 'read-pressure'
     ? guidedReadReplayRequest.id
     : null;
+  const restoredPressureReadCue = activePressureReplayRequestId !== null && guidedReadReplayRequest?.type === 'read-pressure'
+    ? getRestoredPressureReadCue(
+      guidedReadReplayRequest,
+      game.board,
+      selectedReadReply,
+      comparedReadReply,
+      selectedDefenseReadPoint,
+      selectedFollowUpDefenseReadPoint,
+    )
+    : null;
   const activePressureReplayPinOverride = activePressureReplayRequestId !== null
     && pressureSequencePinOverride?.replayRequestId === activePressureReplayRequestId
     ? pressureSequencePinOverride
@@ -2592,6 +2638,16 @@ export function BeginnerObjectiveCard() {
               <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
                 {readPrompt.variationText}
               </p>
+              {restoredPressureReadCue && (
+                <div className="mt-2 border-l-2 pl-2" style={{ borderColor: COLORS.ui.accent }}>
+                  <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: COLORS.ui.accent }}>
+                    Restored read
+                  </div>
+                  <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
+                    {restoredPressureReadCue}
+                  </p>
+                </div>
+              )}
               {readPrompt.replyPoints.length > 0 && (
                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
                   <span className="text-[11px] font-semibold" style={{ color: COLORS.ui.textSecondary }}>
