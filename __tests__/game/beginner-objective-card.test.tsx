@@ -1215,6 +1215,8 @@ describe('BeginnerObjectiveCard', () => {
 
     const defenseSequenceStep = screen.getByRole('button', { name: 'Show board highlights for step 5: Defend C7 at C6; C7 has 5 liberties.' });
     fireEvent.click(defenseSequenceStep);
+    expect(useGameStore.getState().chatMessages.at(-1)?.text).toBe('Read sequence focus: Step 5: Defend C7 at C6; C7 has 5 liberties. This shows how C6 changes the short side before the next read; compare it with the warning markers from the branch. Next choices: E8 levels E7 with C7 at 5 liberties. E6 connects C7 and E7 into one group with 8 liberties. F7 levels E7 with C7 at 5 liberties.');
+
     fireEvent.click(defenseSequenceStep);
     expect(defenseSequenceStep.getAttribute('aria-pressed')).toBe('false');
     expect(screen.queryByText('Next question')).toBeNull();
@@ -1284,6 +1286,8 @@ describe('BeginnerObjectiveCard', () => {
 
     const comparisonSequenceStep = screen.getByRole('button', { name: 'Show board highlights for step 4: Compare D6: C7 2 liberties; E7 3 liberties.' });
     fireEvent.click(comparisonSequenceStep);
+    expect(useGameStore.getState().chatMessages.at(-1)?.text).toBe('Read sequence focus: Step 4: Compare D6: C7 2 liberties; E7 3 liberties. This is the live comparison against D8; use it to see whether the reply direction or liberty count changed. Next choices: C6 grows C7 to 5 liberties; E7 becomes the next read. B7 grows C7 to 4 liberties; E7 becomes the next read.');
+
     fireEvent.click(comparisonSequenceStep);
     expect(comparisonSequenceStep.getAttribute('aria-pressed')).toBe('false');
     expect(screen.queryByText('Next question')).toBeNull();
