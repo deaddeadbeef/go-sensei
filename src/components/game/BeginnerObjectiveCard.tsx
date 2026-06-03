@@ -2364,6 +2364,60 @@ export function BeginnerObjectiveCard() {
       pressureDefenseContinuationRecommendation,
     )
     : null;
+  const livePressureReadHighlights = (() => {
+    if (!readPrompt || activeReadPromptKey !== readPrompt.key) return [];
+
+    const liveSelectedReply = selectedReadReplyKey
+      ? readPrompt.replyPoints.find((point) => targetKey(point) === selectedReadReplyKey) ?? null
+      : null;
+    const liveSelectedRecount = liveSelectedReply && recountReadReplyKey === targetKey(liveSelectedReply)
+      ? getPressureRecount(game, readPrompt, liveSelectedReply)
+      : null;
+    const liveComparedReply = liveSelectedRecount && comparisonReadReplyKey
+      ? readPrompt.replyPoints.find((point) => (
+        targetKey(point) === comparisonReadReplyKey
+        && targetKey(point) !== targetKey(liveSelectedRecount.reply)
+      )) ?? null
+      : null;
+    const liveComparedRecount = liveComparedReply
+      ? getPressureRecount(game, readPrompt, liveComparedReply)
+      : null;
+    const liveComparisonSummary = liveSelectedRecount && liveComparedRecount
+      ? getPressureComparisonSummary(readPrompt, liveComparedRecount, liveSelectedRecount, game.board)
+      : null;
+    const liveDefenseRecommendation = liveComparisonSummary?.defenseRecommendation ?? null;
+    const liveSelectedDefensePoint = liveDefenseRecommendation && defenseReadPointKey
+      ? liveDefenseRecommendation.liberties.find((point) => targetKey(point) === defenseReadPointKey) ?? null
+      : null;
+    const liveDefenseOutcome = liveSelectedRecount && liveDefenseRecommendation && liveSelectedDefensePoint
+      ? getPressureDefenseOutcome(game, readPrompt, liveSelectedRecount, liveDefenseRecommendation, liveSelectedDefensePoint)
+      : null;
+    const liveFollowUpRecommendation = liveDefenseOutcome
+      ? getPressureDefenseContinuationRecommendation(liveDefenseOutcome, game.board)
+      : null;
+    const liveSelectedFollowUpPoint = liveFollowUpRecommendation && followUpDefenseReadPointKey
+      ? liveFollowUpRecommendation.liberties.find((point) => targetKey(point) === followUpDefenseReadPointKey) ?? null
+      : null;
+    const liveFollowUpOutcome = liveSelectedRecount && liveDefenseOutcome && liveFollowUpRecommendation && liveSelectedFollowUpPoint
+      ? getPressureDefenseContinuationOutcome(
+        game,
+        readPrompt,
+        liveSelectedRecount,
+        liveDefenseOutcome,
+        liveFollowUpRecommendation,
+        liveSelectedFollowUpPoint,
+      )
+      : null;
+
+    return getActivePressureReadHighlights(
+      game.board,
+      readPrompt,
+      liveSelectedReply,
+      liveSelectedRecount,
+      liveDefenseOutcome,
+      liveFollowUpOutcome,
+    );
+  })();
   const pressureComparisonExtensionHandoff = getStablePressureExtensionHandoff(
     objective,
     playableTargets,
@@ -2544,6 +2598,15 @@ export function BeginnerObjectiveCard() {
   const restorePressureReadHighlights = () => {
     applyTargetHints(pinnedPressureSequenceRow?.highlights ?? activePressureReadHighlights);
   };
+  const returnToLivePressureRead = () => {
+    if (activePressureReplayRequestId === null) return;
+
+    recordInteraction();
+    setActiveTargetKey(null);
+    setPressureSequencePinOverride(null);
+    clearGuidedReadReplay(activePressureReplayRequestId);
+    applyTargetHints(livePressureReadHighlights);
+  };
   const togglePressureReadSequenceRow = (row: PressureReadSequenceRow, index: number) => {
     if (pinnedPressureSequenceRow?.key === row.key) {
       if (activePressureReplayRequestId !== null) {
@@ -2670,8 +2733,22 @@ export function BeginnerObjectiveCard() {
               </p>
               {restoredPressureReadCue && (
                 <div className="mt-2 border-l-2 pl-2" style={{ borderColor: COLORS.ui.accent }}>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: COLORS.ui.accent }}>
-                    Restored read
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: COLORS.ui.accent }}>
+                      Restored read
+                    </div>
+                    <button
+                      type="button"
+                      className="rounded border px-2 py-0.5 text-[11px] font-semibold transition hover:bg-white/[0.07]"
+                      style={{
+                        borderColor: COLORS.ui.accent,
+                        color: COLORS.ui.textPrimary,
+                        backgroundColor: `${COLORS.ui.accent}1f`,
+                      }}
+                      onClick={returnToLivePressureRead}
+                    >
+                      Return to live read
+                    </button>
                   </div>
                   <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
                     {restoredPressureReadCue}
