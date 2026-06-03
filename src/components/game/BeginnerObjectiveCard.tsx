@@ -361,6 +361,32 @@ function getRestoredPressureReadCue(
   return `Showing a saved read from chat. ${suffix}`;
 }
 
+function getSavedPressureReadLabel(request: GuidedReadReplayRequest): string {
+  if (request.mode === 'branch') return 'first-read branch';
+  if (request.mode === 'recount') return 'recount';
+  if (request.mode === 'comparison') return 'comparison';
+  if (request.mode === 'defense') return 'defense';
+  if (request.mode === 'follow-up-defense') return 'follow-up defense';
+
+  return 'read';
+}
+
+function getReturnToLivePressureReadMessage(
+  request: GuidedReadReplayRequest,
+  board: BoardState,
+  liveReply: Point | null,
+  restoredReply: Point | null,
+): string {
+  const liveBranchText = liveReply
+    ? `back on the ${pointToCoord(liveReply, board.size)} branch`
+    : 'back on the live branch';
+  const savedReadText = restoredReply
+    ? `The saved ${pointToCoord(restoredReply, board.size)} ${getSavedPressureReadLabel(request)} stays in chat if you want to reopen it.`
+    : 'The saved read stays in chat if you want to reopen it.';
+
+  return `Returned to live read: ${liveBranchText}. ${savedReadText}`;
+}
+
 function getPressureReplayAction(
   mode: 'branch' | 'recount',
   prompt: OneSpaceJumpReadPrompt,
@@ -2601,11 +2627,21 @@ export function BeginnerObjectiveCard() {
   const returnToLivePressureRead = () => {
     if (activePressureReplayRequestId === null) return;
 
+    const liveReply = readPrompt && selectedReadReplyKey
+      ? readPrompt.replyPoints.find((point) => targetKey(point) === selectedReadReplyKey) ?? null
+      : null;
+    const returnNote = guidedReadReplayRequest?.type === 'read-pressure'
+      ? getReturnToLivePressureReadMessage(guidedReadReplayRequest, game.board, liveReply, selectedReadReply)
+      : null;
+
     recordInteraction();
     setActiveTargetKey(null);
     setPressureSequencePinOverride(null);
     clearGuidedReadReplay(activePressureReplayRequestId);
     applyTargetHints(livePressureReadHighlights);
+    if (returnNote) {
+      addChatMessage(returnNote, 'teaching');
+    }
   };
   const togglePressureReadSequenceRow = (row: PressureReadSequenceRow, index: number) => {
     if (pinnedPressureSequenceRow?.key === row.key) {
