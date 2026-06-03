@@ -380,10 +380,41 @@ describe('BeginnerObjectiveCard', () => {
 
     expect(screen.queryByText(d8RecountText)).toBeNull();
     expect(useGameStore.getState().chatMessages.at(-2)?.actions).toEqual([
-      { id: 'guided:read-pressure:recount:read-pressure-2,2-4,2-3,2:3,1', label: 'Show recount' },
+      expect.objectContaining({
+        id: 'guided:read-pressure:recount:read-pressure-2,2-4,2-3,2:3,1',
+        label: 'Show recount',
+        previewHighlights: expect.arrayContaining([
+          {
+            id: 'read-pressure-reply-3,1',
+            point: { x: 3, y: 1 },
+            variant: 'positive',
+            label: 'D8: selected reply used for this recount.',
+          },
+        ]),
+      }),
     ]);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Show recount' }));
+    const transcriptRecountAction = screen.getByRole('button', { name: 'Show recount' });
+    fireEvent.focus(transcriptRecountAction);
+    expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
+      {
+        id: 'read-pressure-reply-3,1',
+        point: { x: 3, y: 1 },
+        variant: 'positive',
+        label: 'D8: selected reply used for this recount.',
+      },
+    ]));
+    fireEvent.blur(transcriptRecountAction);
+    expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
+      {
+        id: 'read-pressure-reply-3,3',
+        point: { x: 3, y: 3 },
+        variant: 'positive',
+        label: 'D6: selected first reply; attack the imagined cutting stone.',
+      },
+    ]));
+
+    fireEvent.click(transcriptRecountAction);
 
     expect(screen.getByText(d8RecountText)).toBeTruthy();
     expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
@@ -534,7 +565,18 @@ describe('BeginnerObjectiveCard', () => {
         text: `Comparison read: ${d6RecountText} ${comparisonSummary}`,
         variant: 'teaching',
         actions: [
-          { id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1', label: 'Show comparison' },
+          expect.objectContaining({
+            id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1',
+            label: 'Show comparison',
+            previewHighlights: expect.arrayContaining([
+              {
+                id: 'read-pressure-reply-3,3',
+                point: { x: 3, y: 3 },
+                variant: 'positive',
+                label: 'D6: selected reply used for this recount.',
+              },
+            ]),
+          }),
         ],
       }),
     ]));
@@ -600,7 +642,18 @@ describe('BeginnerObjectiveCard', () => {
       text: `Comparison read: After D6, recount the two Black sides: C7 has 2 liberties at C6 and B7. E7 has 3 liberties at E8, E6, and F7. C7 is the short side now, so defend it before extending again. ${comparisonSummary} ${recommendation}`,
       variant: 'teaching',
       actions: [
-        { id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1', label: 'Show comparison' },
+        expect.objectContaining({
+          id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1',
+          label: 'Show comparison',
+          previewHighlights: expect.arrayContaining([
+            {
+              id: 'read-pressure-short-liberty-2,3',
+              point: { x: 2, y: 3 },
+              variant: 'warning',
+              label: 'C6: defend this C7 liberty before extending.',
+            },
+          ]),
+        }),
       ],
     });
     expect(useGameStore.getState().overlays.targetHints).toEqual([
@@ -674,7 +727,18 @@ describe('BeginnerObjectiveCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Compare D6 against D8' }));
 
     expect(useGameStore.getState().chatMessages.at(-1)?.actions).toEqual([
-      { id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1', label: 'Show comparison' },
+      expect.objectContaining({
+        id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1',
+        label: 'Show comparison',
+        previewHighlights: expect.arrayContaining([
+          {
+            id: 'read-pressure-short-liberty-2,3',
+            point: { x: 2, y: 3 },
+            variant: 'warning',
+            label: 'C6: defend this C7 liberty before extending.',
+          },
+        ]),
+      }),
     ]);
 
     fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
@@ -682,7 +746,20 @@ describe('BeginnerObjectiveCard', () => {
     expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).not.toContain('read-pressure-short-liberty-2,3');
 
     const comparisonActions = screen.getAllByRole('button', { name: 'Show comparison' });
-    fireEvent.click(comparisonActions[comparisonActions.length - 1]);
+    const transcriptComparisonAction = comparisonActions[comparisonActions.length - 1];
+    fireEvent.focus(transcriptComparisonAction);
+    expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
+      {
+        id: 'read-pressure-short-liberty-2,3',
+        point: { x: 2, y: 3 },
+        variant: 'warning',
+        label: 'C6: defend this C7 liberty before extending.',
+      },
+    ]));
+    fireEvent.blur(transcriptComparisonAction);
+    expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).not.toContain('read-pressure-short-liberty-2,3');
+
+    fireEvent.click(transcriptComparisonAction);
 
     expect(screen.getByText(d6RecountText)).toBeTruthy();
     expect(screen.getByText('Comparison summary')).toBeTruthy();
@@ -887,7 +964,18 @@ describe('BeginnerObjectiveCard', () => {
       text: `Defense read: ${defenseText} ${defenseOutcomeText}`,
       variant: 'teaching',
       actions: [
-        { id: 'guided:read-pressure:defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3', label: 'Show defense' },
+        expect.objectContaining({
+          id: 'guided:read-pressure:defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3',
+          label: 'Show defense',
+          previewHighlights: expect.arrayContaining([
+            {
+              id: 'read-pressure-selected-defense-2,3',
+              point: { x: 2, y: 3 },
+              variant: 'positive',
+              label: 'C6: simulated defense; C7 now has 5 liberties.',
+            },
+          ]),
+        }),
       ],
     });
     expect(useGameStore.getState().overlays.targetHints).toEqual([
@@ -999,7 +1087,18 @@ describe('BeginnerObjectiveCard', () => {
       text: `Follow-up defense: ${followUpText} ${followUpOutcomeText}`,
       variant: 'teaching',
       actions: [
-        { id: 'guided:read-pressure:follow-up-defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3:4,1', label: 'Show follow-up' },
+        expect.objectContaining({
+          id: 'guided:read-pressure:follow-up-defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3:4,1',
+          label: 'Show follow-up',
+          previewHighlights: expect.arrayContaining([
+            {
+              id: 'read-pressure-follow-up-defense-4,1',
+              point: { x: 4, y: 1 },
+              variant: 'positive',
+              label: 'E8: follow-up defense; E7 now has 5 liberties.',
+            },
+          ]),
+        }),
       ],
     });
     expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
@@ -1041,7 +1140,20 @@ describe('BeginnerObjectiveCard', () => {
     expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).not.toContain('read-pressure-follow-up-defense-4,1');
 
     const followUpActions = screen.getAllByRole('button', { name: 'Show follow-up' });
-    fireEvent.click(followUpActions[followUpActions.length - 1]);
+    const transcriptFollowUpAction = followUpActions[followUpActions.length - 1];
+    fireEvent.focus(transcriptFollowUpAction);
+    expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
+      {
+        id: 'read-pressure-follow-up-defense-4,1',
+        point: { x: 4, y: 1 },
+        variant: 'positive',
+        label: 'E8: follow-up defense; E7 now has 5 liberties.',
+      },
+    ]));
+    fireEvent.blur(transcriptFollowUpAction);
+    expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).not.toContain('read-pressure-follow-up-defense-4,1');
+
+    fireEvent.click(transcriptFollowUpAction);
 
     expect(screen.getByText('Follow-up defense')).toBeTruthy();
     expect(screen.getByText(followUpText)).toBeTruthy();
@@ -1671,7 +1783,18 @@ describe('BeginnerObjectiveCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Try C6 defense for C7' }));
 
     expect(useGameStore.getState().chatMessages.at(-1)?.actions).toEqual([
-      { id: 'guided:read-pressure:defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3', label: 'Show defense' },
+      expect.objectContaining({
+        id: 'guided:read-pressure:defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3',
+        label: 'Show defense',
+        previewHighlights: expect.arrayContaining([
+          {
+            id: 'read-pressure-selected-defense-2,3',
+            point: { x: 2, y: 3 },
+            variant: 'positive',
+            label: 'C6: simulated defense; C7 now has 5 liberties.',
+          },
+        ]),
+      }),
     ]);
 
     fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
@@ -1681,7 +1804,20 @@ describe('BeginnerObjectiveCard', () => {
     expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).not.toContain('read-pressure-selected-defense-2,3');
 
     const defenseActions = screen.getAllByRole('button', { name: 'Show defense' });
-    fireEvent.click(defenseActions[defenseActions.length - 1]);
+    const transcriptDefenseAction = defenseActions[defenseActions.length - 1];
+    fireEvent.focus(transcriptDefenseAction);
+    expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
+      {
+        id: 'read-pressure-selected-defense-2,3',
+        point: { x: 2, y: 3 },
+        variant: 'positive',
+        label: 'C6: simulated defense; C7 now has 5 liberties.',
+      },
+    ]));
+    fireEvent.blur(transcriptDefenseAction);
+    expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).not.toContain('read-pressure-selected-defense-2,3');
+
+    fireEvent.click(transcriptDefenseAction);
 
     expect(screen.getByText('Defense read')).toBeTruthy();
     expect(screen.getByText(defenseText)).toBeTruthy();

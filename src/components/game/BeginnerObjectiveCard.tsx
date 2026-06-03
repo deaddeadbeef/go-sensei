@@ -338,6 +338,10 @@ function getPressureReplayAction(
   };
 }
 
+function withPreviewHighlights(action: SenseiAction, previewHighlights: OverlayHighlight[]): SenseiAction {
+  return previewHighlights.length > 0 ? { ...action, previewHighlights } : action;
+}
+
 function getPressureComparisonReplayAction(
   prompt: OneSpaceJumpReadPrompt,
   reply: Point,
@@ -1827,8 +1831,13 @@ export function BeginnerObjectiveCard() {
     setFollowUpDefenseReadPointKey(null);
     setPinnedPressureSequenceRowKey(null);
     setPressureSequencePinOverride(null);
-    applyTargetHints(buildOneSpaceJumpPressureHighlights(prompt, game.board, reply));
-    addChatMessage(`Branch choice: ${feedback}`, 'teaching', [getPressureReplayAction('branch', prompt, reply)]);
+    const previewHighlights = buildOneSpaceJumpPressureHighlights(prompt, game.board, reply);
+    applyTargetHints(previewHighlights);
+    addChatMessage(
+      `Branch choice: ${feedback}`,
+      'teaching',
+      [withPreviewHighlights(getPressureReplayAction('branch', prompt, reply), previewHighlights)],
+    );
   }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game.board, recordInteraction]);
 
   const recountReadPressureReply = useCallback((prompt: OneSpaceJumpReadPrompt, reply: Point) => {
@@ -1846,8 +1855,13 @@ export function BeginnerObjectiveCard() {
     setFollowUpDefenseReadPointKey(null);
     setPinnedPressureSequenceRowKey(null);
     setPressureSequencePinOverride(null);
-    applyTargetHints(buildOneSpaceJumpRecountHighlights(prompt, recount, game.board));
-    addChatMessage(`Second read: ${recount.text}`, 'teaching', [getPressureReplayAction('recount', prompt, reply)]);
+    const previewHighlights = buildOneSpaceJumpRecountHighlights(prompt, recount, game.board);
+    applyTargetHints(previewHighlights);
+    addChatMessage(
+      `Second read: ${recount.text}`,
+      'teaching',
+      [withPreviewHighlights(getPressureReplayAction('recount', prompt, reply), previewHighlights)],
+    );
   }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game, recordInteraction]);
 
   const compareReadPressureReply = useCallback((prompt: OneSpaceJumpReadPrompt, comparedReply: Point, reply: Point) => {
@@ -1870,7 +1884,8 @@ export function BeginnerObjectiveCard() {
     setFollowUpDefenseReadPointKey(null);
     setPinnedPressureSequenceRowKey(null);
     setPressureSequencePinOverride(null);
-    applyTargetHints(buildOneSpaceJumpRecountHighlights(prompt, recount, game.board));
+    const previewHighlights = buildOneSpaceJumpRecountHighlights(prompt, recount, game.board);
+    applyTargetHints(previewHighlights);
     const comparisonText = [
       recount.text,
       comparisonSummary?.text,
@@ -1880,7 +1895,7 @@ export function BeginnerObjectiveCard() {
     addChatMessage(
       `Comparison read: ${comparisonText}`,
       'teaching',
-      [getPressureComparisonReplayAction(prompt, reply, comparedReply)],
+      [withPreviewHighlights(getPressureComparisonReplayAction(prompt, reply, comparedReply), previewHighlights)],
     );
   }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game, recordInteraction]);
 
@@ -1908,13 +1923,14 @@ export function BeginnerObjectiveCard() {
     setFollowUpDefenseReadPointKey(null);
     setPinnedPressureSequenceRowKey(null);
     setPressureSequencePinOverride(null);
-    applyTargetHints(defenseOutcome
+    const previewHighlights = defenseOutcome
       ? buildOneSpaceJumpDefenseOutcomeHighlights(prompt, recount, game.board, defenseOutcome)
-      : buildOneSpaceJumpRecountHighlights(prompt, recount, game.board, point));
+      : buildOneSpaceJumpRecountHighlights(prompt, recount, game.board, point);
+    applyTargetHints(previewHighlights);
     addChatMessage(
       `Defense read: ${defenseMessage}`,
       'teaching',
-      [getPressureDefenseReplayAction(prompt, recount.reply, comparedReply, point)],
+      [withPreviewHighlights(getPressureDefenseReplayAction(prompt, recount.reply, comparedReply, point), previewHighlights)],
     );
   }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game, recordInteraction]);
 
@@ -1954,13 +1970,17 @@ export function BeginnerObjectiveCard() {
     setFollowUpDefenseReadPointKey(targetKey(point));
     setPinnedPressureSequenceRowKey(null);
     setPressureSequencePinOverride(null);
-    applyTargetHints(followUpOutcome
+    const previewHighlights = followUpOutcome
       ? buildOneSpaceJumpFollowUpDefenseOutcomeHighlights(prompt, recount, game.board, firstDefenseOutcome, followUpOutcome)
-      : buildOneSpaceJumpDefenseOutcomeHighlights(prompt, recount, game.board, firstDefenseOutcome));
+      : buildOneSpaceJumpDefenseOutcomeHighlights(prompt, recount, game.board, firstDefenseOutcome);
+    applyTargetHints(previewHighlights);
     addChatMessage(
       `Follow-up defense: ${followUpMessage}`,
       'teaching',
-      [getPressureFollowUpDefenseReplayAction(prompt, recount.reply, comparedReply, firstDefensePoint, point)],
+      [withPreviewHighlights(
+        getPressureFollowUpDefenseReplayAction(prompt, recount.reply, comparedReply, firstDefensePoint, point),
+        previewHighlights,
+      )],
     );
   }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game, recordInteraction]);
 
