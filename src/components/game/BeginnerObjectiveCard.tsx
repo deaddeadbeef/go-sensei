@@ -850,6 +850,10 @@ function formatReplaySequenceChoiceSummary(choices: ReplaySequenceDefenseChoice[
   return hints.length > 0 ? `Next choices: ${hints.join(' ')}` : null;
 }
 
+function formatReplaySequenceRecommendedChoice(choice: ReplaySequenceDefenseChoice | null): string | null {
+  return choice?.hint ? `Recommended: ${choice.hint}` : null;
+}
+
 function getPressureSequenceContinuationSummary(
   game: GameState,
   prompt: OneSpaceJumpReadPrompt | null,
@@ -866,12 +870,17 @@ function getPressureSequenceContinuationSummary(
     defenseRecommendation
     && row.replayKey === `compare-${targetKey(selectedRecount.reply)}`
   ) {
-    return formatReplaySequenceChoiceSummary(getPressureDefenseChoices(
+    const choices = getPressureDefenseChoices(
       game,
       prompt,
       selectedRecount,
       defenseRecommendation,
-    ));
+    );
+
+    return [
+      formatReplaySequenceChoiceSummary(choices),
+      formatReplaySequenceRecommendedChoice(getSafestReplaySequenceChoice(choices)),
+    ].filter((text): text is string => Boolean(text)).join(' ');
   }
 
   if (
@@ -879,13 +888,18 @@ function getPressureSequenceContinuationSummary(
     && continuationRecommendation
     && row.replayKey === `defense-${targetKey(selectedDefenseOutcome.defense)}`
   ) {
-    return formatReplaySequenceChoiceSummary(getPressureFollowUpDefenseChoices(
+    const choices = getPressureFollowUpDefenseChoices(
       game,
       prompt,
       selectedRecount,
       selectedDefenseOutcome,
       continuationRecommendation,
-    ));
+    );
+
+    return [
+      formatReplaySequenceChoiceSummary(choices),
+      formatReplaySequenceRecommendedChoice(getSafestReplaySequenceChoice(choices)),
+    ].filter((text): text is string => Boolean(text)).join(' ');
   }
 
   return null;
@@ -899,7 +913,7 @@ function getPressureDefenseContinuationChatAction(
 ): SenseiAction {
   return {
     ...getPressureDefenseReplayAction(prompt, reply, comparedReply, choice.point, `defense-${targetKey(choice.point)}`),
-    label: `Try ${choice.coord}`,
+    label: `Recommended: ${choice.coord}`,
   };
 }
 
@@ -919,7 +933,7 @@ function getPressureFollowUpDefenseContinuationChatAction(
       choice.point,
       `follow-up-${targetKey(choice.point)}`,
     ),
-    label: `Try ${choice.coord}`,
+    label: `Recommended: ${choice.coord}`,
   };
 }
 

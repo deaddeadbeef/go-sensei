@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { act, cleanup, render, waitFor } from '@testing-library/react';
+import { renderToString } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import GamePage from '@/app/page';
 import { useGameStore } from '@/stores/game-store';
@@ -56,5 +57,28 @@ describe('app navigation recovery', () => {
     render(<GamePage />);
 
     await waitFor(() => expect(useGameStore.getState().appPhase).toBe('problems'));
+  });
+
+  it('server-renders a stable shell before persisted stores choose the next recommendation', () => {
+    act(() => {
+      useGameStore.setState({ appPhase: 'path' });
+      useReviewStore.setState({
+        cards: {
+          'capture-001': {
+            easeFactor: 2.5,
+            interval: 0,
+            repetitions: 0,
+            nextReviewDate: Date.now() - 1000,
+          },
+        },
+        history: [],
+      });
+    });
+
+    const html = renderToString(<GamePage />);
+
+    expect(html).toContain('Loading Go Sensei');
+    expect(html).not.toContain('Review due concepts');
+    expect(html).not.toContain('First 9x9 guided game');
   });
 });
