@@ -1215,10 +1215,10 @@ describe('BeginnerObjectiveCard', () => {
 
     const defenseSequenceStep = screen.getByRole('button', { name: 'Show board highlights for step 5: Defend C7 at C6; C7 has 5 liberties.' });
     fireEvent.click(defenseSequenceStep);
-    expect(useGameStore.getState().chatMessages.at(-1)?.text).toBe('Read sequence focus: Step 5: Defend C7 at C6; C7 has 5 liberties. This shows how C6 changes the short side before the next read; compare it with the warning markers from the branch. Next choices: E8 levels E7 with C7 at 5 liberties. E6 connects C7 and E7 into one group with 8 liberties. F7 levels E7 with C7 at 5 liberties.');
+    expect(useGameStore.getState().chatMessages.at(-1)?.text).toBe('Read sequence focus: Step 5: Defend C7 at C6; C7 has 5 liberties. This shows how C6 changes the short side before the next read; compare it with the warning markers from the branch. Next choices: E8 levels E7 with C7 at 5 liberties. E6 connects C7 and E7 into one group with 8 liberties. F7 levels E7 with C7 at 5 liberties. Recommended: E6 connects C7 and E7 into one group with 8 liberties.');
     expect(useGameStore.getState().chatMessages.at(-1)?.actions).toEqual([
       { id: 'guided:read-pressure:defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3:pin:defense-2,3', label: 'Show step' },
-      { id: 'guided:read-pressure:follow-up-defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3:4,3:pin:follow-up-4,3', label: 'Try E6' },
+      { id: 'guided:read-pressure:follow-up-defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3:4,3:pin:follow-up-4,3', label: 'Recommended: E6' },
     ]);
 
     fireEvent.click(defenseSequenceStep);
@@ -1290,10 +1290,10 @@ describe('BeginnerObjectiveCard', () => {
 
     const comparisonSequenceStep = screen.getByRole('button', { name: 'Show board highlights for step 4: Compare D6: C7 2 liberties; E7 3 liberties.' });
     fireEvent.click(comparisonSequenceStep);
-    expect(useGameStore.getState().chatMessages.at(-1)?.text).toBe('Read sequence focus: Step 4: Compare D6: C7 2 liberties; E7 3 liberties. This is the live comparison against D8; use it to see whether the reply direction or liberty count changed. Next choices: C6 grows C7 to 5 liberties; E7 becomes the next read. B7 grows C7 to 4 liberties; E7 becomes the next read.');
+    expect(useGameStore.getState().chatMessages.at(-1)?.text).toBe('Read sequence focus: Step 4: Compare D6: C7 2 liberties; E7 3 liberties. This is the live comparison against D8; use it to see whether the reply direction or liberty count changed. Next choices: C6 grows C7 to 5 liberties; E7 becomes the next read. B7 grows C7 to 4 liberties; E7 becomes the next read. Recommended: C6 grows C7 to 5 liberties; E7 becomes the next read.');
     expect(useGameStore.getState().chatMessages.at(-1)?.actions).toEqual([
       { id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1:pin:compare-3,3', label: 'Show step' },
-      { id: 'guided:read-pressure:defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3:pin:defense-2,3', label: 'Try C6' },
+      { id: 'guided:read-pressure:defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3:pin:defense-2,3', label: 'Recommended: C6' },
     ]);
 
     fireEvent.click(comparisonSequenceStep);
@@ -1363,7 +1363,7 @@ describe('BeginnerObjectiveCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Compare D6 against D8' }));
     fireEvent.click(screen.getByRole('button', { name: 'Show board highlights for step 4: Compare D6: C7 2 liberties; E7 3 liberties.' }));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Try C6' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Recommended: C6' }));
 
     expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
     expect(screen.getByText('Defense read')).toBeTruthy();
@@ -1408,7 +1408,7 @@ describe('BeginnerObjectiveCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Try C6 defense for C7' }));
     fireEvent.click(screen.getByRole('button', { name: 'Show board highlights for step 5: Defend C7 at C6; C7 has 5 liberties.' }));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Try E6' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Recommended: E6' }));
 
     expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
     expect(screen.getByText('Follow-up defense')).toBeTruthy();
