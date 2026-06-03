@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from 'react';
 import { BoardContainer } from '@/components/board/BoardContainer';
 import { SenseiBubble } from '@/components/ui/SenseiBubble';
 import { SenseiBar } from '@/components/ui/SenseiBar';
@@ -27,8 +27,21 @@ import { useHesitationDetector } from '@/hooks/useHesitationDetector';
 import { COLORS } from '@/utils/colors';
 import type { BoardSize } from '@/lib/go-engine/types';
 
+const subscribeToClientHydration = () => () => {};
+const getClientHydrationSnapshot = () => true;
+const getServerHydrationSnapshot = () => false;
+
+function useHasMountedClient() {
+  return useSyncExternalStore(
+    subscribeToClientHydration,
+    getClientHydrationSnapshot,
+    getServerHydrationSnapshot,
+  );
+}
+
 export default function GamePage() {
   const [showSettings, setShowSettings] = useState(false);
+  const hasMounted = useHasMountedClient();
 
   const phase = useGameStore((s) => s.phase);
   const setPhase = useGameStore((s) => s.setPhase);
@@ -117,6 +130,10 @@ export default function GamePage() {
     [game.board.size, startNewGame, setTeachingLevel],
   );
 
+  if (!hasMounted) {
+    return <AppHydrationShell />;
+  }
+
   return (
     <div className="flex flex-col h-dvh overflow-hidden" style={{ backgroundColor: COLORS.ui.bgPrimary }}>
       <SenseiBar onSettingsClick={() => setShowSettings(true)} isLoggedIn={isLoggedIn} />
@@ -193,6 +210,28 @@ export default function GamePage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function AppHydrationShell() {
+  return (
+    <div className="flex h-dvh flex-col overflow-hidden" style={{ backgroundColor: COLORS.ui.bgPrimary }}>
+      <div
+        className="flex h-12 shrink-0 items-center px-4"
+        style={{ backgroundColor: COLORS.ui.bgCard, borderBottom: `1px solid ${COLORS.ui.bgPrimary}` }}
+      >
+        <span className="text-lg font-bold" style={{ color: COLORS.ui.accent }}>
+          碁 Go Sensei
+        </span>
+      </div>
+      <main
+        aria-busy="true"
+        className="flex flex-1 items-center justify-center text-sm font-medium"
+        style={{ color: COLORS.ui.textSecondary }}
+      >
+        Loading Go Sensei
+      </main>
     </div>
   );
 }

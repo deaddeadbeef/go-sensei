@@ -65,6 +65,8 @@ Latest completed slice:
 - Added hover/focus board previews for restored defense and follow-up continuations, so learners can inspect simulated outcome stones and liberties before committing to a replay branch.
 - Added next-choice summaries to read-sequence focus transcript messages, so saved comparison and defense steps preserve the same tactical option hints even before the learner reopens the board-side continuation controls.
 - Added direct safest-continuation transcript actions for saved comparison and defense focus messages, so learners can jump straight to the best defensive or connecting simulation from chat without reopening the board-side continuation panel first.
+- Marked direct transcript continuations as recommended and appended the simulated reason, so learners see why C6 or E6 is the safest next click instead of treating the shortcut as an unexplained command.
+- Added a deterministic pre-mount app shell so persisted lesson, review, auth, and game state cannot cause a server/client hydration mismatch before the browser chooses the learner's actual path.
 
 Next investigation candidates:
-- Whether the transcript should explain why a direct continuation is considered safest, for example by marking "recommended" on the chat action or including a short reason beside it.
+- Whether recommended transcript shortcuts should preview their simulated board markers on hover/focus, matching the board-side continuation controls.
