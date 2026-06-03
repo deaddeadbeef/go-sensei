@@ -1216,6 +1216,10 @@ describe('BeginnerObjectiveCard', () => {
     const defenseSequenceStep = screen.getByRole('button', { name: 'Show board highlights for step 5: Defend C7 at C6; C7 has 5 liberties.' });
     fireEvent.click(defenseSequenceStep);
     expect(useGameStore.getState().chatMessages.at(-1)?.text).toBe('Read sequence focus: Step 5: Defend C7 at C6; C7 has 5 liberties. This shows how C6 changes the short side before the next read; compare it with the warning markers from the branch. Next choices: E8 levels E7 with C7 at 5 liberties. E6 connects C7 and E7 into one group with 8 liberties. F7 levels E7 with C7 at 5 liberties.');
+    expect(useGameStore.getState().chatMessages.at(-1)?.actions).toEqual([
+      { id: 'guided:read-pressure:defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3:pin:defense-2,3', label: 'Show step' },
+      { id: 'guided:read-pressure:follow-up-defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3:4,3:pin:follow-up-4,3', label: 'Try E6' },
+    ]);
 
     fireEvent.click(defenseSequenceStep);
     expect(defenseSequenceStep.getAttribute('aria-pressed')).toBe('false');
@@ -1287,6 +1291,10 @@ describe('BeginnerObjectiveCard', () => {
     const comparisonSequenceStep = screen.getByRole('button', { name: 'Show board highlights for step 4: Compare D6: C7 2 liberties; E7 3 liberties.' });
     fireEvent.click(comparisonSequenceStep);
     expect(useGameStore.getState().chatMessages.at(-1)?.text).toBe('Read sequence focus: Step 4: Compare D6: C7 2 liberties; E7 3 liberties. This is the live comparison against D8; use it to see whether the reply direction or liberty count changed. Next choices: C6 grows C7 to 5 liberties; E7 becomes the next read. B7 grows C7 to 4 liberties; E7 becomes the next read.');
+    expect(useGameStore.getState().chatMessages.at(-1)?.actions).toEqual([
+      { id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1:pin:compare-3,3', label: 'Show step' },
+      { id: 'guided:read-pressure:defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3:pin:defense-2,3', label: 'Try C6' },
+    ]);
 
     fireEvent.click(comparisonSequenceStep);
     expect(comparisonSequenceStep.getAttribute('aria-pressed')).toBe('false');
@@ -1332,6 +1340,95 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText('After C6, C7 grows from 2 to 5 liberties at B7, C5, B6, D5, and E6. E7 has 3 liberties at E8, E6, and F7. C7 is no longer the short side, so the defense did its job; now recount the whole position before extending again.')).toBeTruthy();
     expect(screen.queryByText('Next question')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Try C6 defense from here' })).toBeNull();
+  });
+
+  it('tries the safest defense directly from a comparison focus transcript action', () => {
+    act(() => {
+      useGameStore.getState().placeStone({ x: 2, y: 2 });
+      useGameStore.getState().placeStone({ x: 2, y: 1 });
+      useGameStore.getState().placeStone({ x: 4, y: 2 });
+      useGameStore.getState().pass();
+    });
+
+    render(
+      <>
+        <BeginnerObjectiveCard />
+        <SenseiChatLog />
+      </>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Recount C7 and E7 after D8' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Compare D6 against D8' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Show board highlights for step 4: Compare D6: C7 2 liberties; E7 3 liberties.' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try C6' }));
+
+    expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
+    expect(screen.getByText('Defense read')).toBeTruthy();
+    expect(screen.getByText('After C6, C7 grows from 2 to 5 liberties at B7, C5, B6, D5, and E6. E7 has 3 liberties at E8, E6, and F7. C7 is no longer the short side, so the defense did its job; now recount the whole position before extending again.')).toBeTruthy();
+    expect(screen.getByText('After C6, which side is now shorter, and should the read continue there?')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Try E6 follow-up defense from here' })).toBeTruthy();
+    expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
+      {
+        id: 'read-pressure-selected-defense-2,3',
+        point: { x: 2, y: 3 },
+        variant: 'positive',
+        label: 'C6: simulated defense; C7 now has 5 liberties.',
+      },
+      {
+        id: 'read-pressure-stone-4,2',
+        point: { x: 4, y: 2 },
+        variant: 'warning',
+        label: 'E7: short side with 3 liberties after C6 defense: E8, E6, and F7.',
+      },
+    ]));
+  });
+
+  it('tries the safest follow-up directly from a defense focus transcript action', () => {
+    act(() => {
+      useGameStore.getState().placeStone({ x: 2, y: 2 });
+      useGameStore.getState().placeStone({ x: 2, y: 1 });
+      useGameStore.getState().placeStone({ x: 4, y: 2 });
+      useGameStore.getState().pass();
+    });
+
+    render(
+      <>
+        <BeginnerObjectiveCard />
+        <SenseiChatLog />
+      </>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Recount C7 and E7 after D8' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Compare D6 against D8' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Try C6 defense for C7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Show board highlights for step 5: Defend C7 at C6; C7 has 5 liberties.' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try E6' }));
+
+    expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
+    expect(screen.getByText('Follow-up defense')).toBeTruthy();
+    expect(screen.getByText('After E6, C7 and E7 connect into one Black group with 8 liberties at E8, F7, E5, F6, D5, C5, B6, and B7. Both sides are one group now, so the local read is stable; return to the real game and choose an extension.')).toBeTruthy();
+    expect(screen.getByText('Does E6 connect the stones strongly enough to leave the local fight?')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Play G7 from here' })).toBeTruthy();
+    expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
+      {
+        id: 'read-pressure-follow-up-defense-4,3',
+        point: { x: 4, y: 3 },
+        variant: 'positive',
+        label: 'E6: follow-up defense; C7 and E7 connect with 8 liberties.',
+      },
+      {
+        id: 'read-pressure-anchor-2,2',
+        point: { x: 2, y: 2 },
+        variant: 'positive',
+        label: 'C7: connected group has 8 liberties after E6 follow-up: E8, F7, E5, F6, D5, C5, B6, and B7.',
+      },
+    ]));
   });
 
   it('hands off from a restored follow-up sequence step from chat', () => {

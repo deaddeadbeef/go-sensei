@@ -64,6 +64,7 @@ Latest completed slice:
 - Added concise tactical hints to restored multi-choice defense continuations, so saved comparison and follow-up reads explain whether each option grows liberties, levels the sides, or connects both stones before the learner clicks.
 - Added hover/focus board previews for restored defense and follow-up continuations, so learners can inspect simulated outcome stones and liberties before committing to a replay branch.
 - Added next-choice summaries to read-sequence focus transcript messages, so saved comparison and defense steps preserve the same tactical option hints even before the learner reopens the board-side continuation controls.
+- Added direct safest-continuation transcript actions for saved comparison and defense focus messages, so learners can jump straight to the best defensive or connecting simulation from chat without reopening the board-side continuation panel first.
 
 Next investigation candidates:
-- Whether transcript replay actions should offer a direct safest-continuation button in the chat row itself, not only after reopening the saved board-side panel.
+- Whether the transcript should explain why a direct continuation is considered safest, for example by marking "recommended" on the chat action or including a short reason beside it.

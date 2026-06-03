@@ -108,6 +108,7 @@ interface ReplaySequenceDefenseChoice {
   coord: string;
   hint: string | null;
   highlights: OverlayHighlight[] | null;
+  outcome: PressureDefenseOutcome | null;
 }
 
 function targetKey(point: Point): string {
@@ -784,6 +785,7 @@ function getPressureDefenseChoices(
       highlights: outcome
         ? buildOneSpaceJumpDefenseOutcomeHighlights(prompt, recount, game.board, outcome)
         : null,
+      outcome,
     };
   });
 }
@@ -813,8 +815,31 @@ function getPressureFollowUpDefenseChoices(
       highlights: outcome
         ? buildOneSpaceJumpFollowUpDefenseOutcomeHighlights(prompt, recount, game.board, previousOutcome, outcome)
         : null,
+      outcome,
     };
   });
+}
+
+function getReplaySequenceChoiceSafetyScore(choice: ReplaySequenceDefenseChoice): number {
+  if (!choice.outcome) return Number.NEGATIVE_INFINITY;
+
+  const defendedLibertyCount = choice.outcome.defendedLiberties.length;
+  const otherLibertyCount = choice.outcome.otherLiberties.length;
+  const minimumLibertyCount = Math.min(defendedLibertyCount, otherLibertyCount);
+  const totalLibertyCount = defendedLibertyCount + otherLibertyCount;
+
+  return (choice.outcome.connectedSides ? 10000 : 0) + minimumLibertyCount * 100 + totalLibertyCount;
+}
+
+function getSafestReplaySequenceChoice(choices: ReplaySequenceDefenseChoice[]): ReplaySequenceDefenseChoice | null {
+  return choices.reduce<ReplaySequenceDefenseChoice | null>((best, choice) => {
+    if (!choice.outcome) return best;
+    if (!best) return choice;
+
+    return getReplaySequenceChoiceSafetyScore(choice) > getReplaySequenceChoiceSafetyScore(best)
+      ? choice
+      : best;
+  }, null);
 }
 
 function formatReplaySequenceChoiceSummary(choices: ReplaySequenceDefenseChoice[]): string | null {
@@ -864,6 +889,93 @@ function getPressureSequenceContinuationSummary(
   }
 
   return null;
+}
+
+function getPressureDefenseContinuationChatAction(
+  prompt: OneSpaceJumpReadPrompt,
+  reply: Point,
+  comparedReply: Point,
+  choice: ReplaySequenceDefenseChoice,
+): SenseiAction {
+  return {
+    ...getPressureDefenseReplayAction(prompt, reply, comparedReply, choice.point, `defense-${targetKey(choice.point)}`),
+    label: `Try ${choice.coord}`,
+  };
+}
+
+function getPressureFollowUpDefenseContinuationChatAction(
+  prompt: OneSpaceJumpReadPrompt,
+  reply: Point,
+  comparedReply: Point,
+  firstDefensePoint: Point,
+  choice: ReplaySequenceDefenseChoice,
+): SenseiAction {
+  return {
+    ...getPressureFollowUpDefenseReplayAction(
+      prompt,
+      reply,
+      comparedReply,
+      firstDefensePoint,
+      choice.point,
+      `follow-up-${targetKey(choice.point)}`,
+    ),
+    label: `Try ${choice.coord}`,
+  };
+}
+
+function getPressureSequenceContinuationActions(
+  game: GameState,
+  prompt: OneSpaceJumpReadPrompt | null,
+  selectedRecount: PressureRecount | null,
+  comparedReply: Point | null,
+  defenseRecommendation: PressureDefenseRecommendation | null,
+  selectedDefenseOutcome: PressureDefenseOutcome | null,
+  continuationRecommendation: PressureDefenseRecommendation | null,
+  row: PressureReadSequenceRow,
+): SenseiAction[] {
+  if (!prompt || !selectedRecount || !comparedReply) return [];
+
+  if (
+    defenseRecommendation
+    && row.replayKey === `compare-${targetKey(selectedRecount.reply)}`
+  ) {
+    const safestChoice = getSafestReplaySequenceChoice(getPressureDefenseChoices(
+      game,
+      prompt,
+      selectedRecount,
+      defenseRecommendation,
+    ));
+
+    return safestChoice
+      ? [getPressureDefenseContinuationChatAction(prompt, selectedRecount.reply, comparedReply, safestChoice)]
+      : [];
+  }
+
+  if (
+    selectedDefenseOutcome
+    && continuationRecommendation
+    && row.replayKey === `defense-${targetKey(selectedDefenseOutcome.defense)}`
+  ) {
+    const safestChoice = getSafestReplaySequenceChoice(getPressureFollowUpDefenseChoices(
+      game,
+      prompt,
+      selectedRecount,
+      selectedDefenseOutcome,
+      continuationRecommendation,
+    ));
+
+    return safestChoice
+      ? [getPressureFollowUpDefenseContinuationChatAction(
+        prompt,
+        selectedRecount.reply,
+        comparedReply,
+        selectedDefenseOutcome.defense,
+        safestChoice,
+      )]
+      : [];
+  }
+
+  return [];
 }
 
 function getPressureDefenseContinuationComparisonSummary(
@@ -2360,6 +2472,16 @@ export function BeginnerObjectiveCard() {
         pressureDefenseContinuationRecommendation,
         row,
       );
+      const continuationActions = getPressureSequenceContinuationActions(
+        game,
+        readPrompt,
+        selectedReadRecount,
+        comparedReadReply,
+        pressureDefenseRecommendation,
+        selectedDefenseReadOutcome,
+        pressureDefenseContinuationRecommendation,
+        row,
+      );
 
       addChatMessage(
         [
@@ -2367,7 +2489,7 @@ export function BeginnerObjectiveCard() {
           continuationSummary,
         ].filter((text): text is string => Boolean(text)).join(' '),
         'teaching',
-        [replayAction],
+        [replayAction, ...continuationActions],
       );
     }
   };
