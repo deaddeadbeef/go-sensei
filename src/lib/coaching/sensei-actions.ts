@@ -1,9 +1,18 @@
 import type { ProblemCategory } from '@/lib/problems/types';
 import { LESSONS } from '@/lib/lessons/lesson-data';
+import type { Point } from '@/lib/go-engine/types';
+
+export interface SenseiActionPreviewHighlight {
+  id: string;
+  point: Point;
+  variant: 'positive' | 'warning' | 'danger' | 'neutral';
+  label?: string;
+}
 
 export interface SenseiAction {
   id: string;
   label: string;
+  previewHighlights?: SenseiActionPreviewHighlight[];
 }
 
 export type SenseiActionRoute =

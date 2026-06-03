@@ -914,6 +914,7 @@ function getPressureDefenseContinuationChatAction(
   return {
     ...getPressureDefenseReplayAction(prompt, reply, comparedReply, choice.point, `defense-${targetKey(choice.point)}`),
     label: `Recommended: ${choice.coord}`,
+    ...(choice.highlights ? { previewHighlights: choice.highlights } : {}),
   };
 }
 
@@ -934,6 +935,7 @@ function getPressureFollowUpDefenseContinuationChatAction(
       `follow-up-${targetKey(choice.point)}`,
     ),
     label: `Recommended: ${choice.coord}`,
+    ...(choice.highlights ? { previewHighlights: choice.highlights } : {}),
   };
 }
 
