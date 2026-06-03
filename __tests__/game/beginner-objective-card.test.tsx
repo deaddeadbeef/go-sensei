@@ -405,6 +405,7 @@ describe('BeginnerObjectiveCard', () => {
 
     const d8RecountText = 'After D8, recount the two Black sides: C7 has 3 liberties at C8, C6, and B7. E7 has 3 liberties at E8, E6, and F7. Neither side is short yet, so keep building while staying ready to answer D7.';
     const restoredRecountCue = 'Showing the saved D8 recount from chat. Continue from here, or choose another branch to return to live reading.';
+    const returnToLiveReadNote = 'Returned to live read: back on the D6 branch. The saved D8 recount stays in chat if you want to reopen it.';
 
     fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for D7' }));
     fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
@@ -456,6 +457,11 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.queryByText('Restored read')).toBeNull();
     expect(screen.queryByText(restoredRecountCue)).toBeNull();
     expect(screen.getByText('D6 is a good first read: it attacks the imagined White stone at D7 and asks whether that cutting stone can live. After that, recount C7 and E7 before extending again.')).toBeTruthy();
+    expect(screen.getByText(returnToLiveReadNote)).toBeTruthy();
+    expect(useGameStore.getState().chatMessages.at(-1)).toMatchObject({
+      text: returnToLiveReadNote,
+      variant: 'teaching',
+    });
     expect(useGameStore.getState().guidedReadReplayRequest).toBeNull();
     expect(useGameStore.getState().overlays.targetHints).toEqual([
       {
