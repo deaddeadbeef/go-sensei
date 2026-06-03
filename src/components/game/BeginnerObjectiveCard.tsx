@@ -30,6 +30,8 @@ const ONE_SPACE_JUMP_DELTAS: Point[] = [
   { x: 0, y: -2 },
 ];
 
+const TARGET_HELP_DELAY_MS = 120;
+
 interface OneSpaceJumpReadPrompt {
   key: string;
   title: string;
@@ -1795,6 +1797,8 @@ export function BeginnerObjectiveCard() {
   const [pressureSequencePinOverride, setPressureSequencePinOverride] = useState<{ replayRequestId: number; rowKey: string | null } | null>(null);
   const [pressureHandoffRecap, setPressureHandoffRecap] = useState<PressureHandoffRecap | null>(null);
   const processedReplayRequestId = useRef<number | null>(null);
+  const targetHelpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingTargetHelpKey = useRef<string | null>(null);
 
   const objective = getBeginnerObjective({
     boardSize: game.board.size,
@@ -1809,12 +1813,23 @@ export function BeginnerObjectiveCard() {
     ? getOneSpaceJumpReadPrompt(game)
     : null;
 
+  const cancelTargetHelpTimer = useCallback(() => {
+    if (targetHelpTimer.current !== null) {
+      clearTimeout(targetHelpTimer.current);
+      targetHelpTimer.current = null;
+    }
+
+    pendingTargetHelpKey.current = null;
+  }, []);
+
   const clearTargetHelp = useCallback(() => {
+    cancelTargetHelpTimer();
     setActiveTargetKey(null);
     applyTargetHints([]);
-  }, [applyTargetHints]);
+  }, [applyTargetHints, cancelTargetHelpTimer]);
 
   useEffect(() => () => applyTargetHints([]), [applyTargetHints]);
+  useEffect(() => () => cancelTargetHelpTimer(), [cancelTargetHelpTimer]);
 
   useEffect(() => {
     if (activeReadPromptKey === null || activeReadPromptKey === readPrompt?.key) return;
@@ -1837,6 +1852,21 @@ export function BeginnerObjectiveCard() {
     setPressureSequencePinOverride(null);
     applyTargetHints(buildTargetHintHighlights(objective, point, game.board));
   }, [applyTargetHints, clearGuidedReadReplay, game.board, objective]);
+
+  const scheduleTargetHelp = useCallback((point: Point) => {
+    if (!objective) return;
+
+    const nextTargetKey = targetKey(point);
+    if (activeTargetKey === nextTargetKey || pendingTargetHelpKey.current === nextTargetKey) return;
+
+    cancelTargetHelpTimer();
+    pendingTargetHelpKey.current = nextTargetKey;
+    targetHelpTimer.current = setTimeout(() => {
+      targetHelpTimer.current = null;
+      pendingTargetHelpKey.current = null;
+      showTargetHelp(point);
+    }, TARGET_HELP_DELAY_MS);
+  }, [activeTargetKey, cancelTargetHelpTimer, objective, showTargetHelp]);
 
   const showReadPressure = useCallback((prompt: OneSpaceJumpReadPrompt) => {
     recordInteraction();
@@ -3059,13 +3089,13 @@ export function BeginnerObjectiveCard() {
                 disabled={!canPlayTarget}
                 aria-label={`Play ${coord} target for ${objective.title}`}
                 aria-describedby={activeTargetKey === targetKey(point) ? targetHelpId : undefined}
-                onPointerEnter={() => showTargetHelp(point)}
-                onPointerMove={() => showTargetHelp(point)}
-                onMouseEnter={() => showTargetHelp(point)}
+                onPointerEnter={() => scheduleTargetHelp(point)}
+                onPointerMove={() => scheduleTargetHelp(point)}
+                onMouseEnter={() => scheduleTargetHelp(point)}
                 onMouseLeave={clearTargetHelp}
-                onFocus={() => showTargetHelp(point)}
+                onFocus={() => scheduleTargetHelp(point)}
                 onBlur={clearTargetHelp}
-                onKeyDown={() => showTargetHelp(point)}
+                onKeyDown={() => scheduleTargetHelp(point)}
                 onClick={() => handleTargetClick(point)}
               >
                 {coord}
