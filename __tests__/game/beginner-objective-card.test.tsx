@@ -452,6 +452,47 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText(d8RecountText)).toBeTruthy();
     expect(screen.getByText('Restored read')).toBeTruthy();
     expect(screen.getByText(restoredRecountCue)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Return to live read' }));
+    expect(screen.queryByText('Restored read')).toBeNull();
+    expect(screen.queryByText(restoredRecountCue)).toBeNull();
+    expect(screen.getByText('D6 is a good first read: it attacks the imagined White stone at D7 and asks whether that cutting stone can live. After that, recount C7 and E7 before extending again.')).toBeTruthy();
+    expect(useGameStore.getState().guidedReadReplayRequest).toBeNull();
+    expect(useGameStore.getState().overlays.targetHints).toEqual([
+      {
+        id: 'read-pressure-anchor-2,2',
+        point: { x: 2, y: 2 },
+        variant: 'neutral',
+        label: 'C7: one side of the jump; check whether this side becomes short.',
+      },
+      {
+        id: 'read-pressure-stone-4,2',
+        point: { x: 4, y: 2 },
+        variant: 'neutral',
+        label: 'E7: one side of the jump; check whether this side becomes short.',
+      },
+      {
+        id: 'read-pressure-gap-3,2',
+        point: { x: 3, y: 2 },
+        variant: 'warning',
+        label: 'D7: imagined White pressure point.',
+      },
+      {
+        id: 'read-pressure-reply-3,1',
+        point: { x: 3, y: 1 },
+        variant: 'neutral',
+        label: 'D8: alternate reply to compare in the branch.',
+      },
+      {
+        id: 'read-pressure-reply-3,3',
+        point: { x: 3, y: 3 },
+        variant: 'positive',
+        label: 'D6: selected first reply; attack the imagined cutting stone.',
+      },
+    ]);
+
+    fireEvent.click(transcriptRecountAction);
+    expect(screen.getByText('Restored read')).toBeTruthy();
+    expect(screen.getByText(restoredRecountCue)).toBeTruthy();
     expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
     expect(useGameStore.getState().overlays.targetHints).toEqual([
       {
