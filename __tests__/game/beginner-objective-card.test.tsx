@@ -372,6 +372,7 @@ describe('BeginnerObjectiveCard', () => {
     );
 
     const d8RecountText = 'After D8, recount the two Black sides: C7 has 3 liberties at C8, C6, and B7. E7 has 3 liberties at E8, E6, and F7. Neither side is short yet, so keep building while staying ready to answer D7.';
+    const restoredRecountCue = 'Showing the saved D8 recount from chat. Continue from here, or choose another branch to return to live reading.';
 
     fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for D7' }));
     fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
@@ -417,6 +418,8 @@ describe('BeginnerObjectiveCard', () => {
     fireEvent.click(transcriptRecountAction);
 
     expect(screen.getByText(d8RecountText)).toBeTruthy();
+    expect(screen.getByText('Restored read')).toBeTruthy();
+    expect(screen.getByText(restoredRecountCue)).toBeTruthy();
     expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
     expect(useGameStore.getState().overlays.targetHints).toEqual([
       {
@@ -450,6 +453,10 @@ describe('BeginnerObjectiveCard', () => {
         label: 'D6: alternate reply to compare later.',
       },
     ]);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Choose D6 as the first reply to D7' }));
+    expect(screen.queryByText('Restored read')).toBeNull();
+    expect(screen.queryByText(restoredRecountCue)).toBeNull();
   });
 
   it('compares the alternate pressure reply directly after a recount', () => {
@@ -720,6 +727,7 @@ describe('BeginnerObjectiveCard', () => {
     const d6RecountText = 'After D6, recount the two Black sides: C7 has 2 liberties at C6 and B7. E7 has 3 liberties at E8, E6, and F7. C7 is the short side now, so defend it before extending again.';
     const comparisonSummary = 'D8 and D6 leave the same liberty counts: C7 has 2 liberties and E7 has 3 liberties either way. The difference is direction: D8 attacks D7 from above, while D6 attacks it from below.';
     const recommendation = 'Recommendation: C7 is the short side with 2 liberties at C6 and B7. Defend C7 before extending again.';
+    const restoredComparisonCue = 'Showing the saved D6 comparison against D8 from chat. Continue from here, or choose another branch to return to live reading.';
 
     fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for D7' }));
     fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
@@ -767,6 +775,8 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText('D6: C7 2 liberties, E7 3 liberties.')).toBeTruthy();
     expect(screen.getByText(comparisonSummary)).toBeTruthy();
     expect(screen.getByText(recommendation)).toBeTruthy();
+    expect(screen.getByText('Restored read')).toBeTruthy();
+    expect(screen.getByText(restoredComparisonCue)).toBeTruthy();
     expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
     expect(useGameStore.getState().overlays.targetHints).toEqual([
       {
