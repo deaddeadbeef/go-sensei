@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SenseiChatLog } from '@/components/chat/SenseiChatLog';
 import { BeginnerObjectiveCard } from '@/components/game/BeginnerObjectiveCard';
 import { useGameStore } from '@/stores/game-store';
@@ -13,7 +13,10 @@ describe('BeginnerObjectiveCard', () => {
     });
   });
 
-  afterEach(() => cleanup());
+  afterEach(() => {
+    vi.useRealTimers();
+    cleanup();
+  });
 
   it('names the marked opening points for coordinate learners', () => {
     render(
@@ -44,12 +47,15 @@ describe('BeginnerObjectiveCard', () => {
   });
 
   it('explains why a hovered opening target is useful before it is played', () => {
+    vi.useFakeTimers();
     render(<BeginnerObjectiveCard />);
 
     const target = screen.getByRole('button', { name: 'Play C7 target for Start with a corner' });
     expect(screen.queryByText('Why C7')).toBeNull();
 
     fireEvent.mouseEnter(target);
+    expect(screen.queryByText('Why C7')).toBeNull();
+    act(() => vi.runOnlyPendingTimers());
 
     expect(screen.getByText('Why C7')).toBeTruthy();
     expect(screen.getByText('C7 leans on the top and left edges, so Black needs fewer stones to sketch territory there.')).toBeTruthy();
@@ -64,6 +70,29 @@ describe('BeginnerObjectiveCard', () => {
 
     expect(screen.queryByText('Why C7')).toBeNull();
     expect(useGameStore.getState().overlays.targetHints).toEqual([]);
+    vi.useRealTimers();
+  });
+
+  it('still plays a target on the first click while hover help is pending', () => {
+    vi.useFakeTimers();
+    render(<BeginnerObjectiveCard />);
+
+    const target = screen.getByRole('button', { name: 'Play C7 target for Start with a corner' });
+
+    fireEvent.mouseEnter(target);
+    expect(screen.queryByText('Why C7')).toBeNull();
+    fireEvent.click(target);
+    act(() => vi.runOnlyPendingTimers());
+
+    const state = useGameStore.getState();
+    const lastMove = state.game.moveHistory.at(-1);
+    expect(lastMove).toMatchObject({
+      type: 'place',
+      color: 'black',
+      point: { x: 2, y: 2 },
+    });
+    expect(screen.queryByText('Why C7')).toBeNull();
+    vi.useRealTimers();
   });
 
   it('names extension targets after the learner claims a corner', () => {
@@ -79,6 +108,7 @@ describe('BeginnerObjectiveCard', () => {
   });
 
   it('explains the anchor and gap for a focused extension target', () => {
+    vi.useFakeTimers();
     act(() => {
       useGameStore.getState().placeStone({ x: 2, y: 2 });
       useGameStore.getState().pass();
@@ -88,6 +118,8 @@ describe('BeginnerObjectiveCard', () => {
 
     const target = screen.getByRole('button', { name: 'Play E7 target for Make your stones work together' });
     fireEvent.focus(target);
+    expect(screen.queryByText('Why E7')).toBeNull();
+    act(() => vi.runOnlyPendingTimers());
 
     expect(screen.getByText('Why E7')).toBeTruthy();
     expect(screen.getByText('E7 is a one-space jump from C7; D7 stays open so the two stones can work together without clumping.')).toBeTruthy();
