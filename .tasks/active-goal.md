@@ -63,6 +63,7 @@ Latest completed slice:
 - Refactored restored replay continuation controls into shared compact row and button helpers, keeping future replay actions easier to add without changing the learner-facing labels or behavior.
 - Added concise tactical hints to restored multi-choice defense continuations, so saved comparison and follow-up reads explain whether each option grows liberties, levels the sides, or connects both stones before the learner clicks.
 - Added hover/focus board previews for restored defense and follow-up continuations, so learners can inspect simulated outcome stones and liberties before committing to a replay branch.
+- Added next-choice summaries to read-sequence focus transcript messages, so saved comparison and defense steps preserve the same tactical option hints even before the learner reopens the board-side continuation controls.
 
 Next investigation candidates:
-- Whether replay continuation previews should be exposed in the chat transcript itself, so learners can compare options without reopening the board-side panel first.
+- Whether transcript replay actions should offer a direct safest-continuation button in the chat row itself, not only after reopening the saved board-side panel.

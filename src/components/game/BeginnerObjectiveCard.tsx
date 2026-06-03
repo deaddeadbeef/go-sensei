@@ -767,6 +767,105 @@ function getPressureDefenseChoiceHint(
   return `${coord} grows ${outcome.defendedSideCoord} to ${formatLibertyCount(outcome.defendedLiberties.length)}, but it stays shorter than ${outcome.otherSideCoord}.`;
 }
 
+function getPressureDefenseChoices(
+  game: GameState,
+  prompt: OneSpaceJumpReadPrompt,
+  recount: PressureRecount,
+  defense: PressureDefenseRecommendation,
+): ReplaySequenceDefenseChoice[] {
+  return defense.liberties.map((point): ReplaySequenceDefenseChoice => {
+    const coord = pointToCoord(point, game.board.size);
+    const outcome = getPressureDefenseOutcome(game, prompt, recount, defense, point);
+
+    return {
+      point,
+      coord,
+      hint: outcome ? getPressureDefenseChoiceHint(prompt, outcome, game.board, coord) : null,
+      highlights: outcome
+        ? buildOneSpaceJumpDefenseOutcomeHighlights(prompt, recount, game.board, outcome)
+        : null,
+    };
+  });
+}
+
+function getPressureFollowUpDefenseChoices(
+  game: GameState,
+  prompt: OneSpaceJumpReadPrompt,
+  recount: PressureRecount,
+  previousOutcome: PressureDefenseOutcome,
+  defense: PressureDefenseRecommendation,
+): ReplaySequenceDefenseChoice[] {
+  return defense.liberties.map((point): ReplaySequenceDefenseChoice => {
+    const coord = pointToCoord(point, game.board.size);
+    const outcome = getPressureDefenseContinuationOutcome(
+      game,
+      prompt,
+      recount,
+      previousOutcome,
+      defense,
+      point,
+    );
+
+    return {
+      point,
+      coord,
+      hint: outcome ? getPressureDefenseChoiceHint(prompt, outcome, game.board, coord) : null,
+      highlights: outcome
+        ? buildOneSpaceJumpFollowUpDefenseOutcomeHighlights(prompt, recount, game.board, previousOutcome, outcome)
+        : null,
+    };
+  });
+}
+
+function formatReplaySequenceChoiceSummary(choices: ReplaySequenceDefenseChoice[]): string | null {
+  const hints = choices
+    .map((choice) => choice.hint)
+    .filter((hint): hint is string => Boolean(hint));
+
+  return hints.length > 0 ? `Next choices: ${hints.join(' ')}` : null;
+}
+
+function getPressureSequenceContinuationSummary(
+  game: GameState,
+  prompt: OneSpaceJumpReadPrompt | null,
+  selectedRecount: PressureRecount | null,
+  comparedReply: Point | null,
+  defenseRecommendation: PressureDefenseRecommendation | null,
+  selectedDefenseOutcome: PressureDefenseOutcome | null,
+  continuationRecommendation: PressureDefenseRecommendation | null,
+  row: PressureReadSequenceRow,
+): string | null {
+  if (!prompt || !selectedRecount || !comparedReply) return null;
+
+  if (
+    defenseRecommendation
+    && row.replayKey === `compare-${targetKey(selectedRecount.reply)}`
+  ) {
+    return formatReplaySequenceChoiceSummary(getPressureDefenseChoices(
+      game,
+      prompt,
+      selectedRecount,
+      defenseRecommendation,
+    ));
+  }
+
+  if (
+    selectedDefenseOutcome
+    && continuationRecommendation
+    && row.replayKey === `defense-${targetKey(selectedDefenseOutcome.defense)}`
+  ) {
+    return formatReplaySequenceChoiceSummary(getPressureFollowUpDefenseChoices(
+      game,
+      prompt,
+      selectedRecount,
+      selectedDefenseOutcome,
+      continuationRecommendation,
+    ));
+  }
+
+  return null;
+}
+
 function getPressureDefenseContinuationComparisonSummary(
   game: GameState,
   prompt: OneSpaceJumpReadPrompt,
@@ -2145,25 +2244,7 @@ export function BeginnerObjectiveCard() {
     && pinnedPressureSequenceRow.replayKey === `compare-${targetKey(selectedReadRecount.reply)}`
     ? {
       comparedReply: comparedReadReply,
-      choices: pressureDefenseRecommendation.liberties.map((point): ReplaySequenceDefenseChoice => {
-        const coord = pointToCoord(point, game.board.size);
-        const outcome = getPressureDefenseOutcome(
-          game,
-          readPrompt,
-          selectedReadRecount,
-          pressureDefenseRecommendation,
-          point,
-        );
-
-        return {
-          point,
-          coord,
-          hint: outcome ? getPressureDefenseChoiceHint(readPrompt, outcome, game.board, coord) : null,
-          highlights: outcome
-            ? buildOneSpaceJumpDefenseOutcomeHighlights(readPrompt, selectedReadRecount, game.board, outcome)
-            : null,
-        };
-      }),
+      choices: getPressureDefenseChoices(game, readPrompt, selectedReadRecount, pressureDefenseRecommendation),
       defense: pressureDefenseRecommendation,
       prompt: readPrompt,
       recount: selectedReadRecount,
@@ -2181,32 +2262,13 @@ export function BeginnerObjectiveCard() {
     && pinnedPressureSequenceRow.replayKey === `defense-${targetKey(selectedDefenseReadPoint)}`
     ? {
       comparedReply: comparedReadReply,
-      choices: pressureDefenseContinuationRecommendation.liberties.map((point): ReplaySequenceDefenseChoice => {
-        const coord = pointToCoord(point, game.board.size);
-        const outcome = getPressureDefenseContinuationOutcome(
-          game,
-          readPrompt,
-          selectedReadRecount,
-          selectedDefenseReadOutcome,
-          pressureDefenseContinuationRecommendation,
-          point,
-        );
-
-        return {
-          point,
-          coord,
-          hint: outcome ? getPressureDefenseChoiceHint(readPrompt, outcome, game.board, coord) : null,
-          highlights: outcome
-            ? buildOneSpaceJumpFollowUpDefenseOutcomeHighlights(
-              readPrompt,
-              selectedReadRecount,
-              game.board,
-              selectedDefenseReadOutcome,
-              outcome,
-            )
-            : null,
-        };
-      }),
+      choices: getPressureFollowUpDefenseChoices(
+        game,
+        readPrompt,
+        selectedReadRecount,
+        selectedDefenseReadOutcome,
+        pressureDefenseContinuationRecommendation,
+      ),
       firstDefense: pressureDefenseRecommendation,
       firstDefensePoint: selectedDefenseReadPoint,
       followUpDefense: pressureDefenseContinuationRecommendation,
@@ -2288,8 +2350,22 @@ export function BeginnerObjectiveCard() {
     );
 
     if (replayAction) {
+      const continuationSummary = getPressureSequenceContinuationSummary(
+        game,
+        readPrompt,
+        selectedReadRecount,
+        comparedReadReply,
+        pressureDefenseRecommendation,
+        selectedDefenseReadOutcome,
+        pressureDefenseContinuationRecommendation,
+        row,
+      );
+
       addChatMessage(
-        `Read sequence focus: Step ${index + 1}: ${row.text} ${row.focusText}`,
+        [
+          `Read sequence focus: Step ${index + 1}: ${row.text} ${row.focusText}`,
+          continuationSummary,
+        ].filter((text): text is string => Boolean(text)).join(' '),
         'teaching',
         [replayAction],
       );
