@@ -1229,6 +1229,9 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByRole('button', { name: 'Try E8 follow-up defense from here' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Try E6 follow-up defense from here' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Try F7 follow-up defense from here' })).toBeTruthy();
+    expect(screen.getByText('E8 levels E7 with C7 at 5 liberties.')).toBeTruthy();
+    expect(screen.getByText('E6 connects C7 and E7 into one group with 8 liberties.')).toBeTruthy();
+    expect(screen.getByText('F7 levels E7 with C7 at 5 liberties.')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Try E6 follow-up defense from here' }));
 
@@ -1274,6 +1277,8 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText('After D6, which side changed, and does that force a defense before extending?')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Try C6 defense from here' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Try B7 defense from here' })).toBeTruthy();
+    expect(screen.getByText('C6 grows C7 to 5 liberties; E7 becomes the next read.')).toBeTruthy();
+    expect(screen.getByText('B7 grows C7 to 4 liberties; E7 becomes the next read.')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Try C6 defense from here' }));
 
