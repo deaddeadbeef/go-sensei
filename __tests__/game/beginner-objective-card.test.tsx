@@ -673,6 +673,8 @@ describe('BeginnerObjectiveCard', () => {
     fireEvent.click(originalReplyStep);
     expect(originalReplyStep.getAttribute('aria-pressed')).toBe('false');
     expect(screen.getByText('Real-game handoff')).toBeTruthy();
+    expect(screen.getByText('What you proved')).toBeTruthy();
+    expect(screen.getByText('You proved D8 and D6 both leave C7 and E7 safe, so D7 does not need an immediate defense.')).toBeTruthy();
     expect(screen.getByText('The read is stable, so turn it into a real move: play G7 for Make your stones work together.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Play G7 in the real game after the stable pressure read' })).toBeTruthy();
     expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
@@ -1494,6 +1496,8 @@ describe('BeginnerObjectiveCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Try E6 follow-up defense for E7' }));
 
     expect(screen.getByText('Real-game handoff')).toBeTruthy();
+    expect(screen.getByText('What you proved')).toBeTruthy();
+    expect(screen.getByText('You proved E6 connects C7 and E7 into one Black group with 8 liberties, so the cut is answered.')).toBeTruthy();
     expect(screen.getByText('The read is stable, so turn it into a real move: play G7 for Make your stones work together.')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Play G7 in the real game after the stable pressure read' }));
