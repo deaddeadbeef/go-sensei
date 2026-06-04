@@ -105,6 +105,16 @@ interface PressureReadSequenceRow {
   highlights: OverlayHighlight[];
 }
 
+interface PressureReadSequenceBranchContext {
+  savedReplyKey: string;
+  liveReplyKey: string;
+}
+
+interface PressureReadSequenceBranchBadge {
+  label: 'Saved branch' | 'Live branch';
+  tone: 'saved' | 'live';
+}
+
 interface ReplaySequenceDefenseChoice {
   point: Point;
   coord: string;
@@ -119,6 +129,17 @@ function targetKey(point: Point): string {
 
 function copyPoint(point: Point): Point {
   return { x: point.x, y: point.y };
+}
+
+function getPressureReadSequenceReplayReplyKey(replayKey: string | null | undefined): string | null {
+  if (!replayKey) return null;
+
+  const branchReplayPrefixes = ['reply-', 'recount-', 'compare-'];
+
+  return branchReplayPrefixes.reduce<string | null>((matchedKey, prefix) => {
+    if (matchedKey !== null) return matchedKey;
+    return replayKey.startsWith(prefix) ? replayKey.slice(prefix.length) : null;
+  }, null);
 }
 
 function joinCoordinateList(coords: string[]): string {
@@ -1261,6 +1282,28 @@ function buildPressureHandoffHighlights(handoff: PressureExtensionHandoff): Over
     variant: 'positive',
     label: `${handoff.coord}: real move to play after the stable pressure read.`,
   }];
+}
+
+function getPressureReadSequenceRowBranchBadge(
+  row: PressureReadSequenceRow,
+  context: PressureReadSequenceBranchContext | null,
+): PressureReadSequenceBranchBadge | null {
+  if (!context) return null;
+
+  const branchReplyKey = getPressureReadSequenceReplayReplyKey(row.replayKey);
+
+  if (branchReplyKey === context.savedReplyKey) return { label: 'Saved branch', tone: 'saved' };
+  if (branchReplyKey === context.liveReplyKey) return { label: 'Live branch', tone: 'live' };
+
+  if (
+    row.replayKey.startsWith('defense-')
+    || row.replayKey.startsWith('follow-up-')
+    || row.replayKey.startsWith('handoff-')
+  ) {
+    return { label: 'Saved branch', tone: 'saved' };
+  }
+
+  return null;
 }
 
 function formatPressureSequenceLibertyStep(
@@ -2785,6 +2828,31 @@ export function BeginnerObjectiveCard() {
   const readPromptStoneCoord = readPrompt ? pointToCoord(readPrompt.stone, game.board.size) : null;
   const selectedReadReplyCoord = selectedReadReply ? pointToCoord(selectedReadReply, game.board.size) : null;
   const livePressureReadReply = livePressureReadState.reply;
+  const pressureReadSequenceSavedReplyKey = activePressureReplayRequestId !== null
+    ? getPressureReadSequenceReplayReplyKey(guidedReadReplayRequest?.pinnedSequenceStepKey) ?? replayedReadReplyKey
+    : null;
+  const selectedReadReplyKeyForSequence = selectedReadReply ? targetKey(selectedReadReply) : null;
+  const comparedReadReplyKeyForSequence = comparedReadReply ? targetKey(comparedReadReply) : null;
+  const livePressureReadReplyKey = livePressureReadReply ? targetKey(livePressureReadReply) : null;
+  const pressureReadSequenceLiveReplyKey = pressureReadSequenceSavedReplyKey
+    ? (
+      comparedReadReplyKeyForSequence && comparedReadReplyKeyForSequence !== pressureReadSequenceSavedReplyKey
+        ? comparedReadReplyKeyForSequence
+        : selectedReadReplyKeyForSequence && selectedReadReplyKeyForSequence !== pressureReadSequenceSavedReplyKey
+          ? selectedReadReplyKeyForSequence
+          : livePressureReadReplyKey && livePressureReadReplyKey !== pressureReadSequenceSavedReplyKey
+            ? livePressureReadReplyKey
+            : null
+    )
+    : null;
+  const pressureReadSequenceBranchContext = activePressureReplayRequestId !== null
+    && pressureReadSequenceSavedReplyKey
+    && pressureReadSequenceLiveReplyKey
+    ? {
+      savedReplyKey: pressureReadSequenceSavedReplyKey,
+      liveReplyKey: pressureReadSequenceLiveReplyKey,
+    }
+    : null;
   const restoredPressureReadLiveCue = activePressureReplayRequestId !== null
     ? getRestoredPressureReadLiveCue(game.board, livePressureReadReply, selectedReadReply, livePressureReadState.nextAction)
     : null;
@@ -3270,6 +3338,7 @@ export function BeginnerObjectiveCard() {
                       <div className="mt-1 space-y-0.5 text-[11px] leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
                         {pressureReadSequenceRows.map((row, index) => {
                           const isPinned = pinnedPressureSequenceRow?.key === row.key;
+                          const branchBadge = getPressureReadSequenceRowBranchBadge(row, pressureReadSequenceBranchContext);
 
                           return (
                             <button
@@ -3291,7 +3360,21 @@ export function BeginnerObjectiveCard() {
                               onBlur={restorePressureReadHighlights}
                               onClick={() => togglePressureReadSequenceRow(row, index)}
                             >
-                              {index + 1}. {row.text}
+                              <span className="flex flex-wrap items-center gap-1.5">
+                                {branchBadge && (
+                                  <span
+                                    className="rounded border px-1 py-px text-[9px] font-semibold uppercase tracking-wider"
+                                    style={{
+                                      borderColor: branchBadge.tone === 'saved' ? COLORS.ui.accent : COLORS.overlay.positive,
+                                      color: branchBadge.tone === 'saved' ? COLORS.ui.accent : COLORS.overlay.positive,
+                                      backgroundColor: branchBadge.tone === 'saved' ? `${COLORS.ui.accent}1a` : `${COLORS.overlay.positive}1a`,
+                                    }}
+                                  >
+                                    {branchBadge.label}
+                                  </span>
+                                )}
+                                <span>{index + 1}. {row.text}</span>
+                              </span>
                             </button>
                           );
                         })}
