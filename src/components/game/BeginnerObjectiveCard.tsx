@@ -1468,6 +1468,7 @@ function getStablePressureExtensionHandoff(
   const resolvedProofText = proofText
     ?? `You proved ${anchorCoord} and ${stoneCoord} stayed safe in the ${prompt.gapCoord} read.`;
   const isRepeatedProof = resolvedProofText.startsWith('Two-gap proof:');
+  const isChainProof = resolvedProofText.startsWith('Chain proof:');
   const repeatRead = repeatReply
     ? {
       previousGapCoord: prompt.gapCoord,
@@ -1484,7 +1485,9 @@ function getStablePressureExtensionHandoff(
     coord,
     text: isRepeatedProof
       ? `Both reads are stable, so turn them into a real move: play ${coord} for ${objective.title}.`
-      : `The read is stable, so turn it into a real move: play ${coord} for ${objective.title}.`,
+      : isChainProof
+        ? `The read chain is stable, so turn it into a real move: play ${coord} for ${objective.title}.`
+        : `The read is stable, so turn it into a real move: play ${coord} for ${objective.title}.`,
     proofText: resolvedProofText,
     ariaLabel: `Play ${coord} in the real game after the stable pressure read`,
     recap: {
@@ -1492,7 +1495,9 @@ function getStablePressureExtensionHandoff(
       coord,
       text: isRepeatedProof
         ? `${coord} applies the repeated stable reads in the real game: ${resolvedProofText}`
-        : `${coord} applies the ${prompt.gapCoord} read in the real game: ${resolvedProofText} Black can keep extending instead of answering a cut that has not happened.`,
+        : isChainProof
+          ? `${coord} applies the stable read chain in the real game: ${resolvedProofText}`
+          : `${coord} applies the ${prompt.gapCoord} read in the real game: ${resolvedProofText} Black can keep extending instead of answering a cut that has not happened.`,
       proofText: resolvedProofText,
       repeatRead,
     },
@@ -1508,8 +1513,22 @@ function getTwoGapProofStableGapCoords(proofText: string): string[] {
   );
 }
 
+function getChainProofStableGapCoords(proofText: string): string[] {
+  const match = proofText.match(/^Chain proof: (.+?) were tested and stayed stable;/);
+  if (!match) return [];
+
+  return Array.from(match[1].matchAll(/\b[A-HJ-T]\d+\b/g), (coordMatch) => coordMatch[0]);
+}
+
+function getPressureProofStableGapCoords(proofText: string): string[] {
+  const chainCoords = getChainProofStableGapCoords(proofText);
+  if (chainCoords.length > 0) return chainCoords;
+
+  return getTwoGapProofStableGapCoords(proofText);
+}
+
 function getPressureProofBridgeText(recap: PressureHandoffRecap, prompt: OneSpaceJumpReadPrompt): string {
-  const stableGapCoords = getTwoGapProofStableGapCoords(recap.proofText);
+  const stableGapCoords = getPressureProofStableGapCoords(recap.proofText);
   if (stableGapCoords.length >= 2) {
     const chainScope = stableGapCoords.length === 2 ? 'both' : 'all';
     return `Carry forward the chain: ${joinAndCoordinateList(stableGapCoords)} were ${chainScope} tested and stayed stable. Now read ${prompt.gapCoord} from scratch before the next extension.`;
@@ -1889,12 +1908,25 @@ function getPressureComparisonProofRowText(
   recap: PressureHandoffRecap | null,
   comparisonSummary: PressureComparisonSummary,
 ): string | null {
-  const stableGapCoords = recap ? getTwoGapProofStableGapCoords(recap.proofText) : [];
+  const stableGapCoords = recap ? getPressureProofStableGapCoords(recap.proofText) : [];
   if (stableGapCoords.length > 0) {
     return `${joinAndCoordinateList(stableGapCoords)} were already tested and stayed stable. ${comparisonSummary.proofText}`;
   }
 
   return null;
+}
+
+function getPressureChainExtensionProofText(
+  recap: PressureHandoffRecap | null,
+  comparisonSummary: PressureComparisonSummary | null,
+  prompt: OneSpaceJumpReadPrompt | null,
+): string | null {
+  if (!comparisonSummary?.hasSameCounts || !prompt) return null;
+
+  const stableGapCoords = recap ? getPressureProofStableGapCoords(recap.proofText) : [];
+  if (stableGapCoords.length < 2) return null;
+
+  return `Chain proof: ${joinAndCoordinateList([...stableGapCoords, prompt.gapCoord])} were tested and stayed stable; Black can keep extending.`;
 }
 
 function buildOneSpaceJumpRecountHighlights(
@@ -3195,13 +3227,18 @@ export function BeginnerObjectiveCard() {
     pressureComparisonSummary,
     readPrompt,
   );
+  const pressureChainExtensionProofText = getPressureChainExtensionProofText(
+    activePressureHandoffRecap,
+    pressureComparisonSummary,
+    readPrompt,
+  );
   const pressureComparisonExtensionHandoff = getStablePressureExtensionHandoff(
     objective,
     playableTargets,
     game.board,
     readPrompt,
     Boolean(pressureComparisonSummary && !pressureDefenseRecommendation),
-    pressureRepeatExtensionProofText ?? pressureComparisonSummary?.proofText ?? null,
+    pressureRepeatExtensionProofText ?? pressureChainExtensionProofText ?? pressureComparisonSummary?.proofText ?? null,
     comparedReadReply,
   );
   const selectedDefenseExtensionHandoff = getStablePressureExtensionHandoff(
