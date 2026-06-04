@@ -1008,6 +1008,9 @@ describe('BeginnerObjectiveCard', () => {
 
     const restoredOriginalReplyStep = screen.getByRole('button', { name: 'Show board highlights for step 2: Black D8 attacks D7 from above.' });
     expect(restoredOriginalReplyStep.getAttribute('aria-pressed')).toBe('true');
+    expect(restoredOriginalReplyStep.textContent).toContain('Saved branch');
+    expect(screen.getByRole('button', { name: 'Show board highlights for step 3: Recount: C7 3 liberties; E7 3 liberties.' }).textContent).toContain('Saved branch');
+    expect(screen.getByRole('button', { name: 'Show board highlights for step 4: Compare D6: C7 3 liberties; E7 3 liberties.' }).textContent).toContain('Live branch');
     expect(screen.getByText('Saved read next question')).toBeTruthy();
     expect(screen.getByText('Before returning to D6, ask: did D8 change the attack direction while keeping both sides safe?')).toBeTruthy();
 
@@ -1536,7 +1539,7 @@ describe('BeginnerObjectiveCard', () => {
     fireEvent.click(comparisonActions[0]);
 
     expect(screen.getByText('Restored read')).toBeTruthy();
-    expect(screen.getByText('Live branch')).toBeTruthy();
+    expect(screen.getAllByText('Live branch').length).toBeGreaterThan(0);
     expect(screen.getByText(restoredComparisonCue)).toBeTruthy();
     expect(screen.getByText(restoredLiveHandoffCue)).toBeTruthy();
 
