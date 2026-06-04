@@ -730,6 +730,14 @@ describe('BeginnerObjectiveCard', () => {
         label: 'D6: selected reply used for this recount.',
       },
     ]);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Play G7 in the real game after the stable pressure read' }));
+    act(() => {
+      useGameStore.getState().pass();
+    });
+
+    expect(screen.getByText('Read applied')).toBeTruthy();
+    expect(screen.getByText('G7 applies the D7 read in the real game: You proved D8 and D6 both leave C7 and E7 safe, so D7 does not need an immediate defense. Black can keep extending instead of answering a cut that has not happened.')).toBeTruthy();
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {
@@ -1518,7 +1526,7 @@ describe('BeginnerObjectiveCard', () => {
     });
 
     expect(screen.getByText('Read applied')).toBeTruthy();
-    expect(screen.getByText('G7 applies the D7 read in the real game: C7 and E7 stayed safe in the variation, so Black can keep extending instead of answering a cut that has not happened.')).toBeTruthy();
+    expect(screen.getByText('G7 applies the D7 read in the real game: You proved E6 connects C7 and E7 into one Black group with 8 liberties, so the cut is answered. Black can keep extending instead of answering a cut that has not happened.')).toBeTruthy();
     expect(screen.getByText('What changed')).toBeTruthy();
   });
 
@@ -1578,7 +1586,7 @@ describe('BeginnerObjectiveCard', () => {
     });
 
     expect(screen.getByText('Read applied')).toBeTruthy();
-    expect(screen.getByText('G7 applies the D7 read in the real game: C7 and E7 stayed safe in the variation, so Black can keep extending instead of answering a cut that has not happened.')).toBeTruthy();
+    expect(screen.getByText('G7 applies the D7 read in the real game: You proved E6 connects C7 and E7 into one Black group with 8 liberties, so the cut is answered. Black can keep extending instead of answering a cut that has not happened.')).toBeTruthy();
   });
 
   it('names the live handoff move when reopening a saved comparison after a stable read', () => {
