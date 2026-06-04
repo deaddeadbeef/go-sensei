@@ -104,6 +104,7 @@ Latest completed slice:
 - Reserved a visible board area during dense guided reads and made the objective card scroll internally while the game controls stay visible.
 - Kept the active pressure-read decision row sticky while dense branch transcripts scroll, so the learner does not lose the current choice prompt.
 - Collapsed completed pressure-read branch proof text after the learner advances to the recount, keeping the proof expandable while leaving the next read action visible.
+- Compacted the third-gap carry-forward proof into a D7/F7 chain summary, so the G6 read starts with the useful memory instead of repeating the full two-gap proof.
 
 Next investigation candidates:
-- Whether repeated two-gap proof recaps should become a compact chain summary once the third gap is being read.
+- Whether the completed read-applied recap should itself collapse once the third-gap variation is open, so the board-side card stays focused on the live read.

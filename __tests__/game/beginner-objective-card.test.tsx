@@ -765,6 +765,8 @@ describe('BeginnerObjectiveCard', () => {
     });
 
     expect(screen.getByText(`G5 applies the repeated stable reads in the real game: ${twoGapProof}`)).toBeTruthy();
+    expect(screen.getByText('Carry forward the chain: D7 and F7 were both tested and stayed stable. Now read G6 from scratch before the next extension.')).toBeTruthy();
+    expect(screen.queryByText(`Carry forward the proof: ${twoGapProof} Now test G6 the same way before the next extension.`)).toBeNull();
     expect(screen.getByText('The repeat shortcut stops here: repeating F8 would land on G7, which is already one of your stones. Use Show pressure to read G6 from scratch.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Repeat F8 first-reply pattern at G7 for G6' })).toBeNull();
 

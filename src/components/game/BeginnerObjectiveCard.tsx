@@ -1499,7 +1499,22 @@ function getStablePressureExtensionHandoff(
   };
 }
 
+function getTwoGapProofStableGapCoords(proofText: string): string[] {
+  if (!proofText.startsWith('Two-gap proof:')) return [];
+
+  return Array.from(
+    proofText.matchAll(/\bso ([A-HJ-T]\d+) does not need an immediate defense/g),
+    (match) => match[1],
+  );
+}
+
 function getPressureProofBridgeText(recap: PressureHandoffRecap, prompt: OneSpaceJumpReadPrompt): string {
+  const stableGapCoords = getTwoGapProofStableGapCoords(recap.proofText);
+  if (stableGapCoords.length >= 2) {
+    const chainScope = stableGapCoords.length === 2 ? 'both' : 'all';
+    return `Carry forward the chain: ${joinAndCoordinateList(stableGapCoords)} were ${chainScope} tested and stayed stable. Now read ${prompt.gapCoord} from scratch before the next extension.`;
+  }
+
   return `Carry forward the proof: ${recap.proofText} Now test ${prompt.gapCoord} the same way before the next extension.`;
 }
 
