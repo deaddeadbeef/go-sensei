@@ -325,6 +325,41 @@ function getPressureChoiceFeedback(prompt: OneSpaceJumpReadPrompt, reply: Point,
   return `${replyCoord} is a good first read: it attacks the imagined White stone at ${prompt.gapCoord} and asks whether that cutting stone can live. After that, recount ${anchorCoord} and ${stoneCoord} before extending again.`;
 }
 
+function getPressureReadNextActionText(
+  board: BoardState,
+  prompt: OneSpaceJumpReadPrompt,
+  selectedReply: Point | null,
+  selectedRecount: PressureRecount | null,
+  comparedReply: Point | null,
+  defenseRecommendation: PressureDefenseRecommendation | null,
+  selectedDefense: Point | null,
+  followUpRecommendation: PressureDefenseRecommendation | null,
+  selectedFollowUpDefense: Point | null,
+): string | null {
+  if (!selectedReply) return null;
+
+  const replyCoord = pointToCoord(selectedReply, board.size);
+
+  if (!selectedRecount) {
+    return `Recount ${pointToCoord(prompt.anchor, board.size)} and ${pointToCoord(prompt.stone, board.size)} after ${replyCoord}.`;
+  }
+
+  if (!comparedReply) {
+    const nextReply = prompt.replyPoints.find((point) => targetKey(point) !== targetKey(selectedReply));
+    return nextReply ? `Compare ${pointToCoord(nextReply, board.size)} against ${replyCoord}.` : null;
+  }
+
+  if (defenseRecommendation && !selectedDefense) {
+    return `Try a defense for ${defenseRecommendation.shortSideCoord}.`;
+  }
+
+  if (followUpRecommendation && !selectedFollowUpDefense) {
+    return `Try a follow-up defense for ${followUpRecommendation.shortSideCoord}.`;
+  }
+
+  return null;
+}
+
 function getRestoredPressureReadCue(
   request: GuidedReadReplayRequest,
   board: BoardState,
@@ -365,11 +400,13 @@ function getRestoredPressureReadLiveCue(
   board: BoardState,
   liveReply: Point | null,
   restoredReply: Point | null,
+  liveNextAction: string | null,
 ): string | null {
   if (!liveReply || !restoredReply) return null;
   if (targetKey(liveReply) === targetKey(restoredReply)) return null;
 
-  return `Saved branch: ${pointToCoord(restoredReply, board.size)}. Live branch: ${pointToCoord(liveReply, board.size)}.`;
+  const branchCue = `Saved branch: ${pointToCoord(restoredReply, board.size)}. Live branch: ${pointToCoord(liveReply, board.size)}.`;
+  return liveNextAction ? `${branchCue} Live next: ${liveNextAction}` : branchCue;
 }
 
 function getSavedPressureReadLabel(request: GuidedReadReplayRequest): string {
@@ -2437,8 +2474,14 @@ export function BeginnerObjectiveCard() {
       pressureDefenseContinuationRecommendation,
     )
     : null;
-  const livePressureReadHighlights = (() => {
-    if (!readPrompt || activeReadPromptKey !== readPrompt.key) return [];
+  const livePressureReadState: {
+    highlights: OverlayHighlight[];
+    nextAction: string | null;
+    reply: Point | null;
+  } = (() => {
+    if (!readPrompt || activeReadPromptKey !== readPrompt.key) {
+      return { highlights: [], nextAction: null, reply: null };
+    }
 
     const liveSelectedReply = selectedReadReplyKey
       ? readPrompt.replyPoints.find((point) => targetKey(point) === selectedReadReplyKey) ?? null
@@ -2482,15 +2525,30 @@ export function BeginnerObjectiveCard() {
       )
       : null;
 
-    return getActivePressureReadHighlights(
-      game.board,
-      readPrompt,
-      liveSelectedReply,
-      liveSelectedRecount,
-      liveDefenseOutcome,
-      liveFollowUpOutcome,
-    );
+    return {
+      highlights: getActivePressureReadHighlights(
+        game.board,
+        readPrompt,
+        liveSelectedReply,
+        liveSelectedRecount,
+        liveDefenseOutcome,
+        liveFollowUpOutcome,
+      ),
+      nextAction: getPressureReadNextActionText(
+        game.board,
+        readPrompt,
+        liveSelectedReply,
+        liveSelectedRecount,
+        liveComparedReply,
+        liveDefenseRecommendation,
+        liveSelectedDefensePoint,
+        liveFollowUpRecommendation,
+        liveSelectedFollowUpPoint,
+      ),
+      reply: liveSelectedReply,
+    };
   })();
+  const livePressureReadHighlights = livePressureReadState.highlights;
   const pressureComparisonExtensionHandoff = getStablePressureExtensionHandoff(
     objective,
     playableTargets,
@@ -2647,11 +2705,9 @@ export function BeginnerObjectiveCard() {
   const readPromptAnchorCoord = readPrompt ? pointToCoord(readPrompt.anchor, game.board.size) : null;
   const readPromptStoneCoord = readPrompt ? pointToCoord(readPrompt.stone, game.board.size) : null;
   const selectedReadReplyCoord = selectedReadReply ? pointToCoord(selectedReadReply, game.board.size) : null;
-  const livePressureReadReply = readPrompt && selectedReadReplyKey
-    ? readPrompt.replyPoints.find((point) => targetKey(point) === selectedReadReplyKey) ?? null
-    : null;
+  const livePressureReadReply = livePressureReadState.reply;
   const restoredPressureReadLiveCue = activePressureReplayRequestId !== null
-    ? getRestoredPressureReadLiveCue(game.board, livePressureReadReply, selectedReadReply)
+    ? getRestoredPressureReadLiveCue(game.board, livePressureReadReply, selectedReadReply, livePressureReadState.nextAction)
     : null;
   const activeTarget = activeTargetKey
     ? playableTargets.find((point) => targetKey(point) === activeTargetKey) ?? null
