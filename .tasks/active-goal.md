@@ -78,6 +78,7 @@ Latest completed slice:
 - Rechecked the rendered D6 branch switch after browser smoke; active and restored D8 recount states both switch to D6 correctly, so the earlier concern was a smoke-observation artifact rather than a product bug.
 - Added a compact saved-vs-live branch cue under restored pressure reads, so reopening a saved D8 recount while the live read is D6 plainly names both branches before the learner chooses where to continue.
 - Extended restored-read orientation cues with the live branch's next action, so reopened recounts, comparisons, and defenses say whether the live read is waiting to recount, compare, or defend next.
+- Added a stable-read handoff fallback to restored-read orientation cues, so reopening a saved branch after the live read has resolved now says which real move the live branch unlocked.
 
 Next investigation candidates:
-- Whether restored stable reads should summarize the real-game handoff move as the live branch's next action once the local fight is resolved.
+- Whether the return-to-live note should include the same handoff action shortcut when the live read is already stable.

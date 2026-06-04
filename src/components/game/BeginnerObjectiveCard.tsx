@@ -335,6 +335,7 @@ function getPressureReadNextActionText(
   selectedDefense: Point | null,
   followUpRecommendation: PressureDefenseRecommendation | null,
   selectedFollowUpDefense: Point | null,
+  extensionHandoff: PressureExtensionHandoff | null,
 ): string | null {
   if (!selectedReply) return null;
 
@@ -355,6 +356,10 @@ function getPressureReadNextActionText(
 
   if (followUpRecommendation && !selectedFollowUpDefense) {
     return `Try a follow-up defense for ${followUpRecommendation.shortSideCoord}.`;
+  }
+
+  if (extensionHandoff) {
+    return `Play ${extensionHandoff.coord} in the real game.`;
   }
 
   return null;
@@ -2524,6 +2529,32 @@ export function BeginnerObjectiveCard() {
         liveSelectedFollowUpPoint,
       )
       : null;
+    const liveComparisonHandoff = getStablePressureExtensionHandoff(
+      objective,
+      playableTargets,
+      game.board,
+      readPrompt,
+      Boolean(liveComparisonSummary && !liveDefenseRecommendation),
+    );
+    const liveDefenseHandoff = getStablePressureExtensionHandoff(
+      objective,
+      playableTargets,
+      game.board,
+      readPrompt,
+      Boolean(
+        liveDefenseOutcome
+        && !liveFollowUpRecommendation
+        && isStablePressureDefenseOutcome(liveDefenseOutcome),
+      ),
+    );
+    const liveFollowUpHandoff = getStablePressureExtensionHandoff(
+      objective,
+      playableTargets,
+      game.board,
+      readPrompt,
+      Boolean(liveFollowUpOutcome && isStablePressureDefenseOutcome(liveFollowUpOutcome)),
+    );
+    const liveExtensionHandoff = liveFollowUpHandoff ?? liveDefenseHandoff ?? liveComparisonHandoff;
 
     return {
       highlights: getActivePressureReadHighlights(
@@ -2544,6 +2575,7 @@ export function BeginnerObjectiveCard() {
         liveSelectedDefensePoint,
         liveFollowUpRecommendation,
         liveSelectedFollowUpPoint,
+        liveExtensionHandoff,
       ),
       reply: liveSelectedReply,
     };

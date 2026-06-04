@@ -1504,6 +1504,42 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText('G7 applies the D7 read in the real game: C7 and E7 stayed safe in the variation, so Black can keep extending instead of answering a cut that has not happened.')).toBeTruthy();
   });
 
+  it('names the live handoff move when reopening a saved comparison after a stable read', () => {
+    act(() => {
+      useGameStore.getState().placeStone({ x: 2, y: 2 });
+      useGameStore.getState().pass();
+      useGameStore.getState().placeStone({ x: 4, y: 2 });
+      useGameStore.getState().pass();
+    });
+
+    render(
+      <>
+        <BeginnerObjectiveCard />
+        <SenseiChatLog />
+      </>,
+    );
+
+    const restoredComparisonCue = 'Showing the saved D6 comparison against D8 from chat. Continue from here, or choose another branch to return to live reading.';
+    const restoredLiveHandoffCue = 'Saved branch: D6. Live branch: D8. Live next: Play G7 in the real game.';
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Recount C7 and E7 after D8' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Compare D6 against D8' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Compare D8 against D6' }));
+
+    expect(screen.getByText('Real-game handoff')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Play G7 in the real game after the stable pressure read' })).toBeTruthy();
+
+    const comparisonActions = screen.getAllByRole('button', { name: 'Show comparison' });
+    expect(comparisonActions).toHaveLength(2);
+    fireEvent.click(comparisonActions[0]);
+
+    expect(screen.getByText('Restored read')).toBeTruthy();
+    expect(screen.getByText(restoredComparisonCue)).toBeTruthy();
+    expect(screen.getByText(restoredLiveHandoffCue)).toBeTruthy();
+  });
+
   it('continues a restored defense sequence step from chat', () => {
     act(() => {
       useGameStore.getState().placeStone({ x: 2, y: 2 });
