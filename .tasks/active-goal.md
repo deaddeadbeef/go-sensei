@@ -116,6 +116,7 @@ Latest completed slice:
 - Stopped the repeat-pattern shortcut after a three-gap chain, replacing the H6-to-H4 shortcut with a fresh H4/F4 comparison boundary.
 - Kept the fresh G4 comparison on the chain-proof path, so H4/F4 extends D7/F7/G6 into a four-gap proof instead of leaking repeated-pattern copy.
 - Renamed the four-gap stable-read handoff as a direction change, so the unlocked E3 move answers the stopping-rule prompt instead of sounding like another rote extension.
+- Promoted the active read handoff inside the normal target row, so E3 is labeled as recommended by the read while E5 and C5 remain visible alternatives.
 
 Next investigation candidates:
-- Whether the next bigger gain is outside this one-space-jump chain, such as helping the tutor choose between E3, E5, and C5 after the G4 read.
+- Whether the post-E3 recap should explain why changing direction is complete before the tutor moves on to another shape.
