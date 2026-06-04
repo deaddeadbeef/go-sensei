@@ -109,6 +109,7 @@ Latest completed slice:
 - Turned the G6 open-side recommendation into a direct "Start with H6" action, so the learner can follow the recommended read without translating it into a separate coordinate choice.
 - Added a hover/focus preview to the saved H6 first-read recap, so the board names H6 as the baseline and F6 as the next comparison branch before the learner clicks Compare.
 - Added a hover/focus preview to the Compare F6 action, so learners can inspect the post-F6 recount markers before committing the alternate branch.
+- Added a compact "Why this is safe" proof row after the G6 comparison, preserving the D7/F7 chain while stopping the old repeat-pattern proof from leaking into the fresh read.
 
 Next investigation candidates:
-- Whether the comparison summary after F6 should offer a compact "why this is safe" proof row before the real-game handoff, matching the clarity of the earlier D7 and F7 proof chain.
+- Whether the G6 stable-read handoff should preview the next real extension target before play, so the chain proof visibly lands on the next board move.
