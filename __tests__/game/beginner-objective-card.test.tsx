@@ -738,6 +738,7 @@ describe('BeginnerObjectiveCard', () => {
 
     expect(screen.getByText('Read applied')).toBeTruthy();
     expect(screen.getByText('G7 applies the D7 read in the real game: You proved D8 and D6 both leave C7 and E7 safe, so D7 does not need an immediate defense. Black can keep extending instead of answering a cut that has not happened.')).toBeTruthy();
+    expect(screen.getByText('Carry forward the proof: You proved D8 and D6 both leave C7 and E7 safe, so D7 does not need an immediate defense. Now test F7 the same way before the next extension.')).toBeTruthy();
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {
@@ -1527,6 +1528,7 @@ describe('BeginnerObjectiveCard', () => {
 
     expect(screen.getByText('Read applied')).toBeTruthy();
     expect(screen.getByText('G7 applies the D7 read in the real game: You proved E6 connects C7 and E7 into one Black group with 8 liberties, so the cut is answered. Black can keep extending instead of answering a cut that has not happened.')).toBeTruthy();
+    expect(screen.getByText('Carry forward the proof: You proved E6 connects C7 and E7 into one Black group with 8 liberties, so the cut is answered. Now test F7 the same way before the next extension.')).toBeTruthy();
     expect(screen.getByText('What changed')).toBeTruthy();
   });
 
