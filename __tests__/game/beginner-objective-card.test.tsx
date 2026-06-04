@@ -937,6 +937,16 @@ describe('BeginnerObjectiveCard', () => {
         label: 'F6: selected reply used for this recount.',
       },
     ]));
+
+    fireEvent.click(g6HandoffAction);
+    act(() => {
+      useGameStore.getState().pass();
+    });
+
+    const compactThreeGapProof = 'Chain proof: D7, F7, and G6 were tested and stayed stable; Black can keep extending.';
+    expect(screen.getByText(`G3 applies the stable read chain in the real game: ${compactThreeGapProof}`)).toBeTruthy();
+    expect(screen.getByText('Carry forward the chain: D7, F7, and G6 were all tested and stayed stable. Now read G4 from scratch before the next extension.')).toBeTruthy();
+    expect(screen.queryByText('Carry forward the proof: You proved H6 and F6 both leave G7 and G5 safe, so G6 does not need an immediate defense. Now test G4 the same way before the next extension.')).toBeNull();
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {
