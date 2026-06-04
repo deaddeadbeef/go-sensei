@@ -774,6 +774,10 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText('Recommended: H6')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Choose H6 as the first reply to G6' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Choose F6 as the first reply to G6' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Choose H6 as the first reply to G6' }));
+
+    expect(useGameStore.getState().chatMessages.at(-1)?.text).toBe('Branch choice: H6 was recommended because it starts from the open side of the G7-G5 jump before you compare F6. H6 is a good first read: it attacks the imagined White stone at G6 and asks whether that cutting stone can live. After that, recount G7 and G5 before extending again.');
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {
