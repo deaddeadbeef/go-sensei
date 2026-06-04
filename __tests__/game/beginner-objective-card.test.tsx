@@ -1060,6 +1060,47 @@ describe('BeginnerObjectiveCard', () => {
     ]);
   });
 
+  it('summarizes the last restored sequence step when returning to the live read', () => {
+    act(() => {
+      useGameStore.getState().placeStone({ x: 2, y: 2 });
+      useGameStore.getState().pass();
+      useGameStore.getState().placeStone({ x: 4, y: 2 });
+      useGameStore.getState().pass();
+    });
+
+    render(
+      <>
+        <BeginnerObjectiveCard />
+        <SenseiChatLog />
+      </>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Recount C7 and E7 after D8' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Compare D6 against D8' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Show board highlights for step 2: Black D8 attacks D7 from above.' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Show step' }));
+
+    const restoredRecountStep = screen.getByRole('button', { name: 'Show board highlights for step 3: Recount: C7 3 liberties; E7 3 liberties.' });
+    fireEvent.click(restoredRecountStep);
+    fireEvent.click(screen.getByRole('button', { name: 'Return to live read' }));
+
+    const returnToLiveReadNote = 'Returned to live read: back on the D6 branch. Last inspected sequence step: Saved branch step 3, Recount: C7 3 liberties; E7 3 liberties. The saved D6 comparison stays in chat if you want to reopen it.';
+    expect(useGameStore.getState().chatMessages.at(-1)?.text).toBe(returnToLiveReadNote);
+    expect(screen.getByText(returnToLiveReadNote)).toBeTruthy();
+    expect(useGameStore.getState().chatMessages.at(-1)).toMatchObject({
+      text: returnToLiveReadNote,
+      variant: 'teaching',
+    });
+    expect(useGameStore.getState().chatMessages.at(-1)?.actions).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1:pin:recount-3,1',
+        label: 'Reopen saved read',
+      }),
+    ]));
+  });
+
   it('lets the learner try a recommended short-side defense without changing the real game', () => {
     act(() => {
       useGameStore.getState().placeStone({ x: 2, y: 2 });
