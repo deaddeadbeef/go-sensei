@@ -3482,7 +3482,7 @@ export function BeginnerObjectiveCard() {
                       aria-label={`Recount ${readPromptAnchorCoord} and ${readPromptStoneCoord} after ${selectedReadReplyCoord}`}
                       onClick={() => recountReadPressureReply(readPrompt, selectedReadReply)}
                     >
-                      Recount sides
+                      Recount {readPromptAnchorCoord} and {readPromptStoneCoord}
                     </button>
                   )}
                   {selectedReadRecount && (
