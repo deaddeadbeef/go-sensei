@@ -1538,6 +1538,48 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText('Restored read')).toBeTruthy();
     expect(screen.getByText(restoredComparisonCue)).toBeTruthy();
     expect(screen.getByText(restoredLiveHandoffCue)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Return to live read' }));
+
+    const returnToLiveReadNote = 'Returned to live read: back on the D8 branch. The saved D6 comparison stays in chat if you want to reopen it.';
+    expect(screen.queryByText('Restored read')).toBeNull();
+    expect(screen.getByText(returnToLiveReadNote)).toBeTruthy();
+    expect(useGameStore.getState().chatMessages.at(-1)).toMatchObject({
+      text: returnToLiveReadNote,
+      variant: 'teaching',
+      actions: [
+        expect.objectContaining({
+          id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1',
+          label: 'Reopen saved read',
+        }),
+        expect.objectContaining({
+          id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,1:3,3:pin:handoff-6,2',
+          label: 'Show live handoff',
+          previewHighlights: [
+            {
+              id: 'read-pressure-handoff-6,2',
+              point: { x: 6, y: 2 },
+              variant: 'positive',
+              label: 'G7: real move to play after the stable pressure read.',
+            },
+          ],
+        }),
+      ],
+    });
+
+    const liveHandoffAction = screen.getByRole('button', { name: 'Show live handoff' });
+    fireEvent.focus(liveHandoffAction);
+    expect(useGameStore.getState().overlays.targetHints).toEqual([
+      {
+        id: 'read-pressure-handoff-6,2',
+        point: { x: 6, y: 2 },
+        variant: 'positive',
+        label: 'G7: real move to play after the stable pressure read.',
+      },
+    ]);
+    fireEvent.click(liveHandoffAction);
+
+    expect(screen.getByRole('button', { name: 'Play G7 from here' })).toBeTruthy();
   });
 
   it('continues a restored defense sequence step from chat', () => {

@@ -543,6 +543,37 @@ function getReturnToLivePressureReadAction(
     : null;
 }
 
+function getReturnToLivePressureHandoffAction(
+  prompt: OneSpaceJumpReadPrompt | null,
+  liveReply: Point | null,
+  comparedReply: Point | null,
+  selectedDefense: Point | null,
+  selectedFollowUpDefense: Point | null,
+  handoff: PressureExtensionHandoff | null,
+): SenseiAction | null {
+  if (!prompt || !liveReply || !comparedReply || !handoff) return null;
+
+  const pinnedHandoffStepKey = `handoff-${targetKey(handoff.point)}`;
+  let action: SenseiAction | null = null;
+
+  if (selectedDefense && selectedFollowUpDefense) {
+    action = getPressureFollowUpDefenseReplayAction(
+      prompt,
+      liveReply,
+      comparedReply,
+      selectedDefense,
+      selectedFollowUpDefense,
+      pinnedHandoffStepKey,
+    );
+  } else if (selectedDefense) {
+    action = getPressureDefenseReplayAction(prompt, liveReply, comparedReply, selectedDefense, pinnedHandoffStepKey);
+  } else {
+    action = getPressureComparisonReplayAction(prompt, liveReply, comparedReply, pinnedHandoffStepKey);
+  }
+
+  return withPreviewHighlights({ ...action, label: 'Show live handoff' }, buildPressureHandoffHighlights(handoff));
+}
+
 function getPinnedPressureReplayActionId(actionId: string, pinnedSequenceStepKey?: string): string {
   return pinnedSequenceStepKey ? `${actionId}:pin:${pinnedSequenceStepKey}` : actionId;
 }
@@ -2480,12 +2511,24 @@ export function BeginnerObjectiveCard() {
     )
     : null;
   const livePressureReadState: {
+    comparedReply: Point | null;
+    handoff: PressureExtensionHandoff | null;
     highlights: OverlayHighlight[];
     nextAction: string | null;
     reply: Point | null;
+    selectedDefense: Point | null;
+    selectedFollowUpDefense: Point | null;
   } = (() => {
     if (!readPrompt || activeReadPromptKey !== readPrompt.key) {
-      return { highlights: [], nextAction: null, reply: null };
+      return {
+        comparedReply: null,
+        handoff: null,
+        highlights: [],
+        nextAction: null,
+        reply: null,
+        selectedDefense: null,
+        selectedFollowUpDefense: null,
+      };
     }
 
     const liveSelectedReply = selectedReadReplyKey
@@ -2557,6 +2600,8 @@ export function BeginnerObjectiveCard() {
     const liveExtensionHandoff = liveFollowUpHandoff ?? liveDefenseHandoff ?? liveComparisonHandoff;
 
     return {
+      comparedReply: liveComparedReply,
+      handoff: liveExtensionHandoff,
       highlights: getActivePressureReadHighlights(
         game.board,
         readPrompt,
@@ -2578,6 +2623,8 @@ export function BeginnerObjectiveCard() {
         liveExtensionHandoff,
       ),
       reply: liveSelectedReply,
+      selectedDefense: liveSelectedDefensePoint,
+      selectedFollowUpDefense: liveSelectedFollowUpPoint,
     };
   })();
   const livePressureReadHighlights = livePressureReadState.highlights;
@@ -2783,6 +2830,18 @@ export function BeginnerObjectiveCard() {
         pinnedPressureSequenceRow?.replayKey,
       )
       : null;
+    const liveHandoffAction = guidedReadReplayRequest?.type === 'read-pressure'
+      ? getReturnToLivePressureHandoffAction(
+        readPrompt,
+        livePressureReadState.reply,
+        livePressureReadState.comparedReply,
+        livePressureReadState.selectedDefense,
+        livePressureReadState.selectedFollowUpDefense,
+        livePressureReadState.handoff,
+      )
+      : null;
+    const returnActions = [returnAction, liveHandoffAction]
+      .filter((action): action is SenseiAction => Boolean(action));
 
     recordInteraction();
     setActiveTargetKey(null);
@@ -2790,7 +2849,7 @@ export function BeginnerObjectiveCard() {
     clearGuidedReadReplay(activePressureReplayRequestId);
     applyTargetHints(livePressureReadHighlights);
     if (returnNote) {
-      addChatMessage(returnNote, 'teaching', returnAction ? [returnAction] : undefined);
+      addChatMessage(returnNote, 'teaching', returnActions.length > 0 ? returnActions : undefined);
     }
   };
   const togglePressureReadSequenceRow = (row: PressureReadSequenceRow, index: number) => {
