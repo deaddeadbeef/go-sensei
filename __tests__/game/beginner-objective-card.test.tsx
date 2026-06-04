@@ -786,6 +786,21 @@ describe('BeginnerObjectiveCard', () => {
     expect(recountActionRow.className).toContain('top-0');
     expect(recountActionRow.contains(screen.getByRole('button', { name: 'Recount G7 and G5 after H6' }))).toBe(true);
     expect(useGameStore.getState().chatMessages.at(-1)?.text).toBe('Branch choice: H6 was recommended because it starts from the open side of the G7-G5 jump before you compare F6. H6 is a good first read: it attacks the imagined White stone at G6 and asks whether that cutting stone can live. After that, recount G7 and G5 before extending again.');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Recount G7 and G5 after H6' }));
+
+    const completedFirstRead = screen.getByTestId('read-pressure-completed-first-read');
+    expect(completedFirstRead.textContent).toContain('First read saved: H6');
+    expect(completedFirstRead.hasAttribute('open')).toBe(false);
+    expect(completedFirstRead.querySelector('[hidden]')?.textContent).toContain('Branch choice');
+    expect(screen.getByRole('button', { name: 'Choose F6 as the first reply to G6' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Compare F6 against H6' })).toBeTruthy();
+
+    fireEvent.click(screen.getByText('First read saved: H6'));
+
+    expect(completedFirstRead.hasAttribute('open')).toBe(true);
+    expect(completedFirstRead.querySelector('[hidden]')).toBeNull();
+    expect(completedFirstRead.textContent).toContain('Branch choice');
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {

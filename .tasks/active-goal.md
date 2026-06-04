@@ -103,6 +103,7 @@ Latest completed slice:
 - Scoped the floating Sensei bubble to the board area, so dense guided read panels can no longer be covered by the bubble when the objective card grows tall.
 - Reserved a visible board area during dense guided reads and made the objective card scroll internally while the game controls stay visible.
 - Kept the active pressure-read decision row sticky while dense branch transcripts scroll, so the learner does not lose the current choice prompt.
+- Collapsed completed pressure-read branch proof text after the learner advances to the recount, keeping the proof expandable while leaving the next read action visible.
 
 Next investigation candidates:
-- Whether long pressure-read transcripts should collapse completed proof sections after the learner advances, so the card stays calmer without hiding the evidence.
+- Whether repeated two-gap proof recaps should become a compact chain summary once the third gap is being read.

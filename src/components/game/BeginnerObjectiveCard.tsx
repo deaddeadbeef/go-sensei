@@ -2349,6 +2349,7 @@ export function BeginnerObjectiveCard() {
   const [pinnedPressureSequenceRowKey, setPinnedPressureSequenceRowKey] = useState<string | null>(null);
   const [pressureSequencePinOverride, setPressureSequencePinOverride] = useState<{ replayRequestId: number; rowKey: string | null } | null>(null);
   const [pressureHandoffRecap, setPressureHandoffRecap] = useState<PressureHandoffRecap | null>(null);
+  const [openCompletedFirstReadKey, setOpenCompletedFirstReadKey] = useState<string | null>(null);
   const processedReplayRequestId = useRef<number | null>(null);
   const targetHelpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingTargetHelpKey = useRef<string | null>(null);
@@ -3280,6 +3281,11 @@ export function BeginnerObjectiveCard() {
   const readPromptAnchorCoord = readPrompt ? pointToCoord(readPrompt.anchor, game.board.size) : null;
   const readPromptStoneCoord = readPrompt ? pointToCoord(readPrompt.stone, game.board.size) : null;
   const selectedReadReplyCoord = selectedReadReply ? pointToCoord(selectedReadReply, game.board.size) : null;
+  const completedFirstReadKey = readPrompt && selectedReadRecount && selectedReadReplyCoord
+    ? `${readPrompt.key}:${selectedReadReplyCoord}:${targetKey(selectedReadRecount.reply)}`
+    : null;
+  const isCompletedFirstReadOpen = completedFirstReadKey !== null
+    && openCompletedFirstReadKey === completedFirstReadKey;
   const livePressureReadReply = livePressureReadState.reply;
   const pressureReadSequenceSavedReplyKey = activePressureReplayRequestId !== null
     ? getPressureReadSequenceReplayReplyKey(guidedReadReplayRequest?.pinnedSequenceStepKey) ?? replayedReadReplyKey
@@ -3531,6 +3537,47 @@ export function BeginnerObjectiveCard() {
       );
     }
   };
+  const renderPressureFirstChoiceRow = (
+    isSticky: boolean,
+    testId = 'read-pressure-first-choice-row',
+  ) => {
+    if (!readPrompt || readPrompt.replyPoints.length === 0) return null;
+
+    return (
+      <div
+        data-testid={testId}
+        className={getPressureReadActionRowClass(isSticky)}
+        style={getPressureReadActionRowStyle(isSticky)}
+      >
+        <span className="text-[11px] font-semibold" style={{ color: COLORS.ui.textSecondary }}>
+          Choose a first read:
+        </span>
+        {orderedPressureReplyPoints.map((point) => {
+          const coord = pointToCoord(point, game.board.size);
+          const pointKey = targetKey(point);
+          const isSelected = effectiveSelectedReadReplyKey === pointKey;
+          const isRecommended = pressureOpenSideFirstReplyKey === pointKey;
+
+          return (
+            <button
+              key={`read-pressure-choice-${pointKey}`}
+              type="button"
+              className="rounded border px-2 py-0.5 font-mono text-[11px] font-bold transition hover:bg-white/[0.07]"
+              style={{
+                borderColor: isSelected || isRecommended ? COLORS.overlay.positive : COLORS.ui.accent,
+                color: COLORS.ui.textPrimary,
+                backgroundColor: isSelected || isRecommended ? `${COLORS.overlay.positive}24` : `${COLORS.ui.accent}1f`,
+              }}
+              aria-label={`Choose ${coord} as the first reply to ${readPrompt.gapCoord}`}
+              onClick={() => chooseReadPressureReply(readPrompt, point)}
+            >
+              {isRecommended ? `Recommended: ${coord}` : coord}
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <div
@@ -3656,48 +3703,47 @@ export function BeginnerObjectiveCard() {
                   )}
                 </div>
               )}
-              {readPrompt.replyPoints.length > 0 && (
-                <div
-                  data-testid="read-pressure-first-choice-row"
-                  className={getPressureReadActionRowClass(shouldStickFirstReadRow)}
-                  style={getPressureReadActionRowStyle(shouldStickFirstReadRow)}
-                >
-                  <span className="text-[11px] font-semibold" style={{ color: COLORS.ui.textSecondary }}>
-                    Choose a first read:
-                  </span>
-                  {orderedPressureReplyPoints.map((point) => {
-                    const coord = pointToCoord(point, game.board.size);
-                    const pointKey = targetKey(point);
-                    const isSelected = effectiveSelectedReadReplyKey === pointKey;
-                    const isRecommended = pressureOpenSideFirstReplyKey === pointKey;
-
-                    return (
-                      <button
-                        key={`read-pressure-choice-${pointKey}`}
-                        type="button"
-                        className="rounded border px-2 py-0.5 font-mono text-[11px] font-bold transition hover:bg-white/[0.07]"
-                        style={{
-                          borderColor: isSelected || isRecommended ? COLORS.overlay.positive : COLORS.ui.accent,
-                          color: COLORS.ui.textPrimary,
-                          backgroundColor: isSelected || isRecommended ? `${COLORS.overlay.positive}24` : `${COLORS.ui.accent}1f`,
-                        }}
-                        aria-label={`Choose ${coord} as the first reply to ${readPrompt.gapCoord}`}
-                        onClick={() => chooseReadPressureReply(readPrompt, point)}
-                      >
-                        {isRecommended ? `Recommended: ${coord}` : coord}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+              {renderPressureFirstChoiceRow(shouldStickFirstReadRow)}
               {selectedReadReplyFeedback && (
                 <div className="mt-2">
-                  <div className="text-xs font-semibold" style={{ color: COLORS.ui.textPrimary }}>
-                    Branch choice
-                  </div>
-                  <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
-                    {selectedReadReplyFeedback}
-                  </p>
+                  {selectedReadRecount && selectedReadReplyCoord ? (
+                    <details
+                      data-testid="read-pressure-completed-first-read"
+                      open={isCompletedFirstReadOpen}
+                      className="rounded border px-2 py-1.5 text-xs"
+                      style={{ borderColor: 'rgba(255,255,255,0.08)' }}
+                    >
+                      <summary
+                        className="cursor-pointer text-xs font-semibold"
+                        style={{ color: COLORS.ui.textPrimary }}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          setOpenCompletedFirstReadKey((openKey) => (
+                            openKey === completedFirstReadKey ? null : completedFirstReadKey
+                          ));
+                        }}
+                      >
+                        First read saved: {selectedReadReplyCoord}
+                      </summary>
+                      <div hidden={!isCompletedFirstReadOpen}>
+                        <div className="mt-2 text-xs font-semibold" style={{ color: COLORS.ui.textPrimary }}>
+                          Branch choice
+                        </div>
+                        <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+                          {selectedReadReplyFeedback}
+                        </p>
+                      </div>
+                    </details>
+                  ) : (
+                    <>
+                      <div className="text-xs font-semibold" style={{ color: COLORS.ui.textPrimary }}>
+                        Branch choice
+                      </div>
+                      <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+                        {selectedReadReplyFeedback}
+                      </p>
+                    </>
+                  )}
                   {selectedReadReply && selectedReadReplyCoord && readPromptAnchorCoord && readPromptStoneCoord && (
                     <div
                       data-testid="read-pressure-recount-action-row"
