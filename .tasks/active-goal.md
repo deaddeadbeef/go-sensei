@@ -79,6 +79,7 @@ Latest completed slice:
 - Added a compact saved-vs-live branch cue under restored pressure reads, so reopening a saved D8 recount while the live read is D6 plainly names both branches before the learner chooses where to continue.
 - Extended restored-read orientation cues with the live branch's next action, so reopened recounts, comparisons, and defenses say whether the live read is waiting to recount, compare, or defend next.
 - Added a stable-read handoff fallback to restored-read orientation cues, so reopening a saved branch after the live read has resolved now says which real move the live branch unlocked.
+- Added a "Show live handoff" shortcut to return-to-live transcript notes when the live read has already unlocked a real-game handoff, with the same G7 preview marker as the board-side handoff row.
 
 Next investigation candidates:
-- Whether the return-to-live note should include the same handoff action shortcut when the live read is already stable.
+- Whether the restored-read panel should visually separate saved continuations from live continuations when both are available at once.
