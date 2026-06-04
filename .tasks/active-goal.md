@@ -84,6 +84,7 @@ Latest completed slice:
 - Added saved/live branch badges to restored read-sequence rows when a saved comparison crosses branches, so each replayed step names whether it belongs to the saved branch or the live branch.
 - Added saved/live branch labels to restored read-sequence focus messages in chat, so transcript notes match the branch context shown beside the board.
 - Added a last-inspected sequence-step summary to return-to-live transcript notes, so learners know which saved or live row they just left when they resume the live branch.
+- Restored the live branch's most specific sequence-row highlight when returning from saved reads, so a resolved live handoff lands on the G7 real-game move instead of broad recount markers.
 
 Next investigation candidates:
-- Whether returning to the live read should also restore the live branch's matching sequence-row highlight, instead of only the broad live read markers.
+- Whether return-to-live transcript actions should name the live branch's highlighted row, such as "Show live handoff" versus a generic branch return.
