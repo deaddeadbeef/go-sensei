@@ -83,11 +83,18 @@ interface PressureFollowUpComparisonSummary {
   text: string;
 }
 
+interface PressureRepeatReadHint {
+  previousGapCoord: string;
+  previousReplyCoord: string;
+  replyOffset: Point;
+}
+
 interface PressureHandoffRecap {
   point: Point;
   coord: string;
   text: string;
   proofText: string;
+  repeatRead: PressureRepeatReadHint | null;
 }
 
 interface PressureExtensionHandoff {
@@ -1387,6 +1394,7 @@ function getStablePressureExtensionHandoff(
   prompt: OneSpaceJumpReadPrompt | null,
   isStable: boolean,
   proofText: string | null,
+  repeatReply: Point | null = null,
 ): PressureExtensionHandoff | null {
   if (!isStable || objective.id !== 'extend-from-stone' || !prompt) return null;
 
@@ -1398,6 +1406,16 @@ function getStablePressureExtensionHandoff(
   const stoneCoord = pointToCoord(prompt.stone, board.size);
   const resolvedProofText = proofText
     ?? `You proved ${anchorCoord} and ${stoneCoord} stayed safe in the ${prompt.gapCoord} read.`;
+  const repeatRead = repeatReply
+    ? {
+      previousGapCoord: prompt.gapCoord,
+      previousReplyCoord: pointToCoord(repeatReply, board.size),
+      replyOffset: {
+        x: repeatReply.x - prompt.gap.x,
+        y: repeatReply.y - prompt.gap.y,
+      },
+    }
+    : null;
 
   return {
     point: copyPoint(point),
@@ -1410,12 +1428,22 @@ function getStablePressureExtensionHandoff(
       coord,
       text: `${coord} applies the ${prompt.gapCoord} read in the real game: ${resolvedProofText} Black can keep extending instead of answering a cut that has not happened.`,
       proofText: resolvedProofText,
+      repeatRead,
     },
   };
 }
 
 function getPressureProofBridgeText(recap: PressureHandoffRecap, prompt: OneSpaceJumpReadPrompt): string {
   return `Carry forward the proof: ${recap.proofText} Now test ${prompt.gapCoord} the same way before the next extension.`;
+}
+
+function getPressureRepeatReadPoint(recap: PressureHandoffRecap, prompt: OneSpaceJumpReadPrompt): Point | null {
+  if (!recap.repeatRead) return null;
+
+  return prompt.replyPoints.find((point) => (
+    point.x - prompt.gap.x === recap.repeatRead?.replyOffset.x
+    && point.y - prompt.gap.y === recap.repeatRead?.replyOffset.y
+  )) ?? null;
 }
 
 function buildPressureHandoffHighlights(handoff: PressureExtensionHandoff): OverlayHighlight[] {
@@ -2625,6 +2653,7 @@ export function BeginnerObjectiveCard() {
         readPrompt,
         Boolean(replayedComparisonSummary && !replayedComparisonSummary.defenseRecommendation),
         replayedComparisonSummary?.proofText ?? null,
+        replayedComparedRecount?.reply ?? null,
       )
       : null;
     const replayedDefenseHandoff = objective
@@ -2639,6 +2668,7 @@ export function BeginnerObjectiveCard() {
           && isStablePressureDefenseOutcome(replayedDefenseOutcome),
         ),
         replayedDefenseOutcome ? getPressureDefenseHandoffProofText(replayedDefenseOutcome, game.board) : null,
+        replayedComparedRecount?.reply ?? null,
       )
       : null;
     const replayedFollowUpHandoff = objective
@@ -2652,6 +2682,7 @@ export function BeginnerObjectiveCard() {
           && isStablePressureDefenseOutcome(replayedFollowUpDefenseOutcome),
         ),
         replayedFollowUpDefenseOutcome ? getPressureDefenseHandoffProofText(replayedFollowUpDefenseOutcome, game.board) : null,
+        replayedComparedRecount?.reply ?? null,
       )
       : null;
     const replayedSequenceRows = getPressureReadSequenceRows(
@@ -2851,6 +2882,7 @@ export function BeginnerObjectiveCard() {
       readPrompt,
       Boolean(liveComparisonSummary && !liveDefenseRecommendation),
       liveComparisonSummary?.proofText ?? null,
+      liveComparedReply,
     );
     const liveDefenseHandoff = getStablePressureExtensionHandoff(
       objective,
@@ -2863,6 +2895,7 @@ export function BeginnerObjectiveCard() {
         && isStablePressureDefenseOutcome(liveDefenseOutcome),
       ),
       liveDefenseOutcome ? getPressureDefenseHandoffProofText(liveDefenseOutcome, game.board) : null,
+      liveComparedReply,
     );
     const liveFollowUpHandoff = getStablePressureExtensionHandoff(
       objective,
@@ -2871,6 +2904,7 @@ export function BeginnerObjectiveCard() {
       readPrompt,
       Boolean(liveFollowUpOutcome && isStablePressureDefenseOutcome(liveFollowUpOutcome)),
       liveFollowUpOutcome ? getPressureDefenseHandoffProofText(liveFollowUpOutcome, game.board) : null,
+      liveComparedReply,
     );
     const liveExtensionHandoff = liveFollowUpHandoff ?? liveDefenseHandoff ?? liveComparisonHandoff;
     const liveSequenceRows = getPressureReadSequenceRows(
@@ -2933,6 +2967,7 @@ export function BeginnerObjectiveCard() {
     readPrompt,
     Boolean(pressureComparisonSummary && !pressureDefenseRecommendation),
     pressureComparisonSummary?.proofText ?? null,
+    comparedReadReply,
   );
   const selectedDefenseExtensionHandoff = getStablePressureExtensionHandoff(
     objective,
@@ -2945,6 +2980,7 @@ export function BeginnerObjectiveCard() {
       && isStablePressureDefenseOutcome(selectedDefenseReadOutcome),
     ),
     selectedDefenseReadOutcome ? getPressureDefenseHandoffProofText(selectedDefenseReadOutcome, game.board) : null,
+    comparedReadReply,
   );
   const selectedFollowUpExtensionHandoff = getStablePressureExtensionHandoff(
     objective,
@@ -2956,6 +2992,7 @@ export function BeginnerObjectiveCard() {
       && isStablePressureDefenseOutcome(selectedFollowUpDefenseReadOutcome),
     ),
     selectedFollowUpDefenseReadOutcome ? getPressureDefenseHandoffProofText(selectedFollowUpDefenseReadOutcome, game.board) : null,
+    comparedReadReply,
   );
   const activePressureExtensionHandoff = selectedFollowUpExtensionHandoff
     ?? selectedDefenseExtensionHandoff
@@ -3134,6 +3171,13 @@ export function BeginnerObjectiveCard() {
     : null;
   const pressureProofBridgeText = activePressureHandoffRecap && readPrompt
     ? getPressureProofBridgeText(activePressureHandoffRecap, readPrompt)
+    : null;
+  const pressureRepeatReadHint = activePressureHandoffRecap?.repeatRead ?? null;
+  const pressureRepeatReadPoint = activePressureHandoffRecap && readPrompt
+    ? getPressureRepeatReadPoint(activePressureHandoffRecap, readPrompt)
+    : null;
+  const pressureRepeatReadCoord = pressureRepeatReadPoint
+    ? pointToCoord(pressureRepeatReadPoint, game.board.size)
     : null;
   const activeTargetCoord = activeTarget ? pointToCoord(activeTarget, game.board.size) : null;
   const activeTargetExplanation = activeTarget ? getTargetExplanation(objective, activeTarget, game.board) : null;
@@ -3334,6 +3378,21 @@ export function BeginnerObjectiveCard() {
             >
               Show pressure
             </button>
+            {pressureRepeatReadHint && pressureRepeatReadPoint && pressureRepeatReadCoord && (
+              <button
+                type="button"
+                className="rounded border px-2 py-0.5 text-[11px] font-semibold transition hover:bg-white/[0.07]"
+                style={{
+                  borderColor: COLORS.overlay.positive,
+                  color: COLORS.ui.textPrimary,
+                  backgroundColor: `${COLORS.overlay.positive}1f`,
+                }}
+                aria-label={`Repeat ${pressureRepeatReadHint.previousReplyCoord} first-reply pattern at ${pressureRepeatReadCoord} for ${readPrompt.gapCoord}`}
+                onClick={() => chooseReadPressureReply(readPrompt, pressureRepeatReadPoint)}
+              >
+                Repeat {pressureRepeatReadHint.previousReplyCoord} -&gt; {pressureRepeatReadCoord}
+              </button>
+            )}
           </div>
           {showReadPressureDetail && (
             <div className="mt-2 rounded border px-2 py-1.5" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
