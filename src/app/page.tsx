@@ -162,7 +162,7 @@ export default function GamePage() {
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           {/* Left: Board area */}
           <div className="flex-[7] flex flex-col relative min-w-0 min-h-0 overflow-hidden">
-            <div data-testid="board-bubble-layer" className="relative flex min-h-0 flex-1 overflow-hidden">
+            <div data-testid="board-bubble-layer" className="relative flex min-h-[300px] flex-1 overflow-hidden">
               <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
@@ -172,8 +172,10 @@ export default function GamePage() {
               <SenseiBubble />
               <BoardContainer />
             </div>
-            <div className="shrink-0">
-              <BeginnerObjectiveCard />
+            <div data-testid="guided-control-panel" className="flex min-h-0 shrink flex-col overflow-hidden">
+              <div data-testid="guided-objective-scroll" className="min-h-0 overflow-y-auto">
+                <BeginnerObjectiveCard />
+              </div>
               <GameControls onNewGame={handleNewGame} onPass={handlePass} onUndo={handleUndo} />
             </div>
             <ScoreCard onPlayAgain={handleNewGame} onReviewGame={handleReviewGame} />
