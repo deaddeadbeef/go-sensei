@@ -405,7 +405,7 @@ describe('BeginnerObjectiveCard', () => {
 
     const d8RecountText = 'After D8, recount the two Black sides: C7 has 3 liberties at C8, C6, and B7. E7 has 3 liberties at E8, E6, and F7. Neither side is short yet, so keep building while staying ready to answer D7.';
     const restoredRecountCue = 'Showing the saved D8 recount from chat. Continue from here, or choose another branch to return to live reading.';
-    const restoredVsLiveCue = 'Saved branch: D8. Live branch: D6.';
+    const restoredVsLiveCue = 'Saved branch: D8. Live branch: D6. Live next: Recount C7 and E7 after D6.';
     const returnToLiveReadNote = 'Returned to live read: back on the D6 branch. The saved D8 recount stays in chat if you want to reopen it.';
 
     fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for D7' }));
@@ -837,6 +837,7 @@ describe('BeginnerObjectiveCard', () => {
     const comparisonSummary = 'D8 and D6 leave the same liberty counts: C7 has 2 liberties and E7 has 3 liberties either way. The difference is direction: D8 attacks D7 from above, while D6 attacks it from below.';
     const recommendation = 'Recommendation: C7 is the short side with 2 liberties at C6 and B7. Defend C7 before extending again.';
     const restoredComparisonCue = 'Showing the saved D6 comparison against D8 from chat. Continue from here, or choose another branch to return to live reading.';
+    const restoredComparisonLiveCue = 'Saved branch: D6. Live branch: D8. Live next: Recount C7 and E7 after D8.';
 
     fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for D7' }));
     fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
@@ -886,6 +887,7 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText(recommendation)).toBeTruthy();
     expect(screen.getByText('Restored read')).toBeTruthy();
     expect(screen.getByText(restoredComparisonCue)).toBeTruthy();
+    expect(screen.getByText(restoredComparisonLiveCue)).toBeTruthy();
     expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
     expect(useGameStore.getState().overlays.targetHints).toEqual([
       {
@@ -1894,6 +1896,8 @@ describe('BeginnerObjectiveCard', () => {
 
     const defenseText = 'C6 directly defends C7, the short side in this pressure line. Keep C7 breathing first; then recount before extending again.';
     const defenseOutcomeText = 'After C6, C7 grows from 2 to 5 liberties at B7, C5, B6, D5, and E6. E7 has 3 liberties at E8, E6, and F7. C7 is no longer the short side, so the defense did its job; now recount the whole position before extending again.';
+    const restoredDefenseCue = 'Showing the saved C6 defense from chat. Continue from here, or choose another branch to return to live reading.';
+    const restoredDefenseLiveCue = 'Saved branch: D6. Live branch: D8. Live next: Recount C7 and E7 after D8.';
 
     fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for D7' }));
     fireEvent.click(screen.getByRole('button', { name: 'Choose D8 as the first reply to D7' }));
@@ -1938,6 +1942,9 @@ describe('BeginnerObjectiveCard', () => {
 
     fireEvent.click(transcriptDefenseAction);
 
+    expect(screen.getByText('Restored read')).toBeTruthy();
+    expect(screen.getByText(restoredDefenseCue)).toBeTruthy();
+    expect(screen.getByText(restoredDefenseLiveCue)).toBeTruthy();
     expect(screen.getByText('Defense read')).toBeTruthy();
     expect(screen.getByText(defenseText)).toBeTruthy();
     expect(screen.getByText(defenseOutcomeText)).toBeTruthy();
