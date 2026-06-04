@@ -2313,6 +2313,19 @@ function ReplaySequenceContinuationRow({
   );
 }
 
+function getPressureReadActionRowClass(isSticky: boolean): string {
+  return [
+    'mt-2 flex flex-wrap items-center gap-1.5',
+    isSticky ? 'sticky top-0 z-20 rounded border px-2 py-1 shadow-lg' : null,
+  ].filter(Boolean).join(' ');
+}
+
+function getPressureReadActionRowStyle(isSticky: boolean) {
+  return isSticky
+    ? { backgroundColor: COLORS.ui.bgCard, borderColor: 'rgba(255,255,255,0.08)' }
+    : undefined;
+}
+
 export function BeginnerObjectiveCard() {
   const game = useGameStore((s) => s.game);
   const teachingLevel = useGameStore((s) => s.teachingLevel);
@@ -3344,6 +3357,24 @@ export function BeginnerObjectiveCard() {
       return aIsRecommended ? -1 : 1;
     })
     : [];
+  const shouldStickFirstReadRow = showReadPressureDetail
+    && orderedPressureReplyPoints.length > 0
+    && !selectedReadReply;
+  const shouldStickRecountRow = showReadPressureDetail
+    && Boolean(selectedReadReply)
+    && !selectedReadRecount;
+  const shouldStickCompareRow = showReadPressureDetail
+    && Boolean(selectedReadRecount)
+    && compareReadReplyPoints.length > 0
+    && !comparedReadReply;
+  const shouldStickDefenseRow = showReadPressureDetail
+    && Boolean(pressureDefenseRecommendation)
+    && Boolean(comparedReadReply)
+    && !selectedDefenseReadPoint;
+  const shouldStickFollowUpDefenseRow = showReadPressureDetail
+    && Boolean(pressureDefenseContinuationRecommendation)
+    && Boolean(selectedDefenseReadPoint)
+    && !selectedFollowUpDefenseReadPoint;
   const pressureRepeatComparePoint = pressureRepeatReadHint && selectedReadRecount
     ? compareReadReplyPoints[0] ?? null
     : null;
@@ -3626,7 +3657,11 @@ export function BeginnerObjectiveCard() {
                 </div>
               )}
               {readPrompt.replyPoints.length > 0 && (
-                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                <div
+                  data-testid="read-pressure-first-choice-row"
+                  className={getPressureReadActionRowClass(shouldStickFirstReadRow)}
+                  style={getPressureReadActionRowStyle(shouldStickFirstReadRow)}
+                >
                   <span className="text-[11px] font-semibold" style={{ color: COLORS.ui.textSecondary }}>
                     Choose a first read:
                   </span>
@@ -3664,19 +3699,25 @@ export function BeginnerObjectiveCard() {
                     {selectedReadReplyFeedback}
                   </p>
                   {selectedReadReply && selectedReadReplyCoord && readPromptAnchorCoord && readPromptStoneCoord && (
-                    <button
-                      type="button"
-                      className="mt-2 rounded border px-2 py-0.5 text-[11px] font-semibold transition hover:bg-white/[0.07]"
-                      style={{
-                        borderColor: selectedReadRecount ? COLORS.overlay.positive : COLORS.ui.accent,
-                        color: COLORS.ui.textPrimary,
-                        backgroundColor: selectedReadRecount ? `${COLORS.overlay.positive}24` : `${COLORS.ui.accent}1f`,
-                      }}
-                      aria-label={`Recount ${readPromptAnchorCoord} and ${readPromptStoneCoord} after ${selectedReadReplyCoord}`}
-                      onClick={() => recountReadPressureReply(readPrompt, selectedReadReply)}
+                    <div
+                      data-testid="read-pressure-recount-action-row"
+                      className={getPressureReadActionRowClass(shouldStickRecountRow)}
+                      style={getPressureReadActionRowStyle(shouldStickRecountRow)}
                     >
-                      Recount {readPromptAnchorCoord} and {readPromptStoneCoord}
-                    </button>
+                      <button
+                        type="button"
+                        className="rounded border px-2 py-0.5 text-[11px] font-semibold transition hover:bg-white/[0.07]"
+                        style={{
+                          borderColor: selectedReadRecount ? COLORS.overlay.positive : COLORS.ui.accent,
+                          color: COLORS.ui.textPrimary,
+                          backgroundColor: selectedReadRecount ? `${COLORS.overlay.positive}24` : `${COLORS.ui.accent}1f`,
+                        }}
+                        aria-label={`Recount ${readPromptAnchorCoord} and ${readPromptStoneCoord} after ${selectedReadReplyCoord}`}
+                        onClick={() => recountReadPressureReply(readPrompt, selectedReadReply)}
+                      >
+                        Recount {readPromptAnchorCoord} and {readPromptStoneCoord}
+                      </button>
+                    </div>
                   )}
                   {selectedReadRecount && (
                     <div className="mt-2">
@@ -3692,7 +3733,11 @@ export function BeginnerObjectiveCard() {
                         </p>
                       )}
                       {compareReadReplyPoints.length > 0 && (
-                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                        <div
+                          data-testid="read-pressure-compare-action-row"
+                          className={getPressureReadActionRowClass(shouldStickCompareRow)}
+                          style={getPressureReadActionRowStyle(shouldStickCompareRow)}
+                        >
                           {compareReadReplyPoints.map((point) => {
                             const coord = pointToCoord(point, game.board.size);
                             const currentCoord = pointToCoord(selectedReadRecount.reply, game.board.size);
@@ -3747,7 +3792,11 @@ export function BeginnerObjectiveCard() {
                                 {pressureComparisonSummary.recommendationText}
                               </p>
                               {pressureDefenseRecommendation && comparedReadReply && (
-                                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                                <div
+                                  data-testid="read-pressure-defense-action-row"
+                                  className={getPressureReadActionRowClass(shouldStickDefenseRow)}
+                                  style={getPressureReadActionRowStyle(shouldStickDefenseRow)}
+                                >
                                   <span className="text-[11px] font-semibold" style={{ color: COLORS.ui.textSecondary }}>
                                     Try a defense:
                                   </span>
@@ -3813,7 +3862,11 @@ export function BeginnerObjectiveCard() {
                                         <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
                                           {pressureDefenseContinuationRecommendation.text}
                                         </p>
-                                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                                        <div
+                                          data-testid="read-pressure-follow-up-defense-action-row"
+                                          className={getPressureReadActionRowClass(shouldStickFollowUpDefenseRow)}
+                                          style={getPressureReadActionRowStyle(shouldStickFollowUpDefenseRow)}
+                                        >
                                           {pressureDefenseContinuationRecommendation.liberties.map((point) => {
                                             const coord = pointToCoord(point, game.board.size);
                                             const isSelected = effectiveFollowUpDefenseReadPointKey === targetKey(point);
