@@ -99,8 +99,16 @@ describe('app navigation recovery', () => {
     render(<GamePage />);
 
     const boardBubbleLayer = screen.getByTestId('board-bubble-layer');
+    const guidedControlPanel = screen.getByTestId('guided-control-panel');
+    const guidedObjectiveScroll = screen.getByTestId('guided-objective-scroll');
 
     expect(boardBubbleLayer.className).toContain('overflow-hidden');
+    expect(boardBubbleLayer.className).toContain('min-h-[300px]');
     expect(boardBubbleLayer.contains(screen.getByText('Go Sensei'))).toBe(true);
+    expect(guidedControlPanel.className).toContain('min-h-0');
+    expect(guidedControlPanel.className).toContain('overflow-hidden');
+    expect(guidedObjectiveScroll.className).toContain('min-h-0');
+    expect(guidedObjectiveScroll.className).toContain('overflow-y-auto');
+    expect(guidedControlPanel.contains(screen.getByText('Pass'))).toBe(true);
   });
 });
