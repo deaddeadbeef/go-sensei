@@ -960,7 +960,7 @@ describe('BeginnerObjectiveCard', () => {
     const compactFourGapProof = 'Chain proof: D7, F7, G6, and G4 were tested and stayed stable; Black can keep extending.';
     expect(screen.getByText(g4ChainProof)).toBeTruthy();
     expect(screen.getByText(compactFourGapProof)).toBeTruthy();
-    expect(screen.getByText('The read chain is stable, so turn it into a real move: play E3 for Make your stones work together.')).toBeTruthy();
+    expect(screen.getByText('The G4 read is stable, so change direction now: play E3 for Make your stones work together.')).toBeTruthy();
     expect(screen.queryByText('This matches the G6 proof: the repeated pattern stayed stable again. You proved H4 and F4 both leave G5 and G3 safe, so G4 does not need an immediate defense.')).toBeNull();
     expect(screen.queryByText((text) => text.includes('Two-gap proof: Chain proof'))).toBeNull();
   });
