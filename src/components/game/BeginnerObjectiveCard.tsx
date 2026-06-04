@@ -450,6 +450,7 @@ function getReturnToLivePressureReadMessage(
   board: BoardState,
   liveReply: Point | null,
   restoredReply: Point | null,
+  inspectedSequenceStepSummary: string | null,
 ): string {
   const liveBranchText = liveReply
     ? `back on the ${pointToCoord(liveReply, board.size)} branch`
@@ -457,8 +458,9 @@ function getReturnToLivePressureReadMessage(
   const savedReadText = restoredReply
     ? `The saved ${pointToCoord(restoredReply, board.size)} ${getSavedPressureReadLabel(request)} stays in chat if you want to reopen it.`
     : 'The saved read stays in chat if you want to reopen it.';
+  const inspectedStepText = inspectedSequenceStepSummary ? `${inspectedSequenceStepSummary} ` : '';
 
-  return `Returned to live read: ${liveBranchText}. ${savedReadText}`;
+  return `Returned to live read: ${liveBranchText}. ${inspectedStepText}${savedReadText}`;
 }
 
 function getPressureReplayAction(
@@ -1314,6 +1316,17 @@ function formatPressureReadSequenceFocusMessage(
   const branchContext = branchBadge ? `${branchBadge.label}. ` : '';
 
   return `Read sequence focus: ${branchContext}Step ${index + 1}: ${row.text} ${row.focusText}`;
+}
+
+function formatPressureReadSequenceReturnSummary(
+  row: PressureReadSequenceRow,
+  index: number,
+  branchBadge: PressureReadSequenceBranchBadge | null,
+): string {
+  const stepLabel = branchBadge ? `${branchBadge.label} step ${index + 1}` : `step ${index + 1}`;
+  const rowText = row.text.replace(/[.!?]$/, '');
+
+  return `Last inspected sequence step: ${stepLabel}, ${rowText}.`;
 }
 
 function formatPressureSequenceLibertyStep(
@@ -2863,6 +2876,16 @@ export function BeginnerObjectiveCard() {
       liveReplyKey: pressureReadSequenceLiveReplyKey,
     }
     : null;
+  const pinnedPressureSequenceRowIndex = pinnedPressureSequenceRow
+    ? pressureReadSequenceRows.findIndex((row) => row.key === pinnedPressureSequenceRow.key)
+    : -1;
+  const returnToLivePressureSequenceSummary = pinnedPressureSequenceRow && pinnedPressureSequenceRowIndex >= 0
+    ? formatPressureReadSequenceReturnSummary(
+      pinnedPressureSequenceRow,
+      pinnedPressureSequenceRowIndex,
+      getPressureReadSequenceRowBranchBadge(pinnedPressureSequenceRow, pressureReadSequenceBranchContext),
+    )
+    : null;
   const restoredPressureReadLiveCue = activePressureReplayRequestId !== null
     ? getRestoredPressureReadLiveCue(game.board, livePressureReadReply, selectedReadReply, livePressureReadState.nextAction)
     : null;
@@ -2894,7 +2917,13 @@ export function BeginnerObjectiveCard() {
     if (activePressureReplayRequestId === null) return;
 
     const returnNote = guidedReadReplayRequest?.type === 'read-pressure'
-      ? getReturnToLivePressureReadMessage(guidedReadReplayRequest, game.board, livePressureReadReply, selectedReadReply)
+      ? getReturnToLivePressureReadMessage(
+        guidedReadReplayRequest,
+        game.board,
+        livePressureReadReply,
+        selectedReadReply,
+        returnToLivePressureSequenceSummary,
+      )
       : null;
     const returnAction = guidedReadReplayRequest?.type === 'read-pressure'
       ? getReturnToLivePressureReadAction(
