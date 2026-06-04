@@ -1770,6 +1770,15 @@ function getPressureRepeatComparisonProofRecap(
   return `This matches the ${repeatRead.previousGapCoord} proof: the repeated pattern stayed stable again. ${comparisonSummary.proofText}`;
 }
 
+function getPressureRepeatExtensionProofText(
+  recap: PressureHandoffRecap | null,
+  comparisonSummary: PressureComparisonSummary | null,
+): string | null {
+  if (!recap?.repeatRead || !comparisonSummary?.hasSameCounts) return null;
+
+  return `Two-gap proof: ${recap.proofText} ${comparisonSummary.proofText} Black can keep extending instead of answering either cut immediately.`;
+}
+
 function buildOneSpaceJumpRecountHighlights(
   prompt: OneSpaceJumpReadPrompt,
   recount: PressureRecount,
@@ -2981,13 +2990,23 @@ export function BeginnerObjectiveCard() {
   })();
   const livePressureReadHighlights = livePressureReadState.highlights;
   const livePressureReadSequenceRow = livePressureReadState.sequenceRow;
+  const activePressureHandoffRecap = pressureHandoffRecap
+    && lastPlayerMove
+    && targetKey(pressureHandoffRecap.point) === targetKey(lastPlayerMove)
+    ? pressureHandoffRecap
+    : null;
+  const pressureRepeatReadHint = activePressureHandoffRecap?.repeatRead ?? null;
+  const pressureRepeatExtensionProofText = getPressureRepeatExtensionProofText(
+    activePressureHandoffRecap,
+    pressureComparisonSummary,
+  );
   const pressureComparisonExtensionHandoff = getStablePressureExtensionHandoff(
     objective,
     playableTargets,
     game.board,
     readPrompt,
     Boolean(pressureComparisonSummary && !pressureDefenseRecommendation),
-    pressureComparisonSummary?.proofText ?? null,
+    pressureRepeatExtensionProofText ?? pressureComparisonSummary?.proofText ?? null,
     comparedReadReply,
   );
   const selectedDefenseExtensionHandoff = getStablePressureExtensionHandoff(
@@ -3185,15 +3204,9 @@ export function BeginnerObjectiveCard() {
   const activeTarget = activeTargetKey
     ? playableTargets.find((point) => targetKey(point) === activeTargetKey) ?? null
     : null;
-  const activePressureHandoffRecap = pressureHandoffRecap
-    && lastPlayerMove
-    && targetKey(pressureHandoffRecap.point) === targetKey(lastPlayerMove)
-    ? pressureHandoffRecap
-    : null;
   const pressureProofBridgeText = activePressureHandoffRecap && readPrompt
     ? getPressureProofBridgeText(activePressureHandoffRecap, readPrompt)
     : null;
-  const pressureRepeatReadHint = activePressureHandoffRecap?.repeatRead ?? null;
   const pressureRepeatReadPoint = activePressureHandoffRecap && readPrompt
     ? getPressureRepeatReadPoint(activePressureHandoffRecap, readPrompt)
     : null;
