@@ -1395,17 +1395,19 @@ function getStablePressureExtensionHandoff(
   const coord = pointToCoord(point, board.size);
   const anchorCoord = pointToCoord(prompt.anchor, board.size);
   const stoneCoord = pointToCoord(prompt.stone, board.size);
+  const resolvedProofText = proofText
+    ?? `You proved ${anchorCoord} and ${stoneCoord} stayed safe in the ${prompt.gapCoord} read.`;
 
   return {
     point: copyPoint(point),
     coord,
     text: `The read is stable, so turn it into a real move: play ${coord} for ${objective.title}.`,
-    proofText: proofText ?? `You proved ${anchorCoord} and ${stoneCoord} stayed safe in the ${prompt.gapCoord} read, so Black can return to extension.`,
+    proofText: resolvedProofText,
     ariaLabel: `Play ${coord} in the real game after the stable pressure read`,
     recap: {
       point: copyPoint(point),
       coord,
-      text: `${coord} applies the ${prompt.gapCoord} read in the real game: ${anchorCoord} and ${stoneCoord} stayed safe in the variation, so Black can keep extending instead of answering a cut that has not happened.`,
+      text: `${coord} applies the ${prompt.gapCoord} read in the real game: ${resolvedProofText} Black can keep extending instead of answering a cut that has not happened.`,
     },
   };
 }
