@@ -87,6 +87,7 @@ Latest completed slice:
 - Restored the live branch's most specific sequence-row highlight when returning from saved reads, so a resolved live handoff lands on the G7 real-game move instead of broad recount markers.
 - Renamed return-to-live saved-read actions with their branch coordinate and read type, so transcript buttons say exactly whether they reopen a D8 recount, D6 comparison, defense, or follow-up defense.
 - Renamed top-level restored-read transcript actions with their saved coordinate and read type, so chat buttons now say "Show saved D6 comparison" or "Show saved C6 defense" instead of generic "Show comparison" or "Show defense".
+- Renamed saved/live sequence-step transcript actions when branch context is explicit, so restored read rows now offer buttons like "Show saved step 3: D8 recount" and "Show live step 4: D6 comparison".
 
 Next investigation candidates:
-- Whether pinned sequence-step transcript actions should name the saved/live row they restore, rather than the generic "Show step" label.
+- Whether the pressure-read flow should surface a short recap of what the learner proved before recommending the real-game handoff.
