@@ -85,6 +85,7 @@ Latest completed slice:
 - Added saved/live branch labels to restored read-sequence focus messages in chat, so transcript notes match the branch context shown beside the board.
 - Added a last-inspected sequence-step summary to return-to-live transcript notes, so learners know which saved or live row they just left when they resume the live branch.
 - Restored the live branch's most specific sequence-row highlight when returning from saved reads, so a resolved live handoff lands on the G7 real-game move instead of broad recount markers.
+- Renamed return-to-live saved-read actions with their branch coordinate and read type, so transcript buttons say exactly whether they reopen a D8 recount, D6 comparison, defense, or follow-up defense.
 
 Next investigation candidates:
-- Whether return-to-live transcript actions should name the live branch's highlighted row, such as "Show live handoff" versus a generic branch return.
+- Whether restored-read transcript actions should use the same coordinate-specific labels before the learner returns to live context.

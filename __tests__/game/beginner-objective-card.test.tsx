@@ -468,7 +468,7 @@ describe('BeginnerObjectiveCard', () => {
     expect(useGameStore.getState().chatMessages.at(-1)?.actions).toEqual([
       expect.objectContaining({
         id: 'guided:read-pressure:recount:read-pressure-2,2-4,2-3,2:3,1',
-        label: 'Reopen saved read',
+        label: 'Reopen saved D8 recount',
         previewHighlights: expect.arrayContaining([
           {
             id: 'read-pressure-reply-3,1',
@@ -481,7 +481,7 @@ describe('BeginnerObjectiveCard', () => {
     ]);
     expect(useGameStore.getState().guidedReadReplayRequest).toBeNull();
 
-    const returnNoteReopenAction = screen.getByRole('button', { name: 'Reopen saved read' });
+    const returnNoteReopenAction = screen.getByRole('button', { name: 'Reopen saved D8 recount' });
     fireEvent.focus(returnNoteReopenAction);
     expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
       {
@@ -1096,7 +1096,7 @@ describe('BeginnerObjectiveCard', () => {
     expect(useGameStore.getState().chatMessages.at(-1)?.actions).toEqual(expect.arrayContaining([
       expect.objectContaining({
         id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1:pin:recount-3,1',
-        label: 'Reopen saved read',
+        label: 'Reopen saved D6 comparison',
       }),
     ]));
     const liveHandoffStep = screen.getByRole('button', { name: 'Show board highlights for step 5: Real-game handoff: play G7 after the stable read.' });
@@ -1612,7 +1612,7 @@ describe('BeginnerObjectiveCard', () => {
       actions: [
         expect.objectContaining({
           id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1',
-          label: 'Reopen saved read',
+          label: 'Reopen saved D6 comparison',
         }),
         expect.objectContaining({
           id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,1:3,3:pin:handoff-6,2',
