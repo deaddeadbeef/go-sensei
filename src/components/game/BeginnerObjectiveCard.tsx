@@ -454,6 +454,42 @@ function getPressureFollowUpDefenseReplayAction(
   };
 }
 
+function getReturnToLivePressureReadAction(
+  request: GuidedReadReplayRequest,
+  prompt: OneSpaceJumpReadPrompt | null,
+  selectedReply: Point | null,
+  comparedReply: Point | null,
+  selectedDefense: Point | null,
+  selectedFollowUpDefense: Point | null,
+  previewHighlights: OverlayHighlight[],
+  pinnedSequenceStepKey?: string,
+): SenseiAction | null {
+  if (!prompt || !selectedReply) return null;
+
+  let action: SenseiAction | null = null;
+
+  if (request.mode === 'branch' || request.mode === 'recount') {
+    action = getPressureReplayAction(request.mode, prompt, selectedReply, pinnedSequenceStepKey);
+  } else if (request.mode === 'comparison' && comparedReply) {
+    action = getPressureComparisonReplayAction(prompt, selectedReply, comparedReply, pinnedSequenceStepKey);
+  } else if (request.mode === 'defense' && comparedReply && selectedDefense) {
+    action = getPressureDefenseReplayAction(prompt, selectedReply, comparedReply, selectedDefense, pinnedSequenceStepKey);
+  } else if (request.mode === 'follow-up-defense' && comparedReply && selectedDefense && selectedFollowUpDefense) {
+    action = getPressureFollowUpDefenseReplayAction(
+      prompt,
+      selectedReply,
+      comparedReply,
+      selectedDefense,
+      selectedFollowUpDefense,
+      pinnedSequenceStepKey,
+    );
+  }
+
+  return action
+    ? withPreviewHighlights({ ...action, label: 'Reopen saved read' }, previewHighlights)
+    : null;
+}
+
 function getPinnedPressureReplayActionId(actionId: string, pinnedSequenceStepKey?: string): string {
   return pinnedSequenceStepKey ? `${actionId}:pin:${pinnedSequenceStepKey}` : actionId;
 }
@@ -2633,6 +2669,18 @@ export function BeginnerObjectiveCard() {
     const returnNote = guidedReadReplayRequest?.type === 'read-pressure'
       ? getReturnToLivePressureReadMessage(guidedReadReplayRequest, game.board, liveReply, selectedReadReply)
       : null;
+    const returnAction = guidedReadReplayRequest?.type === 'read-pressure'
+      ? getReturnToLivePressureReadAction(
+        guidedReadReplayRequest,
+        readPrompt,
+        selectedReadReply,
+        comparedReadReply,
+        selectedDefenseReadPoint,
+        selectedFollowUpDefenseReadPoint,
+        pinnedPressureSequenceRow?.highlights ?? activePressureReadHighlights,
+        pinnedPressureSequenceRow?.replayKey,
+      )
+      : null;
 
     recordInteraction();
     setActiveTargetKey(null);
@@ -2640,7 +2688,7 @@ export function BeginnerObjectiveCard() {
     clearGuidedReadReplay(activePressureReplayRequestId);
     applyTargetHints(livePressureReadHighlights);
     if (returnNote) {
-      addChatMessage(returnNote, 'teaching');
+      addChatMessage(returnNote, 'teaching', returnAction ? [returnAction] : undefined);
     }
   };
   const togglePressureReadSequenceRow = (row: PressureReadSequenceRow, index: number) => {

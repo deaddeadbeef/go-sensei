@@ -74,6 +74,7 @@ Latest completed slice:
 - Delayed target hover/focus help just enough that a learner's first click on a guided target still plays the move instead of only opening the explanation.
 - Added a one-click "Return to live read" control inside restored pressure reads, so learners can leave saved chat context and recover the live branch's text and board highlights.
 - Added a compact transcript note after returning from restored pressure reads, so chat records when the learner leaves saved context and which live branch they returned to.
+- Added a one-click "Reopen saved read" shortcut to return-to-live transcript notes, with hover/focus board previews that recover the same saved read or pinned step the learner just left.
 
 Next investigation candidates:
-- Whether live/read transcript notes should offer a small shortcut back to the most recent restored read without cluttering the chat action row.
+- Investigate why the rendered D6 first-read button did not switch away from an active D8 recount during browser smoke, despite the unit path covering that branch transition.
