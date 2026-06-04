@@ -106,6 +106,7 @@ Latest completed slice:
 - Collapsed completed pressure-read branch proof text after the learner advances to the recount, keeping the proof expandable while leaving the next read action visible.
 - Compacted the third-gap carry-forward proof into a D7/F7 chain summary, so the G6 read starts with the useful memory instead of repeating the full two-gap proof.
 - Collapsed the older "Read applied" recap once the next pressure variation is open, preserving the proof while keeping the live G6 read in focus.
+- Turned the G6 open-side recommendation into a direct "Start with H6" action, so the learner can follow the recommended read without translating it into a separate coordinate choice.
 
 Next investigation candidates:
-- Whether the G6 pressure variation should turn the open-side recommendation into a one-click "start with H6" action row, so the learner does not have to translate the recommendation into a separate coordinate button.
+- Whether the completed H6 first-read recap should preview the F6 comparison target on hover/focus, so the learner can see the next branch before clicking Compare.
