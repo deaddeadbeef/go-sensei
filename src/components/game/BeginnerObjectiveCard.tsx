@@ -1961,6 +1961,38 @@ function buildOneSpaceJumpRecountHighlights(
   ];
 }
 
+function buildCompletedFirstReadComparisonPreviewHighlights(
+  prompt: OneSpaceJumpReadPrompt,
+  recount: PressureRecount,
+  board: BoardState,
+  comparisonReply: Point,
+): OverlayHighlight[] {
+  const savedCoord = pointToCoord(recount.reply, board.size);
+  const comparisonCoord = pointToCoord(comparisonReply, board.size);
+  const savedReplyKey = targetKey(recount.reply);
+  const comparisonReplyKey = targetKey(comparisonReply);
+
+  return buildOneSpaceJumpRecountHighlights(prompt, recount, board).map((highlight) => {
+    if (highlight.id === `read-pressure-reply-${savedReplyKey}`) {
+      return {
+        ...highlight,
+        variant: 'positive',
+        label: `${savedCoord}: saved first read and baseline for the next comparison.`,
+      };
+    }
+
+    if (highlight.id === `read-pressure-reply-${comparisonReplyKey}`) {
+      return {
+        ...highlight,
+        variant: 'warning',
+        label: `${comparisonCoord}: next comparison branch to test against ${savedCoord}.`,
+      };
+    }
+
+    return highlight;
+  });
+}
+
 function buildOneSpaceJumpDefenseOutcomeHighlights(
   prompt: OneSpaceJumpReadPrompt,
   recount: PressureRecount,
@@ -3413,6 +3445,16 @@ export function BeginnerObjectiveCard() {
     pressureRepeatReadHint,
     pressureComparisonSummary,
   );
+  const completedFirstReadComparisonPreviewHighlights = readPrompt
+    && selectedReadRecount
+    && compareReadReplyPoints.length > 0
+    ? buildCompletedFirstReadComparisonPreviewHighlights(
+      readPrompt,
+      selectedReadRecount,
+      game.board,
+      compareReadReplyPoints[0],
+    )
+    : null;
   const activeTargetCoord = activeTarget ? pointToCoord(activeTarget, game.board.size) : null;
   const activeTargetExplanation = activeTarget ? getTargetExplanation(objective, activeTarget, game.board) : null;
   const targetHelpId = 'beginner-objective-target-help';
@@ -3428,6 +3470,12 @@ export function BeginnerObjectiveCard() {
   };
   const restorePressureReadHighlights = () => {
     applyTargetHints(pinnedPressureSequenceRow?.highlights ?? activePressureReadHighlights);
+  };
+  const showCompletedFirstReadComparisonPreview = () => {
+    if (!completedFirstReadComparisonPreviewHighlights) return;
+
+    setActiveTargetKey(null);
+    applyTargetHints(completedFirstReadComparisonPreviewHighlights);
   };
   const returnToLivePressureRead = () => {
     if (activePressureReplayRequestId === null) return;
@@ -3754,6 +3802,12 @@ export function BeginnerObjectiveCard() {
                       <summary
                         className="cursor-pointer text-xs font-semibold"
                         style={{ color: COLORS.ui.textPrimary }}
+                        onPointerEnter={showCompletedFirstReadComparisonPreview}
+                        onPointerMove={showCompletedFirstReadComparisonPreview}
+                        onMouseEnter={showCompletedFirstReadComparisonPreview}
+                        onMouseLeave={restorePressureReadHighlights}
+                        onFocus={showCompletedFirstReadComparisonPreview}
+                        onBlur={restorePressureReadHighlights}
                         onClick={(event) => {
                           event.preventDefault();
                           setOpenCompletedFirstReadKey((openKey) => (

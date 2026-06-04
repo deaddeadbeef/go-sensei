@@ -803,6 +803,48 @@ describe('BeginnerObjectiveCard', () => {
     expect(completedFirstRead.querySelector('[hidden]')?.textContent).toContain('Branch choice');
     expect(screen.getByRole('button', { name: 'Choose F6 as the first reply to G6' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Compare F6 against H6' })).toBeTruthy();
+    expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
+      {
+        id: 'read-pressure-reply-7,3',
+        point: { x: 7, y: 3 },
+        variant: 'positive',
+        label: 'H6: selected reply used for this recount.',
+      },
+      {
+        id: 'read-pressure-reply-5,3',
+        point: { x: 5, y: 3 },
+        variant: 'neutral',
+        label: 'F6: alternate reply to compare later.',
+      },
+    ]));
+
+    fireEvent.focus(screen.getByText('First read saved: H6'));
+
+    expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
+      {
+        id: 'read-pressure-reply-7,3',
+        point: { x: 7, y: 3 },
+        variant: 'positive',
+        label: 'H6: saved first read and baseline for the next comparison.',
+      },
+      {
+        id: 'read-pressure-reply-5,3',
+        point: { x: 5, y: 3 },
+        variant: 'warning',
+        label: 'F6: next comparison branch to test against H6.',
+      },
+    ]));
+
+    fireEvent.blur(screen.getByText('First read saved: H6'));
+
+    expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
+      {
+        id: 'read-pressure-reply-5,3',
+        point: { x: 5, y: 3 },
+        variant: 'neutral',
+        label: 'F6: alternate reply to compare later.',
+      },
+    ]));
 
     fireEvent.click(screen.getByText('First read saved: H6'));
 
