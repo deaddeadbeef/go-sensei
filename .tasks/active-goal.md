@@ -91,6 +91,7 @@ Latest completed slice:
 - Added a compact "What you proved" recap to stable pressure handoffs, so learners see why the read permits the real-game extension before clicking it.
 - Carried the stable-read proof into the post-handoff "Read applied" recap, so the real move preserves the exact comparison or connecting proof that justified it.
 - Echoed the previous stable-read proof inside the next "Read next" prompt after a real-game handoff, so learners carry the completed D7 proof into the next F7 gap.
+- Added a one-click repeat-pattern shortcut after stable handoffs, so learners can carry the previous first reply direction into the next pressure gap without reopening the read from scratch.
 
 Next investigation candidates:
-- Whether the next pressure prompt should offer a one-click "repeat the same read" path that preloads the first reply pattern from the previous gap.
+- Whether the repeat-pattern shortcut should continue through the recount step automatically, or keep the learner responsible for recounting the new sides.
