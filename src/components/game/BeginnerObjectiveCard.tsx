@@ -1306,6 +1306,16 @@ function getPressureReadSequenceRowBranchBadge(
   return null;
 }
 
+function formatPressureReadSequenceFocusMessage(
+  row: PressureReadSequenceRow,
+  index: number,
+  branchBadge: PressureReadSequenceBranchBadge | null,
+): string {
+  const branchContext = branchBadge ? `${branchBadge.label}. ` : '';
+
+  return `Read sequence focus: ${branchContext}Step ${index + 1}: ${row.text} ${row.focusText}`;
+}
+
 function formatPressureSequenceLibertyStep(
   prompt: OneSpaceJumpReadPrompt,
   recount: PressureRecount,
@@ -2973,7 +2983,11 @@ export function BeginnerObjectiveCard() {
 
       addChatMessage(
         [
-          `Read sequence focus: Step ${index + 1}: ${row.text} ${row.focusText}`,
+          formatPressureReadSequenceFocusMessage(
+            row,
+            index,
+            getPressureReadSequenceRowBranchBadge(row, pressureReadSequenceBranchContext),
+          ),
           continuationSummary,
         ].filter((text): text is string => Boolean(text)).join(' '),
         'teaching',
