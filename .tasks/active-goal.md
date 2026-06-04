@@ -90,6 +90,7 @@ Latest completed slice:
 - Renamed saved/live sequence-step transcript actions when branch context is explicit, so restored read rows now offer buttons like "Show saved step 3: D8 recount" and "Show live step 4: D6 comparison".
 - Added a compact "What you proved" recap to stable pressure handoffs, so learners see why the read permits the real-game extension before clicking it.
 - Carried the stable-read proof into the post-handoff "Read applied" recap, so the real move preserves the exact comparison or connecting proof that justified it.
+- Echoed the previous stable-read proof inside the next "Read next" prompt after a real-game handoff, so learners carry the completed D7 proof into the next F7 gap.
 
 Next investigation candidates:
-- Whether the next pressure prompt after a real-game handoff should reference the previous proof, so learners connect one completed read to the next gap.
+- Whether the next pressure prompt should offer a one-click "repeat the same read" path that preloads the first reply pattern from the previous gap.
