@@ -765,6 +765,8 @@ describe('BeginnerObjectiveCard', () => {
     });
 
     expect(screen.getByText(`G5 applies the repeated stable reads in the real game: ${twoGapProof}`)).toBeTruthy();
+    expect(screen.getByText('The repeat shortcut stops here: repeating F8 would land on G7, which is already one of your stones. Use Show pressure to read G6 from scratch.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Repeat F8 first-reply pattern at G7 for G6' })).toBeNull();
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {
