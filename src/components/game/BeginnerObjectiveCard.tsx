@@ -3879,6 +3879,10 @@ export function BeginnerObjectiveCard() {
                           {compareReadReplyPoints.map((point) => {
                             const coord = pointToCoord(point, game.board.size);
                             const currentCoord = pointToCoord(selectedReadRecount.reply, game.board.size);
+                            const previewRecount = getPressureRecount(game, readPrompt, point);
+                            const previewHighlights = previewRecount
+                              ? buildOneSpaceJumpRecountHighlights(readPrompt, previewRecount, game.board)
+                              : null;
 
                             return (
                               <button
@@ -3891,6 +3895,12 @@ export function BeginnerObjectiveCard() {
                                   backgroundColor: `${COLORS.ui.accent}1f`,
                                 }}
                                 aria-label={`Compare ${coord} against ${currentCoord}`}
+                                onPointerEnter={() => showPressureReadSequenceContinuation(previewHighlights)}
+                                onPointerMove={() => showPressureReadSequenceContinuation(previewHighlights)}
+                                onMouseEnter={() => showPressureReadSequenceContinuation(previewHighlights)}
+                                onMouseLeave={restorePressureReadHighlights}
+                                onFocus={() => showPressureReadSequenceContinuation(previewHighlights)}
+                                onBlur={restorePressureReadHighlights}
                                 onClick={() => compareReadPressureReply(readPrompt, selectedReadRecount.reply, point)}
                               >
                                 Compare {coord}

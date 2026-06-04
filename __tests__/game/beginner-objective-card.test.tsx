@@ -846,6 +846,59 @@ describe('BeginnerObjectiveCard', () => {
       },
     ]));
 
+    const compareF6Action = screen.getByRole('button', { name: 'Compare F6 against H6' });
+    fireEvent.focus(compareF6Action);
+
+    expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
+      {
+        id: 'read-pressure-anchor-6,2',
+        point: { x: 6, y: 2 },
+        variant: 'positive',
+        label: 'G7: 3 liberties after F6: G8, F7, and H7.',
+      },
+      {
+        id: 'read-pressure-stone-6,4',
+        point: { x: 6, y: 4 },
+        variant: 'positive',
+        label: 'G5: 3 liberties after F6: G4, F5, and H5.',
+      },
+      {
+        id: 'read-pressure-gap-6,3',
+        point: { x: 6, y: 3 },
+        variant: 'warning',
+        label: 'G6: imagined White pressure point to keep watching.',
+      },
+      {
+        id: 'read-pressure-reply-5,3',
+        point: { x: 5, y: 3 },
+        variant: 'positive',
+        label: 'F6: selected reply used for this recount.',
+      },
+      {
+        id: 'read-pressure-reply-7,3',
+        point: { x: 7, y: 3 },
+        variant: 'neutral',
+        label: 'H6: alternate reply to compare later.',
+      },
+    ]));
+
+    fireEvent.blur(compareF6Action);
+
+    expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
+      {
+        id: 'read-pressure-reply-7,3',
+        point: { x: 7, y: 3 },
+        variant: 'positive',
+        label: 'H6: selected reply used for this recount.',
+      },
+      {
+        id: 'read-pressure-reply-5,3',
+        point: { x: 5, y: 3 },
+        variant: 'neutral',
+        label: 'F6: alternate reply to compare later.',
+      },
+    ]));
+
     fireEvent.click(screen.getByText('First read saved: H6'));
 
     expect(completedFirstRead.hasAttribute('open')).toBe(true);
