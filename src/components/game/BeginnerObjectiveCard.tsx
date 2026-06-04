@@ -195,6 +195,25 @@ function joinAndCoordinateList(coords: string[]): string {
   return `${coords.slice(0, -1).join(', ')}, and ${coords[coords.length - 1]}`;
 }
 
+function formatPressureHandoffTargetText(
+  defaultText: string | null,
+  objective: BeginnerObjective,
+  targets: Point[],
+  handoff: PressureExtensionHandoff | null,
+  board: BoardState,
+): string | null {
+  if (!handoff || objective.id !== 'extend-from-stone') return defaultText;
+  if (!targets.some((point) => targetKey(point) === targetKey(handoff.point))) return defaultText;
+
+  const otherTargetCoords = targets
+    .filter((point) => targetKey(point) !== targetKey(handoff.point))
+    .map((point) => pointToCoord(point, board.size));
+  if (otherTargetCoords.length === 0) return `Recommended by the read: ${handoff.coord}.`;
+
+  const otherLabel = otherTargetCoords.length === 1 ? 'Other one-space jump' : 'Other one-space jumps';
+  return `Recommended by the read: ${handoff.coord}. ${otherLabel}: ${joinCoordinateList(otherTargetCoords)}.`;
+}
+
 function formatLibertyCount(count: number): string {
   return `${count} ${count === 1 ? 'liberty' : 'liberties'}`;
 }
@@ -3305,6 +3324,13 @@ export function BeginnerObjectiveCard() {
   const activePressureExtensionHandoff = selectedFollowUpExtensionHandoff
     ?? selectedDefenseExtensionHandoff
     ?? pressureComparisonExtensionHandoff;
+  const targetDisplayText = formatPressureHandoffTargetText(
+    targetText,
+    objective,
+    playableTargets,
+    activePressureExtensionHandoff,
+    game.board,
+  );
   const pressureReadSequenceRows = getPressureReadSequenceRows(
     game.board,
     readPrompt,
@@ -4382,9 +4408,9 @@ export function BeginnerObjectiveCard() {
           {progress.text}
         </div>
       )}
-      {targetText && (
+      {targetDisplayText && (
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs font-semibold" style={{ color: COLORS.ui.textPrimary }}>
-          <span>{targetText}</span>
+          <span>{targetDisplayText}</span>
           {playableTargets.map((point) => {
             const coord = pointToCoord(point, game.board.size);
 
