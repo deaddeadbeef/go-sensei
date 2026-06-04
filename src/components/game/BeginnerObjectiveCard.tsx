@@ -1469,6 +1469,7 @@ function getStablePressureExtensionHandoff(
     ?? `You proved ${anchorCoord} and ${stoneCoord} stayed safe in the ${prompt.gapCoord} read.`;
   const isRepeatedProof = resolvedProofText.startsWith('Two-gap proof:');
   const isChainProof = resolvedProofText.startsWith('Chain proof:');
+  const isDirectionChangeChainProof = getChainProofStableGapCoords(resolvedProofText).length >= 4;
   const repeatRead = repeatReply
     ? {
       previousGapCoord: prompt.gapCoord,
@@ -1486,7 +1487,9 @@ function getStablePressureExtensionHandoff(
     text: isRepeatedProof
       ? `Both reads are stable, so turn them into a real move: play ${coord} for ${objective.title}.`
       : isChainProof
-        ? `The read chain is stable, so turn it into a real move: play ${coord} for ${objective.title}.`
+        ? isDirectionChangeChainProof
+          ? `The ${prompt.gapCoord} read is stable, so change direction now: play ${coord} for ${objective.title}.`
+          : `The read chain is stable, so turn it into a real move: play ${coord} for ${objective.title}.`
         : `The read is stable, so turn it into a real move: play ${coord} for ${objective.title}.`,
     proofText: resolvedProofText,
     ariaLabel: `Play ${coord} in the real game after the stable pressure read`,
