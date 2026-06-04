@@ -505,18 +505,48 @@ function getReturnToLivePressureReadMessage(
   return `Returned to live read: ${liveBranchText}. ${inspectedStepText}${savedReadText}`;
 }
 
+interface PressureReplayActionOptions {
+  board?: BoardState;
+  pinnedSequenceStepKey?: string;
+}
+
+function getPressureReplayActionLabel(
+  mode: 'branch' | 'recount',
+  reply: Point,
+  board?: BoardState,
+): string {
+  if (!board) return mode === 'recount' ? 'Show recount' : 'Show branch';
+
+  const replyCoord = pointToCoord(reply, board.size);
+  return mode === 'recount' ? `Show saved ${replyCoord} recount` : `Show saved ${replyCoord} branch`;
+}
+
+function getPressureComparisonReplayActionLabel(reply: Point, board?: BoardState): string {
+  return board ? `Show saved ${pointToCoord(reply, board.size)} comparison` : 'Show comparison';
+}
+
+function getPressureDefenseReplayActionLabel(defensePoint: Point, board?: BoardState): string {
+  return board ? `Show saved ${pointToCoord(defensePoint, board.size)} defense` : 'Show defense';
+}
+
+function getPressureFollowUpReplayActionLabel(followUpDefensePoint: Point, board?: BoardState): string {
+  return board ? `Show saved ${pointToCoord(followUpDefensePoint, board.size)} follow-up defense` : 'Show follow-up';
+}
+
 function getPressureReplayAction(
   mode: 'branch' | 'recount',
   prompt: OneSpaceJumpReadPrompt,
   reply: Point,
-  pinnedSequenceStepKey?: string,
+  options: PressureReplayActionOptions = {},
 ): SenseiAction {
+  const { board, pinnedSequenceStepKey } = options;
+
   return {
     id: getPinnedPressureReplayActionId(
       `guided:read-pressure:${mode}:${prompt.key}:${targetKey(reply)}`,
       pinnedSequenceStepKey,
     ),
-    label: pinnedSequenceStepKey ? 'Show step' : mode === 'recount' ? 'Show recount' : 'Show branch',
+    label: pinnedSequenceStepKey ? 'Show step' : getPressureReplayActionLabel(mode, reply, board),
   };
 }
 
@@ -528,14 +558,16 @@ function getPressureComparisonReplayAction(
   prompt: OneSpaceJumpReadPrompt,
   reply: Point,
   comparedReply: Point,
-  pinnedSequenceStepKey?: string,
+  options: PressureReplayActionOptions = {},
 ): SenseiAction {
+  const { board, pinnedSequenceStepKey } = options;
+
   return {
     id: getPinnedPressureReplayActionId(
       `guided:read-pressure:comparison:${prompt.key}:${targetKey(reply)}:${targetKey(comparedReply)}`,
       pinnedSequenceStepKey,
     ),
-    label: pinnedSequenceStepKey ? 'Show step' : 'Show comparison',
+    label: pinnedSequenceStepKey ? 'Show step' : getPressureComparisonReplayActionLabel(reply, board),
   };
 }
 
@@ -544,14 +576,16 @@ function getPressureDefenseReplayAction(
   reply: Point,
   comparedReply: Point,
   defensePoint: Point,
-  pinnedSequenceStepKey?: string,
+  options: PressureReplayActionOptions = {},
 ): SenseiAction {
+  const { board, pinnedSequenceStepKey } = options;
+
   return {
     id: getPinnedPressureReplayActionId(
       `guided:read-pressure:defense:${prompt.key}:${targetKey(reply)}:${targetKey(comparedReply)}:${targetKey(defensePoint)}`,
       pinnedSequenceStepKey,
     ),
-    label: pinnedSequenceStepKey ? 'Show step' : 'Show defense',
+    label: pinnedSequenceStepKey ? 'Show step' : getPressureDefenseReplayActionLabel(defensePoint, board),
   };
 }
 
@@ -561,14 +595,16 @@ function getPressureFollowUpDefenseReplayAction(
   comparedReply: Point,
   defensePoint: Point,
   followUpDefensePoint: Point,
-  pinnedSequenceStepKey?: string,
+  options: PressureReplayActionOptions = {},
 ): SenseiAction {
+  const { board, pinnedSequenceStepKey } = options;
+
   return {
     id: getPinnedPressureReplayActionId(
       `guided:read-pressure:follow-up-defense:${prompt.key}:${targetKey(reply)}:${targetKey(comparedReply)}:${targetKey(defensePoint)}:${targetKey(followUpDefensePoint)}`,
       pinnedSequenceStepKey,
     ),
-    label: pinnedSequenceStepKey ? 'Show step' : 'Show follow-up',
+    label: pinnedSequenceStepKey ? 'Show step' : getPressureFollowUpReplayActionLabel(followUpDefensePoint, board),
   };
 }
 
@@ -588,11 +624,11 @@ function getReturnToLivePressureReadAction(
   let action: SenseiAction | null = null;
 
   if (request.mode === 'branch' || request.mode === 'recount') {
-    action = getPressureReplayAction(request.mode, prompt, selectedReply, pinnedSequenceStepKey);
+    action = getPressureReplayAction(request.mode, prompt, selectedReply, { pinnedSequenceStepKey });
   } else if (request.mode === 'comparison' && comparedReply) {
-    action = getPressureComparisonReplayAction(prompt, selectedReply, comparedReply, pinnedSequenceStepKey);
+    action = getPressureComparisonReplayAction(prompt, selectedReply, comparedReply, { pinnedSequenceStepKey });
   } else if (request.mode === 'defense' && comparedReply && selectedDefense) {
-    action = getPressureDefenseReplayAction(prompt, selectedReply, comparedReply, selectedDefense, pinnedSequenceStepKey);
+    action = getPressureDefenseReplayAction(prompt, selectedReply, comparedReply, selectedDefense, { pinnedSequenceStepKey });
   } else if (request.mode === 'follow-up-defense' && comparedReply && selectedDefense && selectedFollowUpDefense) {
     action = getPressureFollowUpDefenseReplayAction(
       prompt,
@@ -600,7 +636,7 @@ function getReturnToLivePressureReadAction(
       comparedReply,
       selectedDefense,
       selectedFollowUpDefense,
-      pinnedSequenceStepKey,
+      { pinnedSequenceStepKey },
     );
   }
 
@@ -641,12 +677,23 @@ function getReturnToLivePressureHandoffAction(
       comparedReply,
       selectedDefense,
       selectedFollowUpDefense,
-      pinnedHandoffStepKey,
+      { pinnedSequenceStepKey: pinnedHandoffStepKey },
     );
   } else if (selectedDefense) {
-    action = getPressureDefenseReplayAction(prompt, liveReply, comparedReply, selectedDefense, pinnedHandoffStepKey);
+    action = getPressureDefenseReplayAction(
+      prompt,
+      liveReply,
+      comparedReply,
+      selectedDefense,
+      { pinnedSequenceStepKey: pinnedHandoffStepKey },
+    );
   } else {
-    action = getPressureComparisonReplayAction(prompt, liveReply, comparedReply, pinnedHandoffStepKey);
+    action = getPressureComparisonReplayAction(
+      prompt,
+      liveReply,
+      comparedReply,
+      { pinnedSequenceStepKey: pinnedHandoffStepKey },
+    );
   }
 
   return withPreviewHighlights({ ...action, label: 'Show live handoff' }, buildPressureHandoffHighlights(handoff));
@@ -674,7 +721,7 @@ function getPressureSequenceFocusReplayAction(
       comparedReply,
       selectedDefenseOutcome.defense,
       selectedFollowUpDefenseOutcome.defense,
-      pinnedSequenceStepKey,
+      { pinnedSequenceStepKey },
     );
   }
 
@@ -684,19 +731,19 @@ function getPressureSequenceFocusReplayAction(
       selectedReply,
       comparedReply,
       selectedDefenseOutcome.defense,
-      pinnedSequenceStepKey,
+      { pinnedSequenceStepKey },
     );
   }
 
   if (comparedReply) {
-    return getPressureComparisonReplayAction(prompt, selectedReply, comparedReply, pinnedSequenceStepKey);
+    return getPressureComparisonReplayAction(prompt, selectedReply, comparedReply, { pinnedSequenceStepKey });
   }
 
   if (selectedRecount) {
-    return getPressureReplayAction('recount', prompt, selectedReply, pinnedSequenceStepKey);
+    return getPressureReplayAction('recount', prompt, selectedReply, { pinnedSequenceStepKey });
   }
 
-  return getPressureReplayAction('branch', prompt, selectedReply, pinnedSequenceStepKey);
+  return getPressureReplayAction('branch', prompt, selectedReply, { pinnedSequenceStepKey });
 }
 
 function getPressureRecountFollowUp(
@@ -1178,7 +1225,13 @@ function getPressureDefenseContinuationChatAction(
   choice: ReplaySequenceDefenseChoice,
 ): SenseiAction {
   return {
-    ...getPressureDefenseReplayAction(prompt, reply, comparedReply, choice.point, `defense-${targetKey(choice.point)}`),
+    ...getPressureDefenseReplayAction(
+      prompt,
+      reply,
+      comparedReply,
+      choice.point,
+      { pinnedSequenceStepKey: `defense-${targetKey(choice.point)}` },
+    ),
     label: `Recommended: ${choice.coord}`,
     ...(choice.highlights ? { previewHighlights: choice.highlights } : {}),
   };
@@ -1198,7 +1251,7 @@ function getPressureFollowUpDefenseContinuationChatAction(
       comparedReply,
       firstDefensePoint,
       choice.point,
-      `follow-up-${targetKey(choice.point)}`,
+      { pinnedSequenceStepKey: `follow-up-${targetKey(choice.point)}` },
     ),
     label: `Recommended: ${choice.coord}`,
     ...(choice.highlights ? { previewHighlights: choice.highlights } : {}),
@@ -2169,7 +2222,7 @@ export function BeginnerObjectiveCard() {
     addChatMessage(
       `Branch choice: ${feedback}`,
       'teaching',
-      [withPreviewHighlights(getPressureReplayAction('branch', prompt, reply), previewHighlights)],
+      [withPreviewHighlights(getPressureReplayAction('branch', prompt, reply, { board: game.board }), previewHighlights)],
     );
   }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game.board, recordInteraction]);
 
@@ -2193,7 +2246,7 @@ export function BeginnerObjectiveCard() {
     addChatMessage(
       `Second read: ${recount.text}`,
       'teaching',
-      [withPreviewHighlights(getPressureReplayAction('recount', prompt, reply), previewHighlights)],
+      [withPreviewHighlights(getPressureReplayAction('recount', prompt, reply, { board: game.board }), previewHighlights)],
     );
   }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game, recordInteraction]);
 
@@ -2228,7 +2281,7 @@ export function BeginnerObjectiveCard() {
     addChatMessage(
       `Comparison read: ${comparisonText}`,
       'teaching',
-      [withPreviewHighlights(getPressureComparisonReplayAction(prompt, reply, comparedReply), previewHighlights)],
+      [withPreviewHighlights(getPressureComparisonReplayAction(prompt, reply, comparedReply, { board: game.board }), previewHighlights)],
     );
   }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game, recordInteraction]);
 
@@ -2263,7 +2316,10 @@ export function BeginnerObjectiveCard() {
     addChatMessage(
       `Defense read: ${defenseMessage}`,
       'teaching',
-      [withPreviewHighlights(getPressureDefenseReplayAction(prompt, recount.reply, comparedReply, point), previewHighlights)],
+      [withPreviewHighlights(
+        getPressureDefenseReplayAction(prompt, recount.reply, comparedReply, point, { board: game.board }),
+        previewHighlights,
+      )],
     );
   }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game, recordInteraction]);
 
@@ -2311,7 +2367,14 @@ export function BeginnerObjectiveCard() {
       `Follow-up defense: ${followUpMessage}`,
       'teaching',
       [withPreviewHighlights(
-        getPressureFollowUpDefenseReplayAction(prompt, recount.reply, comparedReply, firstDefensePoint, point),
+        getPressureFollowUpDefenseReplayAction(
+          prompt,
+          recount.reply,
+          comparedReply,
+          firstDefensePoint,
+          point,
+          { board: game.board },
+        ),
         previewHighlights,
       )],
     );
