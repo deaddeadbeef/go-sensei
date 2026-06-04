@@ -3179,6 +3179,18 @@ export function BeginnerObjectiveCard() {
   const pressureRepeatReadCoord = pressureRepeatReadPoint
     ? pointToCoord(pressureRepeatReadPoint, game.board.size)
     : null;
+  const pressureRepeatComparePoint = pressureRepeatReadHint && selectedReadRecount
+    ? compareReadReplyPoints[0] ?? null
+    : null;
+  const pressureRepeatCompareCoord = pressureRepeatComparePoint
+    ? pointToCoord(pressureRepeatComparePoint, game.board.size)
+    : null;
+  const pressureRepeatComparisonReminder = pressureRepeatReadHint
+    && selectedReadReplyCoord
+    && pressureRepeatCompareCoord
+    && readPrompt
+    ? `You repeated ${pressureRepeatReadHint.previousReplyCoord} as ${selectedReadReplyCoord}. Now compare ${pressureRepeatCompareCoord} so the ${readPrompt.gapCoord} read gets its own proof before the next extension.`
+    : null;
   const activeTargetCoord = activeTarget ? pointToCoord(activeTarget, game.board.size) : null;
   const activeTargetExplanation = activeTarget ? getTargetExplanation(objective, activeTarget, game.board) : null;
   const targetHelpId = 'beginner-objective-target-help';
@@ -3493,6 +3505,11 @@ export function BeginnerObjectiveCard() {
                       <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
                         {selectedReadRecount.text}
                       </p>
+                      {pressureRepeatComparisonReminder && (
+                        <p className="mt-1 text-xs leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
+                          {pressureRepeatComparisonReminder}
+                        </p>
+                      )}
                       {compareReadReplyPoints.length > 0 && (
                         <div className="mt-2 flex flex-wrap items-center gap-1.5">
                           {compareReadReplyPoints.map((point) => {
