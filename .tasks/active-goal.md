@@ -82,6 +82,7 @@ Latest completed slice:
 - Added a "Show live handoff" shortcut to return-to-live transcript notes when the live read has already unlocked a real-game handoff, with the same G7 preview marker as the board-side handoff row.
 - Labeled restored-read navigation as "Live branch" and restored sequence prompts as "Saved read next question", so saved-context continuations and live-context exits are visually distinct in the same panel.
 - Added saved/live branch badges to restored read-sequence rows when a saved comparison crosses branches, so each replayed step names whether it belongs to the saved branch or the live branch.
+- Added saved/live branch labels to restored read-sequence focus messages in chat, so transcript notes match the branch context shown beside the board.
 
 Next investigation candidates:
-- Whether the branch badges should also appear in transcript focus messages when the learner reopens a saved row from chat.
+- Whether restored saved/live branch context should be summarized once when learners return to the live read after inspecting multiple saved rows.
