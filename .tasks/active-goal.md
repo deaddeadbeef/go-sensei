@@ -97,6 +97,7 @@ Latest completed slice:
 - Added a repeat-pattern proof recap after the second-gap comparison, so learners see that F8/F6 proved the same stable result as the earlier D8/D6 read instead of treating it as an isolated count.
 - Added a two-gap proof to the repeated-read real-game handoff, so the extension shortcut says both D7 and F7 were tested before asking the learner to keep extending.
 - Updated repeated-read handoff copy to say both reads are stable and to preserve the repeated-read proof after the real G5 move, instead of reverting to singular "the read" language.
+- Added a repeat-shortcut boundary note after G5, so learners see why the old F8 shortcut would land on occupied G7 and why G6 needs a fresh pressure read.
 
 Next investigation candidates:
-- Whether the next repeated read after G5 should offer a repeat-pattern shortcut from the two-gap proof without overwhelming the learner with too many saved branches.
+- Whether the fresh G6 pressure read should start from the open-side reply that preserves the vertical jump, rather than presenting all replies with equal weight.
