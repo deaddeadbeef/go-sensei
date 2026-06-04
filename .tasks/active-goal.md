@@ -94,6 +94,7 @@ Latest completed slice:
 - Added a one-click repeat-pattern shortcut after stable handoffs, so learners can carry the previous first reply direction into the next pressure gap without reopening the read from scratch.
 - Named pressure-recount buttons with the exact stones being recounted, so repeat-pattern reads visibly ask for "Recount E7 and G7" instead of a generic "Recount sides" action.
 - Added a compare-the-other-reply reminder after repeated-pattern recounts, so learners do not mistake a repeated first reply for a completed proof on the new gap.
+- Added a repeat-pattern proof recap after the second-gap comparison, so learners see that F8/F6 proved the same stable result as the earlier D8/D6 read instead of treating it as an isolated count.
 
 Next investigation candidates:
-- Whether repeat-pattern comparison summaries should explicitly say when the second gap proved the same stable result as the previous gap.
+- Whether repeated stable reads should hand off into a "play the next extension" shortcut that names both completed gap proofs.
