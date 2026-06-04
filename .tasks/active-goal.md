@@ -100,6 +100,7 @@ Latest completed slice:
 - Added a repeat-shortcut boundary note after G5, so learners see why the old F8 shortcut would land on occupied G7 and why G6 needs a fresh pressure read.
 - Recommended the open-side first reply inside fresh pressure reads, so the G6 read starts from H6 before comparing F6 instead of presenting both replies with equal weight.
 - Echoed the H6 open-side recommendation in the branch-choice chat entry, so saved transcript history preserves why the fresh G6 read started from that side.
+- Scoped the floating Sensei bubble to the board area, so dense guided read panels can no longer be covered by the bubble when the objective card grows tall.
 
 Next investigation candidates:
-- Whether the Sensei bubble should move or collapse during dense read panels, since rendered smoke shows it can cover the top of the objective card during long guided sequences.
+- Whether dense guided read panels should use an internal scroll or reserve a clearer minimum board area, so the board stays visibly available while long read transcripts grow.
