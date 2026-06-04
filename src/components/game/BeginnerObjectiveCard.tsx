@@ -127,6 +127,14 @@ function targetKey(point: Point): string {
   return `${point.x},${point.y}`;
 }
 
+function pointFromTargetKey(key: string): Point | null {
+  const [xText, yText] = key.split(',');
+  const x = Number(xText);
+  const y = Number(yText);
+
+  return Number.isInteger(x) && Number.isInteger(y) ? { x, y } : null;
+}
+
 function copyPoint(point: Point): Point {
   return { x: point.x, y: point.y };
 }
@@ -1424,6 +1432,46 @@ function formatPressureReadSequenceFocusMessage(
   const branchContext = branchBadge ? `${branchBadge.label}. ` : '';
 
   return `Read sequence focus: ${branchContext}Step ${index + 1}: ${row.text} ${row.focusText}`;
+}
+
+function getPressureReadSequenceActionRowLabel(
+  row: PressureReadSequenceRow,
+  board: BoardState,
+  prompt: OneSpaceJumpReadPrompt | null,
+): string | null {
+  if (row.replayKey === 'gap') return prompt ? `${prompt.gapCoord} pressure` : 'pressure';
+
+  const replayPrefixes: Array<[string, string]> = [
+    ['follow-up-', 'follow-up'],
+    ['handoff-', 'handoff'],
+    ['defense-', 'defense'],
+    ['compare-', 'comparison'],
+    ['recount-', 'recount'],
+    ['reply-', 'reply'],
+  ];
+  const matchedPrefix = replayPrefixes.find(([prefix]) => row.replayKey.startsWith(prefix));
+  if (!matchedPrefix) return null;
+
+  const [prefix, label] = matchedPrefix;
+  const point = pointFromTargetKey(row.replayKey.slice(prefix.length));
+  if (!point) return null;
+
+  return `${pointToCoord(point, board.size)} ${label}`;
+}
+
+function formatPressureReadSequenceActionLabel(
+  row: PressureReadSequenceRow,
+  index: number,
+  branchBadge: PressureReadSequenceBranchBadge,
+  board: BoardState,
+  prompt: OneSpaceJumpReadPrompt | null,
+): string {
+  const branchLabel = branchBadge.tone === 'saved' ? 'saved ' : 'live ';
+  const rowLabel = getPressureReadSequenceActionRowLabel(row, board, prompt);
+
+  return rowLabel
+    ? `Show ${branchLabel}step ${index + 1}: ${rowLabel}`
+    : `Show ${branchLabel}step ${index + 1}`;
 }
 
 function formatPressureReadSequenceReturnSummary(
@@ -3135,6 +3183,7 @@ export function BeginnerObjectiveCard() {
     );
 
     if (replayAction) {
+      const branchBadge = getPressureReadSequenceRowBranchBadge(row, pressureReadSequenceBranchContext);
       const continuationSummary = getPressureSequenceContinuationSummary(
         game,
         readPrompt,
@@ -3161,12 +3210,21 @@ export function BeginnerObjectiveCard() {
           formatPressureReadSequenceFocusMessage(
             row,
             index,
-            getPressureReadSequenceRowBranchBadge(row, pressureReadSequenceBranchContext),
+            branchBadge,
           ),
           continuationSummary,
         ].filter((text): text is string => Boolean(text)).join(' '),
         'teaching',
-        [{ ...replayAction, previewHighlights: row.highlights }, ...continuationActions],
+        [
+          {
+            ...replayAction,
+            label: branchBadge
+              ? formatPressureReadSequenceActionLabel(row, index, branchBadge, game.board, readPrompt)
+              : replayAction.label,
+            previewHighlights: row.highlights,
+          },
+          ...continuationActions,
+        ],
       );
     }
   };
