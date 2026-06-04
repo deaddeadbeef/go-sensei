@@ -114,6 +114,7 @@ Latest completed slice:
 - Carried the completed D7/F7/G6 chain into the post-G3 handoff recap and next G4 reading prompt with a compact chain proof.
 - Added a stopping-rule sentence to the three-gap chain bridge, so the G4 read teaches learners to re-evaluate direction instead of extending by habit.
 - Stopped the repeat-pattern shortcut after a three-gap chain, replacing the H6-to-H4 shortcut with a fresh H4/F4 comparison boundary.
+- Kept the fresh G4 comparison on the chain-proof path, so H4/F4 extends D7/F7/G6 into a four-gap proof instead of leaking repeated-pattern copy.
 
 Next investigation candidates:
 - Whether the next bigger gain is outside this one-space-jump chain, such as helping the tutor choose between E3, E5, and C5 after the G4 read.
