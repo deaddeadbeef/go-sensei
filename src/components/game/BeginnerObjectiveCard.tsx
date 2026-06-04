@@ -3129,6 +3129,7 @@ export function BeginnerObjectiveCard() {
     && targetKey(pressureHandoffRecap.point) === targetKey(lastPlayerMove)
     ? pressureHandoffRecap
     : null;
+  const shouldCollapseAppliedPressureRecap = Boolean(activePressureHandoffRecap && showReadPressureDetail);
   const pressureRepeatReadHint = activePressureHandoffRecap?.repeatRead ?? null;
   const pressureRepeatExtensionProofText = getPressureRepeatExtensionProofText(
     activePressureHandoffRecap,
@@ -3600,14 +3601,29 @@ export function BeginnerObjectiveCard() {
       style={{ backgroundColor: COLORS.ui.bgCard, borderColor: 'rgba(255,255,255,0.08)' }}
     >
       {activePressureHandoffRecap && (
-        <div className="mb-2 border-b border-white/10 pb-2">
-          <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: COLORS.ui.textSecondary }}>
-            Read applied
+        shouldCollapseAppliedPressureRecap ? (
+          <details className="mb-2 border-b border-white/10 pb-2">
+            <summary className="cursor-pointer text-[10px] font-semibold uppercase tracking-wider" style={{ color: COLORS.ui.textSecondary }}>
+              <span>Read applied</span>
+              {' '}
+              <span className="ml-2 font-mono normal-case tracking-normal" style={{ color: COLORS.ui.textPrimary }}>
+                {activePressureHandoffRecap.coord}
+              </span>
+            </summary>
+            <p className="mt-1 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+              {activePressureHandoffRecap.text}
+            </p>
+          </details>
+        ) : (
+          <div className="mb-2 border-b border-white/10 pb-2">
+            <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: COLORS.ui.textSecondary }}>
+              Read applied
+            </div>
+            <p className="mt-1 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+              {activePressureHandoffRecap.text}
+            </p>
           </div>
-          <p className="mt-1 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
-            {activePressureHandoffRecap.text}
-          </p>
-        </div>
+        )
       )}
       {insight && (
         <div className="mb-2 border-b border-white/10 pb-2">
