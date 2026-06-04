@@ -1009,8 +1009,15 @@ describe('BeginnerObjectiveCard', () => {
     const restoredOriginalReplyStep = screen.getByRole('button', { name: 'Show board highlights for step 2: Black D8 attacks D7 from above.' });
     expect(restoredOriginalReplyStep.getAttribute('aria-pressed')).toBe('true');
     expect(restoredOriginalReplyStep.textContent).toContain('Saved branch');
-    expect(screen.getByRole('button', { name: 'Show board highlights for step 3: Recount: C7 3 liberties; E7 3 liberties.' }).textContent).toContain('Saved branch');
-    expect(screen.getByRole('button', { name: 'Show board highlights for step 4: Compare D6: C7 3 liberties; E7 3 liberties.' }).textContent).toContain('Live branch');
+    const restoredRecountStep = screen.getByRole('button', { name: 'Show board highlights for step 3: Recount: C7 3 liberties; E7 3 liberties.' });
+    expect(restoredRecountStep.textContent).toContain('Saved branch');
+    const restoredComparisonStep = screen.getByRole('button', { name: 'Show board highlights for step 4: Compare D6: C7 3 liberties; E7 3 liberties.' });
+    expect(restoredComparisonStep.textContent).toContain('Live branch');
+    fireEvent.click(restoredRecountStep);
+    expect(useGameStore.getState().chatMessages.at(-1)?.text).toBe('Read sequence focus: Saved branch. Step 3: Recount: C7 3 liberties; E7 3 liberties. Pin this D8 count as the baseline before the live D6 comparison; it shows what stayed safe or became short.');
+    fireEvent.click(restoredComparisonStep);
+    expect(useGameStore.getState().chatMessages.at(-1)?.text).toBe('Read sequence focus: Live branch. Step 4: Compare D6: C7 3 liberties; E7 3 liberties. This is the live comparison against D8; use it to see whether the reply direction or liberty count changed.');
+    fireEvent.click(screen.getByRole('button', { name: 'Show board highlights for step 2: Black D8 attacks D7 from above.' }));
     expect(screen.getByText('Saved read next question')).toBeTruthy();
     expect(screen.getByText('Before returning to D6, ask: did D8 change the attack direction while keeping both sides safe?')).toBeTruthy();
 
