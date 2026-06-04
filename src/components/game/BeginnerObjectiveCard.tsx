@@ -142,6 +142,24 @@ function getPressureReadSequenceReplayReplyKey(replayKey: string | null | undefi
   }, null);
 }
 
+function getPreferredLivePressureReadSequenceReplayKey(
+  selectedReply: Point | null,
+  selectedRecount: PressureRecount | null,
+  comparedReply: Point | null,
+  selectedDefense: Point | null,
+  selectedFollowUpDefense: Point | null,
+  handoff: PressureExtensionHandoff | null,
+): string | null {
+  if (handoff) return `handoff-${targetKey(handoff.point)}`;
+  if (selectedFollowUpDefense) return `follow-up-${targetKey(selectedFollowUpDefense)}`;
+  if (selectedDefense) return `defense-${targetKey(selectedDefense)}`;
+  if (selectedRecount && comparedReply) return `compare-${targetKey(selectedRecount.reply)}`;
+  if (selectedRecount) return `recount-${targetKey(selectedRecount.reply)}`;
+  if (selectedReply) return `reply-${targetKey(selectedReply)}`;
+
+  return 'gap';
+}
+
 function joinCoordinateList(coords: string[]): string {
   if (coords.length === 0) return '';
   if (coords.length === 1) return coords[0];
@@ -2584,6 +2602,7 @@ export function BeginnerObjectiveCard() {
     reply: Point | null;
     selectedDefense: Point | null;
     selectedFollowUpDefense: Point | null;
+    sequenceRow: PressureReadSequenceRow | null;
   } = (() => {
     if (!readPrompt || activeReadPromptKey !== readPrompt.key) {
       return {
@@ -2594,6 +2613,7 @@ export function BeginnerObjectiveCard() {
         reply: null,
         selectedDefense: null,
         selectedFollowUpDefense: null,
+        sequenceRow: null,
       };
     }
 
@@ -2664,6 +2684,27 @@ export function BeginnerObjectiveCard() {
       Boolean(liveFollowUpOutcome && isStablePressureDefenseOutcome(liveFollowUpOutcome)),
     );
     const liveExtensionHandoff = liveFollowUpHandoff ?? liveDefenseHandoff ?? liveComparisonHandoff;
+    const liveSequenceRows = getPressureReadSequenceRows(
+      game.board,
+      readPrompt,
+      liveSelectedReply,
+      liveSelectedRecount,
+      liveComparedRecount,
+      liveDefenseOutcome,
+      liveFollowUpOutcome,
+      liveExtensionHandoff,
+    );
+    const preferredLiveSequenceReplayKey = getPreferredLivePressureReadSequenceReplayKey(
+      liveSelectedReply,
+      liveSelectedRecount,
+      liveComparedReply,
+      liveSelectedDefensePoint,
+      liveSelectedFollowUpPoint,
+      liveExtensionHandoff,
+    );
+    const preferredLiveSequenceRow = preferredLiveSequenceReplayKey
+      ? liveSequenceRows.find((row) => row.replayKey === preferredLiveSequenceReplayKey) ?? null
+      : null;
 
     return {
       comparedReply: liveComparedReply,
@@ -2691,9 +2732,11 @@ export function BeginnerObjectiveCard() {
       reply: liveSelectedReply,
       selectedDefense: liveSelectedDefensePoint,
       selectedFollowUpDefense: liveSelectedFollowUpPoint,
+      sequenceRow: preferredLiveSequenceRow,
     };
   })();
   const livePressureReadHighlights = livePressureReadState.highlights;
+  const livePressureReadSequenceRow = livePressureReadState.sequenceRow;
   const pressureComparisonExtensionHandoff = getStablePressureExtensionHandoff(
     objective,
     playableTargets,
@@ -2949,12 +2992,14 @@ export function BeginnerObjectiveCard() {
       : null;
     const returnActions = [returnAction, liveHandoffAction]
       .filter((action): action is SenseiAction => Boolean(action));
+    const liveReturnHighlights = livePressureReadSequenceRow?.highlights ?? livePressureReadHighlights;
 
     recordInteraction();
     setActiveTargetKey(null);
     setPressureSequencePinOverride(null);
+    setPinnedPressureSequenceRowKey(livePressureReadSequenceRow?.key ?? null);
     clearGuidedReadReplay(activePressureReplayRequestId);
-    applyTargetHints(livePressureReadHighlights);
+    applyTargetHints(liveReturnHighlights);
     if (returnNote) {
       addChatMessage(returnNote, 'teaching', returnActions.length > 0 ? returnActions : undefined);
     }

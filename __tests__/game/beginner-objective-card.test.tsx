@@ -1099,6 +1099,16 @@ describe('BeginnerObjectiveCard', () => {
         label: 'Reopen saved read',
       }),
     ]));
+    const liveHandoffStep = screen.getByRole('button', { name: 'Show board highlights for step 5: Real-game handoff: play G7 after the stable read.' });
+    expect(liveHandoffStep.getAttribute('aria-pressed')).toBe('true');
+    expect(useGameStore.getState().overlays.targetHints).toEqual([
+      {
+        id: 'read-pressure-handoff-6,2',
+        point: { x: 6, y: 2 },
+        variant: 'positive',
+        label: 'G7: real move to play after the stable pressure read.',
+      },
+    ]);
   });
 
   it('lets the learner try a recommended short-side defense without changing the real game', () => {
