@@ -3573,21 +3573,28 @@ export function BeginnerObjectiveCard() {
           const pointKey = targetKey(point);
           const isSelected = effectiveSelectedReadReplyKey === pointKey;
           const isRecommended = pressureOpenSideFirstReplyKey === pointKey;
+          const isOpenSideStartAction = Boolean(pressureRepeatBoundaryText && isRecommended);
 
           return (
             <button
               key={`read-pressure-choice-${pointKey}`}
               type="button"
-              className="rounded border px-2 py-0.5 font-mono text-[11px] font-bold transition hover:bg-white/[0.07]"
+              className={`rounded border px-2 py-0.5 text-[11px] font-bold transition hover:bg-white/[0.07] ${
+                isOpenSideStartAction ? '' : 'font-mono'
+              }`}
               style={{
                 borderColor: isSelected || isRecommended ? COLORS.overlay.positive : COLORS.ui.accent,
                 color: COLORS.ui.textPrimary,
                 backgroundColor: isSelected || isRecommended ? `${COLORS.overlay.positive}24` : `${COLORS.ui.accent}1f`,
               }}
-              aria-label={`Choose ${coord} as the first reply to ${readPrompt.gapCoord}`}
+              aria-label={
+                isOpenSideStartAction
+                  ? `Start with ${coord} as the open-side first reply to ${readPrompt.gapCoord}`
+                  : `Choose ${coord} as the first reply to ${readPrompt.gapCoord}`
+              }
               onClick={() => chooseReadPressureReply(readPrompt, point)}
             >
-              {isRecommended ? `Recommended: ${coord}` : coord}
+              {isOpenSideStartAction ? `Start with ${coord}` : isRecommended ? `Recommended: ${coord}` : coord}
             </button>
           );
         })}
