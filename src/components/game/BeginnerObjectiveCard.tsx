@@ -1877,10 +1877,24 @@ function getPressureRepeatComparisonProofRecap(
 function getPressureRepeatExtensionProofText(
   recap: PressureHandoffRecap | null,
   comparisonSummary: PressureComparisonSummary | null,
+  prompt: OneSpaceJumpReadPrompt | null,
 ): string | null {
-  if (!recap?.repeatRead || !comparisonSummary?.hasSameCounts) return null;
+  if (!recap?.repeatRead || !comparisonSummary?.hasSameCounts || !prompt) return null;
+  if (!getPressureRepeatReadPoint(recap, prompt)) return null;
 
   return `Two-gap proof: ${recap.proofText} ${comparisonSummary.proofText} Black can keep extending instead of answering either cut immediately.`;
+}
+
+function getPressureComparisonProofRowText(
+  recap: PressureHandoffRecap | null,
+  comparisonSummary: PressureComparisonSummary,
+): string | null {
+  const stableGapCoords = recap ? getTwoGapProofStableGapCoords(recap.proofText) : [];
+  if (stableGapCoords.length > 0) {
+    return `${joinAndCoordinateList(stableGapCoords)} were already tested and stayed stable. ${comparisonSummary.proofText}`;
+  }
+
+  return null;
 }
 
 function buildOneSpaceJumpRecountHighlights(
@@ -2556,10 +2570,13 @@ export function BeginnerObjectiveCard() {
     const comparisonSummary = comparedRecount
       ? getPressureComparisonSummary(prompt, comparedRecount, recount, game.board)
       : null;
-    const activeRepeatReadHint = pressureHandoffRecap
+    const activeRepeatRecap = pressureHandoffRecap
       && lastPlayerMove
       && targetKey(pressureHandoffRecap.point) === targetKey(lastPlayerMove)
-      ? pressureHandoffRecap.repeatRead
+      ? pressureHandoffRecap
+      : null;
+    const activeRepeatReadHint = activeRepeatRecap && getPressureRepeatReadPoint(activeRepeatRecap, prompt)
+      ? activeRepeatRecap.repeatRead
       : null;
     const repeatComparisonProofRecap = getPressureRepeatComparisonProofRecap(
       activeRepeatReadHint,
@@ -3166,6 +3183,7 @@ export function BeginnerObjectiveCard() {
   const pressureRepeatExtensionProofText = getPressureRepeatExtensionProofText(
     activePressureHandoffRecap,
     pressureComparisonSummary,
+    readPrompt,
   );
   const pressureComparisonExtensionHandoff = getStablePressureExtensionHandoff(
     objective,
@@ -3429,22 +3447,28 @@ export function BeginnerObjectiveCard() {
     && Boolean(pressureDefenseContinuationRecommendation)
     && Boolean(selectedDefenseReadPoint)
     && !selectedFollowUpDefenseReadPoint;
-  const pressureRepeatComparePoint = pressureRepeatReadHint && selectedReadRecount
+  const pressureRepeatComparePoint = pressureRepeatReadHint && pressureRepeatReadPoint && selectedReadRecount
     ? compareReadReplyPoints[0] ?? null
     : null;
   const pressureRepeatCompareCoord = pressureRepeatComparePoint
     ? pointToCoord(pressureRepeatComparePoint, game.board.size)
     : null;
   const pressureRepeatComparisonReminder = pressureRepeatReadHint
+    && pressureRepeatReadPoint
     && selectedReadReplyCoord
     && pressureRepeatCompareCoord
     && readPrompt
     ? `You repeated ${pressureRepeatReadHint.previousReplyCoord} as ${selectedReadReplyCoord}. Now compare ${pressureRepeatCompareCoord} so the ${readPrompt.gapCoord} read gets its own proof before the next extension.`
     : null;
   const pressureRepeatComparisonProofRecap = getPressureRepeatComparisonProofRecap(
-    pressureRepeatReadHint,
+    pressureRepeatReadPoint ? pressureRepeatReadHint : null,
     pressureComparisonSummary,
   );
+  const pressureComparisonProofRowText = pressureComparisonSummary
+    && !pressureDefenseRecommendation
+    && !pressureRepeatComparisonProofRecap
+    ? getPressureComparisonProofRowText(activePressureHandoffRecap, pressureComparisonSummary)
+    : null;
   const completedFirstReadComparisonPreviewHighlights = readPrompt
     && selectedReadRecount
     && compareReadReplyPoints.length > 0
@@ -3922,6 +3946,16 @@ export function BeginnerObjectiveCard() {
                           <p className="mt-1 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
                             {pressureComparisonSummary.text}
                           </p>
+                          {pressureComparisonProofRowText && (
+                            <div className="mt-1">
+                              <div className="text-[11px] font-semibold uppercase" style={{ color: COLORS.ui.accent }}>
+                                Why this is safe
+                              </div>
+                              <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
+                                {pressureComparisonProofRowText}
+                              </p>
+                            </div>
+                          )}
                           {pressureRepeatComparisonProofRecap && (
                             <p className="mt-1 text-xs leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
                               {pressureRepeatComparisonProofRecap}
