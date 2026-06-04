@@ -75,6 +75,7 @@ Latest completed slice:
 - Added a one-click "Return to live read" control inside restored pressure reads, so learners can leave saved chat context and recover the live branch's text and board highlights.
 - Added a compact transcript note after returning from restored pressure reads, so chat records when the learner leaves saved context and which live branch they returned to.
 - Added a one-click "Reopen saved read" shortcut to return-to-live transcript notes, with hover/focus board previews that recover the same saved read or pinned step the learner just left.
+- Rechecked the rendered D6 branch switch after browser smoke; active and restored D8 recount states both switch to D6 correctly, so the earlier concern was a smoke-observation artifact rather than a product bug.
 
 Next investigation candidates:
-- Investigate why the rendered D6 first-read button did not switch away from an active D8 recount during browser smoke, despite the unit path covering that branch transition.
+- Whether reopened saved reads should show a compact "what differs from live" cue so learners can re-enter old branches without losing the live decision they returned from.
