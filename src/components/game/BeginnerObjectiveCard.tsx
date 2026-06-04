@@ -87,6 +87,7 @@ interface PressureHandoffRecap {
   point: Point;
   coord: string;
   text: string;
+  proofText: string;
 }
 
 interface PressureExtensionHandoff {
@@ -1408,8 +1409,13 @@ function getStablePressureExtensionHandoff(
       point: copyPoint(point),
       coord,
       text: `${coord} applies the ${prompt.gapCoord} read in the real game: ${resolvedProofText} Black can keep extending instead of answering a cut that has not happened.`,
+      proofText: resolvedProofText,
     },
   };
+}
+
+function getPressureProofBridgeText(recap: PressureHandoffRecap, prompt: OneSpaceJumpReadPrompt): string {
+  return `Carry forward the proof: ${recap.proofText} Now test ${prompt.gapCoord} the same way before the next extension.`;
 }
 
 function buildPressureHandoffHighlights(handoff: PressureExtensionHandoff): OverlayHighlight[] {
@@ -3126,6 +3132,9 @@ export function BeginnerObjectiveCard() {
     && targetKey(pressureHandoffRecap.point) === targetKey(lastPlayerMove)
     ? pressureHandoffRecap
     : null;
+  const pressureProofBridgeText = activePressureHandoffRecap && readPrompt
+    ? getPressureProofBridgeText(activePressureHandoffRecap, readPrompt)
+    : null;
   const activeTargetCoord = activeTarget ? pointToCoord(activeTarget, game.board.size) : null;
   const activeTargetExplanation = activeTarget ? getTargetExplanation(objective, activeTarget, game.board) : null;
   const targetHelpId = 'beginner-objective-target-help';
@@ -3306,6 +3315,11 @@ export function BeginnerObjectiveCard() {
           <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
             {readPrompt.text}
           </p>
+          {pressureProofBridgeText && (
+            <p className="mt-1 text-xs leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
+              {pressureProofBridgeText}
+            </p>
+          )}
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <button
               type="button"
