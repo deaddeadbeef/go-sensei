@@ -417,7 +417,7 @@ describe('BeginnerObjectiveCard', () => {
     expect(useGameStore.getState().chatMessages.at(-2)?.actions).toEqual([
       expect.objectContaining({
         id: 'guided:read-pressure:recount:read-pressure-2,2-4,2-3,2:3,1',
-        label: 'Show recount',
+        label: 'Show saved D8 recount',
         previewHighlights: expect.arrayContaining([
           {
             id: 'read-pressure-reply-3,1',
@@ -429,7 +429,7 @@ describe('BeginnerObjectiveCard', () => {
       }),
     ]);
 
-    const transcriptRecountAction = screen.getByRole('button', { name: 'Show recount' });
+    const transcriptRecountAction = screen.getByRole('button', { name: 'Show saved D8 recount' });
     fireEvent.focus(transcriptRecountAction);
     expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
       {
@@ -683,7 +683,7 @@ describe('BeginnerObjectiveCard', () => {
         actions: [
           expect.objectContaining({
             id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1',
-            label: 'Show comparison',
+            label: 'Show saved D6 comparison',
             previewHighlights: expect.arrayContaining([
               {
                 id: 'read-pressure-reply-3,3',
@@ -760,7 +760,7 @@ describe('BeginnerObjectiveCard', () => {
       actions: [
         expect.objectContaining({
           id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1',
-          label: 'Show comparison',
+          label: 'Show saved D6 comparison',
           previewHighlights: expect.arrayContaining([
             {
               id: 'read-pressure-short-liberty-2,3',
@@ -847,7 +847,7 @@ describe('BeginnerObjectiveCard', () => {
     expect(useGameStore.getState().chatMessages.at(-1)?.actions).toEqual([
       expect.objectContaining({
         id: 'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1',
-        label: 'Show comparison',
+        label: 'Show saved D6 comparison',
         previewHighlights: expect.arrayContaining([
           {
             id: 'read-pressure-short-liberty-2,3',
@@ -863,7 +863,7 @@ describe('BeginnerObjectiveCard', () => {
 
     expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).not.toContain('read-pressure-short-liberty-2,3');
 
-    const comparisonActions = screen.getAllByRole('button', { name: 'Show comparison' });
+    const comparisonActions = screen.getAllByRole('button', { name: 'Show saved D6 comparison' });
     const transcriptComparisonAction = comparisonActions[comparisonActions.length - 1];
     fireEvent.focus(transcriptComparisonAction);
     expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
@@ -1148,7 +1148,7 @@ describe('BeginnerObjectiveCard', () => {
       actions: [
         expect.objectContaining({
           id: 'guided:read-pressure:defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3',
-          label: 'Show defense',
+          label: 'Show saved C6 defense',
           previewHighlights: expect.arrayContaining([
             {
               id: 'read-pressure-selected-defense-2,3',
@@ -1271,7 +1271,7 @@ describe('BeginnerObjectiveCard', () => {
       actions: [
         expect.objectContaining({
           id: 'guided:read-pressure:follow-up-defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3:4,1',
-          label: 'Show follow-up',
+          label: 'Show saved E8 follow-up defense',
           previewHighlights: expect.arrayContaining([
             {
               id: 'read-pressure-follow-up-defense-4,1',
@@ -1321,7 +1321,7 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.queryByText(followUpText)).toBeNull();
     expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).not.toContain('read-pressure-follow-up-defense-4,1');
 
-    const followUpActions = screen.getAllByRole('button', { name: 'Show follow-up' });
+    const followUpActions = screen.getAllByRole('button', { name: 'Show saved E8 follow-up defense' });
     const transcriptFollowUpAction = followUpActions[followUpActions.length - 1];
     fireEvent.focus(transcriptFollowUpAction);
     expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
@@ -1592,9 +1592,9 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText('Real-game handoff')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Play G7 in the real game after the stable pressure read' })).toBeTruthy();
 
-    const comparisonActions = screen.getAllByRole('button', { name: 'Show comparison' });
-    expect(comparisonActions).toHaveLength(2);
-    fireEvent.click(comparisonActions[0]);
+    expect(screen.getByRole('button', { name: 'Show saved D8 comparison' })).toBeTruthy();
+    const savedD6ComparisonAction = screen.getByRole('button', { name: 'Show saved D6 comparison' });
+    fireEvent.click(savedD6ComparisonAction);
 
     expect(screen.getByText('Restored read')).toBeTruthy();
     expect(screen.getAllByText('Live branch').length).toBeGreaterThan(0);
@@ -2049,7 +2049,7 @@ describe('BeginnerObjectiveCard', () => {
     expect(useGameStore.getState().chatMessages.at(-1)?.actions).toEqual([
       expect.objectContaining({
         id: 'guided:read-pressure:defense:read-pressure-2,2-4,2-3,2:3,3:3,1:2,3',
-        label: 'Show defense',
+        label: 'Show saved C6 defense',
         previewHighlights: expect.arrayContaining([
           {
             id: 'read-pressure-selected-defense-2,3',
@@ -2067,7 +2067,7 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.queryByText(defenseOutcomeText)).toBeNull();
     expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).not.toContain('read-pressure-selected-defense-2,3');
 
-    const defenseActions = screen.getAllByRole('button', { name: 'Show defense' });
+    const defenseActions = screen.getAllByRole('button', { name: 'Show saved C6 defense' });
     const transcriptDefenseAction = defenseActions[defenseActions.length - 1];
     fireEvent.focus(transcriptDefenseAction);
     expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
