@@ -462,7 +462,33 @@ describe('BeginnerObjectiveCard', () => {
       text: returnToLiveReadNote,
       variant: 'teaching',
     });
+    expect(useGameStore.getState().chatMessages.at(-1)?.actions).toEqual([
+      expect.objectContaining({
+        id: 'guided:read-pressure:recount:read-pressure-2,2-4,2-3,2:3,1',
+        label: 'Reopen saved read',
+        previewHighlights: expect.arrayContaining([
+          {
+            id: 'read-pressure-reply-3,1',
+            point: { x: 3, y: 1 },
+            variant: 'positive',
+            label: 'D8: selected reply used for this recount.',
+          },
+        ]),
+      }),
+    ]);
     expect(useGameStore.getState().guidedReadReplayRequest).toBeNull();
+
+    const returnNoteReopenAction = screen.getByRole('button', { name: 'Reopen saved read' });
+    fireEvent.focus(returnNoteReopenAction);
+    expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
+      {
+        id: 'read-pressure-reply-3,1',
+        point: { x: 3, y: 1 },
+        variant: 'positive',
+        label: 'D8: selected reply used for this recount.',
+      },
+    ]));
+    fireEvent.blur(returnNoteReopenAction);
     expect(useGameStore.getState().overlays.targetHints).toEqual([
       {
         id: 'read-pressure-anchor-2,2',
@@ -496,7 +522,7 @@ describe('BeginnerObjectiveCard', () => {
       },
     ]);
 
-    fireEvent.click(transcriptRecountAction);
+    fireEvent.click(returnNoteReopenAction);
     expect(screen.getByText('Restored read')).toBeTruthy();
     expect(screen.getByText(restoredRecountCue)).toBeTruthy();
     expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
