@@ -102,6 +102,7 @@ Latest completed slice:
 - Echoed the H6 open-side recommendation in the branch-choice chat entry, so saved transcript history preserves why the fresh G6 read started from that side.
 - Scoped the floating Sensei bubble to the board area, so dense guided read panels can no longer be covered by the bubble when the objective card grows tall.
 - Reserved a visible board area during dense guided reads and made the objective card scroll internally while the game controls stay visible.
+- Kept the active pressure-read decision row sticky while dense branch transcripts scroll, so the learner does not lose the current choice prompt.
 
 Next investigation candidates:
-- Whether the dense guided read panel should keep its current read-next section sticky while the learner scrolls through long branch transcripts.
+- Whether long pressure-read transcripts should collapse completed proof sections after the learner advances, so the card stays calmer without hiding the evidence.
