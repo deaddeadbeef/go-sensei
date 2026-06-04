@@ -55,7 +55,7 @@ Latest completed slice:
 - Let learners pin and unpin a read-sequence row's board highlights, so one reading position can stay visible while they study the branch.
 - Reflected pinned read-sequence rows in transcript replay actions, so a learner can reopen the same branch with the last studied sequence step still pressed and highlighted.
 - Added concise teaching summaries to sequence-focus transcript messages, so saved steps explain what to compare with the live branch or real-game handoff.
-- Added a replay-only "Next question" prompt under restored sequence-focus rows, so learners know what to inspect after reopening a saved step.
+- Added a replay-only saved-read next-question prompt under restored sequence-focus rows, so learners know what to inspect after reopening a saved step.
 - Added a one-click "Compare from here" continuation under restored baseline sequence rows, so learners can return from a saved D8 step to the live D6 comparison without hunting for the older branch control.
 - Added a one-click "Play from here" continuation under restored handoff sequence rows, so a saved real-game handoff step can immediately become the actual extension move.
 - Added one-click continuation controls under restored defense and follow-up sequence rows, so saved defensive reads can keep reading the new short side or hand off to the real extension without hunting through the full panel.
@@ -80,6 +80,7 @@ Latest completed slice:
 - Extended restored-read orientation cues with the live branch's next action, so reopened recounts, comparisons, and defenses say whether the live read is waiting to recount, compare, or defend next.
 - Added a stable-read handoff fallback to restored-read orientation cues, so reopening a saved branch after the live read has resolved now says which real move the live branch unlocked.
 - Added a "Show live handoff" shortcut to return-to-live transcript notes when the live read has already unlocked a real-game handoff, with the same G7 preview marker as the board-side handoff row.
+- Labeled restored-read navigation as "Live branch" and restored sequence prompts as "Saved read next question", so saved-context continuations and live-context exits are visually distinct in the same panel.
 
 Next investigation candidates:
-- Whether the restored-read panel should visually separate saved continuations from live continuations when both are available at once.
+- Whether restored-read sequence rows should use saved/live badges per row when a comparison crosses branches.

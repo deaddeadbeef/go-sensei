@@ -2982,6 +2982,9 @@ export function BeginnerObjectiveCard() {
                     <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: COLORS.ui.accent }}>
                       Restored read
                     </div>
+                    <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: COLORS.ui.textSecondary }}>
+                      Live branch
+                    </div>
                     <button
                       type="button"
                       className="rounded border px-2 py-0.5 text-[11px] font-semibold transition hover:bg-white/[0.07]"
@@ -3296,7 +3299,7 @@ export function BeginnerObjectiveCard() {
                       {replayedPressureSequenceNextQuestion && (
                         <div className="mt-2 border-t border-white/10 pt-2">
                           <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: COLORS.ui.textSecondary }}>
-                            Next question
+                            Saved read next question
                           </div>
                           <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
                             {replayedPressureSequenceNextQuestion}
