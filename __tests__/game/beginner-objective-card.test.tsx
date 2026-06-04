@@ -749,6 +749,11 @@ describe('BeginnerObjectiveCard', () => {
 
     expect(screen.getByText('You repeated D8 as F8. Now compare F6 so the F7 read gets its own proof before the next extension.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Compare F6 against F8' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Compare F6 against F8' }));
+
+    const repeatProofRecap = 'This matches the D7 proof: the repeated pattern stayed stable again. You proved F8 and F6 both leave E7 and G7 safe, so F7 does not need an immediate defense.';
+    expect(screen.getByText(repeatProofRecap)).toBeTruthy();
+    expect(useGameStore.getState().chatMessages.at(-1)?.text).toContain(repeatProofRecap);
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {
