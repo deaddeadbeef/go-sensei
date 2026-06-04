@@ -287,6 +287,25 @@ function getPressureOpenSideFirstReadText(
   return `Start with ${firstCoord}: it attacks ${prompt.gapCoord} from the open side of the ${anchorCoord}-${stoneCoord} jump.${compareText}`;
 }
 
+function getPressureOpenSideBranchChoiceText(
+  prompt: OneSpaceJumpReadPrompt,
+  board: BoardState,
+  reply: Point,
+): string | null {
+  const firstReply = getPressureOpenSideFirstReplyPoint(board, prompt);
+  if (!firstReply || targetKey(firstReply) !== targetKey(reply)) return null;
+
+  const replyCoord = pointToCoord(reply, board.size);
+  const anchorCoord = pointToCoord(prompt.anchor, board.size);
+  const stoneCoord = pointToCoord(prompt.stone, board.size);
+  const comparePoint = prompt.replyPoints.find((point) => targetKey(point) !== targetKey(reply)) ?? null;
+  const compareText = comparePoint
+    ? ` before you compare ${pointToCoord(comparePoint, board.size)}`
+    : '';
+
+  return `${replyCoord} was recommended because it starts from the open side of the ${anchorCoord}-${stoneCoord} jump${compareText}.`;
+}
+
 function getExtensionTargetExplanation(point: Point, board: BoardState): string {
   const coord = pointToCoord(point, board.size);
   const anchor = getExtensionAnchor(board, point);
@@ -2406,6 +2425,23 @@ export function BeginnerObjectiveCard() {
 
   const chooseReadPressureReply = useCallback((prompt: OneSpaceJumpReadPrompt, reply: Point) => {
     const feedback = getPressureChoiceFeedback(prompt, reply, game.board);
+    const hasActivePressureHandoff = Boolean(
+      pressureHandoffRecap
+        && lastPlayerMove
+        && targetKey(pressureHandoffRecap.point) === targetKey(lastPlayerMove),
+    );
+    const activeRepeatReadPoint = hasActivePressureHandoff && pressureHandoffRecap
+      ? getPressureRepeatReadPoint(pressureHandoffRecap, prompt)
+      : null;
+    const hasBlockedRepeatShortcut = hasActivePressureHandoff && pressureHandoffRecap
+      ? getPressureRepeatBoundaryText(pressureHandoffRecap, prompt, game.board, activeRepeatReadPoint) !== null
+      : false;
+    const openSideBranchChoiceText = hasBlockedRepeatShortcut
+      ? getPressureOpenSideBranchChoiceText(prompt, game.board, reply)
+      : null;
+    const chatFeedback = openSideBranchChoiceText
+      ? `${openSideBranchChoiceText} ${feedback}`
+      : feedback;
 
     recordInteraction();
     clearGuidedReadReplay();
@@ -2421,11 +2457,11 @@ export function BeginnerObjectiveCard() {
     const previewHighlights = buildOneSpaceJumpPressureHighlights(prompt, game.board, reply);
     applyTargetHints(previewHighlights);
     addChatMessage(
-      `Branch choice: ${feedback}`,
+      `Branch choice: ${chatFeedback}`,
       'teaching',
       [withPreviewHighlights(getPressureReplayAction('branch', prompt, reply, { board: game.board }), previewHighlights)],
     );
-  }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game.board, recordInteraction]);
+  }, [addChatMessage, applyTargetHints, clearGuidedReadReplay, game.board, lastPlayerMove, pressureHandoffRecap, recordInteraction]);
 
   const recountReadPressureReply = useCallback((prompt: OneSpaceJumpReadPrompt, reply: Point) => {
     const recount = getPressureRecount(game, prompt, reply);
