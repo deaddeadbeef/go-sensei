@@ -92,6 +92,7 @@ Latest completed slice:
 - Carried the stable-read proof into the post-handoff "Read applied" recap, so the real move preserves the exact comparison or connecting proof that justified it.
 - Echoed the previous stable-read proof inside the next "Read next" prompt after a real-game handoff, so learners carry the completed D7 proof into the next F7 gap.
 - Added a one-click repeat-pattern shortcut after stable handoffs, so learners can carry the previous first reply direction into the next pressure gap without reopening the read from scratch.
+- Named pressure-recount buttons with the exact stones being recounted, so repeat-pattern reads visibly ask for "Recount E7 and G7" instead of a generic "Recount sides" action.
 
 Next investigation candidates:
-- Whether the repeat-pattern shortcut should continue through the recount step automatically, or keep the learner responsible for recounting the new sides.
+- Whether repeat-pattern recounts should get a brief "compare the other reply" reminder after the new sides are counted.

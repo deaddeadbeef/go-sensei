@@ -743,6 +743,7 @@ describe('BeginnerObjectiveCard', () => {
 
     expect(screen.getByText('Pressure variation')).toBeTruthy();
     expect(screen.getByText('F8 is a good first read: it attacks the imagined White stone at F7 and asks whether that cutting stone can live. After that, recount E7 and G7 before extending again.')).toBeTruthy();
+    expect(screen.getByText('Recount E7 and G7')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Recount E7 and G7 after F8' })).toBeTruthy();
   });
 
