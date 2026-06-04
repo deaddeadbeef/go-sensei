@@ -77,6 +77,7 @@ Latest completed slice:
 - Added a one-click "Reopen saved read" shortcut to return-to-live transcript notes, with hover/focus board previews that recover the same saved read or pinned step the learner just left.
 - Rechecked the rendered D6 branch switch after browser smoke; active and restored D8 recount states both switch to D6 correctly, so the earlier concern was a smoke-observation artifact rather than a product bug.
 - Added a compact saved-vs-live branch cue under restored pressure reads, so reopening a saved D8 recount while the live read is D6 plainly names both branches before the learner chooses where to continue.
+- Extended restored-read orientation cues with the live branch's next action, so reopened recounts, comparisons, and defenses say whether the live read is waiting to recount, compare, or defend next.
 
 Next investigation candidates:
-- Whether restored comparison and defense reads should also name the live branch's current next action, not just the saved and live first-reply coordinates.
+- Whether restored stable reads should summarize the real-game handoff move as the live branch's next action once the local fight is resolved.
