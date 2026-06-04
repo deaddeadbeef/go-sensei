@@ -754,6 +754,8 @@ describe('BeginnerObjectiveCard', () => {
     const repeatProofRecap = 'This matches the D7 proof: the repeated pattern stayed stable again. You proved F8 and F6 both leave E7 and G7 safe, so F7 does not need an immediate defense.';
     expect(screen.getByText(repeatProofRecap)).toBeTruthy();
     expect(useGameStore.getState().chatMessages.at(-1)?.text).toContain(repeatProofRecap);
+
+    expect(screen.getByText('Two-gap proof: You proved D8 and D6 both leave C7 and E7 safe, so D7 does not need an immediate defense. You proved F8 and F6 both leave E7 and G7 safe, so F7 does not need an immediate defense. Black can keep extending instead of answering either cut immediately.')).toBeTruthy();
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {
