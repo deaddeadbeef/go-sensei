@@ -88,6 +88,7 @@ Latest completed slice:
 - Renamed return-to-live saved-read actions with their branch coordinate and read type, so transcript buttons say exactly whether they reopen a D8 recount, D6 comparison, defense, or follow-up defense.
 - Renamed top-level restored-read transcript actions with their saved coordinate and read type, so chat buttons now say "Show saved D6 comparison" or "Show saved C6 defense" instead of generic "Show comparison" or "Show defense".
 - Renamed saved/live sequence-step transcript actions when branch context is explicit, so restored read rows now offer buttons like "Show saved step 3: D8 recount" and "Show live step 4: D6 comparison".
+- Added a compact "What you proved" recap to stable pressure handoffs, so learners see why the read permits the real-game extension before clicking it.
 
 Next investigation candidates:
-- Whether the pressure-read flow should surface a short recap of what the learner proved before recommending the real-game handoff.
+- Whether the post-handoff "Read applied" recap should name the proof that justified the extension, not only the move that applied it.
