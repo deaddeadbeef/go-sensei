@@ -950,6 +950,19 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByRole('button', { name: 'Show pressure variation for G4' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Repeat H6 first-reply pattern at H4 for G4' })).toBeNull();
     expect(screen.queryByText('Carry forward the proof: You proved H6 and F6 both leave G7 and G5 safe, so G6 does not need an immediate defense. Now test G4 the same way before the next extension.')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for G4' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Start with H4 as the open-side first reply to G4' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Recount G5 and G3 after H4' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Compare F4 against H4' }));
+
+    const g4ChainProof = 'D7, F7, and G6 were already tested and stayed stable. You proved H4 and F4 both leave G5 and G3 safe, so G4 does not need an immediate defense.';
+    const compactFourGapProof = 'Chain proof: D7, F7, G6, and G4 were tested and stayed stable; Black can keep extending.';
+    expect(screen.getByText(g4ChainProof)).toBeTruthy();
+    expect(screen.getByText(compactFourGapProof)).toBeTruthy();
+    expect(screen.getByText('The read chain is stable, so turn it into a real move: play E3 for Make your stones work together.')).toBeTruthy();
+    expect(screen.queryByText('This matches the G6 proof: the repeated pattern stayed stable again. You proved H4 and F4 both leave G5 and G3 safe, so G4 does not need an immediate defense.')).toBeNull();
+    expect(screen.queryByText((text) => text.includes('Two-gap proof: Chain proof'))).toBeNull();
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {

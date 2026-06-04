@@ -1923,6 +1923,7 @@ function getPressureRepeatExtensionProofText(
 ): string | null {
   if (!recap?.repeatRead || !comparisonSummary?.hasSameCounts || !prompt) return null;
   if (!getPressureRepeatReadPoint(recap, prompt)) return null;
+  if (getPressureProofStableGapCoords(recap.proofText).length >= 3) return null;
 
   return `Two-gap proof: ${recap.proofText} ${comparisonSummary.proofText} Black can keep extending instead of answering either cut immediately.`;
 }
@@ -2644,7 +2645,12 @@ export function BeginnerObjectiveCard() {
       && targetKey(pressureHandoffRecap.point) === targetKey(lastPlayerMove)
       ? pressureHandoffRecap
       : null;
-    const activeRepeatReadHint = activeRepeatRecap && getPressureRepeatReadPoint(activeRepeatRecap, prompt)
+    const activeRepeatReadPoint = activeRepeatRecap
+      ? getPressureRepeatReadPoint(activeRepeatRecap, prompt)
+      : null;
+    const activeRepeatReadHint = activeRepeatRecap
+      && activeRepeatReadPoint
+      && !getPressureChainRepeatBoundaryText(activeRepeatRecap, prompt, game.board, activeRepeatReadPoint)
       ? activeRepeatRecap.repeatRead
       : null;
     const repeatComparisonProofRecap = getPressureRepeatComparisonProofRecap(
