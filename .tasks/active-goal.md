@@ -111,6 +111,7 @@ Latest completed slice:
 - Added a hover/focus preview to the Compare F6 action, so learners can inspect the post-F6 recount markers before committing the alternate branch.
 - Added a compact "Why this is safe" proof row after the G6 comparison, preserving the D7/F7 chain while stopping the old repeat-pattern proof from leaking into the fresh read.
 - Added hover/focus previews to stable-read handoff buttons, so the G6 proof can visibly land on the real G3 extension target before the learner plays it.
+- Carried the completed D7/F7/G6 chain into the post-G3 handoff recap and next G4 reading prompt with a compact chain proof.
 
 Next investigation candidates:
-- Whether the post-handoff recap after playing G3 should carry the completed D7/F7/G6 proof chain into the next reading prompt without overwhelming the dense panel.
+- Whether the G4 read can safely continue the compact chain, or whether the tutor should introduce a stopping rule before the chain becomes rote.
