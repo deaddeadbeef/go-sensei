@@ -1452,6 +1452,30 @@ function getPressureRepeatReadPoint(recap: PressureHandoffRecap, prompt: OneSpac
   )) ?? null;
 }
 
+function getPressureRepeatBoundaryText(
+  recap: PressureHandoffRecap | null,
+  prompt: OneSpaceJumpReadPrompt | null,
+  board: BoardState,
+  repeatPoint: Point | null,
+): string | null {
+  if (!recap?.repeatRead || !prompt || repeatPoint) return null;
+
+  const projectedPoint = {
+    x: prompt.gap.x + recap.repeatRead.replyOffset.x,
+    y: prompt.gap.y + recap.repeatRead.replyOffset.y,
+  };
+  if (!isOnBoard(board, projectedPoint)) {
+    return `The repeat shortcut stops here: repeating ${recap.repeatRead.previousReplyCoord} would leave the board. Use Show pressure to read ${prompt.gapCoord} from scratch.`;
+  }
+
+  const stone = getStone(board, projectedPoint);
+  if (stone === null) return null;
+
+  const projectedCoord = pointToCoord(projectedPoint, board.size);
+  const blockerText = stone === 'black' ? 'one of your stones' : 'an occupied point';
+  return `The repeat shortcut stops here: repeating ${recap.repeatRead.previousReplyCoord} would land on ${projectedCoord}, which is already ${blockerText}. Use Show pressure to read ${prompt.gapCoord} from scratch.`;
+}
+
 function buildPressureHandoffHighlights(handoff: PressureExtensionHandoff): OverlayHighlight[] {
   return [{
     id: `read-pressure-handoff-${targetKey(handoff.point)}`,
@@ -3217,6 +3241,12 @@ export function BeginnerObjectiveCard() {
   const pressureRepeatReadCoord = pressureRepeatReadPoint
     ? pointToCoord(pressureRepeatReadPoint, game.board.size)
     : null;
+  const pressureRepeatBoundaryText = getPressureRepeatBoundaryText(
+    activePressureHandoffRecap,
+    readPrompt,
+    game.board,
+    pressureRepeatReadPoint,
+  );
   const pressureRepeatComparePoint = pressureRepeatReadHint && selectedReadRecount
     ? compareReadReplyPoints[0] ?? null
     : null;
@@ -3416,6 +3446,11 @@ export function BeginnerObjectiveCard() {
           {pressureProofBridgeText && (
             <p className="mt-1 text-xs leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
               {pressureProofBridgeText}
+            </p>
+          )}
+          {pressureRepeatBoundaryText && (
+            <p className="mt-1 text-xs leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
+              {pressureRepeatBoundaryText}
             </p>
           )}
           <div className="mt-2 flex flex-wrap items-center gap-2">
