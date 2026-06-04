@@ -961,6 +961,8 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText(g4ChainProof)).toBeTruthy();
     expect(screen.getByText(compactFourGapProof)).toBeTruthy();
     expect(screen.getByText('The G4 read is stable, so change direction now: play E3 for Make your stones work together.')).toBeTruthy();
+    expect(screen.getByText('Recommended by the read: E3. Other one-space jumps: E5 or C5.')).toBeTruthy();
+    expect(screen.queryByText('Try E3, E5, or C5.')).toBeNull();
     expect(screen.queryByText('This matches the G6 proof: the repeated pattern stayed stable again. You proved H4 and F4 both leave G5 and G3 safe, so G4 does not need an immediate defense.')).toBeNull();
     expect(screen.queryByText((text) => text.includes('Two-gap proof: Chain proof'))).toBeNull();
   });
