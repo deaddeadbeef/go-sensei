@@ -765,6 +765,7 @@ describe('BeginnerObjectiveCard', () => {
     });
 
     expect(screen.getByText(`G5 applies the repeated stable reads in the real game: ${twoGapProof}`)).toBeTruthy();
+    expect(screen.getByText('Read applied').closest('details')).toBeNull();
     expect(screen.getByText('Carry forward the chain: D7 and F7 were both tested and stayed stable. Now read G6 from scratch before the next extension.')).toBeTruthy();
     expect(screen.queryByText(`Carry forward the proof: ${twoGapProof} Now test G6 the same way before the next extension.`)).toBeNull();
     expect(screen.getByText('The repeat shortcut stops here: repeating F8 would land on G7, which is already one of your stones. Use Show pressure to read G6 from scratch.')).toBeTruthy();
@@ -772,6 +773,10 @@ describe('BeginnerObjectiveCard', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for G6' }));
 
+    const collapsedAppliedRead = screen.getByText('Read applied').closest('details');
+    expect(collapsedAppliedRead).toBeTruthy();
+    expect(collapsedAppliedRead?.hasAttribute('open')).toBe(false);
+    expect(collapsedAppliedRead?.textContent).toContain(`G5 applies the repeated stable reads in the real game: ${twoGapProof}`);
     expect(screen.getByText('Start with H6: it attacks G6 from the open side of the G7-G5 jump. Recount both stones, then compare F6.')).toBeTruthy();
     expect(screen.getByText('Recommended: H6')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Choose H6 as the first reply to G6' })).toBeTruthy();
