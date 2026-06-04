@@ -73,6 +73,7 @@ interface PressureDefenseOutcome {
 interface PressureComparisonSummary {
   rows: string[];
   text: string;
+  proofText: string;
   recommendationText: string | null;
   defenseRecommendation: PressureDefenseRecommendation | null;
 }
@@ -92,6 +93,7 @@ interface PressureExtensionHandoff {
   point: Point;
   coord: string;
   text: string;
+  proofText: string;
   ariaLabel: string;
   recap: PressureHandoffRecap;
 }
@@ -1065,6 +1067,19 @@ function getPressureDefenseContinuationOutcome(
   };
 }
 
+function getPressureDefenseHandoffProofText(outcome: PressureDefenseOutcome, board: BoardState): string {
+  const defenseCoord = pointToCoord(outcome.defense, board.size);
+  const [firstSideCoord, secondSideCoord] = [outcome.defendedSide, outcome.otherSide]
+    .sort((a, b) => a.y - b.y || a.x - b.x)
+    .map((point) => pointToCoord(point, board.size));
+
+  if (outcome.connectedSides) {
+    return `You proved ${defenseCoord} connects ${firstSideCoord} and ${secondSideCoord} into one Black group with ${formatLibertyCount(outcome.defendedLiberties.length)}, so the cut is answered.`;
+  }
+
+  return `You proved ${defenseCoord} leaves ${firstSideCoord} and ${secondSideCoord} level at ${formatLibertyCount(outcome.defendedLiberties.length)}, so neither side needs another local defense.`;
+}
+
 function getPressureDefenseChoiceHint(
   prompt: OneSpaceJumpReadPrompt,
   outcome: PressureDefenseOutcome,
@@ -1370,6 +1385,7 @@ function getStablePressureExtensionHandoff(
   board: BoardState,
   prompt: OneSpaceJumpReadPrompt | null,
   isStable: boolean,
+  proofText: string | null,
 ): PressureExtensionHandoff | null {
   if (!isStable || objective.id !== 'extend-from-stone' || !prompt) return null;
 
@@ -1384,6 +1400,7 @@ function getStablePressureExtensionHandoff(
     point: copyPoint(point),
     coord,
     text: `The read is stable, so turn it into a real move: play ${coord} for ${objective.title}.`,
+    proofText: proofText ?? `You proved ${anchorCoord} and ${stoneCoord} stayed safe in the ${prompt.gapCoord} read, so Black can return to extension.`,
     ariaLabel: `Play ${coord} in the real game after the stable pressure read`,
     recap: {
       point: copyPoint(point),
@@ -1688,6 +1705,9 @@ function getPressureComparisonSummary(
   const hasSameCounts = firstRecount.anchorLiberties.length === secondRecount.anchorLiberties.length
     && firstRecount.stoneLiberties.length === secondRecount.stoneLiberties.length;
   const defenseRecommendation = getPressureDefenseRecommendation(prompt, secondRecount, board);
+  const proofText = hasSameCounts
+    ? `You proved ${firstCoord} and ${secondCoord} both leave ${anchorCoord} and ${stoneCoord} safe, so ${prompt.gapCoord} does not need an immediate defense.`
+    : `You proved ${secondCoord} leaves ${anchorCoord} and ${stoneCoord} stable without a short-side defense, so ${prompt.gapCoord} does not need an immediate defense.`;
 
   return {
     rows: [
@@ -1697,6 +1717,7 @@ function getPressureComparisonSummary(
     text: hasSameCounts
       ? `${firstCoord} and ${secondCoord} leave the same liberty counts: ${anchorCoord} has ${formatLibertyCount(secondRecount.anchorLiberties.length)} and ${stoneCoord} has ${formatLibertyCount(secondRecount.stoneLiberties.length)} either way. The difference is direction: ${directionText}`
       : `Compared with ${firstCoord}, ${secondCoord} changes the count: ${formatLibertyChange(anchorCoord, firstRecount.anchorLiberties.length, secondRecount.anchorLiberties.length)} and ${formatLibertyChange(stoneCoord, firstRecount.stoneLiberties.length, secondRecount.stoneLiberties.length)}. The direction also changes: ${directionText}`,
+    proofText,
     recommendationText: defenseRecommendation?.text ?? null,
     defenseRecommendation,
   };
@@ -2032,6 +2053,12 @@ function StablePressureExtensionHandoff({
       <div className="text-xs font-semibold" style={{ color: COLORS.ui.textPrimary }}>
         Real-game handoff
       </div>
+      <div className="mt-1 text-[11px] font-semibold uppercase" style={{ color: COLORS.ui.accent }}>
+        What you proved
+      </div>
+      <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
+        {handoff.proofText}
+      </p>
       <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
         {handoff.text}
       </p>
@@ -2589,6 +2616,7 @@ export function BeginnerObjectiveCard() {
         game.board,
         readPrompt,
         Boolean(replayedComparisonSummary && !replayedComparisonSummary.defenseRecommendation),
+        replayedComparisonSummary?.proofText ?? null,
       )
       : null;
     const replayedDefenseHandoff = objective
@@ -2602,6 +2630,7 @@ export function BeginnerObjectiveCard() {
           && !replayedContinuationDefense
           && isStablePressureDefenseOutcome(replayedDefenseOutcome),
         ),
+        replayedDefenseOutcome ? getPressureDefenseHandoffProofText(replayedDefenseOutcome, game.board) : null,
       )
       : null;
     const replayedFollowUpHandoff = objective
@@ -2614,6 +2643,7 @@ export function BeginnerObjectiveCard() {
           replayedFollowUpDefenseOutcome
           && isStablePressureDefenseOutcome(replayedFollowUpDefenseOutcome),
         ),
+        replayedFollowUpDefenseOutcome ? getPressureDefenseHandoffProofText(replayedFollowUpDefenseOutcome, game.board) : null,
       )
       : null;
     const replayedSequenceRows = getPressureReadSequenceRows(
@@ -2812,6 +2842,7 @@ export function BeginnerObjectiveCard() {
       game.board,
       readPrompt,
       Boolean(liveComparisonSummary && !liveDefenseRecommendation),
+      liveComparisonSummary?.proofText ?? null,
     );
     const liveDefenseHandoff = getStablePressureExtensionHandoff(
       objective,
@@ -2823,6 +2854,7 @@ export function BeginnerObjectiveCard() {
         && !liveFollowUpRecommendation
         && isStablePressureDefenseOutcome(liveDefenseOutcome),
       ),
+      liveDefenseOutcome ? getPressureDefenseHandoffProofText(liveDefenseOutcome, game.board) : null,
     );
     const liveFollowUpHandoff = getStablePressureExtensionHandoff(
       objective,
@@ -2830,6 +2862,7 @@ export function BeginnerObjectiveCard() {
       game.board,
       readPrompt,
       Boolean(liveFollowUpOutcome && isStablePressureDefenseOutcome(liveFollowUpOutcome)),
+      liveFollowUpOutcome ? getPressureDefenseHandoffProofText(liveFollowUpOutcome, game.board) : null,
     );
     const liveExtensionHandoff = liveFollowUpHandoff ?? liveDefenseHandoff ?? liveComparisonHandoff;
     const liveSequenceRows = getPressureReadSequenceRows(
@@ -2891,6 +2924,7 @@ export function BeginnerObjectiveCard() {
     game.board,
     readPrompt,
     Boolean(pressureComparisonSummary && !pressureDefenseRecommendation),
+    pressureComparisonSummary?.proofText ?? null,
   );
   const selectedDefenseExtensionHandoff = getStablePressureExtensionHandoff(
     objective,
@@ -2902,6 +2936,7 @@ export function BeginnerObjectiveCard() {
       && !pressureDefenseContinuationRecommendation
       && isStablePressureDefenseOutcome(selectedDefenseReadOutcome),
     ),
+    selectedDefenseReadOutcome ? getPressureDefenseHandoffProofText(selectedDefenseReadOutcome, game.board) : null,
   );
   const selectedFollowUpExtensionHandoff = getStablePressureExtensionHandoff(
     objective,
@@ -2912,6 +2947,7 @@ export function BeginnerObjectiveCard() {
       selectedFollowUpDefenseReadOutcome
       && isStablePressureDefenseOutcome(selectedFollowUpDefenseReadOutcome),
     ),
+    selectedFollowUpDefenseReadOutcome ? getPressureDefenseHandoffProofText(selectedFollowUpDefenseReadOutcome, game.board) : null,
   );
   const activePressureExtensionHandoff = selectedFollowUpExtensionHandoff
     ?? selectedDefenseExtensionHandoff
