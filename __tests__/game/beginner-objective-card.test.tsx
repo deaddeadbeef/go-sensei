@@ -778,14 +778,15 @@ describe('BeginnerObjectiveCard', () => {
     expect(collapsedAppliedRead?.hasAttribute('open')).toBe(false);
     expect(collapsedAppliedRead?.textContent).toContain(`G5 applies the repeated stable reads in the real game: ${twoGapProof}`);
     expect(screen.getByText('Start with H6: it attacks G6 from the open side of the G7-G5 jump. Recount both stones, then compare F6.')).toBeTruthy();
-    expect(screen.getByText('Recommended: H6')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Choose H6 as the first reply to G6' })).toBeTruthy();
+    expect(screen.getByText('Start with H6')).toBeTruthy();
+    expect(screen.queryByText('Recommended: H6')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Start with H6 as the open-side first reply to G6' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Choose F6 as the first reply to G6' })).toBeTruthy();
     const firstChoiceRow = screen.getByTestId('read-pressure-first-choice-row');
     expect(firstChoiceRow.className).toContain('sticky');
     expect(firstChoiceRow.className).toContain('top-0');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Choose H6 as the first reply to G6' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Start with H6 as the open-side first reply to G6' }));
 
     expect(firstChoiceRow.className).not.toContain('sticky');
     const recountActionRow = screen.getByTestId('read-pressure-recount-action-row');
