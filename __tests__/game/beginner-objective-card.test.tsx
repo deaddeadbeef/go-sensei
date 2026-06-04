@@ -946,6 +946,9 @@ describe('BeginnerObjectiveCard', () => {
     const compactThreeGapProof = 'Chain proof: D7, F7, and G6 were tested and stayed stable; Black can keep extending.';
     expect(screen.getByText(`G3 applies the stable read chain in the real game: ${compactThreeGapProof}`)).toBeTruthy();
     expect(screen.getByText('Carry forward the chain: D7, F7, and G6 were all tested and stayed stable. Stopping rule: read G4 once from scratch, then choose the next direction from the new board instead of extending by habit.')).toBeTruthy();
+    expect(screen.getByText('The repeat shortcut stops here: D7, F7, and G6 are already a long enough chain. Use Show pressure so G4 gets a fresh H4/F4 comparison before the next direction.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Show pressure variation for G4' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Repeat H6 first-reply pattern at H4 for G4' })).toBeNull();
     expect(screen.queryByText('Carry forward the proof: You proved H6 and F6 both leave G7 and G5 safe, so G6 does not need an immediate defense. Now test G4 the same way before the next extension.')).toBeNull();
   });
 
