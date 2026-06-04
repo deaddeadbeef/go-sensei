@@ -463,6 +463,30 @@ function getSavedPressureReadLabel(request: GuidedReadReplayRequest): string {
   return 'read';
 }
 
+function getReturnToLivePressureReadActionLabel(
+  request: GuidedReadReplayRequest,
+  board: BoardState,
+  selectedReply: Point | null,
+  selectedDefense: Point | null,
+  selectedFollowUpDefense: Point | null,
+): string {
+  if (request.mode === 'defense' && selectedDefense) {
+    return `Reopen saved ${pointToCoord(selectedDefense, board.size)} defense`;
+  }
+
+  if (request.mode === 'follow-up-defense' && selectedFollowUpDefense) {
+    return `Reopen saved ${pointToCoord(selectedFollowUpDefense, board.size)} follow-up defense`;
+  }
+
+  if (selectedReply) {
+    const label = request.mode === 'branch' ? 'branch' : getSavedPressureReadLabel(request);
+
+    return `Reopen saved ${pointToCoord(selectedReply, board.size)} ${label}`;
+  }
+
+  return 'Reopen saved read';
+}
+
 function getReturnToLivePressureReadMessage(
   request: GuidedReadReplayRequest,
   board: BoardState,
@@ -550,6 +574,7 @@ function getPressureFollowUpDefenseReplayAction(
 
 function getReturnToLivePressureReadAction(
   request: GuidedReadReplayRequest,
+  board: BoardState,
   prompt: OneSpaceJumpReadPrompt | null,
   selectedReply: Point | null,
   comparedReply: Point | null,
@@ -580,7 +605,19 @@ function getReturnToLivePressureReadAction(
   }
 
   return action
-    ? withPreviewHighlights({ ...action, label: 'Reopen saved read' }, previewHighlights)
+    ? withPreviewHighlights(
+      {
+        ...action,
+        label: getReturnToLivePressureReadActionLabel(
+          request,
+          board,
+          selectedReply,
+          selectedDefense,
+          selectedFollowUpDefense,
+        ),
+      },
+      previewHighlights,
+    )
     : null;
 }
 
@@ -2971,6 +3008,7 @@ export function BeginnerObjectiveCard() {
     const returnAction = guidedReadReplayRequest?.type === 'read-pressure'
       ? getReturnToLivePressureReadAction(
         guidedReadReplayRequest,
+        game.board,
         readPrompt,
         selectedReadReply,
         comparedReadReply,
