@@ -110,6 +110,7 @@ Latest completed slice:
 - Added a hover/focus preview to the saved H6 first-read recap, so the board names H6 as the baseline and F6 as the next comparison branch before the learner clicks Compare.
 - Added a hover/focus preview to the Compare F6 action, so learners can inspect the post-F6 recount markers before committing the alternate branch.
 - Added a compact "Why this is safe" proof row after the G6 comparison, preserving the D7/F7 chain while stopping the old repeat-pattern proof from leaking into the fresh read.
+- Added hover/focus previews to stable-read handoff buttons, so the G6 proof can visibly land on the real G3 extension target before the learner plays it.
 
 Next investigation candidates:
-- Whether the G6 stable-read handoff should preview the next real extension target before play, so the chain proof visibly lands on the next board move.
+- Whether the post-handoff recap after playing G3 should carry the completed D7/F7/G6 proof chain into the next reading prompt without overwhelming the dense panel.
