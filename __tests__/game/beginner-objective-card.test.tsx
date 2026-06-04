@@ -745,6 +745,10 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText('F8 is a good first read: it attacks the imagined White stone at F7 and asks whether that cutting stone can live. After that, recount E7 and G7 before extending again.')).toBeTruthy();
     expect(screen.getByText('Recount E7 and G7')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Recount E7 and G7 after F8' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Recount E7 and G7 after F8' }));
+
+    expect(screen.getByText('You repeated D8 as F8. Now compare F6 so the F7 read gets its own proof before the next extension.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Compare F6 against F8' })).toBeTruthy();
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {
