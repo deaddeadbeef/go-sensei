@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, render, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import { renderToString } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import GamePage from '@/app/page';
@@ -37,7 +37,10 @@ describe('app navigation recovery', () => {
     });
   });
 
-  afterEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
 
   it('recovers a lesson detail phase with no lesson id to the learning path', async () => {
     act(() => {
@@ -80,5 +83,24 @@ describe('app navigation recovery', () => {
     expect(html).toContain('Loading Go Sensei');
     expect(html).not.toContain('Review due concepts');
     expect(html).not.toContain('First 9x9 guided game');
+  });
+
+  it('scopes the floating Sensei bubble to the board area', () => {
+    vi.stubGlobal('ResizeObserver', class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    });
+
+    act(() => {
+      useGameStore.getState().startGuidedIntroGame();
+    });
+
+    render(<GamePage />);
+
+    const boardBubbleLayer = screen.getByTestId('board-bubble-layer');
+
+    expect(boardBubbleLayer.className).toContain('overflow-hidden');
+    expect(boardBubbleLayer.contains(screen.getByText('Go Sensei'))).toBe(true);
   });
 });

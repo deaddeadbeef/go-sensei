@@ -162,14 +162,16 @@ export default function GamePage() {
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           {/* Left: Board area */}
           <div className="flex-[7] flex flex-col relative min-w-0 min-h-0 overflow-hidden">
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                background: `radial-gradient(circle at center, ${COLORS.board.bg}15 0%, transparent 70%)`,
-              }}
-            />
-            <SenseiBubble />
-            <BoardContainer />
+            <div data-testid="board-bubble-layer" className="relative flex min-h-0 flex-1 overflow-hidden">
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background: `radial-gradient(circle at center, ${COLORS.board.bg}15 0%, transparent 70%)`,
+                }}
+              />
+              <SenseiBubble />
+              <BoardContainer />
+            </div>
             <div className="shrink-0">
               <BeginnerObjectiveCard />
               <GameControls onNewGame={handleNewGame} onPass={handlePass} onUndo={handleUndo} />
