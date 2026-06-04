@@ -904,6 +904,16 @@ describe('BeginnerObjectiveCard', () => {
     expect(completedFirstRead.hasAttribute('open')).toBe(true);
     expect(completedFirstRead.querySelector('[hidden]')).toBeNull();
     expect(completedFirstRead.textContent).toContain('Branch choice');
+
+    fireEvent.click(compareF6Action);
+
+    const g6ChainProof = 'D7 and F7 were already tested and stayed stable. You proved H6 and F6 both leave G7 and G5 safe, so G6 does not need an immediate defense.';
+    expect(screen.getByText('Comparison summary')).toBeTruthy();
+    expect(screen.getByText('Why this is safe')).toBeTruthy();
+    expect(screen.getByText(g6ChainProof)).toBeTruthy();
+    expect(screen.queryByText('This matches the F7 proof: the repeated pattern stayed stable again. You proved H6 and F6 both leave G7 and G5 safe, so G6 does not need an immediate defense.')).toBeNull();
+    expect(screen.queryByText((text) => text.includes('Two-gap proof: Two-gap proof'))).toBeNull();
+    expect(useGameStore.getState().chatMessages.at(-1)?.text).not.toContain('This matches the F7 proof');
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {
