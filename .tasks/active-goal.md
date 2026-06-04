@@ -108,6 +108,7 @@ Latest completed slice:
 - Collapsed the older "Read applied" recap once the next pressure variation is open, preserving the proof while keeping the live G6 read in focus.
 - Turned the G6 open-side recommendation into a direct "Start with H6" action, so the learner can follow the recommended read without translating it into a separate coordinate choice.
 - Added a hover/focus preview to the saved H6 first-read recap, so the board names H6 as the baseline and F6 as the next comparison branch before the learner clicks Compare.
+- Added a hover/focus preview to the Compare F6 action, so learners can inspect the post-F6 recount markers before committing the alternate branch.
 
 Next investigation candidates:
-- Whether the Compare F6 action should also preview the post-F6 recount on hover/focus, so the learner can inspect the branch outcome before committing the comparison.
+- Whether the comparison summary after F6 should offer a compact "why this is safe" proof row before the real-game handoff, matching the clarity of the earlier D7 and F7 proof chain.
