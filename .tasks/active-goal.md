@@ -113,6 +113,7 @@ Latest completed slice:
 - Added hover/focus previews to stable-read handoff buttons, so the G6 proof can visibly land on the real G3 extension target before the learner plays it.
 - Carried the completed D7/F7/G6 chain into the post-G3 handoff recap and next G4 reading prompt with a compact chain proof.
 - Added a stopping-rule sentence to the three-gap chain bridge, so the G4 read teaches learners to re-evaluate direction instead of extending by habit.
+- Stopped the repeat-pattern shortcut after a three-gap chain, replacing the H6-to-H4 shortcut with a fresh H4/F4 comparison boundary.
 
 Next investigation candidates:
-- Whether the G4 pressure read itself should preview the open-side H4/F4 comparison, or whether the next bigger gain is outside this one-space-jump chain.
+- Whether the next bigger gain is outside this one-space-jump chain, such as helping the tutor choose between E3, E5, and C5 after the G4 read.

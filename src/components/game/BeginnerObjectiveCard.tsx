@@ -1573,6 +1573,26 @@ function getPressureRepeatBoundaryText(
   return `The repeat shortcut stops here: repeating ${recap.repeatRead.previousReplyCoord} would land on ${projectedCoord}, which is already ${blockerText}. Use Show pressure to read ${prompt.gapCoord} from scratch.`;
 }
 
+function getPressureChainRepeatBoundaryText(
+  recap: PressureHandoffRecap | null,
+  prompt: OneSpaceJumpReadPrompt | null,
+  board: BoardState,
+  repeatPoint: Point | null,
+): string | null {
+  if (!recap?.repeatRead || !prompt || !repeatPoint) return null;
+
+  const stableGapCoords = getPressureProofStableGapCoords(recap.proofText);
+  if (stableGapCoords.length < 3) return null;
+
+  const repeatCoord = pointToCoord(repeatPoint, board.size);
+  const comparePoint = prompt.replyPoints.find((point) => targetKey(point) !== targetKey(repeatPoint)) ?? null;
+  const comparisonText = comparePoint
+    ? `${repeatCoord}/${pointToCoord(comparePoint, board.size)}`
+    : repeatCoord;
+
+  return `The repeat shortcut stops here: ${joinAndCoordinateList(stableGapCoords)} are already a long enough chain. Use Show pressure so ${prompt.gapCoord} gets a fresh ${comparisonText} comparison before the next direction.`;
+}
+
 function buildPressureHandoffHighlights(handoff: PressureExtensionHandoff): OverlayHighlight[] {
   return [{
     id: `read-pressure-handoff-${targetKey(handoff.point)}`,
@@ -2553,8 +2573,12 @@ export function BeginnerObjectiveCard() {
     const activeRepeatReadPoint = hasActivePressureHandoff && pressureHandoffRecap
       ? getPressureRepeatReadPoint(pressureHandoffRecap, prompt)
       : null;
+    const chainRepeatBoundaryText = hasActivePressureHandoff && pressureHandoffRecap
+      ? getPressureChainRepeatBoundaryText(pressureHandoffRecap, prompt, game.board, activeRepeatReadPoint)
+      : null;
     const hasBlockedRepeatShortcut = hasActivePressureHandoff && pressureHandoffRecap
-      ? getPressureRepeatBoundaryText(pressureHandoffRecap, prompt, game.board, activeRepeatReadPoint) !== null
+      ? Boolean(chainRepeatBoundaryText)
+        || getPressureRepeatBoundaryText(pressureHandoffRecap, prompt, game.board, activeRepeatReadPoint) !== null
       : false;
     const openSideBranchChoiceText = hasBlockedRepeatShortcut
       ? getPressureOpenSideBranchChoiceText(prompt, game.board, reply)
@@ -3447,13 +3471,24 @@ export function BeginnerObjectiveCard() {
   const pressureProofBridgeText = activePressureHandoffRecap && readPrompt
     ? getPressureProofBridgeText(activePressureHandoffRecap, readPrompt)
     : null;
-  const pressureRepeatReadPoint = activePressureHandoffRecap && readPrompt
+  const projectedPressureRepeatReadPoint = activePressureHandoffRecap && readPrompt
     ? getPressureRepeatReadPoint(activePressureHandoffRecap, readPrompt)
     : null;
+  const pressureChainRepeatBoundaryText = activePressureHandoffRecap && readPrompt
+    ? getPressureChainRepeatBoundaryText(
+      activePressureHandoffRecap,
+      readPrompt,
+      game.board,
+      projectedPressureRepeatReadPoint,
+    )
+    : null;
+  const pressureRepeatReadPoint = pressureChainRepeatBoundaryText
+    ? null
+    : projectedPressureRepeatReadPoint;
   const pressureRepeatReadCoord = pressureRepeatReadPoint
     ? pointToCoord(pressureRepeatReadPoint, game.board.size)
     : null;
-  const pressureRepeatBoundaryText = getPressureRepeatBoundaryText(
+  const pressureRepeatBoundaryText = pressureChainRepeatBoundaryText ?? getPressureRepeatBoundaryText(
     activePressureHandoffRecap,
     readPrompt,
     game.board,
