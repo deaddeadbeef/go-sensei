@@ -99,6 +99,7 @@ Latest completed slice:
 - Updated repeated-read handoff copy to say both reads are stable and to preserve the repeated-read proof after the real G5 move, instead of reverting to singular "the read" language.
 - Added a repeat-shortcut boundary note after G5, so learners see why the old F8 shortcut would land on occupied G7 and why G6 needs a fresh pressure read.
 - Recommended the open-side first reply inside fresh pressure reads, so the G6 read starts from H6 before comparing F6 instead of presenting both replies with equal weight.
+- Echoed the H6 open-side recommendation in the branch-choice chat entry, so saved transcript history preserves why the fresh G6 read started from that side.
 
 Next investigation candidates:
-- Whether the open-side first-read recommendation should be echoed in the branch-choice chat message, so saved transcript entries preserve why the learner started with that reply.
+- Whether the Sensei bubble should move or collapse during dense read panels, since rendered smoke shows it can cover the top of the objective card during long guided sequences.
