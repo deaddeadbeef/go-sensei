@@ -98,6 +98,7 @@ Latest completed slice:
 - Added a two-gap proof to the repeated-read real-game handoff, so the extension shortcut says both D7 and F7 were tested before asking the learner to keep extending.
 - Updated repeated-read handoff copy to say both reads are stable and to preserve the repeated-read proof after the real G5 move, instead of reverting to singular "the read" language.
 - Added a repeat-shortcut boundary note after G5, so learners see why the old F8 shortcut would land on occupied G7 and why G6 needs a fresh pressure read.
+- Recommended the open-side first reply inside fresh pressure reads, so the G6 read starts from H6 before comparing F6 instead of presenting both replies with equal weight.
 
 Next investigation candidates:
-- Whether the fresh G6 pressure read should start from the open-side reply that preserves the vertical jump, rather than presenting all replies with equal weight.
+- Whether the open-side first-read recommendation should be echoed in the branch-choice chat message, so saved transcript entries preserve why the learner started with that reply.

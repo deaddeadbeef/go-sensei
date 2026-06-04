@@ -767,6 +767,13 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText(`G5 applies the repeated stable reads in the real game: ${twoGapProof}`)).toBeTruthy();
     expect(screen.getByText('The repeat shortcut stops here: repeating F8 would land on G7, which is already one of your stones. Use Show pressure to read G6 from scratch.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Repeat F8 first-reply pattern at G7 for G6' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for G6' }));
+
+    expect(screen.getByText('Start with H6: it attacks G6 from the open side of the G7-G5 jump. Recount both stones, then compare F6.')).toBeTruthy();
+    expect(screen.getByText('Recommended: H6')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Choose H6 as the first reply to G6' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Choose F6 as the first reply to G6' })).toBeTruthy();
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {

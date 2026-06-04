@@ -246,6 +246,47 @@ function getGapPressureReplyPoints(board: BoardState, anchor: Point, stone: Poin
   return candidates.filter((point) => isOnBoard(board, point) && getStone(board, point) === null);
 }
 
+function getPressureOpenSideFirstReplyPoint(board: BoardState, prompt: OneSpaceJumpReadPrompt): Point | null {
+  if (prompt.replyPoints.length < 2) return null;
+
+  const center = (board.size - 1) / 2;
+  const isHorizontalJump = Math.abs(prompt.stone.x - prompt.anchor.x) === 2;
+
+  if (isHorizontalJump) {
+    if (prompt.gap.y === center) return null;
+
+    return prompt.replyPoints.find((point) => (
+      prompt.gap.y < center
+        ? point.y < prompt.gap.y
+        : point.y > prompt.gap.y
+    )) ?? null;
+  }
+
+  if (prompt.gap.x === center) return null;
+
+  return prompt.replyPoints.find((point) => (
+    prompt.gap.x < center
+      ? point.x < prompt.gap.x
+      : point.x > prompt.gap.x
+  )) ?? null;
+}
+
+function getPressureOpenSideFirstReadText(
+  prompt: OneSpaceJumpReadPrompt,
+  board: BoardState,
+  firstReply: Point,
+): string {
+  const firstCoord = pointToCoord(firstReply, board.size);
+  const anchorCoord = pointToCoord(prompt.anchor, board.size);
+  const stoneCoord = pointToCoord(prompt.stone, board.size);
+  const comparePoint = prompt.replyPoints.find((point) => targetKey(point) !== targetKey(firstReply)) ?? null;
+  const compareText = comparePoint
+    ? ` Recount both stones, then compare ${pointToCoord(comparePoint, board.size)}.`
+    : ' Recount both stones before extending again.';
+
+  return `Start with ${firstCoord}: it attacks ${prompt.gapCoord} from the open side of the ${anchorCoord}-${stoneCoord} jump.${compareText}`;
+}
+
 function getExtensionTargetExplanation(point: Point, board: BoardState): string {
   const coord = pointToCoord(point, board.size);
   const anchor = getExtensionAnchor(board, point);
@@ -3247,6 +3288,26 @@ export function BeginnerObjectiveCard() {
     game.board,
     pressureRepeatReadPoint,
   );
+  const pressureOpenSideFirstReplyPoint = readPrompt
+    ? getPressureOpenSideFirstReplyPoint(game.board, readPrompt)
+    : null;
+  const pressureOpenSideFirstReplyKey = pressureOpenSideFirstReplyPoint
+    ? targetKey(pressureOpenSideFirstReplyPoint)
+    : null;
+  const pressureOpenSideFirstReadText = readPrompt && pressureOpenSideFirstReplyPoint
+    ? getPressureOpenSideFirstReadText(readPrompt, game.board, pressureOpenSideFirstReplyPoint)
+    : null;
+  const orderedPressureReplyPoints = readPrompt
+    ? [...readPrompt.replyPoints].sort((a, b) => {
+      if (!pressureOpenSideFirstReplyKey) return 0;
+
+      const aIsRecommended = targetKey(a) === pressureOpenSideFirstReplyKey;
+      const bIsRecommended = targetKey(b) === pressureOpenSideFirstReplyKey;
+
+      if (aIsRecommended === bIsRecommended) return 0;
+      return aIsRecommended ? -1 : 1;
+    })
+    : [];
   const pressureRepeatComparePoint = pressureRepeatReadHint && selectedReadRecount
     ? compareReadReplyPoints[0] ?? null
     : null;
@@ -3491,6 +3552,11 @@ export function BeginnerObjectiveCard() {
               <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
                 {readPrompt.variationText}
               </p>
+              {pressureOpenSideFirstReadText && (
+                <p className="mt-1 text-xs leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
+                  {pressureOpenSideFirstReadText}
+                </p>
+              )}
               {restoredPressureReadCue && (
                 <div className="mt-2 border-l-2 pl-2" style={{ borderColor: COLORS.ui.accent }}>
                   <div className="flex flex-wrap items-center gap-2">
@@ -3528,24 +3594,26 @@ export function BeginnerObjectiveCard() {
                   <span className="text-[11px] font-semibold" style={{ color: COLORS.ui.textSecondary }}>
                     Choose a first read:
                   </span>
-                  {readPrompt.replyPoints.map((point) => {
+                  {orderedPressureReplyPoints.map((point) => {
                     const coord = pointToCoord(point, game.board.size);
-                    const isSelected = effectiveSelectedReadReplyKey === targetKey(point);
+                    const pointKey = targetKey(point);
+                    const isSelected = effectiveSelectedReadReplyKey === pointKey;
+                    const isRecommended = pressureOpenSideFirstReplyKey === pointKey;
 
                     return (
                       <button
-                        key={`read-pressure-choice-${targetKey(point)}`}
+                        key={`read-pressure-choice-${pointKey}`}
                         type="button"
                         className="rounded border px-2 py-0.5 font-mono text-[11px] font-bold transition hover:bg-white/[0.07]"
                         style={{
-                          borderColor: isSelected ? COLORS.overlay.positive : COLORS.ui.accent,
+                          borderColor: isSelected || isRecommended ? COLORS.overlay.positive : COLORS.ui.accent,
                           color: COLORS.ui.textPrimary,
-                          backgroundColor: isSelected ? `${COLORS.overlay.positive}24` : `${COLORS.ui.accent}1f`,
+                          backgroundColor: isSelected || isRecommended ? `${COLORS.overlay.positive}24` : `${COLORS.ui.accent}1f`,
                         }}
                         aria-label={`Choose ${coord} as the first reply to ${readPrompt.gapCoord}`}
                         onClick={() => chooseReadPressureReply(readPrompt, point)}
                       >
-                        {coord}
+                        {isRecommended ? `Recommended: ${coord}` : coord}
                       </button>
                     );
                   })}
