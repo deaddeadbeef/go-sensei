@@ -979,7 +979,7 @@ describe('BeginnerObjectiveCard', () => {
 
     fireEvent.click(originalReplyStep);
     expect(originalReplyStep.getAttribute('aria-pressed')).toBe('false');
-    expect(screen.queryByText('Next question')).toBeNull();
+    expect(screen.queryByText('Saved read next question')).toBeNull();
     expect(useGameStore.getState().overlays.targetHints.map((hint) => hint.id)).toContain('read-pressure-reply-3,3');
 
     const focusActions = screen.getAllByRole('button', { name: 'Show step' });
@@ -1008,13 +1008,13 @@ describe('BeginnerObjectiveCard', () => {
 
     const restoredOriginalReplyStep = screen.getByRole('button', { name: 'Show board highlights for step 2: Black D8 attacks D7 from above.' });
     expect(restoredOriginalReplyStep.getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByText('Next question')).toBeTruthy();
+    expect(screen.getByText('Saved read next question')).toBeTruthy();
     expect(screen.getByText('Before returning to D6, ask: did D8 change the attack direction while keeping both sides safe?')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Compare D6 from here' }));
 
     expect(restoredOriginalReplyStep.getAttribute('aria-pressed')).toBe('false');
-    expect(screen.queryByText('Next question')).toBeNull();
+    expect(screen.queryByText('Saved read next question')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Compare D6 from here' })).toBeNull();
     expect(useGameStore.getState().overlays.targetHints).toEqual([
       {
@@ -1471,14 +1471,14 @@ describe('BeginnerObjectiveCard', () => {
     fireEvent.click(handoffSequenceStep);
     fireEvent.click(handoffSequenceStep);
     expect(handoffSequenceStep.getAttribute('aria-pressed')).toBe('false');
-    expect(screen.queryByText('Next question')).toBeNull();
+    expect(screen.queryByText('Saved read next question')).toBeNull();
 
     const focusActions = screen.getAllByRole('button', { name: 'Show step' });
     fireEvent.click(focusActions[focusActions.length - 1]);
 
     const restoredHandoffStep = screen.getByRole('button', { name: 'Show board highlights for step 7: Real-game handoff: play G7 after the stable read.' });
     expect(restoredHandoffStep.getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByText('Next question')).toBeTruthy();
+    expect(screen.getByText('Saved read next question')).toBeTruthy();
     expect(screen.getByText('What real move can you play now that C7 and E7 survived the simulation?')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Play G7 from here' })).toBeTruthy();
 
@@ -1493,7 +1493,7 @@ describe('BeginnerObjectiveCard', () => {
     });
     expect(state.lastPlayerMove).toEqual({ x: 6, y: 2 });
     expect(state.game.currentPlayer).toBe('white');
-    expect(screen.queryByText('Next question')).toBeNull();
+    expect(screen.queryByText('Saved read next question')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Play G7 from here' })).toBeNull();
 
     act(() => {
@@ -1536,6 +1536,7 @@ describe('BeginnerObjectiveCard', () => {
     fireEvent.click(comparisonActions[0]);
 
     expect(screen.getByText('Restored read')).toBeTruthy();
+    expect(screen.getByText('Live branch')).toBeTruthy();
     expect(screen.getByText(restoredComparisonCue)).toBeTruthy();
     expect(screen.getByText(restoredLiveHandoffCue)).toBeTruthy();
 
@@ -1579,6 +1580,7 @@ describe('BeginnerObjectiveCard', () => {
     ]);
     fireEvent.click(liveHandoffAction);
 
+    expect(screen.getByText('Saved read next question')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Play G7 from here' })).toBeTruthy();
   });
 
@@ -1635,14 +1637,14 @@ describe('BeginnerObjectiveCard', () => {
 
     fireEvent.click(defenseSequenceStep);
     expect(defenseSequenceStep.getAttribute('aria-pressed')).toBe('false');
-    expect(screen.queryByText('Next question')).toBeNull();
+    expect(screen.queryByText('Saved read next question')).toBeNull();
 
     const focusActions = screen.getAllByRole('button', { name: 'Show step' });
     fireEvent.click(focusActions[focusActions.length - 1]);
 
     const restoredDefenseStep = screen.getByRole('button', { name: 'Show board highlights for step 5: Defend C7 at C6; C7 has 5 liberties.' });
     expect(restoredDefenseStep.getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByText('Next question')).toBeTruthy();
+    expect(screen.getByText('Saved read next question')).toBeTruthy();
     expect(screen.getByText('After C6, which side is now shorter, and should the read continue there?')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Try E8 follow-up defense from here' })).toBeTruthy();
     const e6FollowUpFromHere = screen.getByRole('button', { name: 'Try E6 follow-up defense from here' });
@@ -1676,7 +1678,7 @@ describe('BeginnerObjectiveCard', () => {
     expect(useGameStore.getState().game.moveHistory).toHaveLength(4);
     expect(screen.getByText('Follow-up defense')).toBeTruthy();
     expect(screen.getByText('After E6, C7 and E7 connect into one Black group with 8 liberties at E8, F7, E5, F6, D5, C5, B6, and B7. Both sides are one group now, so the local read is stable; return to the real game and choose an extension.')).toBeTruthy();
-    expect(screen.queryByText('Next question')).toBeNull();
+    expect(screen.queryByText('Saved read next question')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Try E6 follow-up defense from here' })).toBeNull();
   });
 
@@ -1732,14 +1734,14 @@ describe('BeginnerObjectiveCard', () => {
 
     fireEvent.click(comparisonSequenceStep);
     expect(comparisonSequenceStep.getAttribute('aria-pressed')).toBe('false');
-    expect(screen.queryByText('Next question')).toBeNull();
+    expect(screen.queryByText('Saved read next question')).toBeNull();
 
     const focusActions = screen.getAllByRole('button', { name: 'Show step' });
     fireEvent.click(focusActions[focusActions.length - 1]);
 
     const restoredComparisonStep = screen.getByRole('button', { name: 'Show board highlights for step 4: Compare D6: C7 2 liberties; E7 3 liberties.' });
     expect(restoredComparisonStep.getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByText('Next question')).toBeTruthy();
+    expect(screen.getByText('Saved read next question')).toBeTruthy();
     expect(screen.getByText('After D6, which side changed, and does that force a defense before extending?')).toBeTruthy();
     const c6DefenseFromHere = screen.getByRole('button', { name: 'Try C6 defense from here' });
     expect(c6DefenseFromHere).toBeTruthy();
@@ -1772,7 +1774,7 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText('Defense read')).toBeTruthy();
     expect(screen.getByText('C6 directly defends C7, the short side in this pressure line. Keep C7 breathing first; then recount before extending again.')).toBeTruthy();
     expect(screen.getByText('After C6, C7 grows from 2 to 5 liberties at B7, C5, B6, D5, and E6. E7 has 3 liberties at E8, E6, and F7. C7 is no longer the short side, so the defense did its job; now recount the whole position before extending again.')).toBeTruthy();
-    expect(screen.queryByText('Next question')).toBeNull();
+    expect(screen.queryByText('Saved read next question')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Try C6 defense from here' })).toBeNull();
   });
 
@@ -1931,14 +1933,14 @@ describe('BeginnerObjectiveCard', () => {
     fireEvent.click(followUpSequenceStep);
     fireEvent.click(followUpSequenceStep);
     expect(followUpSequenceStep.getAttribute('aria-pressed')).toBe('false');
-    expect(screen.queryByText('Next question')).toBeNull();
+    expect(screen.queryByText('Saved read next question')).toBeNull();
 
     const focusActions = screen.getAllByRole('button', { name: 'Show step' });
     fireEvent.click(focusActions[focusActions.length - 1]);
 
     const restoredFollowUpStep = screen.getByRole('button', { name: 'Show board highlights for step 6: Follow-up E6 connects C7 and E7 into one group.' });
     expect(restoredFollowUpStep.getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByText('Next question')).toBeTruthy();
+    expect(screen.getByText('Saved read next question')).toBeTruthy();
     expect(screen.getByText('Does E6 connect the stones strongly enough to leave the local fight?')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Play G7 from here' })).toBeTruthy();
 
@@ -1953,7 +1955,7 @@ describe('BeginnerObjectiveCard', () => {
     });
     expect(state.lastPlayerMove).toEqual({ x: 6, y: 2 });
     expect(state.game.currentPlayer).toBe('white');
-    expect(screen.queryByText('Next question')).toBeNull();
+    expect(screen.queryByText('Saved read next question')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Play G7 from here' })).toBeNull();
   });
 
