@@ -361,6 +361,17 @@ function getRestoredPressureReadCue(
   return `Showing a saved read from chat. ${suffix}`;
 }
 
+function getRestoredPressureReadLiveCue(
+  board: BoardState,
+  liveReply: Point | null,
+  restoredReply: Point | null,
+): string | null {
+  if (!liveReply || !restoredReply) return null;
+  if (targetKey(liveReply) === targetKey(restoredReply)) return null;
+
+  return `Saved branch: ${pointToCoord(restoredReply, board.size)}. Live branch: ${pointToCoord(liveReply, board.size)}.`;
+}
+
 function getSavedPressureReadLabel(request: GuidedReadReplayRequest): string {
   if (request.mode === 'branch') return 'first-read branch';
   if (request.mode === 'recount') return 'recount';
@@ -2636,6 +2647,12 @@ export function BeginnerObjectiveCard() {
   const readPromptAnchorCoord = readPrompt ? pointToCoord(readPrompt.anchor, game.board.size) : null;
   const readPromptStoneCoord = readPrompt ? pointToCoord(readPrompt.stone, game.board.size) : null;
   const selectedReadReplyCoord = selectedReadReply ? pointToCoord(selectedReadReply, game.board.size) : null;
+  const livePressureReadReply = readPrompt && selectedReadReplyKey
+    ? readPrompt.replyPoints.find((point) => targetKey(point) === selectedReadReplyKey) ?? null
+    : null;
+  const restoredPressureReadLiveCue = activePressureReplayRequestId !== null
+    ? getRestoredPressureReadLiveCue(game.board, livePressureReadReply, selectedReadReply)
+    : null;
   const activeTarget = activeTargetKey
     ? playableTargets.find((point) => targetKey(point) === activeTargetKey) ?? null
     : null;
@@ -2663,11 +2680,8 @@ export function BeginnerObjectiveCard() {
   const returnToLivePressureRead = () => {
     if (activePressureReplayRequestId === null) return;
 
-    const liveReply = readPrompt && selectedReadReplyKey
-      ? readPrompt.replyPoints.find((point) => targetKey(point) === selectedReadReplyKey) ?? null
-      : null;
     const returnNote = guidedReadReplayRequest?.type === 'read-pressure'
-      ? getReturnToLivePressureReadMessage(guidedReadReplayRequest, game.board, liveReply, selectedReadReply)
+      ? getReturnToLivePressureReadMessage(guidedReadReplayRequest, game.board, livePressureReadReply, selectedReadReply)
       : null;
     const returnAction = guidedReadReplayRequest?.type === 'read-pressure'
       ? getReturnToLivePressureReadAction(
@@ -2837,6 +2851,11 @@ export function BeginnerObjectiveCard() {
                   <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
                     {restoredPressureReadCue}
                   </p>
+                  {restoredPressureReadLiveCue && (
+                    <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+                      {restoredPressureReadLiveCue}
+                    </p>
+                  )}
                 </div>
               )}
               {readPrompt.replyPoints.length > 0 && (
