@@ -107,6 +107,7 @@ Latest completed slice:
 - Compacted the third-gap carry-forward proof into a D7/F7 chain summary, so the G6 read starts with the useful memory instead of repeating the full two-gap proof.
 - Collapsed the older "Read applied" recap once the next pressure variation is open, preserving the proof while keeping the live G6 read in focus.
 - Turned the G6 open-side recommendation into a direct "Start with H6" action, so the learner can follow the recommended read without translating it into a separate coordinate choice.
+- Added a hover/focus preview to the saved H6 first-read recap, so the board names H6 as the baseline and F6 as the next comparison branch before the learner clicks Compare.
 
 Next investigation candidates:
-- Whether the completed H6 first-read recap should preview the F6 comparison target on hover/focus, so the learner can see the next branch before clicking Compare.
+- Whether the Compare F6 action should also preview the post-F6 recount on hover/focus, so the learner can inspect the branch outcome before committing the comparison.
