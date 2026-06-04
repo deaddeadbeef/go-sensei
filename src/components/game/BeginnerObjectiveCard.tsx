@@ -1530,8 +1530,11 @@ function getPressureProofStableGapCoords(proofText: string): string[] {
 function getPressureProofBridgeText(recap: PressureHandoffRecap, prompt: OneSpaceJumpReadPrompt): string {
   const stableGapCoords = getPressureProofStableGapCoords(recap.proofText);
   if (stableGapCoords.length >= 2) {
-    const chainScope = stableGapCoords.length === 2 ? 'both' : 'all';
-    return `Carry forward the chain: ${joinAndCoordinateList(stableGapCoords)} were ${chainScope} tested and stayed stable. Now read ${prompt.gapCoord} from scratch before the next extension.`;
+    if (stableGapCoords.length >= 3) {
+      return `Carry forward the chain: ${joinAndCoordinateList(stableGapCoords)} were all tested and stayed stable. Stopping rule: read ${prompt.gapCoord} once from scratch, then choose the next direction from the new board instead of extending by habit.`;
+    }
+
+    return `Carry forward the chain: ${joinAndCoordinateList(stableGapCoords)} were both tested and stayed stable. Now read ${prompt.gapCoord} from scratch before the next extension.`;
   }
 
   return `Carry forward the proof: ${recap.proofText} Now test ${prompt.gapCoord} the same way before the next extension.`;

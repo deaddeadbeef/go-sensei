@@ -112,6 +112,7 @@ Latest completed slice:
 - Added a compact "Why this is safe" proof row after the G6 comparison, preserving the D7/F7 chain while stopping the old repeat-pattern proof from leaking into the fresh read.
 - Added hover/focus previews to stable-read handoff buttons, so the G6 proof can visibly land on the real G3 extension target before the learner plays it.
 - Carried the completed D7/F7/G6 chain into the post-G3 handoff recap and next G4 reading prompt with a compact chain proof.
+- Added a stopping-rule sentence to the three-gap chain bridge, so the G4 read teaches learners to re-evaluate direction instead of extending by habit.
 
 Next investigation candidates:
-- Whether the G4 read can safely continue the compact chain, or whether the tutor should introduce a stopping rule before the chain becomes rote.
+- Whether the G4 pressure read itself should preview the open-side H4/F4 comparison, or whether the next bigger gain is outside this one-space-jump chain.
