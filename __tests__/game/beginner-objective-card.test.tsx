@@ -755,7 +755,16 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText(repeatProofRecap)).toBeTruthy();
     expect(useGameStore.getState().chatMessages.at(-1)?.text).toContain(repeatProofRecap);
 
-    expect(screen.getByText('Two-gap proof: You proved D8 and D6 both leave C7 and E7 safe, so D7 does not need an immediate defense. You proved F8 and F6 both leave E7 and G7 safe, so F7 does not need an immediate defense. Black can keep extending instead of answering either cut immediately.')).toBeTruthy();
+    const twoGapProof = 'Two-gap proof: You proved D8 and D6 both leave C7 and E7 safe, so D7 does not need an immediate defense. You proved F8 and F6 both leave E7 and G7 safe, so F7 does not need an immediate defense. Black can keep extending instead of answering either cut immediately.';
+    expect(screen.getByText(twoGapProof)).toBeTruthy();
+    expect(screen.getByText('Both reads are stable, so turn them into a real move: play G5 for Make your stones work together.')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Play G5 in the real game after the stable pressure read' }));
+    act(() => {
+      useGameStore.getState().pass();
+    });
+
+    expect(screen.getByText(`G5 applies the repeated stable reads in the real game: ${twoGapProof}`)).toBeTruthy();
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {

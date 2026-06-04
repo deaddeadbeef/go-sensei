@@ -1407,6 +1407,7 @@ function getStablePressureExtensionHandoff(
   const stoneCoord = pointToCoord(prompt.stone, board.size);
   const resolvedProofText = proofText
     ?? `You proved ${anchorCoord} and ${stoneCoord} stayed safe in the ${prompt.gapCoord} read.`;
+  const isRepeatedProof = resolvedProofText.startsWith('Two-gap proof:');
   const repeatRead = repeatReply
     ? {
       previousGapCoord: prompt.gapCoord,
@@ -1421,13 +1422,17 @@ function getStablePressureExtensionHandoff(
   return {
     point: copyPoint(point),
     coord,
-    text: `The read is stable, so turn it into a real move: play ${coord} for ${objective.title}.`,
+    text: isRepeatedProof
+      ? `Both reads are stable, so turn them into a real move: play ${coord} for ${objective.title}.`
+      : `The read is stable, so turn it into a real move: play ${coord} for ${objective.title}.`,
     proofText: resolvedProofText,
     ariaLabel: `Play ${coord} in the real game after the stable pressure read`,
     recap: {
       point: copyPoint(point),
       coord,
-      text: `${coord} applies the ${prompt.gapCoord} read in the real game: ${resolvedProofText} Black can keep extending instead of answering a cut that has not happened.`,
+      text: isRepeatedProof
+        ? `${coord} applies the repeated stable reads in the real game: ${resolvedProofText}`
+        : `${coord} applies the ${prompt.gapCoord} read in the real game: ${resolvedProofText} Black can keep extending instead of answering a cut that has not happened.`,
       proofText: resolvedProofText,
       repeatRead,
     },
@@ -2546,10 +2551,9 @@ export function BeginnerObjectiveCard() {
   }, [playObjectiveTarget]);
 
   const handlePressureHandoffClick = useCallback((handoff: PressureExtensionHandoff) => {
-    const played = playObjectiveTarget(handoff.point);
-    if (!played) return;
-
     setPressureHandoffRecap(handoff.recap);
+    const played = playObjectiveTarget(handoff.point);
+    if (!played) setPressureHandoffRecap(null);
   }, [playObjectiveTarget]);
 
   const replayedReadReplyKey = guidedReadReplayRequest?.type === 'read-pressure'
