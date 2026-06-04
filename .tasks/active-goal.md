@@ -83,6 +83,7 @@ Latest completed slice:
 - Labeled restored-read navigation as "Live branch" and restored sequence prompts as "Saved read next question", so saved-context continuations and live-context exits are visually distinct in the same panel.
 - Added saved/live branch badges to restored read-sequence rows when a saved comparison crosses branches, so each replayed step names whether it belongs to the saved branch or the live branch.
 - Added saved/live branch labels to restored read-sequence focus messages in chat, so transcript notes match the branch context shown beside the board.
+- Added a last-inspected sequence-step summary to return-to-live transcript notes, so learners know which saved or live row they just left when they resume the live branch.
 
 Next investigation candidates:
-- Whether restored saved/live branch context should be summarized once when learners return to the live read after inspecting multiple saved rows.
+- Whether returning to the live read should also restore the live branch's matching sequence-row highlight, instead of only the broad live read markers.
