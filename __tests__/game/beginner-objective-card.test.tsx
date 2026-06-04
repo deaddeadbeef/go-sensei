@@ -914,6 +914,29 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.queryByText('This matches the F7 proof: the repeated pattern stayed stable again. You proved H6 and F6 both leave G7 and G5 safe, so G6 does not need an immediate defense.')).toBeNull();
     expect(screen.queryByText((text) => text.includes('Two-gap proof: Two-gap proof'))).toBeNull();
     expect(useGameStore.getState().chatMessages.at(-1)?.text).not.toContain('This matches the F7 proof');
+
+    const g6HandoffAction = screen.getByRole('button', { name: 'Play G3 in the real game after the stable pressure read' });
+    fireEvent.focus(g6HandoffAction);
+
+    expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
+      {
+        id: 'read-pressure-handoff-6,6',
+        point: { x: 6, y: 6 },
+        variant: 'positive',
+        label: 'G3: real move to play after the stable pressure read.',
+      },
+    ]));
+
+    fireEvent.blur(g6HandoffAction);
+
+    expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
+      {
+        id: 'read-pressure-reply-5,3',
+        point: { x: 5, y: 3 },
+        variant: 'positive',
+        label: 'F6: selected reply used for this recount.',
+      },
+    ]));
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {

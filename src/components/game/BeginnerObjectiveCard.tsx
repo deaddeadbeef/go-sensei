@@ -2246,12 +2246,16 @@ function buildTargetHintHighlights(objective: BeginnerObjective, point: Point, b
 interface StablePressureExtensionHandoffProps {
   handoff: PressureExtensionHandoff;
   canPlayTarget: boolean;
+  onPreview: (handoff: PressureExtensionHandoff) => void;
+  onPreviewEnd: () => void;
   onPlay: (handoff: PressureExtensionHandoff) => void;
 }
 
 function StablePressureExtensionHandoff({
   handoff,
   canPlayTarget,
+  onPreview,
+  onPreviewEnd,
   onPlay,
 }: StablePressureExtensionHandoffProps) {
   return (
@@ -2278,6 +2282,12 @@ function StablePressureExtensionHandoff({
         }}
         disabled={!canPlayTarget}
         aria-label={handoff.ariaLabel}
+        onPointerEnter={() => onPreview(handoff)}
+        onPointerMove={() => onPreview(handoff)}
+        onMouseEnter={() => onPreview(handoff)}
+        onMouseLeave={onPreviewEnd}
+        onFocus={() => onPreview(handoff)}
+        onBlur={onPreviewEnd}
         onClick={() => onPlay(handoff)}
       >
         {handoff.coord}
@@ -3501,6 +3511,9 @@ export function BeginnerObjectiveCard() {
     setActiveTargetKey(null);
     applyTargetHints(completedFirstReadComparisonPreviewHighlights);
   };
+  const showPressureHandoffPreview = (handoff: PressureExtensionHandoff) => {
+    showPressureReadSequenceContinuation(buildPressureHandoffHighlights(handoff));
+  };
   const returnToLivePressureRead = () => {
     if (activePressureReplayRequestId === null) return;
 
@@ -3965,6 +3978,8 @@ export function BeginnerObjectiveCard() {
                             <StablePressureExtensionHandoff
                               handoff={pressureComparisonExtensionHandoff}
                               canPlayTarget={canPlayTarget}
+                              onPreview={showPressureHandoffPreview}
+                              onPreviewEnd={restorePressureReadHighlights}
                               onPlay={handlePressureHandoffClick}
                             />
                           )}
@@ -4028,6 +4043,8 @@ export function BeginnerObjectiveCard() {
                                     <StablePressureExtensionHandoff
                                       handoff={selectedDefenseExtensionHandoff}
                                       canPlayTarget={canPlayTarget}
+                                      onPreview={showPressureHandoffPreview}
+                                      onPreviewEnd={restorePressureReadHighlights}
                                       onPlay={handlePressureHandoffClick}
                                     />
                                   )}
@@ -4113,6 +4130,8 @@ export function BeginnerObjectiveCard() {
                                         <StablePressureExtensionHandoff
                                           handoff={selectedFollowUpExtensionHandoff}
                                           canPlayTarget={canPlayTarget}
+                                          onPreview={showPressureHandoffPreview}
+                                          onPreviewEnd={restorePressureReadHighlights}
                                           onPlay={handlePressureHandoffClick}
                                         />
                                       )}
