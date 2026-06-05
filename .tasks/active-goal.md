@@ -142,6 +142,7 @@ Latest completed slice:
 - Fed that fresh-area follow-up context into the cloud tutor request body, so remote coaching sees H8/H2 follow-up targets as new-area extensions instead of generic one-space jumps.
 - Updated the numbered-targets local explanation after H8/H2, so marker guidance says H6/F8 or F2/H4 extend the new area and carries the same Board Analysis reasons as the objective card.
 - Updated shape-question local guidance after H8/H2, so "good shape" practice names the fresh area extension and marks H6/F8 or F2/H4 with fresh-area reasons.
+- Updated reading-routine local guidance after H8/H2, so "read ahead" practice applies the three-question routine to the fresh-area H6/F8 or F2/H4 extension.
 
 Next investigation candidates:
-- Whether topic-specific territory or reading answers after H8/H2 should also prefer the fresh-area follow-up target label when they restate the current objective.
+- Whether territory answers after H8/H2 should also prefer the fresh-area follow-up target label when they restate the current objective.
