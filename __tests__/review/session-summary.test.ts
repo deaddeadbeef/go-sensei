@@ -13,6 +13,7 @@ describe('review session summary', () => {
     expect(summary.practiceCategory).toBe('life-and-death');
     expect(summary.practiceLabel).toBe('Practice Life and death');
     expect(summary.attentionProblems.map(({ problem }) => problem.title)).toEqual(['Make Two Eyes']);
+    expect(summary.attentionProblems[0].replayMoveLabel).toBe('C8');
   });
 
   it('recommends reinforcement when answers took extra reading', () => {
@@ -25,6 +26,7 @@ describe('review session summary', () => {
     expect(summary.practiceCategory).toBe('capture');
     expect(summary.practiceLabel).toBe('Drill Capture');
     expect(summary.accuracy).toBe(100);
+    expect(summary.attentionProblems[0].replayMoveLabel).toBe('A8');
   });
 
   it('returns learners to the path after clean reviews', () => {

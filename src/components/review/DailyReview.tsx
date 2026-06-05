@@ -289,14 +289,20 @@ export function DailyReview() {
                       Needs attention
                     </p>
                     <ul className="mt-2 space-y-2">
-                      {summary.attentionProblems.slice(0, 3).map(({ problem, solved, attempts }) => (
-                        <li key={problem.id} className="text-sm" style={{ color: COLORS.ui.textPrimary }}>
-                          <span className="font-semibold">{problem.title}</span>
-                          <span className="ml-2" style={{ color: COLORS.ui.textSecondary }}>
-                            {solved ? `${attempts} attempts` : 'missed'}
-                          </span>
-                        </li>
-                      ))}
+                      {summary.attentionProblems.slice(0, 3).map(({ problem, solved, attempts, replayMoveLabel }) => {
+                        const reviewStatus = solved ? `${attempts} attempts` : 'missed';
+                        const replayCue = replayMoveLabel ? `${reviewStatus} - replay ${replayMoveLabel}` : reviewStatus;
+
+                        return (
+                          <li key={problem.id} className="text-sm" style={{ color: COLORS.ui.textPrimary }}>
+                            <span className="font-semibold">{problem.title}</span>
+                            {' '}
+                            <span className="ml-2" style={{ color: COLORS.ui.textSecondary }}>
+                              {replayCue}
+                            </span>
+                          </li>
+                        );
+                      })}
                     </ul>
                   </div>
                 )}
