@@ -60,8 +60,11 @@ describe('DailyReview', () => {
     render(<DailyReview />);
 
     expect(screen.getByText('No problems due for review. Solve more problems to build your review queue.')).toBeTruthy();
+    expect(screen.getByText('Best next step')).toBeTruthy();
+    expect(screen.getByText("Seed tomorrow's review")).toBeTruthy();
+    expect(screen.getByText(/Go Sensei will bring it back when the lesson is ready to stick/)).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Solve a problem' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Solve a fresh problem' }));
 
     expect(useGameStore.getState().appPhase).toBe('problems');
     expect(useGameStore.getState().preferredProblemFilter).toBeNull();
