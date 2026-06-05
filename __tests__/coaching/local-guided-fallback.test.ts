@@ -1,5 +1,26 @@
 import { getLocalGuidedFallback } from '@/lib/coaching/local-guided-fallback';
-import { createGame, passMove, playMove } from '@/lib/go-engine';
+import { createGame, passMove, playMove, setStone } from '@/lib/go-engine';
+import type { GameState, Point } from '@/lib/go-engine';
+
+function settledShapeGame(): GameState {
+  const stones: Point[] = [
+    { x: 2, y: 2 },
+    { x: 4, y: 2 },
+    { x: 6, y: 2 },
+    { x: 2, y: 4 },
+    { x: 3, y: 4 },
+    { x: 4, y: 4 },
+    { x: 6, y: 4 },
+    { x: 2, y: 6 },
+    { x: 4, y: 6 },
+    { x: 6, y: 6 },
+  ];
+
+  return stones.reduce(
+    (game, point) => ({ ...game, board: setStone(game.board, point, 'black') }),
+    createGame(9),
+  );
+}
 
 describe('local guided fallback', () => {
   it('keeps a guided learner moving after a failed AI response to a first move', () => {
@@ -125,6 +146,32 @@ describe('local guided fallback', () => {
     expect(fallback?.text).not.toContain('GitHub login');
     expect(fallback?.text).toContain('Start with a corner');
     expect(fallback?.text).toContain('Use the marked targets to make the next move concrete.');
+  });
+
+  it('marks fresh-area targets with direction-aware reasons during local fallback', () => {
+    const fallback = getLocalGuidedFallback(settledShapeGame(), 'guided', 'auth-unavailable');
+
+    expect(fallback).toMatchObject({
+      shouldPassSensei: false,
+      conceptIds: expect.arrayContaining(['direction-of-play', 'shape']),
+      actions: [{ id: 'hint', label: 'Show targets' }],
+    });
+    expect(fallback?.text).toContain('Choose a new area');
+    expect(fallback?.text).toContain('Try H8 or H2.');
+    expect(fallback?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-fallback-move-7,1',
+        point: { x: 7, y: 1 },
+        rank: 1,
+        reason: 'Consider H8 as a fresh upper-right direction away from the settled local shape.',
+      },
+      {
+        id: 'local-fallback-move-7,7',
+        point: { x: 7, y: 7 },
+        rank: 2,
+        reason: 'Consider H2 as a fresh lower-right direction away from the settled local shape.',
+      },
+    ]);
   });
 
   it('does not take over non-beginner modes', () => {
