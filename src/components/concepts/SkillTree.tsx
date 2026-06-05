@@ -87,6 +87,20 @@ export function SkillTree() {
       .filter((concept): concept is Concept => Boolean(concept))
       .filter((concept) => getMastery(concept.id).level < 1)
     : [];
+  const firstActionablePrerequisite = missingPrerequisites.find((concept) => (
+    Boolean(findLessonForConcept(concept.id)) || Boolean(findProblemCategoryForConcept(concept.id))
+  )) ?? null;
+  const prerequisiteLesson = firstActionablePrerequisite
+    ? findLessonForConcept(firstActionablePrerequisite.id)
+    : null;
+  const prerequisiteProblemCategory = firstActionablePrerequisite
+    ? findProblemCategoryForConcept(firstActionablePrerequisite.id)
+    : null;
+  const prerequisiteActionLabel = prerequisiteLesson
+    ? `Start prerequisite lesson: ${prerequisiteLesson.title}`
+    : prerequisiteProblemCategory
+      ? `Practice prerequisite ${problemCategoryTitle(prerequisiteProblemCategory).toLowerCase()} problems`
+      : null;
 
   const conceptsByCategory = CATEGORY_ORDER.map((cat) => ({
     category: cat,
@@ -337,6 +351,15 @@ export function SkillTree() {
                 <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.text }}>
                   Build the prerequisite ideas before practicing this concept directly.
                 </p>
+                {firstActionablePrerequisite && prerequisiteActionLabel && (
+                  <button
+                    onClick={() => startConceptPractice(firstActionablePrerequisite)}
+                    className="mt-3 rounded-lg px-3 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
+                    style={{ backgroundColor: COLORS.accent, color: COLORS.bg }}
+                  >
+                    {prerequisiteActionLabel}
+                  </button>
+                )}
                 {missingPrerequisites.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {missingPrerequisites.map((concept) => (
@@ -354,7 +377,7 @@ export function SkillTree() {
                 <button
                   onClick={showLearningPath}
                   className="mt-3 rounded-lg px-3 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
-                  style={{ backgroundColor: COLORS.accent, color: COLORS.bg }}
+                  style={{ backgroundColor: COLORS.cardHover, color: COLORS.text, border: `1px solid ${COLORS.border}` }}
                 >
                   Follow learning path
                 </button>
