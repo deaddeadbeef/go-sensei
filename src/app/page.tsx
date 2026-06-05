@@ -159,10 +159,13 @@ export default function GamePage() {
       {appPhase === 'review' && <DailyReview />}
       {appPhase === 'dashboard' && <ProgressDashboard />}
       {appPhase === 'game' && (
-        <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+        <div
+          data-testid="game-shell"
+          className="flex-1 min-h-0 flex flex-col overflow-y-auto overflow-x-hidden md:flex-row md:overflow-hidden"
+        >
           {/* Left: Board area */}
-          <div className="flex-[7] flex flex-col relative min-w-0 min-h-0 overflow-hidden">
-            <div data-testid="board-bubble-layer" className="relative flex min-h-[300px] flex-1 overflow-hidden">
+          <div className="flex-none flex flex-col relative min-w-0 md:flex-[7] md:min-h-0 md:overflow-hidden">
+            <div data-testid="board-bubble-layer" className="relative flex min-h-[300px] shrink-0 overflow-hidden md:flex-1">
               <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
@@ -172,8 +175,8 @@ export default function GamePage() {
               <SenseiBubble />
               <BoardContainer />
             </div>
-            <div data-testid="guided-control-panel" className="flex min-h-0 shrink flex-col overflow-hidden">
-              <div data-testid="guided-objective-scroll" className="min-h-0 overflow-y-auto">
+            <div data-testid="guided-control-panel" className="flex shrink-0 flex-col md:min-h-0 md:shrink md:overflow-hidden">
+              <div data-testid="guided-objective-scroll" className="md:min-h-0 md:overflow-y-auto">
                 <BeginnerObjectiveCard />
               </div>
               <GameControls onNewGame={handleNewGame} onPass={handlePass} onUndo={handleUndo} />
@@ -183,7 +186,8 @@ export default function GamePage() {
 
           {/* Right: Sidebar — full-width on mobile, side panel on desktop */}
           <div
-            className="flex-[3] flex flex-col md:min-w-[280px] md:max-w-[400px] border-t md:border-t-0 md:border-l"
+            data-testid="game-sidebar"
+            className="flex-none flex h-[62dvh] min-h-[360px] max-h-[620px] min-w-0 flex-col border-t md:flex-[3] md:min-h-0 md:h-auto md:max-h-none md:min-w-[280px] md:max-w-[400px] md:border-t-0 md:border-l"
             style={{ borderColor: COLORS.ui.bgCard, backgroundColor: COLORS.ui.bgPrimary }}
           >
             {/* Rules panel (compact, top) */}
