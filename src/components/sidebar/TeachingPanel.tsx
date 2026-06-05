@@ -1,6 +1,7 @@
 'use client';
 
 import { CONCEPTS } from '@/lib/concepts/concept-data';
+import { getSuggestionMarkerLabel } from '@/components/board/overlays/SuggestionOverlay';
 import { getMoveInsight } from '@/lib/coaching/move-insight';
 import { useConceptStore } from '@/stores/concept-store';
 import { useGameStore } from '@/stores/game-store';
@@ -117,14 +118,14 @@ export function TeachingPanel() {
                       type="button"
                       className="flex w-full items-start gap-1.5 rounded-sm text-left transition hover:bg-white/[0.04] disabled:cursor-default disabled:hover:bg-transparent"
                       disabled={!canPlaySuggestion}
-                      aria-label={`Play ${coordLabel(s.point.x, s.point.y, boardSize)} suggestion: ${s.reason}`}
+                      aria-label={`Play candidate ${getSuggestionMarkerLabel(s.rank)} at ${coordLabel(s.point.x, s.point.y, boardSize)}: ${s.reason}`}
                       onClick={() => handleSuggestionClick(s.point)}
                     >
                       <span
                         className="shrink-0 rounded px-1 py-0.5 text-[10px] font-mono font-bold leading-none"
                         style={{ backgroundColor: `${variantColors.neutral}33`, color: variantColors.neutral }}
                       >
-                        {coordLabel(s.point.x, s.point.y, boardSize)} #{s.rank}
+                        {getSuggestionMarkerLabel(s.rank)} {coordLabel(s.point.x, s.point.y, boardSize)}
                       </span>
                       <span className="text-xs text-white/70 leading-tight">{s.reason}</span>
                     </button>
