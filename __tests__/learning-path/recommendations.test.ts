@@ -56,7 +56,7 @@ describe('learning path recommendations', () => {
       actionLabel: 'Start lesson: What is a Group?',
     });
     expect(recommendation.focusConcepts).toEqual(['stones-and-board', 'groups']);
-    expect(recommendation.practicePlan.length).toBeGreaterThan(0);
+    expect(recommendation.practicePlan).toContain('If the answer is shown, explain why it matches the hint before continuing.');
   });
 
   it('due review beats new material', () => {
@@ -79,7 +79,7 @@ describe('learning path recommendations', () => {
       filter: 'capture',
       actionLabel: 'Open capture problems',
     });
-    expect(recommendation.practicePlan).toContain('If you miss three times, study the shown solution line.');
+    expect(recommendation.practicePlan).toContain('If you miss three times, cover the numbers and explain the first solution move.');
   });
 
   it('eyes lesson completion recommends life-and-death problems before more guided games', () => {
