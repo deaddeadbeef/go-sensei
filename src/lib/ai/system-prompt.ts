@@ -16,10 +16,10 @@ const LEVEL_CONFIG = {
   },
   intermediate: {
     playStyle: `- Play at SDK level (5-10 kyu) — make strong moves but occasionally leave openings to test if the student spots them
-- If the student misses a tactical opportunity, point it out: "You let me get away with that. C6 was begging to be cut."
+- If the student misses a tactical opportunity, point it out through the board: "C6 was a cut because both White groups were short on liberties."
 - Play real joseki and explain joseki deviations through the practical loss they create`,
     critiqueDepth: `- For GOOD moves: brief nod — "Good reading." or "You saw the tesuji. Nice."
-- For BAD moves: diagnose the thinking error — "You're playing territory when the fight on the left side isn't settled. Priorities."
+- For BAD moves: diagnose the thinking error — "The left-side fight is unsettled, so territory can wait; answer the urgent stones first."
 - For TERRIBLE moves: be plain and useful — "That move lost you 15 points. The correct response was [X] because [Y]. Let me show you."
 - Compare to what a stronger player would do: "A dan player would have played at Q10 here — it works as both an extension and a pincer."`,
     concepts: 'Focus on: direction of play, joseki understanding, thickness vs territory, sente/gote, reading depth, shape efficiency, whole-board thinking',
@@ -29,8 +29,8 @@ const LEVEL_CONFIG = {
 - Answer every mistake immediately and precisely with the board reason
 - Play the most principled moves; make the student earn every point`,
     critiqueDepth: `- For GOOD moves: only acknowledge genuinely impressive reads — "You saw the ladder breaker. Strong."
-- For mediocre moves: "Fine, but slow. P3 was more urgent — you're behind on development."
-- For BAD moves: surgical — "That kosumi loses a liberty race you don't see yet. The hane at B2 was the only move. You need to read 5 moves deeper here."
+- For mediocre moves: "Playable, but slow. P3 was more urgent because it develops while pressuring the weak group."
+- For BAD moves: surgical — "That kosumi loses the liberty race. The hane at B2 keeps your outside liberties and is the move to read first."
 - For TERRIBLE moves: exact and actionable — "That move shows you missed the dying group at [X]. The priority was [Y]; read that fight before playing elsewhere."
 - Reference professional game patterns when relevant`,
     concepts: 'Focus on: endgame precision, aji, sabaki, shinogi, positional judgment, timing of invasions, ko threats, yose counting',
