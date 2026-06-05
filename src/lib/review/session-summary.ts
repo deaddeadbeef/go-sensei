@@ -1,5 +1,7 @@
 import { problemCategoryTitle } from '@/lib/learning-path/concept-practice';
+import type { BoardSize } from '@/lib/go-engine/types';
 import { PROBLEMS } from '@/lib/problems/problem-data';
+import { formatProblemPoint, getPrimarySolutionLine } from '@/lib/problems/solution-review';
 import type { Problem, ProblemCategory } from '@/lib/problems/types';
 
 export interface ReviewSessionResult {
@@ -22,6 +24,7 @@ export interface ReviewSessionSummary {
     problem: Problem;
     solved: boolean;
     attempts: number;
+    replayMoveLabel: string | null;
   }>;
 }
 
@@ -29,6 +32,13 @@ const PROBLEM_BY_ID = new Map(PROBLEMS.map((problem) => [problem.id, problem]));
 
 function resultProblem(result: ReviewSessionResult): Problem | null {
   return PROBLEM_BY_ID.get(result.problemId) ?? null;
+}
+
+function getReplayMoveLabel(problem: Problem): string | null {
+  const firstStudentStep = getPrimarySolutionLine(problem).find((step) => step.role === 'student') ?? null;
+  return firstStudentStep
+    ? formatProblemPoint(firstStudentStep.move, problem.boardSize as BoardSize)
+    : null;
 }
 
 export function buildReviewSessionSummary(results: ReviewSessionResult[]): ReviewSessionSummary {
@@ -45,7 +55,14 @@ export function buildReviewSessionSummary(results: ReviewSessionResult[]): Revie
   const attentionProblems = attentionResults
     .map((result) => {
       const problem = resultProblem(result);
-      return problem ? { problem, solved: result.solved, attempts: result.attempts } : null;
+      return problem
+        ? {
+            problem,
+            solved: result.solved,
+            attempts: result.attempts,
+            replayMoveLabel: getReplayMoveLabel(problem),
+          }
+        : null;
     })
     .filter((item): item is NonNullable<typeof item> => item !== null);
 
