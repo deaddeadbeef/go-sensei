@@ -38,6 +38,24 @@ describe('ProgressDashboard', () => {
     expect(screen.getByText('0 due today')).toBeTruthy();
   });
 
+  it('keeps stale progress ids out of dashboard totals', () => {
+    useProgressStore.setState({
+      completedLessons: ['groups', 'stale-lesson-id'],
+      problemAttempts: [
+        solved('capture-001'),
+        solved('missing-problem-id'),
+        { problemId: 'capture-002', solved: false, attempts: 2, moveSequence: [], timestamp: 1 },
+      ],
+    });
+
+    render(<ProgressDashboard />);
+
+    expect(screen.getByText('1/10')).toBeTruthy();
+    expect(screen.getByText('9 remaining')).toBeTruthy();
+    expect(screen.getByText('1/20')).toBeTruthy();
+    expect(screen.getByText('1/20 solved · 50% accuracy')).toBeTruthy();
+  });
+
   it('turns dashboard metrics into a recommended next move', () => {
     render(<ProgressDashboard />);
 
