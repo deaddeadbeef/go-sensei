@@ -27,6 +27,14 @@ export interface BeginnerObjectiveProgress {
   objectiveId: BeginnerObjective['id'];
 }
 
+export interface FreshAreaFollowUpContext {
+  anchor: Point;
+  anchorCoord: string;
+  areaLabel: string;
+  directionLabel: string;
+  targetPoints: Point[];
+}
+
 const CORNER_TARGETS_9X9: Point[] = [
   { x: 2, y: 2 },
   { x: 6, y: 2 },
@@ -86,14 +94,19 @@ export function getBeginnerObjectiveSuggestionReason(
   objective: BeginnerObjective,
   point: Point,
   boardSize: BoardSize,
+  followUpContext?: FreshAreaFollowUpContext | null,
 ): string {
   const coord = pointToCoord(point, boardSize);
 
   switch (objective.id) {
     case 'claim-corner':
       return `Start at ${coord}: the board edge helps this stone make territory.`;
-    case 'extend-from-stone':
+    case 'extend-from-stone': {
+      if (followUpContext?.targetPoints.some((target) => pointEquals(target, point))) {
+        return `Try ${coord} to give ${followUpContext.anchorCoord} a partner in the ${followUpContext.areaLabel} while keeping a one-space gap.`;
+      }
       return `Try ${coord} as a one-space jump that works with your stones.`;
+    }
     case 'choose-new-area':
       return `Consider ${coord} as a fresh ${getBoardAreaDirectionLabel(point, boardSize)} away from the settled local shape.`;
     case 'look-for-weak-groups':
@@ -105,15 +118,71 @@ export function formatObjectiveTargetText(
   objective: BeginnerObjective,
   boardSize: BoardSize,
   limit = 4,
+  followUpContext?: FreshAreaFollowUpContext | null,
 ): string | null {
   if (objective.targetPoints.length === 0) return null;
 
-  const shownCoords = objective.targetPoints
-    .slice(0, limit)
+  const shownTargets = objective.targetPoints.slice(0, limit);
+  const shownCoords = shownTargets
     .map((point) => pointToCoord(point, boardSize));
+
+  if (objective.id === 'extend-from-stone' && followUpContext) {
+    const followUpCoords = shownTargets
+      .filter((point) => followUpContext.targetPoints.some((target) => pointEquals(target, point)))
+      .map((point) => pointToCoord(point, boardSize));
+
+    if (followUpCoords.length > 0) {
+      return `Extend ${followUpContext.anchorCoord} into the ${followUpContext.areaLabel}: try ${joinCoordinateList(followUpCoords)}.`;
+    }
+  }
+
   const suffix = objective.targetPoints.length > shownCoords.length ? ' first' : '';
 
   return `Try ${joinCoordinateList(shownCoords)}${suffix}.`;
+}
+
+function isOneSpaceJumpFrom(anchor: Point, target: Point): boolean {
+  return ONE_SPACE_JUMP_DELTAS.some((delta) => (
+    anchor.x + delta.x === target.x
+    && anchor.y + delta.y === target.y
+  ));
+}
+
+function formatAreaLabel(directionLabel: string): string {
+  return directionLabel.endsWith(' direction')
+    ? directionLabel.replace(/ direction$/, ' area')
+    : directionLabel;
+}
+
+export function getFreshAreaFollowUpContext(
+  game: GameState,
+  teachingLevel: TeachingLevel,
+  objective = getBeginnerObjective({
+    boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
+    moveCount: game.moveHistory.length,
+    currentPlayer: 'black',
+    teachingLevel,
+  }),
+): FreshAreaFollowUpContext | null {
+  if (!objective || objective.id !== 'extend-from-stone') return null;
+
+  const progress = getBeginnerObjectiveProgress(game, teachingLevel);
+  if (progress?.status !== 'met' || progress.objectiveId !== 'choose-new-area') return null;
+
+  const targetPoints = objective.targetPoints.filter((point) => isOneSpaceJumpFrom(progress.lastMove, point));
+  if (targetPoints.length === 0) return null;
+
+  const directionLabel = getBoardAreaDirectionLabel(progress.lastMove, game.board.size);
+
+  return {
+    anchor: { ...progress.lastMove },
+    anchorCoord: pointToCoord(progress.lastMove, game.board.size),
+    areaLabel: formatAreaLabel(directionLabel),
+    directionLabel,
+    targetPoints: targetPoints.map((point) => ({ ...point })),
+  };
 }
 
 function getStones(board: BoardState, color: StoneColor): Point[] {

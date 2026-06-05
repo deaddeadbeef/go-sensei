@@ -23,9 +23,10 @@ import {
   getBeginnerObjectiveSuggestionReason,
   getBeginnerObjective,
   getBeginnerObjectiveProgress,
+  getFreshAreaFollowUpContext,
 } from '@/lib/coaching/beginner-objectives';
 import { getBeginnerObjectiveActions, getBeginnerObjectiveLessonAction } from '@/lib/coaching/beginner-objective-actions';
-import type { BeginnerObjective } from '@/lib/coaching/beginner-objectives';
+import type { BeginnerObjective, FreshAreaFollowUpContext } from '@/lib/coaching/beginner-objectives';
 import { getMoveInsight } from '@/lib/coaching/move-insight';
 import type { SenseiAction } from '@/lib/coaching/sensei-actions';
 
@@ -735,12 +736,17 @@ function isInfluenceQuestion(q: string): boolean {
     || /\bhow\s+does\s+(a\s+)?cent(er|re)\s+stone\s+(help|work|matter)\b/.test(q);
 }
 
-function objectiveSuggestions(objective: BeginnerObjective, boardSize: BoardSize, idPrefix: string): LocalSuggestionFocus[] {
+function objectiveSuggestions(
+  objective: BeginnerObjective,
+  boardSize: BoardSize,
+  idPrefix: string,
+  followUpContext?: FreshAreaFollowUpContext | null,
+): LocalSuggestionFocus[] {
   return objective.targetPoints.slice(0, 4).map((point, index) => ({
     id: `${idPrefix}-${pointKey(point)}`,
     point: copyPoint(point),
     rank: index + 1,
-    reason: getBeginnerObjectiveSuggestionReason(objective, point, boardSize),
+    reason: getBeginnerObjectiveSuggestionReason(objective, point, boardSize, followUpContext),
   }));
 }
 
@@ -882,6 +888,7 @@ function targetReason(
   point: Point,
   boardSize: BoardSize,
   anchor: Point | null,
+  followUpContext?: FreshAreaFollowUpContext | null,
 ): string {
   const coord = pointToCoord(point, boardSize);
 
@@ -890,6 +897,10 @@ function targetReason(
   }
 
   if (objective.id === 'extend-from-stone') {
+    if (followUpContext?.targetPoints.some((target) => pointEquals(target, point))) {
+      return `${coord} is marked because it extends ${followUpContext.anchorCoord} into the ${followUpContext.areaLabel}: close enough to give that fresh stone a partner, but far enough away to grow space instead of clumping.`;
+    }
+
     const anchorCoord = anchor ? pointToCoord(anchor, boardSize) : 'your anchor stone';
     return `${coord} is marked because it is a one-space jump from ${anchorCoord}: close enough to work with that stone, but far enough away to grow territory instead of clumping.`;
   }
@@ -915,7 +926,8 @@ function buildTargetReasonAnswer(game: GameState, teachingLevel: TeachingLevel, 
     : objective.targetPoints[0];
   const requestedCoord = requestedPoint ? pointToCoord(requestedPoint, game.board.size) : null;
   const targetCoord = pointToCoord(targetPoint, game.board.size);
-  const suggestions = objectiveSuggestions(objective, game.board.size, 'local-target-reason-move');
+  const followUpContext = getFreshAreaFollowUpContext(game, teachingLevel, objective);
+  const suggestions = objectiveSuggestions(objective, game.board.size, 'local-target-reason-move', followUpContext);
   const action = getBeginnerObjectiveLessonAction(objective);
   const anchorMove = lastBlackPlacedMove(game);
   const lines: string[] = [];
@@ -945,7 +957,7 @@ function buildTargetReasonAnswer(game: GameState, teachingLevel: TeachingLevel, 
     }
   }
 
-  lines.push(targetReason(objective, targetPoint, game.board.size, anchorMove?.point ?? null));
+  lines.push(targetReason(objective, targetPoint, game.board.size, anchorMove?.point ?? null, followUpContext));
 
   const otherTargets = objective.targetPoints
     .filter((point) => !pointEquals(point, targetPoint))
@@ -1035,7 +1047,8 @@ function buildCandidateMoveAnswer(game: GameState, teachingLevel: TeachingLevel,
   if (!objective) return null;
 
   const coord = pointToCoord(requestedPoint, game.board.size);
-  const suggestions = objectiveSuggestions(objective, game.board.size, 'local-candidate-move');
+  const followUpContext = getFreshAreaFollowUpContext(game, teachingLevel, objective);
+  const suggestions = objectiveSuggestions(objective, game.board.size, 'local-candidate-move', followUpContext);
   const action = getBeginnerObjectiveLessonAction(objective);
   const targetCoordText = objectiveTargetCoordList(objective, game.board.size);
   const isMarkedTarget = objective.targetPoints.some((point) => pointEquals(point, requestedPoint));
@@ -1060,7 +1073,7 @@ function buildCandidateMoveAnswer(game: GameState, teachingLevel: TeachingLevel,
     return {
       text: [
         `Yes. ${coord} fits the current goal: ${objective.title}.`,
-        targetReason(objective, requestedPoint, game.board.size, anchorMove?.point ?? null),
+        targetReason(objective, requestedPoint, game.board.size, anchorMove?.point ?? null, followUpContext),
         'I marked the current targets again so you can compare the options before playing.',
       ].join(' '),
       conceptIds: objective.conceptIds,
@@ -1100,6 +1113,7 @@ function comparisonTargetReason(
   points: Point[],
   boardSize: BoardSize,
   anchor: Point | null,
+  followUpContext?: FreshAreaFollowUpContext | null,
 ): string {
   const coords = points.map((point) => pointToCoord(point, boardSize));
   const coordText = joinList(coords);
@@ -1109,6 +1123,12 @@ function comparisonTargetReason(
   }
 
   if (objective.id === 'extend-from-stone') {
+    const allFollowUpTargets = followUpContext
+      && points.every((point) => followUpContext.targetPoints.some((target) => pointEquals(target, point)));
+    if (allFollowUpTargets) {
+      return `${coordText} both extend ${followUpContext.anchorCoord} into the ${followUpContext.areaLabel}. They keep the same fresh-area plan alive in different directions: close enough to give ${followUpContext.anchorCoord} a partner, but not so close that Black clumps.`;
+    }
+
     const anchorCoord = anchor ? pointToCoord(anchor, boardSize) : 'your anchor stone';
     return `${coordText} are both one-space jumps from ${anchorCoord}. They teach the same idea in different directions: keep a one-point gap so the stones help each other without clumping.`;
   }
@@ -1141,7 +1161,8 @@ function buildCandidateComparisonAnswer(game: GameState, teachingLevel: Teaching
 
   if (!objective) return null;
 
-  const suggestions = objectiveSuggestions(objective, game.board.size, 'local-candidate-comparison-move');
+  const followUpContext = getFreshAreaFollowUpContext(game, teachingLevel, objective);
+  const suggestions = objectiveSuggestions(objective, game.board.size, 'local-candidate-comparison-move', followUpContext);
   const action = getBeginnerObjectiveLessonAction(objective);
   const anchorMove = lastBlackPlacedMove(game);
   const targetCoordText = objectiveTargetCoordList(objective, game.board.size);
@@ -1168,13 +1189,13 @@ function buildCandidateComparisonAnswer(game: GameState, teachingLevel: Teaching
 
   if (markedPoints.length >= 2 && unmarkedPoints.length === 0) {
     lines.push(`Both choices fit the current goal: ${objective.title}.`);
-    lines.push(comparisonTargetReason(objective, markedPoints, game.board.size, anchorMove?.point ?? null));
+    lines.push(comparisonTargetReason(objective, markedPoints, game.board.size, anchorMove?.point ?? null, followUpContext));
     lines.push('I marked both choices again; choose the side where you want your next area to grow.');
   } else if (markedPoints.length >= 1) {
     const preferred = markedPoints[0];
     const preferredCoord = pointToCoord(preferred, game.board.size);
     lines.push(`I would choose ${preferredCoord} for this beginner goal.`);
-    lines.push(targetReason(objective, preferred, game.board.size, anchorMove?.point ?? null));
+    lines.push(targetReason(objective, preferred, game.board.size, anchorMove?.point ?? null, followUpContext));
     for (const point of unmarkedPoints.slice(0, 2)) {
       lines.push(candidateMissReason(objective, point, game.board.size, anchorMove?.point ?? null, game.board));
     }
@@ -3724,7 +3745,8 @@ function buildMoveImpactAnswer(game: GameState, teachingLevel: TeachingLevel): L
     currentPlayer: 'black',
     teachingLevel,
   });
-  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-move-impact-next-move') : [];
+  const followUpContext = objective ? getFreshAreaFollowUpContext(game, teachingLevel, objective) : null;
+  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-move-impact-next-move', followUpContext) : [];
   const action = objective ? getBeginnerObjectiveLessonAction(objective) : null;
 
   if (!move) {
@@ -3748,7 +3770,7 @@ function buildMoveImpactAnswer(game: GameState, teachingLevel: TeachingLevel): L
   const coord = pointToCoord(move.point, game.board.size);
   const progress = getBeginnerObjectiveProgress(game, teachingLevel);
   const insight = getMoveInsight(game, teachingLevel);
-  const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
+  const targetText = objective ? formatObjectiveTargetText(objective, game.board.size, 4, followUpContext) : null;
   const highlightVariant: LocalHighlightFocus['variant'] = progress?.status === 'missed'
     ? 'warning'
     : progress?.status === 'met'
@@ -4011,7 +4033,8 @@ function buildMoveReviewAnswer(game: GameState, teachingLevel: TeachingLevel): L
     currentPlayer: 'black',
     teachingLevel,
   });
-  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-review-next-move') : [];
+  const followUpContext = objective ? getFreshAreaFollowUpContext(game, teachingLevel, objective) : null;
+  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-review-next-move', followUpContext) : [];
   const action = objective ? getBeginnerObjectiveLessonAction(objective) : null;
 
   if (!progress && !insight) {
@@ -4035,7 +4058,7 @@ function buildMoveReviewAnswer(game: GameState, teachingLevel: TeachingLevel): L
     lines.push(insight.observation);
     lines.push(`Next: ${insight.nextStep}`);
   } else if (objective) {
-    const targetText = formatObjectiveTargetText(objective, game.board.size);
+    const targetText = formatObjectiveTargetText(objective, game.board.size, 4, followUpContext);
     lines.push(`Next: ${objective.instruction}${targetText ? ` ${targetText}` : ''}`);
   }
 
@@ -4066,8 +4089,9 @@ function buildObjectiveAnswer(game: GameState, teachingLevel: TeachingLevel): Lo
 
   if (!objective) return null;
 
-  const targetText = formatObjectiveTargetText(objective, game.board.size);
-  const suggestions = objectiveSuggestions(objective, game.board.size, 'local-objective-move');
+  const followUpContext = getFreshAreaFollowUpContext(game, teachingLevel, objective);
+  const targetText = formatObjectiveTargetText(objective, game.board.size, 4, followUpContext);
+  const suggestions = objectiveSuggestions(objective, game.board.size, 'local-objective-move', followUpContext);
   const action = getBeginnerObjectiveLessonAction(objective);
 
   return {
@@ -4101,8 +4125,9 @@ function buildConfusionAnswer(game: GameState, teachingLevel: TeachingLevel): Lo
     };
   }
 
-  const targetText = formatObjectiveTargetText(objective, game.board.size);
-  const suggestions = objectiveSuggestions(objective, game.board.size, 'local-confusion-move');
+  const followUpContext = getFreshAreaFollowUpContext(game, teachingLevel, objective);
+  const targetText = formatObjectiveTargetText(objective, game.board.size, 4, followUpContext);
+  const suggestions = objectiveSuggestions(objective, game.board.size, 'local-confusion-move', followUpContext);
 
   return {
     text: [

@@ -2,7 +2,9 @@ import {
   formatObjectiveTargetText,
   getBoardAreaDirectionLabel,
   getBeginnerObjective,
+  getBeginnerObjectiveSuggestionReason,
   getBeginnerObjectiveProgress,
+  getFreshAreaFollowUpContext,
 } from '@/lib/coaching/beginner-objectives';
 import { createBoard, createGame, passMove, playMove, setStone } from '@/lib/go-engine';
 import type { BoardState, Point, StoneColor } from '@/lib/go-engine/types';
@@ -234,6 +236,72 @@ describe('beginner objectives', () => {
       text: 'Good: H8 chose the upper-right direction after the local shape settled. Before the next move, say what this H8 stone is trying to open so White\'s reply has context.',
     });
     expect(getBeginnerObjectiveProgress(offTargetMove.newState, 'guided')).toBeNull();
+  });
+
+  it('names fresh-area follow-up targets as extensions of the new plan', () => {
+    const settledBoard = boardWith([
+      { point: { x: 2, y: 2 }, color: 'black' },
+      { point: { x: 4, y: 2 }, color: 'black' },
+      { point: { x: 6, y: 2 }, color: 'black' },
+      { point: { x: 2, y: 4 }, color: 'black' },
+      { point: { x: 3, y: 4 }, color: 'black' },
+      { point: { x: 4, y: 4 }, color: 'black' },
+      { point: { x: 6, y: 4 }, color: 'black' },
+      { point: { x: 2, y: 6 }, color: 'black' },
+      { point: { x: 4, y: 6 }, color: 'black' },
+      { point: { x: 6, y: 6 }, color: 'black' },
+    ]);
+    const settledGame = { ...createGame(9), board: settledBoard };
+    const h8Move = playMove(settledGame, { x: 7, y: 1 });
+    const h2Move = playMove(settledGame, { x: 7, y: 7 });
+    if (!h8Move.success) throw new Error('test setup H8 move failed');
+    if (!h2Move.success) throw new Error('test setup H2 move failed');
+
+    const h8Objective = getBeginnerObjective({
+      boardSize: 9,
+      board: h8Move.newState.board,
+      moveHistory: h8Move.newState.moveHistory,
+      moveCount: h8Move.newState.moveHistory.length,
+      currentPlayer: 'black',
+      teachingLevel: 'guided',
+    });
+    const h2Objective = getBeginnerObjective({
+      boardSize: 9,
+      board: h2Move.newState.board,
+      moveHistory: h2Move.newState.moveHistory,
+      moveCount: h2Move.newState.moveHistory.length,
+      currentPlayer: 'black',
+      teachingLevel: 'guided',
+    });
+    if (!h8Objective || !h2Objective) throw new Error('Expected follow-up objectives');
+
+    const h8Context = getFreshAreaFollowUpContext(h8Move.newState, 'guided', h8Objective);
+    const h2Context = getFreshAreaFollowUpContext(h2Move.newState, 'guided', h2Objective);
+
+    expect(h8Context).toMatchObject({
+      anchor: { x: 7, y: 1 },
+      anchorCoord: 'H8',
+      areaLabel: 'upper-right area',
+      directionLabel: 'upper-right direction',
+      targetPoints: [
+        { x: 7, y: 3 },
+        { x: 5, y: 1 },
+      ],
+    });
+    expect(formatObjectiveTargetText(h8Objective, 9, 4, h8Context)).toBe('Extend H8 into the upper-right area: try H6 or F8.');
+    expect(getBeginnerObjectiveSuggestionReason(h8Objective, { x: 7, y: 3 }, 9, h8Context)).toBe('Try H6 to give H8 a partner in the upper-right area while keeping a one-space gap.');
+
+    expect(h2Context).toMatchObject({
+      anchor: { x: 7, y: 7 },
+      anchorCoord: 'H2',
+      areaLabel: 'lower-right area',
+      directionLabel: 'lower-right direction',
+      targetPoints: [
+        { x: 5, y: 7 },
+        { x: 7, y: 5 },
+      ],
+    });
+    expect(formatObjectiveTargetText(h2Objective, 9, 4, h2Context)).toBe('Extend H2 into the lower-right area: try F2 or H4.');
   });
 
   it('reports when the learner completed the marked opening objective', () => {

@@ -3,6 +3,7 @@ import {
   formatObjectiveTargetText,
   getBeginnerObjectiveSuggestionReason,
   getBeginnerObjective,
+  getFreshAreaFollowUpContext,
 } from '@/lib/coaching/beginner-objectives';
 import { getBeginnerObjectiveActions } from '@/lib/coaching/beginner-objective-actions';
 import {
@@ -51,7 +52,8 @@ function buildObjectiveSuggestions(game: GameState, teachingLevel: TeachingLevel
     return { conceptIds: [], line: null, suggestions: [], actions: [] };
   }
 
-  const targetText = formatObjectiveTargetText(objective, game.board.size);
+  const followUpContext = getFreshAreaFollowUpContext(game, teachingLevel, objective);
+  const targetText = formatObjectiveTargetText(objective, game.board.size, 4, followUpContext);
 
   return {
     conceptIds: objective.conceptIds,
@@ -60,7 +62,7 @@ function buildObjectiveSuggestions(game: GameState, teachingLevel: TeachingLevel
       id: `illegal-move-target-${pointKey(target)}`,
       point: { x: target.x, y: target.y },
       rank: index + 1,
-      reason: getBeginnerObjectiveSuggestionReason(objective, target, game.board.size),
+      reason: getBeginnerObjectiveSuggestionReason(objective, target, game.board.size, followUpContext),
     })),
     actions: getBeginnerObjectiveActions(objective),
   };

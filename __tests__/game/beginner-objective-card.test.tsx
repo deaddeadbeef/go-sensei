@@ -1116,6 +1116,31 @@ describe('BeginnerObjectiveCard', () => {
     act(() => vi.runOnlyPendingTimers());
     expect(screen.getByText('Why H2')).toBeTruthy();
     expect(screen.getByText('H2 opens the lower-right direction after the nearby shape settled. It is far enough away to start a new plan without crowding your stones.')).toBeTruthy();
+    fireEvent.blur(h2Target);
+    fireEvent.click(h8Target);
+    act(() => {
+      useGameStore.getState().pass();
+    });
+    expect(screen.getByText('Extend H8 into the upper-right area: try H6 or F8.')).toBeTruthy();
+    const h6Target = screen.getByRole('button', { name: 'Play H6 target for Make your stones work together' });
+    fireEvent.focus(h6Target);
+    act(() => vi.runOnlyPendingTimers());
+    expect(screen.getByText('Why H6')).toBeTruthy();
+    expect(screen.getByText('H6 extends H8 into the upper-right area; H7 stays open so the fresh-area stone gets a flexible partner instead of staying isolated.')).toBeTruthy();
+    expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
+      {
+        id: 'target-hint-target-7,3',
+        point: { x: 7, y: 3 },
+        variant: 'positive',
+        label: 'H6: extends H8 into the upper-right area.',
+      },
+      {
+        id: 'target-hint-anchor-7,1',
+        point: { x: 7, y: 1 },
+        variant: 'neutral',
+        label: 'H8: fresh-area anchor for this extension.',
+      },
+    ]));
     expect(screen.queryByText('Before playing, ask which stones have little room to escape.')).toBeNull();
     expect(screen.queryByText('Progress check: D5 stayed near the settled shape. Look for a fresh direction before rereading the same local area.')).toBeNull();
   });
