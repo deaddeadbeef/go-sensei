@@ -128,6 +128,14 @@ describe('SkillTree', () => {
     expect(screen.getByTestId('skill-tree-detail').textContent).toContain('Stones & Board');
   });
 
+  it('returns learners to the board from the skill tree', () => {
+    render(<SkillTree />);
+
+    clickButtonText('Return to board');
+
+    expect(useGameStore.getState().appPhase).toBe('game');
+  });
+
   it('scrolls selected concept details into view', () => {
     const scrollIntoView = vi.fn();
     let scheduledFrame: FrameRequestCallback | null = null;
