@@ -106,8 +106,8 @@ export function ProblemSolutionPanel({ steps, boardSize, takeaway }: ProblemSolu
         </p>
         <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
           {firstMoveLabel
-            ? `First move to remember: ${firstMoveLabel}. Cover the numbers, say why that move works, then reset and solve from memory.`
-            : 'Cover the numbers, say why the first move works, then reset and solve from memory.'}
+            ? `First move to remember: ${firstMoveLabel}. Cover the numbers and say why ${firstMoveLabel} works before moving on.`
+            : 'Cover the numbers and say why the first move works before moving on.'}
         </p>
       </div>
       {takeaway && (
