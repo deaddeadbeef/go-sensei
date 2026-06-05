@@ -107,6 +107,42 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText('Try E7 or C5.')).toBeTruthy();
   });
 
+  it('matches target buttons to visible suggestion candidates when suggestions are active', () => {
+    act(() => {
+      useGameStore.getState().placeStone({ x: 2, y: 2 });
+      useGameStore.getState().pass();
+      useGameStore.getState().applySuggestions([
+        {
+          id: 'candidate-e7',
+          point: { x: 4, y: 2 },
+          rank: 1,
+          reason: 'Try E7 as a one-space jump.',
+        },
+        {
+          id: 'candidate-c5',
+          point: { x: 2, y: 4 },
+          rank: 2,
+          reason: 'Try C5 as a one-space jump.',
+        },
+      ]);
+    });
+
+    render(<BeginnerObjectiveCard />);
+
+    expect(screen.getByText('A E7')).toBeTruthy();
+    expect(screen.getByText('B C5')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', {
+      name: 'Play candidate A at E7 target for Make your stones work together',
+    }));
+
+    expect(useGameStore.getState().game.moveHistory.at(-1)).toMatchObject({
+      type: 'place',
+      color: 'black',
+      point: { x: 4, y: 2 },
+    });
+  });
+
   it('explains the anchor and gap for a focused extension target', () => {
     vi.useFakeTimers();
     act(() => {
