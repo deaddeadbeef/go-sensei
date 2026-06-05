@@ -45,6 +45,12 @@ const ONE_SPACE_JUMP_DELTAS: Point[] = [
   { x: 0, y: -2 },
 ];
 
+interface OneSpaceJumpAnchor {
+  anchor: Point;
+  gap: Point;
+  moveIndex: number;
+}
+
 function objectiveNextStep(game: GameState, teachingLevel: TeachingLevel): { text: string; concepts: string[] } {
   const objective = getBeginnerObjective({
     boardSize: game.board.size,
@@ -78,7 +84,25 @@ function weakBlackGroupInsight(game: GameState): { liberties: number; stones: Po
   return weakGroup ? { liberties: weakGroup.liberties.length, stones: weakGroup.stones } : null;
 }
 
-function findOneSpaceJumpAnchor(game: GameState, point: Point): { anchor: Point; gap: Point } | null {
+function getLastBlackPlacementIndex(game: GameState, point: Point): number {
+  for (let i = game.moveHistory.length - 1; i >= 0; i -= 1) {
+    const move = game.moveHistory[i];
+    if (
+      move.type === 'place'
+      && move.color === 'black'
+      && move.point.x === point.x
+      && move.point.y === point.y
+    ) {
+      return i;
+    }
+  }
+
+  return -1;
+}
+
+function findOneSpaceJumpAnchors(game: GameState, point: Point): OneSpaceJumpAnchor[] {
+  const anchors: OneSpaceJumpAnchor[] = [];
+
   for (const delta of ONE_SPACE_JUMP_DELTAS) {
     const anchor = { x: point.x - delta.x, y: point.y - delta.y };
     const gap = { x: point.x - delta.x / 2, y: point.y - delta.y / 2 };
@@ -86,7 +110,56 @@ function findOneSpaceJumpAnchor(game: GameState, point: Point): { anchor: Point;
     if (getStone(game.board, anchor) !== 'black') continue;
     if (getStone(game.board, gap) !== null) continue;
 
-    return { anchor, gap };
+    anchors.push({
+      anchor,
+      gap,
+      moveIndex: getLastBlackPlacementIndex(game, anchor),
+    });
+  }
+
+  return anchors;
+}
+
+function findOneSpaceJumpAnchor(game: GameState, point: Point): OneSpaceJumpAnchor | null {
+  return findOneSpaceJumpAnchors(game, point)[0] ?? null;
+}
+
+function isOppositeJumpPair(point: Point, first: OneSpaceJumpAnchor, second: OneSpaceJumpAnchor): boolean {
+  const verticalPair = first.anchor.x === point.x
+    && second.anchor.x === point.x
+    && Math.sign(first.anchor.y - point.y) !== Math.sign(second.anchor.y - point.y);
+  const horizontalPair = first.anchor.y === point.y
+    && second.anchor.y === point.y
+    && Math.sign(first.anchor.x - point.x) !== Math.sign(second.anchor.x - point.x);
+
+  return verticalPair || horizontalPair;
+}
+
+function describeBridgeSide(anchor: Point, point: Point): string {
+  if (anchor.y > point.y) return 'lower-side stone';
+  if (anchor.y < point.y) return 'upper-side stone';
+  if (anchor.x < point.x) return 'left-side stone';
+  return 'right-side stone';
+}
+
+function findOneSpaceJumpBridge(game: GameState, point: Point): {
+  earlier: OneSpaceJumpAnchor;
+  later: OneSpaceJumpAnchor;
+} | null {
+  const anchors = findOneSpaceJumpAnchors(game, point);
+
+  for (let i = 0; i < anchors.length; i += 1) {
+    for (let j = i + 1; j < anchors.length; j += 1) {
+      const first = anchors[i];
+      const second = anchors[j];
+      if (!isOppositeJumpPair(point, first, second)) continue;
+      if (first.moveIndex < 0 || second.moveIndex < 0) continue;
+
+      const [earlier, later] = first.moveIndex < second.moveIndex ? [first, second] : [second, first];
+      if (!isNearCorner(earlier.anchor, game.board.size)) continue;
+
+      return { earlier, later };
+    }
   }
 
   return null;
@@ -138,9 +211,26 @@ export function getMoveInsight(game: GameState, teachingLevel: TeachingLevel): M
 
   const coord = pointToCoord(move.point, game.board.size);
   const progress = getBeginnerObjectiveProgress(game, teachingLevel);
+  const jumpBridge = progress?.status === 'met' && progress.objectiveId === 'extend-from-stone'
+    ? findOneSpaceJumpBridge(game, move.point)
+    : null;
   const jumpShape = progress?.status === 'met' && progress.objectiveId === 'extend-from-stone'
     ? findOneSpaceJumpAnchor(game, move.point)
     : null;
+
+  if (jumpBridge) {
+    const earlierCoord = pointToCoord(jumpBridge.earlier.anchor, game.board.size);
+    const laterCoord = pointToCoord(jumpBridge.later.anchor, game.board.size);
+    const earlierGapCoord = pointToCoord(jumpBridge.earlier.gap, game.board.size);
+    const laterGapCoord = pointToCoord(jumpBridge.later.gap, game.board.size);
+
+    return {
+      title: 'Bridge back to the corner',
+      observation: `${coord} links ${laterCoord} back toward the earlier ${earlierCoord} corner: ${earlierGapCoord} and ${laterGapCoord} stay open, so the corner stone and the ${describeBridgeSide(jumpBridge.later.anchor, move.point)} now support the same line before you extend again.`,
+      nextStep: next.text,
+      conceptIds: ['shape', 'direction-of-play', ...next.concepts],
+    };
+  }
 
   if (jumpShape) {
     const anchorCoord = pointToCoord(jumpShape.anchor, game.board.size);
