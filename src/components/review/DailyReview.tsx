@@ -369,20 +369,27 @@ export function DailyReview() {
   const revealSolution = problemState.status !== 'playing';
 
   return (
-    <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+    <div
+      data-testid="daily-review-shell"
+      className="flex-1 min-h-0 flex flex-col overflow-y-auto overflow-x-hidden md:flex-row md:overflow-hidden"
+    >
       {/* ---- Left: Board area ---- */}
-      <div className="flex-[7] flex items-center justify-center p-4 min-w-0 min-h-0 relative">
+      <div
+        data-testid="daily-review-board-panel"
+        className="flex-none flex min-h-[340px] shrink-0 items-center justify-center overflow-hidden p-4 min-w-0 relative md:flex-[7] md:min-h-0 md:shrink md:overflow-hidden"
+      >
         <div
           className="absolute inset-0 pointer-events-none"
           style={{ background: `radial-gradient(circle at center, ${COLORS.board.bg}15 0%, transparent 70%)` }}
         />
 
-        <svg
-          viewBox={`0 0 ${SVG_SIZE} ${SVG_SIZE}`}
-          className="w-full h-full max-w-[600px] max-h-[600px] select-none"
-          style={{ cursor: problemState.status === 'playing' ? 'crosshair' : 'default' }}
-          onClick={handleBoardClick}
-        >
+        <div data-testid="daily-review-board-frame" className="relative aspect-square h-full max-h-[600px] max-w-full">
+          <svg
+            viewBox={`0 0 ${SVG_SIZE} ${SVG_SIZE}`}
+            className="h-full w-full select-none"
+            style={{ cursor: problemState.status === 'playing' ? 'crosshair' : 'default' }}
+            onClick={handleBoardClick}
+          >
           <defs>
             <radialGradient id="review-black-stone" cx="35%" cy="35%">
               <stop offset="0%" stopColor={COLORS.stone.blackShine} />
@@ -456,12 +463,14 @@ export function DailyReview() {
               );
             })()}
           </AnimatePresence>
-        </svg>
+          </svg>
+        </div>
       </div>
 
       {/* ---- Right: Info panel ---- */}
       <div
-        className="flex-[3] flex flex-col md:min-w-[280px] md:max-w-[400px] border-t md:border-t-0 md:border-l"
+        data-testid="daily-review-sidebar"
+        className="flex-none flex h-[54dvh] min-h-[300px] max-h-[600px] min-w-0 flex-col border-t md:flex-[3] md:min-h-0 md:h-auto md:max-h-none md:min-w-[280px] md:max-w-[400px] md:border-t-0 md:border-l"
         style={{ borderColor: COLORS.ui.bgCard, backgroundColor: COLORS.ui.bgPrimary }}
       >
         {/* Progress header */}
@@ -509,6 +518,19 @@ export function DailyReview() {
 
         {/* Status area */}
         <div className="flex-1 overflow-y-auto px-4 py-3">
+          {problemState.showHint && currentProblem.hint && (
+            <motion.div
+              className="mb-3 rounded-lg p-3"
+              style={{ backgroundColor: `${COLORS.overlay.suggestion}15`, border: `1px solid ${COLORS.overlay.suggestion}40` }}
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <p className="text-sm" style={{ color: COLORS.overlay.suggestion }}>
+                💡 {currentProblem.hint}
+              </p>
+            </motion.div>
+          )}
+
           {problemState.status === 'playing' && (
             <ProblemReadingPlan category={currentProblem.category} />
           )}
@@ -570,29 +592,6 @@ export function DailyReview() {
             </p>
           )}
 
-          {/* Hint area */}
-          {currentProblem.hint && !problemState.showHint && problemState.status === 'playing' && (
-            <button
-              onClick={() => setProblemState((s) => ({ ...s, showHint: true }))}
-              className="text-xs mb-3 underline"
-              style={{ color: COLORS.ui.textSecondary }}
-            >
-              Show hint
-            </button>
-          )}
-          {problemState.showHint && currentProblem.hint && (
-            <motion.div
-              className="mb-3 rounded-lg p-3"
-              style={{ backgroundColor: `${COLORS.overlay.suggestion}15`, border: `1px solid ${COLORS.overlay.suggestion}40` }}
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <p className="text-sm" style={{ color: COLORS.overlay.suggestion }}>
-                💡 {currentProblem.hint}
-              </p>
-            </motion.div>
-          )}
-
           {/* Playing prompt */}
           {problemState.status === 'playing' && (
             <motion.div
@@ -610,6 +609,15 @@ export function DailyReview() {
 
         {/* Action buttons */}
         <div className="shrink-0 p-4 border-t flex flex-col gap-3" style={{ borderColor: COLORS.ui.bgCard }}>
+          {currentProblem.hint && !problemState.showHint && problemState.status === 'playing' && (
+            <button
+              onClick={() => setProblemState((s) => ({ ...s, showHint: true }))}
+              className="w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-opacity hover:opacity-90"
+              style={{ backgroundColor: COLORS.ui.bgCard, color: COLORS.ui.textPrimary }}
+            >
+              Show hint
+            </button>
+          )}
           {(problemState.status === 'solved' || problemState.status === 'failed') && (
             <button
               onClick={handleNext}
