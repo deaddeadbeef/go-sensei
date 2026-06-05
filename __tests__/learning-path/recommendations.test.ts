@@ -55,6 +55,7 @@ describe('learning path recommendations', () => {
       targetId: 'groups',
       actionLabel: 'Start lesson',
     });
+    expect(recommendation.focusConcepts).toEqual(['stones-and-board', 'groups']);
     expect(recommendation.practicePlan.length).toBeGreaterThan(0);
   });
 

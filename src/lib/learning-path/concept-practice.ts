@@ -2,7 +2,7 @@ import { LESSONS } from '@/lib/lessons/lesson-data';
 import type { ProblemCategory } from '@/lib/problems/types';
 
 export const LESSON_TO_CONCEPTS: Record<string, string[]> = {
-  groups: ['groups'],
+  groups: ['stones-and-board', 'groups'],
   liberties: ['liberties'],
   capture: ['capture', 'atari'],
   territory: ['territory'],
