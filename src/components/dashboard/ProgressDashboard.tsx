@@ -26,6 +26,8 @@ const COLORS = {
 };
 
 const CONCEPT_NAMES = new Map(CONCEPTS.map((concept) => [concept.id, concept.name]));
+const LESSON_IDS = new Set(LESSONS.map((lesson) => lesson.id));
+const PROBLEM_IDS = new Set(PROBLEMS.map((problem) => problem.id));
 
 interface StatCardProps {
   icon: string;
@@ -184,12 +186,14 @@ export function ProgressDashboard() {
   const showReview = useGameStore((s) => s.showReview);
   const showLearningPath = useGameStore((s) => s.showLearningPath);
 
+  const completedLessonCount = completedLessons.filter((lessonId) => LESSON_IDS.has(lessonId)).length;
+  const knownProblemAttempts = problemAttempts.filter((attempt) => PROBLEM_IDS.has(attempt.problemId));
   const solvedProblems = new Set(
-    problemAttempts.filter((a) => a.solved).map((a) => a.problemId),
+    knownProblemAttempts.filter((attempt) => attempt.solved).map((attempt) => attempt.problemId),
   ).size;
 
-  const totalAccuracy = problemAttempts.length > 0
-    ? Math.round((problemAttempts.filter((a) => a.solved).length / problemAttempts.length) * 100)
+  const totalAccuracy = knownProblemAttempts.length > 0
+    ? Math.round((knownProblemAttempts.filter((attempt) => attempt.solved).length / knownProblemAttempts.length) * 100)
     : 0;
 
   const recommendation = useMemo(
@@ -248,7 +252,7 @@ export function ProgressDashboard() {
 
         {/* Stats grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-          <StatCard icon="📚" label="Lessons" value={`${completedLessons.length}/${LESSONS.length}`} color={COLORS.blue} delay={0.05} />
+          <StatCard icon="📚" label="Lessons" value={`${completedLessonCount}/${LESSONS.length}`} color={COLORS.blue} delay={0.05} />
           <StatCard icon="🧩" label="Problems Solved" value={`${solvedProblems}/${PROBLEMS.length}`} sub={`${totalAccuracy}% accuracy`} color={COLORS.green} delay={0.1} />
           <StatCard icon="🧠" label="Concepts" value={`${conceptStats.mastered + conceptStats.practiced}/${conceptStats.total}`} sub={`${conceptStats.mastered} mastered`} color={COLORS.amber} delay={0.15} />
           <StatCard icon="🔥" label="Review Streak" value={`${reviewStats.streak}d`} sub={`${reviewStats.dueToday} due today`} color={COLORS.red} delay={0.2} />
@@ -266,9 +270,9 @@ export function ProgressDashboard() {
             <h2 className="text-sm font-semibold" style={{ color: COLORS.text }}>📚 Lessons</h2>
             <button onClick={showLessons} className="text-xs" style={{ color: COLORS.accent }}>Open lessons →</button>
           </div>
-          <ProgressBar value={completedLessons.length} max={LESSONS.length} color={COLORS.blue} />
+          <ProgressBar value={completedLessonCount} max={LESSONS.length} color={COLORS.blue} />
           <p className="text-xs mt-1" style={{ color: COLORS.textDim }}>
-            {completedLessons.length === LESSONS.length ? 'All lessons completed! 🎉' : `${LESSONS.length - completedLessons.length} remaining`}
+            {completedLessonCount === LESSONS.length ? 'All lessons completed! 🎉' : `${LESSONS.length - completedLessonCount} remaining`}
           </p>
         </motion.div>
 
