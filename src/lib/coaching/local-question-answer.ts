@@ -4181,10 +4181,10 @@ function buildResignRestartAnswer(game: GameState, teachingLevel: TeachingLevel)
   return {
     text: [
       'Resigning or starting over is allowed, but do it deliberately: it ends this practice position instead of teaching from it.',
-      'For guided learning, first try to rescue one useful idea from the board.',
-      objective ? `Your current salvage job is: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}` : 'If the board feels unusable, start a fresh guided game and keep the first move simple.',
+      'For guided learning, first take one useful idea from the board.',
+      objective ? `Your current recovery job is: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}` : 'If the board feels unusable, start a fresh guided game and keep the first move simple.',
       objective?.why ?? '',
-      suggestions.length > 0 ? 'I marked the current targets; play one of them before deciding to throw this board away.' : '',
+      suggestions.length > 0 ? 'I marked the current targets; play one of them before deciding to restart.' : '',
     ].filter(Boolean).join(' '),
     conceptIds: uniqueConceptIds(['stones-and-board', 'direction-of-play', ...(objective?.conceptIds ?? [])]),
     ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),

@@ -375,14 +375,14 @@ describe('local question answer', () => {
     ]);
   });
 
-  it('turns resignation questions into a concrete salvage target', () => {
+  it('turns resignation questions into a concrete recovery target', () => {
     const answer = getLocalQuestionAnswer('Should I resign?', createGame(9), 'guided');
 
     expect(answer?.text).toContain('Resigning or starting over is allowed, but do it deliberately');
-    expect(answer?.text).toContain('For guided learning, first try to rescue one useful idea from the board.');
-    expect(answer?.text).toContain('Your current salvage job is: Start with a corner.');
+    expect(answer?.text).toContain('For guided learning, first take one useful idea from the board.');
+    expect(answer?.text).toContain('Your current recovery job is: Start with a corner.');
     expect(answer?.text).toContain('Place your next stone near an empty corner. Try C7, G7, C3, or G3.');
-    expect(answer?.text).toContain('play one of them before deciding to throw this board away');
+    expect(answer?.text).toContain('play one of them before deciding to restart');
     expect(answer?.conceptIds).toEqual(expect.arrayContaining(['stones-and-board', 'direction-of-play', 'corner-opening', 'territory']));
     expect(answer?.boardFocus?.suggestions).toEqual([
       {
@@ -423,7 +423,7 @@ describe('local question answer', () => {
 
     const answer = getLocalQuestionAnswer('Should I start over?', firstMove.newState, 'guided');
 
-    expect(answer?.text).toContain('Your current salvage job is: Make your stones work together.');
+    expect(answer?.text).toContain('Your current recovery job is: Make your stones work together.');
     expect(answer?.text).toContain('Play a one-space jump from one of your stones. Try E7 or C5.');
     expect(answer?.boardFocus?.suggestions?.map((suggestion) => suggestion.point)).toEqual([
       { x: 4, y: 2 },
