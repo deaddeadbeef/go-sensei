@@ -75,6 +75,8 @@ interface PressureComparisonSummary {
   text: string;
   proofText: string;
   hasSameCounts: boolean;
+  anchorLibertyCount: number;
+  stoneLibertyCount: number;
   recommendationText: string | null;
   defenseRecommendation: PressureDefenseRecommendation | null;
 }
@@ -108,6 +110,11 @@ interface PressureExtensionHandoff {
 }
 
 interface PressureLocalShapeSettledCue {
+  title: string;
+  text: string;
+}
+
+interface PressureWeakGroupHandoffCue {
   title: string;
   text: string;
 }
@@ -2180,6 +2187,8 @@ function getPressureComparisonSummary(
       : `Compared with ${firstCoord}, ${secondCoord} changes the count: ${formatLibertyChange(anchorCoord, firstRecount.anchorLiberties.length, secondRecount.anchorLiberties.length)} and ${formatLibertyChange(stoneCoord, firstRecount.stoneLiberties.length, secondRecount.stoneLiberties.length)}. The direction also changes: ${directionText}`,
     proofText,
     hasSameCounts,
+    anchorLibertyCount: secondRecount.anchorLiberties.length,
+    stoneLibertyCount: secondRecount.stoneLiberties.length,
     recommendationText: defenseRecommendation?.text ?? null,
     defenseRecommendation,
   };
@@ -2218,6 +2227,28 @@ function getPressureComparisonProofRowText(
   }
 
   return recap && comparisonSummary.hasSameCounts ? comparisonSummary.proofText : null;
+}
+
+function getPressureWeakGroupHandoffCue(
+  objective: BeginnerObjective,
+  prompt: OneSpaceJumpReadPrompt | null,
+  comparisonSummary: PressureComparisonSummary | null,
+  board: BoardState,
+): PressureWeakGroupHandoffCue | null {
+  if (objective.id !== 'look-for-weak-groups') return null;
+  if (!prompt || !comparisonSummary?.hasSameCounts || comparisonSummary.defenseRecommendation) return null;
+
+  const bridgeContext = getBridgeLineContext(board, prompt.anchor, prompt.stone);
+  if (!bridgeContext) return null;
+
+  const anchorCoord = pointToCoord(prompt.anchor, board.size);
+  const stoneCoord = pointToCoord(prompt.stone, board.size);
+  const sharedLibertyCount = Math.min(comparisonSummary.anchorLibertyCount, comparisonSummary.stoneLibertyCount);
+
+  return {
+    title: 'Weak-group handoff',
+    text: `The ${prompt.gapCoord} proof is the weak-group check: ${anchorCoord} and ${stoneCoord} both keep ${formatLibertyCount(sharedLibertyCount)}, so no urgent defense is marked. Keep ${bridgeContext.oppositeGapCoord} as the bridge liberty back to ${bridgeContext.oppositeAnchorCoord} before choosing the next real move.`,
+  };
 }
 
 function getPressureChainExtensionProofText(
@@ -3865,6 +3896,10 @@ export function BeginnerObjectiveCard() {
     && !pressureRepeatComparisonProofRecap
     ? getPressureComparisonProofRowText(activePressureHandoffRecap, pressureComparisonSummary)
     : null;
+  const pressureWeakGroupHandoffCue = pressureComparisonSummary
+    && !pressureDefenseRecommendation
+    ? getPressureWeakGroupHandoffCue(objective, readPrompt, pressureComparisonSummary, game.board)
+    : null;
   const completedFirstReadComparisonPreviewHighlights = readPrompt
     && selectedReadRecount
     && compareReadReplyPoints.length > 0
@@ -4361,6 +4396,16 @@ export function BeginnerObjectiveCard() {
                             <p className="mt-1 text-xs leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
                               {pressureRepeatComparisonProofRecap}
                             </p>
+                          )}
+                          {pressureWeakGroupHandoffCue && (
+                            <div className="mt-1">
+                              <div className="text-[11px] font-semibold uppercase" style={{ color: COLORS.ui.accent }}>
+                                {pressureWeakGroupHandoffCue.title}
+                              </div>
+                              <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
+                                {pressureWeakGroupHandoffCue.text}
+                              </p>
+                            </div>
                           )}
                           {pressureComparisonExtensionHandoff && (
                             <StablePressureExtensionHandoff
