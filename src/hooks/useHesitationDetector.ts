@@ -1,6 +1,10 @@
 "use client";
 import { useEffect, useRef } from 'react';
-import { formatObjectiveTargetText, getBeginnerObjective } from '@/lib/coaching/beginner-objectives';
+import {
+  formatObjectiveTargetText,
+  getBeginnerObjective,
+  getFreshAreaFollowUpContext,
+} from '@/lib/coaching/beginner-objectives';
 import { useGameStore } from '@/stores/game-store';
 import { HESITATION_NUDGE_TIME, HESITATION_PROACTIVE_TIME } from '@/utils/animation';
 import type { GameState, StoneColor } from '@/lib/go-engine/types';
@@ -43,7 +47,8 @@ export function buildHesitationNudge(game: GameState, teachingLevel: TeachingLev
     };
   }
 
-  const targetText = formatObjectiveTargetText(objective, game.board.size);
+  const followUpContext = getFreshAreaFollowUpContext(game, teachingLevel, objective);
+  const targetText = formatObjectiveTargetText(objective, game.board.size, 4, followUpContext);
 
   return {
     text: `Your current job is ${objective.title}: ${objective.instruction}${targetText ? ` ${targetText}` : ''} Want me to mark it on the board?`,

@@ -3,6 +3,7 @@ import {
   getBeginnerObjectiveSuggestionReason,
   getBeginnerObjective,
   getBeginnerObjectiveProgress,
+  getFreshAreaFollowUpContext,
 } from '@/lib/coaching/beginner-objectives';
 import { getBeginnerObjectiveActions } from '@/lib/coaching/beginner-objective-actions';
 import { pointKey, pointToCoord } from '@/lib/go-engine';
@@ -10,7 +11,7 @@ import type { BoardSize, GameState, Move, Point } from '@/lib/go-engine/types';
 import type { TeachingLevel } from '@/lib/ai/system-prompt';
 import type { SenseiAction } from '@/lib/coaching/sensei-actions';
 import type { LocalBoardFocus, LocalSuggestionFocus } from '@/lib/coaching/local-question-answer';
-import type { BeginnerObjective } from '@/lib/coaching/beginner-objectives';
+import type { BeginnerObjective, FreshAreaFollowUpContext } from '@/lib/coaching/beginner-objectives';
 import { getMoveInsight } from '@/lib/coaching/move-insight';
 
 type LocalFallbackReason = 'auth-expired' | 'auth-unavailable' | 'network-error' | 'server-error';
@@ -76,12 +77,13 @@ function buildObjectiveBoardFocus(
   boardSize: BoardSize,
   move: Move | null,
   progressStatus: 'met' | 'missed' | null,
+  followUpContext?: FreshAreaFollowUpContext | null,
 ): LocalBoardFocus | undefined {
   const suggestions: LocalSuggestionFocus[] = objective.targetPoints.slice(0, 4).map((point, index) => ({
     id: `local-fallback-move-${pointKey(point)}`,
     point: copyPoint(point),
     rank: index + 1,
-    reason: getBeginnerObjectiveSuggestionReason(objective, point, boardSize),
+    reason: getBeginnerObjectiveSuggestionReason(objective, point, boardSize, followUpContext),
   }));
   const highlights = move?.type === 'place'
     ? [{
@@ -120,6 +122,7 @@ export function getLocalGuidedFallback(
   const insight = getMoveInsight(game, teachingLevel);
   const move = lastBlackMove(game);
   const shouldPassSensei = game.currentPlayer !== 'black';
+  const followUpContext = objective ? getFreshAreaFollowUpContext(game, teachingLevel, objective) : null;
   const lines = [
     introText(reason),
     progress?.text ?? describeLastMove(game),
@@ -130,7 +133,7 @@ export function getLocalGuidedFallback(
   }
 
   if (objective) {
-    const targetText = formatObjectiveTargetText(objective, game.board.size);
+    const targetText = formatObjectiveTargetText(objective, game.board.size, 4, followUpContext);
     const targetSentence = targetText ? `${targetText} ` : '';
     lines.push(`Next focus: ${objective.title}. ${objective.instruction} ${targetSentence}${objective.why}`);
   } else {
@@ -152,7 +155,7 @@ export function getLocalGuidedFallback(
       ...(insight?.conceptIds ?? []),
     ]),
     actions: objective ? getBeginnerObjectiveActions(objective) : [],
-    ...(objective ? { boardFocus: buildObjectiveBoardFocus(objective, game.board.size, move, progress?.status ?? null) } : {}),
+    ...(objective ? { boardFocus: buildObjectiveBoardFocus(objective, game.board.size, move, progress?.status ?? null, followUpContext) } : {}),
     shouldPassSensei,
   };
 }
