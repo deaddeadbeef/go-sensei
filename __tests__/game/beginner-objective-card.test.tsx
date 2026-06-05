@@ -569,6 +569,7 @@ describe('BeginnerObjectiveCard', () => {
   });
 
   it('compares the alternate pressure reply directly after a recount', () => {
+    vi.useFakeTimers();
     act(() => {
       useGameStore.getState().placeStone({ x: 2, y: 2 });
       useGameStore.getState().pass();
@@ -1093,8 +1094,28 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText('Choose a new area')).toBeTruthy();
     expect(screen.getByText('Your nearby groups are safe for now. Pick a fresh area instead of rereading the settled shape.')).toBeTruthy();
     expect(screen.getByText('Try H8 or H2.')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Play H8 target for Choose a new area' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Play H2 target for Choose a new area' })).toBeTruthy();
+    const h8Target = screen.getByRole('button', { name: 'Play H8 target for Choose a new area' });
+    const h2Target = screen.getByRole('button', { name: 'Play H2 target for Choose a new area' });
+    expect(h8Target).toBeTruthy();
+    expect(h2Target).toBeTruthy();
+    fireEvent.focus(h8Target);
+    expect(screen.queryByText('Why H8')).toBeNull();
+    act(() => vi.runOnlyPendingTimers());
+    expect(screen.getByText('Why H8')).toBeTruthy();
+    expect(screen.getByText('H8 opens the upper-right direction after the nearby shape settled. It is far enough away to start a new plan without crowding your stones.')).toBeTruthy();
+    expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
+      {
+        id: 'target-hint-target-7,1',
+        point: { x: 7, y: 1 },
+        variant: 'positive',
+        label: 'H8: fresh upper-right direction after the nearby shape settled.',
+      },
+    ]));
+    fireEvent.blur(h8Target);
+    fireEvent.focus(h2Target);
+    act(() => vi.runOnlyPendingTimers());
+    expect(screen.getByText('Why H2')).toBeTruthy();
+    expect(screen.getByText('H2 opens the lower-right direction after the nearby shape settled. It is far enough away to start a new plan without crowding your stones.')).toBeTruthy();
     expect(screen.queryByText('Before playing, ask which stones have little room to escape.')).toBeNull();
     expect(screen.queryByText('Progress check: D5 stayed near the settled shape. Look for a fresh direction before rereading the same local area.')).toBeNull();
   });

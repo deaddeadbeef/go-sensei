@@ -1,5 +1,6 @@
 import {
   formatObjectiveTargetText,
+  getBoardAreaDirectionLabel,
   getBeginnerObjective,
   getBeginnerObjectiveProgress,
 } from '@/lib/coaching/beginner-objectives';
@@ -14,6 +15,12 @@ function boardWith(stones: Array<{ point: Point; color: StoneColor }>): BoardSta
 }
 
 describe('beginner objectives', () => {
+  it('names board areas from the learner view', () => {
+    expect(getBoardAreaDirectionLabel({ x: 7, y: 1 }, 9)).toBe('upper-right direction');
+    expect(getBoardAreaDirectionLabel({ x: 7, y: 7 }, 9)).toBe('lower-right direction');
+    expect(getBoardAreaDirectionLabel({ x: 4, y: 4 }, 9)).toBe('center');
+  });
+
   it('recommends corner play at the start of a 9x9 game', () => {
     const objective = getBeginnerObjective({
       boardSize: 9,
