@@ -15,11 +15,14 @@ const variantStyles: Record<string, { borderColor: string; icon: string }> = {
   thinking: { borderColor: COLORS.ui.textSecondary, icon: '🤔' },
 };
 
+const FLOATING_BUBBLE_MAX_CHARS = 280;
+
 export function SenseiBubble() {
   const bubble = useGameStore((s) => s.bubble);
   const dismissBubble = useGameStore((s) => s.dismissBubble);
   const handleAction = useSenseiAction();
   const { displayedText, isComplete } = useTypewriter(bubble.text);
+  const shouldRenderFloatingBubble = bubble.anchorPoint !== null || bubble.text.length <= FLOATING_BUBBLE_MAX_CHARS;
 
   useEffect(() => {
     if (!bubble.visible || !isComplete || bubble.actions.length > 0) return;
@@ -31,7 +34,7 @@ export function SenseiBubble() {
 
   return (
     <AnimatePresence>
-      {bubble.visible && bubble.text && (
+      {bubble.visible && bubble.text && shouldRenderFloatingBubble && (
         <motion.div
           key="sensei-bubble"
           className="absolute top-4 left-1/2 -translate-x-1/2 z-10 max-w-sm pointer-events-auto"
