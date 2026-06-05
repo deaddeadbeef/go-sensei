@@ -79,6 +79,9 @@ export function ProblemSolutionOverlay({ steps, boardSize, stoneRadius }: Proble
 export function ProblemSolutionPanel({ steps, boardSize, takeaway }: ProblemSolutionPanelProps) {
   if (steps.length === 0) return null;
 
+  const firstStudentStep = steps.find((step) => step.role === 'student') ?? null;
+  const firstMoveLabel = firstStudentStep ? formatProblemPoint(firstStudentStep.move, boardSize) : null;
+
   return (
     <motion.div
       className="mb-3 rounded-xl p-4"
@@ -92,6 +95,19 @@ export function ProblemSolutionPanel({ steps, boardSize, takeaway }: ProblemSolu
         </p>
         <p className="mt-1 text-xs" style={{ color: COLORS.ui.textSecondary }}>
           Numbered points on the board show the main answer sequence.
+        </p>
+      </div>
+      <div
+        className="mb-3 rounded-lg p-3"
+        style={{ backgroundColor: `${COLORS.overlay.suggestion}12`, border: `1px solid ${COLORS.overlay.suggestion}35` }}
+      >
+        <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: COLORS.overlay.suggestion }}>
+          Study routine
+        </p>
+        <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
+          {firstMoveLabel
+            ? `First move to remember: ${firstMoveLabel}. Cover the numbers, say why that move works, then reset and solve from memory.`
+            : 'Cover the numbers, say why the first move works, then reset and solve from memory.'}
         </p>
       </div>
       {takeaway && (
