@@ -3,6 +3,7 @@
 import { useCallback, useRef, useEffect, useState } from 'react';
 import { useGameStore } from '@/stores/game-store';
 import { LESSONS } from '@/lib/lessons/lesson-data';
+import { LESSON_TO_CONCEPTS } from '@/lib/learning-path/concept-practice';
 import { LessonOverlay } from './LessonOverlay';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -17,19 +18,6 @@ import { COLORS } from '@/utils/colors';
 import { LESSON_TRANSITION } from '@/utils/animation';
 import { useConceptStore } from '@/stores/concept-store';
 import type { BoardSize } from '@/lib/go-engine/types';
-
-const LESSON_CONCEPTS: Record<string, string[]> = {
-  groups: ['stones-and-board', 'groups'],
-  liberties: ['liberties'],
-  capture: ['capture'],
-  territory: ['territory'],
-  eyes: ['eyes'],
-  ko: ['ko'],
-  ladder: ['ladder'],
-  net: ['net'],
-  snapback: ['snapback'],
-  'territory-vs-influence': ['influence', 'territory'],
-};
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -151,7 +139,7 @@ export function LessonView() {
   const handleComplete = useCallback(() => {
     completeLesson();
     if (currentLessonId) {
-      const concepts = LESSON_CONCEPTS[currentLessonId];
+      const concepts = LESSON_TO_CONCEPTS[currentLessonId];
       if (concepts) {
         concepts.forEach((c) => recordEvidence(c, 'lesson_completed'));
       }
