@@ -54,6 +54,26 @@ describe('LearningPath', () => {
     expect(useGameStore.getState().currentLessonId).toBe('groups');
   });
 
+  it('shows reliable progress totals in the path summary', () => {
+    useProgressStore.setState({
+      completedLessons: ['groups', 'stale-lesson-id'],
+      problemAttempts: [
+        { problemId: 'capture-001', solved: true, attempts: 1, moveSequence: [], timestamp: 1 },
+        { problemId: 'missing-problem-id', solved: true, attempts: 1, moveSequence: [], timestamp: 1 },
+        { problemId: 'capture-002', solved: false, attempts: 3, moveSequence: [], timestamp: 1 },
+      ],
+    });
+
+    render(<LearningPath />);
+
+    expect(screen.getByText('Lessons completed')).toBeTruthy();
+    expect(screen.getByText('1/10')).toBeTruthy();
+    expect(screen.getByText('Problems solved')).toBeTruthy();
+    expect(screen.getByText('1/20')).toBeTruthy();
+    expect(screen.getByText('Reviews due')).toBeTruthy();
+    expect(screen.getByText('0 today')).toBeTruthy();
+  });
+
   it('restores guided 9x9 from the guided game card when progress has a stale normal game', () => {
     useGameStore.getState().startGuidedIntroGame();
     useGameStore.getState().startNewGame(19);
