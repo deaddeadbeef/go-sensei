@@ -4369,8 +4369,22 @@ function buildTerritoryContext(game: GameState, teachingLevel: TeachingLevel): T
 
   if (!objective || objective.id === 'look-for-weak-groups') return null;
 
-  const suggestions = objectiveSuggestions(objective, game.board.size, 'local-territory-move');
+  const followUpContext = getFreshAreaFollowUpContext(game, teachingLevel, objective);
+  const suggestions = objectiveSuggestions(objective, game.board.size, 'local-territory-move', followUpContext);
   if (!suggestions.length) return null;
+
+  if (objective.id === 'extend-from-stone' && followUpContext) {
+    const targetCoords = followUpContext.targetPoints.map((point) => pointToCoord(point, game.board.size));
+    const targetSubject = joinList(targetCoords);
+    const targetVerb = targetCoords.length === 1 ? 'it extends' : 'they extend';
+    const targetPronoun = targetCoords.length === 1 ? 'it helps' : 'they help';
+
+    return {
+      sentence: `I marked ${targetSubject} because ${targetVerb} ${followUpContext.anchorCoord} into the ${followUpContext.areaLabel}: ${targetPronoun} the fresh stone sketch a loose border without touching too closely.`,
+      boardFocus: { suggestions },
+      conceptIds: uniqueConceptIds([...objective.conceptIds, 'territory', 'shape', 'direction-of-play']),
+    };
+  }
 
   const shape = objective.id === 'extend-from-stone' ? findLearnerOneSpaceJumpShape(game) : null;
   if (shape) {
