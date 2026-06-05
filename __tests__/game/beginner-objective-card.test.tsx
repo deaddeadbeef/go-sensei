@@ -965,6 +965,13 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.queryByText('Try E3, E5, or C5.')).toBeNull();
     expect(screen.queryByText('This matches the G6 proof: the repeated pattern stayed stable again. You proved H4 and F4 both leave G5 and G3 safe, so G4 does not need an immediate defense.')).toBeNull();
     expect(screen.queryByText((text) => text.includes('Two-gap proof: Chain proof'))).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Play E3 target for Make your stones work together' }));
+    act(() => {
+      useGameStore.getState().pass();
+    });
+
+    expect(screen.getByText(`E3 applies the stable read chain in the real game: ${compactFourGapProof}`)).toBeTruthy();
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {
