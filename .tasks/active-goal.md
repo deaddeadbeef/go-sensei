@@ -140,6 +140,7 @@ Latest completed slice:
 - Centralized beginner target suggestion reasons so guided resume overlays, local fallback, illegal-move feedback, and local Q&A all describe H8/H2 as fresh directions instead of weak-group liberties.
 - Added fresh-area follow-up context after H8/H2, so the next H6/F8 or F2/H4 targets are described as extensions of the newly opened area in local tutor answers, guided resume, fallback/illegal feedback, hesitation nudges, and the objective card.
 - Fed that fresh-area follow-up context into the cloud tutor request body, so remote coaching sees H8/H2 follow-up targets as new-area extensions instead of generic one-space jumps.
+- Updated the numbered-targets local explanation after H8/H2, so marker guidance says H6/F8 or F2/H4 extend the new area and carries the same Board Analysis reasons as the objective card.
 
 Next investigation candidates:
-- Whether remaining specialized local Q&A paths that mention target text should use the fresh-area follow-up label when the learner asks topic-specific questions after H8/H2.
+- Whether topic-specific shape, territory, or reading answers after H8/H2 should also prefer the fresh-area follow-up target label when they restate the current objective.

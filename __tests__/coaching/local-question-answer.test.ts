@@ -1989,6 +1989,31 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
   });
 
+  it('explains numbered targets after H8 as extensions of the fresh area', () => {
+    const freshAreaMove = playMove(settledShapeGame(), { x: 7, y: 1 });
+    if (!freshAreaMove.success) throw new Error('test setup fresh-area move failed');
+    const afterWhitePass = passMove(freshAreaMove.newState);
+
+    const answer = getLocalQuestionAnswer('What are these numbered targets?', afterWhitePass, 'guided');
+
+    expect(answer?.text).toContain('Right now the marked target goal is: Make your stones work together. Play a one-space jump from one of your stones. Extend H8 into the upper-right area: try H6 or F8.');
+    expect(answer?.text).toContain('H6 and F8 are marked because they extend H8 into the upper-right area: they give the fresh-area stone a partner without clumping.');
+    expect(answer?.boardFocus?.suggestions?.slice(0, 2)).toEqual([
+      {
+        id: 'local-marker-guide-move-7,3',
+        point: { x: 7, y: 3 },
+        rank: 1,
+        reason: 'Try H6 to give H8 a partner in the upper-right area while keeping a one-space gap.',
+      },
+      {
+        id: 'local-marker-guide-move-5,1',
+        point: { x: 5, y: 1 },
+        rank: 2,
+        reason: 'Try F8 to give H8 a partner in the upper-right area while keeping a one-space gap.',
+      },
+    ]);
+  });
+
   it('answers liberty questions with current board context', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');

@@ -2068,13 +2068,22 @@ function buildTurnAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQu
   };
 }
 
-function markerObjectiveReason(objective: BeginnerObjective, boardSize: BoardSize): string {
+function markerObjectiveReason(
+  objective: BeginnerObjective,
+  boardSize: BoardSize,
+  followUpContext?: FreshAreaFollowUpContext | null,
+): string {
   if (objective.id === 'claim-corner') {
     return 'These targets are corner starts: the board edge helps you make territory with fewer stones.';
   }
 
   if (objective.id === 'extend-from-stone') {
-    const coords = objective.targetPoints.slice(0, 4).map((point) => pointToCoord(point, boardSize));
+    const targetPoints = followUpContext?.targetPoints.length ? followUpContext.targetPoints : objective.targetPoints;
+    const coords = targetPoints.slice(0, 4).map((point) => pointToCoord(point, boardSize));
+    if (followUpContext) {
+      return `${joinList(coords)} are marked because they extend ${followUpContext.anchorCoord} into the ${followUpContext.areaLabel}: they give the fresh-area stone a partner without clumping.`;
+    }
+
     return `${joinList(coords)} are marked because they are one-space jumps: they keep your stones working together without clumping.`;
   }
 
@@ -2191,14 +2200,15 @@ function buildBoardMarkerAnswer(game: GameState, teachingLevel: TeachingLevel): 
 
   if (!objective || objective.targetPoints.length === 0) return null;
 
-  const suggestions = objectiveSuggestions(objective, game.board.size, 'local-marker-guide-move');
+  const followUpContext = getFreshAreaFollowUpContext(game, teachingLevel, objective);
+  const suggestions = objectiveSuggestions(objective, game.board.size, 'local-marker-guide-move', followUpContext);
   const action = getBeginnerObjectiveLessonAction(objective);
-  const targetText = formatObjectiveTargetText(objective, game.board.size);
+  const targetText = formatObjectiveTargetText(objective, game.board.size, 4, followUpContext);
   const lines = [
     'The glowing numbered circles are suggested moves, not stones already on the board.',
     'The number is the suggestion rank: #1 is the first idea to try, and higher numbers are other good options for the same beginner goal.',
     `Right now the marked target goal is: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}`,
-    markerObjectiveReason(objective, game.board.size),
+    markerObjectiveReason(objective, game.board.size, followUpContext),
     'Click one marked intersection to play there, or use Show targets to restore the markers if they disappear.',
     'I marked the targets again and kept the reasons in Board Analysis.',
   ];
