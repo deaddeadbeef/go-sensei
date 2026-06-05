@@ -85,6 +85,20 @@ describe('app navigation recovery', () => {
     expect(html).not.toContain('First 9x9 guided game');
   });
 
+  it('does not queue board welcome coaching while the learner is on the path', () => {
+    act(() => {
+      useGameStore.getState().showLearningPath();
+    });
+
+    render(<GamePage />);
+
+    expect(screen.getByText('First 9x9 guided game')).toBeTruthy();
+    expect(useGameStore.getState().appPhase).toBe('path');
+    expect(useGameStore.getState().phase).toBe('welcome');
+    expect(useGameStore.getState().bubble.visible).toBe(false);
+    expect(useGameStore.getState().bubble.text).toBe('');
+  });
+
   it('scopes the floating Sensei bubble to the board area', () => {
     vi.stubGlobal('ResizeObserver', class {
       observe() {}

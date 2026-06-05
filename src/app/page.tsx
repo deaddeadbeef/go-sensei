@@ -74,6 +74,7 @@ export default function GamePage() {
 
   const welcomeShown = useRef(false);
   useEffect(() => {
+    if (appPhase !== 'game') return;
     if (phase === 'welcome' && !welcomeShown.current) {
       welcomeShown.current = true;
       const level = useGameStore.getState().teachingLevel;
@@ -91,7 +92,7 @@ export default function GamePage() {
       });
       setTimeout(() => setPhase('playing'), 500);
     }
-  }, [phase, showBubble, setPhase]);
+  }, [appPhase, phase, showBubble, setPhase]);
 
   const prevMoveCountRef = useRef(0);
   useEffect(() => {
