@@ -15,7 +15,7 @@ const variantStyles: Record<string, { borderColor: string; icon: string }> = {
   thinking: { borderColor: COLORS.ui.textSecondary, icon: '🤔' },
 };
 
-const FLOATING_BUBBLE_MAX_CHARS = 280;
+const FLOATING_BUBBLE_MAX_CHARS = 260;
 
 export function SenseiBubble() {
   const bubble = useGameStore((s) => s.bubble);
