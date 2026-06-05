@@ -12,6 +12,10 @@ const PUNITIVE_PATTERNS = [
   /No mercy/i,
   /Fix your priorities/i,
   /you're not reading the board/i,
+  /You let me get away/i,
+  /\bPriorities\./i,
+  /you don't see yet/i,
+  /You need to read/i,
 ];
 
 describe('AI teaching tone', () => {
