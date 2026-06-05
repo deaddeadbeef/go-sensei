@@ -130,6 +130,7 @@ Latest completed slice:
 - Taught the F5 center-line variation as above/below replies on the C5-E5-G5 bridge, with the same-count proof rendered even when the next objective is weak-group reading instead of another extension.
 - Added a weak-group handoff after the stable F5 proof, naming D5 as the bridge liberty to keep in mind while clarifying that G5 and E5 have no urgent defense to mark.
 - Made the post-F5 weak-group handoff actionable by exposing D5 as a focusable bridge-liberty cue that marks the D5-C5 connection on the board.
+- Added a quiet D5 real-move handoff after the safe F5 weak-group proof, so the learner can settle the C5-E5 bridge without being told it is an emergency defense.
 
 Next investigation candidates:
-- Whether the safe post-F5 weak-group state should suggest a concrete next real move after confirming no urgent defense is needed.
+- Whether the D5-settled state should transition into a broader "choose a new area" lesson instead of staying in weak-group checking.
