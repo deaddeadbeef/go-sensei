@@ -244,6 +244,9 @@ export function DailyReview() {
   if (review.problemIds.length === 0 || review.phase === 'complete') {
     const stats = getReviewStats();
     const summary = buildReviewSessionSummary(review.results);
+    const learningPathLabel = review.results.length > 0 && !summary.practiceCategory
+      ? 'Pick up next recommendation'
+      : 'Learning path';
 
     return (
       <div className="flex-1 flex items-center justify-center p-6" style={{ backgroundColor: COLORS.ui.bgPrimary }}>
@@ -341,7 +344,7 @@ export function DailyReview() {
                 color: review.results.length > 0 && !summary.practiceCategory ? COLORS.ui.bgPrimary : COLORS.ui.textPrimary,
               }}
             >
-              Learning path
+              {learningPathLabel}
             </button>
             <button
               onClick={returnToGame}
