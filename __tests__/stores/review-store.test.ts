@@ -85,6 +85,17 @@ describe('review store', () => {
     expect(stats.streak).toBeGreaterThanOrEqual(1); // reviewed today
   });
 
+  it('getReviewStats ignores stale reviewed problem ids', () => {
+    act(() => {
+      useReviewStore.getState().recordReview('capture-001', 5);
+      useReviewStore.getState().recordReview('missing-problem-id', 5);
+    });
+
+    const stats = useReviewStore.getState().getReviewStats();
+
+    expect(stats.totalReviewed).toBe(1);
+  });
+
   it('resetAll clears everything', () => {
     act(() => useReviewStore.getState().recordReview('capture-001', 5));
     act(() => useReviewStore.getState().resetAll());
