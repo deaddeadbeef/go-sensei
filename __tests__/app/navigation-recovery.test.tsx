@@ -98,17 +98,46 @@ describe('app navigation recovery', () => {
 
     render(<GamePage />);
 
+    const classTokens = (element: HTMLElement) => element.className.split(/\s+/);
+    const gameShell = screen.getByTestId('game-shell');
     const boardBubbleLayer = screen.getByTestId('board-bubble-layer');
     const guidedControlPanel = screen.getByTestId('guided-control-panel');
     const guidedObjectiveScroll = screen.getByTestId('guided-objective-scroll');
+    const gameSidebar = screen.getByTestId('game-sidebar');
 
-    expect(boardBubbleLayer.className).toContain('overflow-hidden');
-    expect(boardBubbleLayer.className).toContain('min-h-[300px]');
+    expect(classTokens(gameShell)).toEqual(expect.arrayContaining([
+      'min-h-0',
+      'overflow-y-auto',
+      'overflow-x-hidden',
+      'md:overflow-hidden',
+    ]));
+    expect(classTokens(boardBubbleLayer)).toEqual(expect.arrayContaining([
+      'min-h-[300px]',
+      'shrink-0',
+      'overflow-hidden',
+      'md:flex-1',
+    ]));
     expect(boardBubbleLayer.contains(screen.getByText('Go Sensei'))).toBe(true);
-    expect(guidedControlPanel.className).toContain('min-h-0');
-    expect(guidedControlPanel.className).toContain('overflow-hidden');
-    expect(guidedObjectiveScroll.className).toContain('min-h-0');
-    expect(guidedObjectiveScroll.className).toContain('overflow-y-auto');
+    expect(classTokens(guidedControlPanel)).toEqual(expect.arrayContaining([
+      'shrink-0',
+      'md:min-h-0',
+      'md:shrink',
+      'md:overflow-hidden',
+    ]));
+    expect(classTokens(guidedObjectiveScroll)).toEqual(expect.arrayContaining([
+      'md:min-h-0',
+      'md:overflow-y-auto',
+    ]));
+    expect(classTokens(gameSidebar)).toEqual(expect.arrayContaining([
+      'flex-none',
+      'h-[62dvh]',
+      'min-h-[360px]',
+      'max-h-[620px]',
+      'min-w-0',
+      'md:flex-[3]',
+      'md:min-h-0',
+      'md:h-auto',
+    ]));
     expect(guidedControlPanel.contains(screen.getByText('Pass'))).toBe(true);
   });
 });
