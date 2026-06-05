@@ -489,7 +489,7 @@ export function ProblemView() {
               animate={{ opacity: 1, y: 0 }}
             >
               <p className="text-sm font-medium" style={{ color: COLORS.ui.accent }}>
-                👆 Click the board to make your move
+                👆 Read first, then click your move
               </p>
             </motion.div>
           )}
