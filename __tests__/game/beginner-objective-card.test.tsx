@@ -1035,7 +1035,8 @@ describe('BeginnerObjectiveCard', () => {
     });
 
     expect(screen.getByText(`E5 applies the C4 read in the real game: ${c4BridgeProof} Black can keep extending instead of answering a cut that has not happened.`)).toBeTruthy();
-    expect(screen.getByText(`Carry forward the proof: ${c4BridgeProof} Now test F5 the same way before the next extension.`)).toBeTruthy();
+    expect(screen.getByText(`Carry forward the bridge: E5 now links the older G5 stone to the proven C7-C5-C3 bridge through C5 and D5. Read F5 with that whole connection in mind, not as a fresh isolated G5-E5 gap.`)).toBeTruthy();
+    expect(screen.queryByText(`Carry forward the proof: ${c4BridgeProof} Now test F5 the same way before the next extension.`)).toBeNull();
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {
