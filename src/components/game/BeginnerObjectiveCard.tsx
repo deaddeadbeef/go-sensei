@@ -2029,8 +2029,17 @@ function getPressureComparisonSummary(
   const hasSameCounts = firstRecount.anchorLiberties.length === secondRecount.anchorLiberties.length
     && firstRecount.stoneLiberties.length === secondRecount.stoneLiberties.length;
   const defenseRecommendation = getPressureDefenseRecommendation(prompt, secondRecount, board);
+  const bridgeContext = hasSameCounts ? getBridgeLineContext(board, prompt.anchor, prompt.stone) : null;
+  const outsideReply = bridgeContext ? getPressureOpenSideFirstReplyPoint(board, prompt) : null;
+  const outsideCoord = outsideReply ? pointToCoord(outsideReply, board.size) : firstCoord;
+  const insideRecount = outsideReply && targetKey(outsideReply) === targetKey(firstRecount.reply)
+    ? secondRecount
+    : firstRecount;
+  const insideCoord = pointToCoord(insideRecount.reply, board.size);
   const proofText = hasSameCounts
-    ? `You proved ${firstCoord} and ${secondCoord} both leave ${anchorCoord} and ${stoneCoord} safe, so ${prompt.gapCoord} does not need an immediate defense.`
+    ? bridgeContext
+      ? `You proved ${outsideCoord} and ${insideCoord} both leave the ${bridgeContext.lineText} line stable, so ${prompt.gapCoord} does not need an immediate defense.`
+      : `You proved ${firstCoord} and ${secondCoord} both leave ${anchorCoord} and ${stoneCoord} safe, so ${prompt.gapCoord} does not need an immediate defense.`
     : `You proved ${secondCoord} leaves ${anchorCoord} and ${stoneCoord} stable without a short-side defense, so ${prompt.gapCoord} does not need an immediate defense.`;
 
   return {
@@ -2039,7 +2048,9 @@ function getPressureComparisonSummary(
       formatPressureComparisonRow(prompt, secondRecount, board),
     ],
     text: hasSameCounts
-      ? `${firstCoord} and ${secondCoord} leave the same liberty counts: ${anchorCoord} has ${formatLibertyCount(secondRecount.anchorLiberties.length)} and ${stoneCoord} has ${formatLibertyCount(secondRecount.stoneLiberties.length)} either way. The difference is direction: ${directionText}`
+      ? bridgeContext
+        ? `${outsideCoord} and ${insideCoord} leave the ${bridgeContext.lineText} bridge equally stable: ${anchorCoord} has ${formatLibertyCount(secondRecount.anchorLiberties.length)} and ${stoneCoord} has ${formatLibertyCount(secondRecount.stoneLiberties.length)} either way. ${outsideCoord} attacks ${prompt.gapCoord} from outside the line; ${insideCoord} tests the inside toward the center. ${bridgeContext.oppositeAnchorCoord} still supports through ${bridgeContext.oppositeGapCoord}, so ${prompt.gapCoord} does not need an immediate defense.`
+        : `${firstCoord} and ${secondCoord} leave the same liberty counts: ${anchorCoord} has ${formatLibertyCount(secondRecount.anchorLiberties.length)} and ${stoneCoord} has ${formatLibertyCount(secondRecount.stoneLiberties.length)} either way. The difference is direction: ${directionText}`
       : `Compared with ${firstCoord}, ${secondCoord} changes the count: ${formatLibertyChange(anchorCoord, firstRecount.anchorLiberties.length, secondRecount.anchorLiberties.length)} and ${formatLibertyChange(stoneCoord, firstRecount.stoneLiberties.length, secondRecount.stoneLiberties.length)}. The direction also changes: ${directionText}`,
     proofText,
     hasSameCounts,
