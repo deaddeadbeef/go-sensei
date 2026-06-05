@@ -132,6 +132,7 @@ export function DailyReview() {
   const returnToGame = useGameStore((s) => s.returnToGame);
   const showLearningPath = useGameStore((s) => s.showLearningPath);
   const showProblems = useGameStore((s) => s.showProblems);
+  const startProblem = useGameStore((s) => s.startProblem);
   const getDueProblems = useReviewStore((s) => s.getDueProblems);
   const recordAttempt = useReviewStore((s) => s.recordAttempt);
   const getReviewStats = useReviewStore((s) => s.getReviewStats);
@@ -244,6 +245,7 @@ export function DailyReview() {
   if (review.problemIds.length === 0 || review.phase === 'complete') {
     const stats = getReviewStats();
     const summary = buildReviewSessionSummary(review.results);
+    const replayProblem = summary.attentionProblems[0]?.problem ?? null;
     const learningPathLabel = review.results.length > 0 && !summary.practiceCategory
       ? 'Pick up next recommendation'
       : 'Learning path';
@@ -341,11 +343,18 @@ export function DailyReview() {
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
             {review.results.length > 0 && summary.practiceCategory && summary.practiceLabel && (
               <button
-                onClick={() => showProblems(summary.practiceCategory ?? undefined)}
+                onClick={() => {
+                  if (replayProblem) {
+                    showProblems(replayProblem.category);
+                    startProblem(replayProblem);
+                  } else {
+                    showProblems(summary.practiceCategory ?? undefined);
+                  }
+                }}
                 className="px-6 py-2 rounded-lg text-sm font-medium transition-transform hover:scale-[1.02] active:scale-95"
                 style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
               >
-                {summary.practiceLabel}
+                {replayProblem ? `Replay ${replayProblem.title}` : summary.practiceLabel}
               </button>
             )}
             {review.results.length === 0 && (

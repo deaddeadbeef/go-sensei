@@ -184,9 +184,10 @@ describe('DailyReview', () => {
     expect(screen.getByText('Make Two Eyes')).toBeTruthy();
     expect(screen.getByText('missed - replay C8')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Practice Life and death' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Replay Make Two Eyes' }));
 
-    expect(useGameStore.getState().appPhase).toBe('problems');
+    expect(useGameStore.getState().appPhase).toBe('problem');
+    expect(useGameStore.getState().currentProblemId).toBe('life-001');
     expect(useGameStore.getState().preferredProblemFilter).toBe('life-and-death');
   });
 
