@@ -986,6 +986,18 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.queryByText('Chain proof: D7, F7, G6, G4, and F3 were tested and stayed stable; Black can keep extending.')).toBeNull();
     expect(screen.queryByText(`D7, F7, G6, and G4 were already tested and stayed stable. ${f3LocalProof}`)).toBeNull();
     expect(screen.queryByText('The F3 read is stable, so change direction now: play C3 for Make your stones work together.')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Play C3 target for Make your stones work together' }));
+    act(() => {
+      useGameStore.getState().pass();
+    });
+
+    expect(screen.getByText(`C3 applies the F3 read in the real game: ${f3LocalProof} Black can keep extending instead of answering a cut that has not happened.`)).toBeTruthy();
+    expect(screen.getByText('Local shape settled')).toBeTruthy();
+    expect(screen.getByText('C3 landed after the F3 read, so this lower-edge shape is connected enough for now. Look upward next: C5 or E5 grow the same stones from a new direction.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Show pressure variation for D3' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Repeat F2 first-reply pattern at D2 for D3' })).toBeNull();
+    expect(screen.getByText('Try C5 or E5.')).toBeTruthy();
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {

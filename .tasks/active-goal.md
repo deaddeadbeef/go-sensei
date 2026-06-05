@@ -119,6 +119,7 @@ Latest completed slice:
 - Promoted the active read handoff inside the normal target row, so E3 is labeled as recommended by the read while E5 and C5 remain visible alternatives.
 - Preserved the stable-read recap when the learner accepts E3 from the normal target row, so the tutor explains why the direction change is complete before moving on to F3.
 - Reset the F3 read after the E3 direction change, so a stable F3 comparison starts a fresh local proof instead of appending a fifth point to the old D7/F7/G6/G4 chain.
+- Settled the lower-edge shape after the C3 handoff, replacing the D3 repeat-read prompt with guidance to look upward at C5 or E5 from a new direction.
 
 Next investigation candidates:
-- Whether the post-C3 handoff should explain when this local shape is finished and route the learner toward a new board area.
+- Whether the next C5/E5 choice should teach direction of play explicitly instead of presenting both upward jumps as equivalent.
