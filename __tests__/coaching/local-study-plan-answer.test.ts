@@ -34,6 +34,7 @@ describe('local study plan answer', () => {
     expect(answer?.text).toContain('Progress check: you have completed no lessons, solved no problems, and not started a guided 9x9 game yet.');
     expect(answer?.text).toContain('That is not a failure; it means the tutor needs one visible move or lesson before it can judge your Go.');
     expect(answer?.text).toContain('Next honest step: First 9x9 guided game. Start on a small board with one clear goal at a time.');
+    expect(answer?.text).toContain('Finish line: The guided 9x9 is started and the first corner objective is visible on the board.');
     expect(answer?.text).toContain('Keep attention on Corner Openings, Territory, and Liberties.');
     expect(answer?.actions).toEqual([{ id: 'guided:intro', label: 'Start guided 9x9' }]);
     expect(answer?.conceptIds).toEqual(expect.arrayContaining(['corner-opening', 'territory', 'liberties']));
@@ -104,6 +105,7 @@ describe('local study plan answer', () => {
 
     expect(answer?.text).toContain('Study plan: Daily review.');
     expect(answer?.text).toContain('1 review position is due before new material.');
+    expect(answer?.text).toContain('Finish line: All due review cards are answered, and any miss has been replayed once.');
     expect(answer?.text).toContain('First: Solve the due review positions before opening new material.');
     expect(answer?.actions).toEqual([{ id: 'review', label: 'Start daily review' }]);
   });
