@@ -137,6 +137,7 @@ Latest completed slice:
 - Added direction-aware fresh-area explanations, so H8 is described as upper-right and H2 as lower-right in target hover/focus help and local Q&A suggestions.
 - Added a local comparison answer for H8 vs H2, so the tutor contrasts their upper-right and lower-right plans before the learner commits to a fresh area.
 - Added post-move reflection for successful H8/H2 fresh-area choices, while keeping off-target fresh-area moves silent so the D5 bridge handoff does not regress into a false miss.
+- Centralized beginner target suggestion reasons so guided resume overlays, local fallback, illegal-move feedback, and local Q&A all describe H8/H2 as fresh directions instead of weak-group liberties.
 
 Next investigation candidates:
-- Whether guided resume overlays should use the same direction-aware fresh-area suggestion reasons as the objective card and local Q&A.
+- Whether the follow-up targets after H8/H2 should name how they extend the newly opened area instead of using generic one-space-jump copy.

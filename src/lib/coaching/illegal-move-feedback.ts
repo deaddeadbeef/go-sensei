@@ -1,6 +1,7 @@
 import type { TeachingLevel } from '@/lib/ai/system-prompt';
 import {
   formatObjectiveTargetText,
+  getBeginnerObjectiveSuggestionReason,
   getBeginnerObjective,
 } from '@/lib/coaching/beginner-objectives';
 import { getBeginnerObjectiveActions } from '@/lib/coaching/beginner-objective-actions';
@@ -12,7 +13,7 @@ import {
   pointKey,
   pointToCoord,
 } from '@/lib/go-engine';
-import type { BoardSize, GameState, Point } from '@/lib/go-engine';
+import type { GameState, Point } from '@/lib/go-engine';
 import type { SenseiAction } from '@/lib/coaching/sensei-actions';
 import type { LocalBoardFocus, LocalSuggestionFocus } from '@/lib/coaching/local-question-answer';
 
@@ -25,20 +26,6 @@ export interface IllegalMoveFeedback {
 
 function uniqueConceptIds(conceptIds: string[]): string[] {
   return [...new Set(conceptIds)];
-}
-
-function suggestionReason(objectiveId: string, point: Point, boardSize: BoardSize): string {
-  const coord = pointToCoord(point, boardSize);
-
-  if (objectiveId === 'claim-corner') {
-    return `Start at ${coord}: the board edge helps this stone make territory.`;
-  }
-
-  if (objectiveId === 'extend-from-stone') {
-    return `Try ${coord} as a one-space jump that works with your stones.`;
-  }
-
-  return `Give your group room by playing its liberty at ${coord}.`;
 }
 
 function buildObjectiveSuggestions(game: GameState, teachingLevel: TeachingLevel): {
@@ -73,7 +60,7 @@ function buildObjectiveSuggestions(game: GameState, teachingLevel: TeachingLevel
       id: `illegal-move-target-${pointKey(target)}`,
       point: { x: target.x, y: target.y },
       rank: index + 1,
-      reason: suggestionReason(objective.id, target, game.board.size),
+      reason: getBeginnerObjectiveSuggestionReason(objective, target, game.board.size),
     })),
     actions: getBeginnerObjectiveActions(objective),
   };

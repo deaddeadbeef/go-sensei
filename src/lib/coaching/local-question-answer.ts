@@ -20,6 +20,7 @@ import type { TeachingLevel } from '@/lib/ai/system-prompt';
 import {
   formatObjectiveTargetText,
   getBoardAreaDirectionLabel,
+  getBeginnerObjectiveSuggestionReason,
   getBeginnerObjective,
   getBeginnerObjectiveProgress,
 } from '@/lib/coaching/beginner-objectives';
@@ -734,30 +735,12 @@ function isInfluenceQuestion(q: string): boolean {
     || /\bhow\s+does\s+(a\s+)?cent(er|re)\s+stone\s+(help|work|matter)\b/.test(q);
 }
 
-function suggestionReason(objective: BeginnerObjective, point: Point, boardSize: BoardSize): string {
-  const coord = pointToCoord(point, boardSize);
-
-  if (objective.id === 'claim-corner') {
-    return `Start at ${coord}: the board edge helps this stone make territory.`;
-  }
-
-  if (objective.id === 'extend-from-stone') {
-    return `Try ${coord} as a one-space jump that works with your stones.`;
-  }
-
-  if (objective.id === 'choose-new-area') {
-    return `Consider ${coord} as a fresh ${getBoardAreaDirectionLabel(point, boardSize)} away from the settled local shape.`;
-  }
-
-  return `Give your group room by playing its liberty at ${coord}.`;
-}
-
 function objectiveSuggestions(objective: BeginnerObjective, boardSize: BoardSize, idPrefix: string): LocalSuggestionFocus[] {
   return objective.targetPoints.slice(0, 4).map((point, index) => ({
     id: `${idPrefix}-${pointKey(point)}`,
     point: copyPoint(point),
     rank: index + 1,
-    reason: suggestionReason(objective, point, boardSize),
+    reason: getBeginnerObjectiveSuggestionReason(objective, point, boardSize),
   }));
 }
 
