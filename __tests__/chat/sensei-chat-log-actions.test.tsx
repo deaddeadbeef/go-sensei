@@ -32,4 +32,15 @@ describe('SenseiChatLog actions', () => {
     expect(useGameStore.getState().appPhase).toBe('problems');
     expect(useGameStore.getState().preferredProblemFilter).toBe('capture');
   });
+
+  it('uses a board-aware empty prompt after the learner has moved', () => {
+    act(() => {
+      useGameStore.getState().placeStone({ x: 2, y: 2 });
+    });
+
+    render(<SenseiChatLog />);
+
+    expect(screen.getByText('Ask about the current board, a marked target, or why the last move mattered.')).toBeTruthy();
+    expect(screen.queryByText('Place a stone to start learning!')).toBeNull();
+  });
 });
