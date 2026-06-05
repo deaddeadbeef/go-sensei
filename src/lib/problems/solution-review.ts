@@ -58,3 +58,26 @@ export function getPrimarySolutionLine(problem: Problem): ProblemSolutionStep[] 
 
   return steps;
 }
+
+export function getProblemSolutionTakeaway(
+  problem: Problem,
+  steps: ProblemSolutionStep[] = getPrimarySolutionLine(problem),
+): string {
+  const firstStudentStep = steps.find((step) => step.role === 'student') ?? null;
+  const firstMove = firstStudentStep
+    ? `The first move at ${formatProblemPoint(firstStudentStep.move, problem.boardSize as BoardSize)}`
+    : 'The first move';
+
+  switch (problem.category) {
+    case 'capture':
+      return `${firstMove} works by attacking liberties. Follow the numbered sequence until the target group has no safe adjacent point left.`;
+    case 'life-and-death':
+      return `${firstMove} is the vital point for eye space. Ask whether the defender can still make two separate eyes after that point is occupied.`;
+    case 'tesuji':
+      return `${firstMove} is a shape tactic, not just a contact move. It creates an immediate threat the opponent cannot answer cleanly.`;
+    case 'reading':
+      return `${firstMove} works because the replies stay forcing. Read the marked sequence before playing so you know the target cannot escape.`;
+    case 'endgame':
+      return `${firstMove} is the urgent value move. Compare it with smaller gote points, then notice how the sequence keeps the bigger point under control.`;
+  }
+}
