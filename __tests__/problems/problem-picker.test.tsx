@@ -52,6 +52,14 @@ describe('ProblemPicker', () => {
     expect(scrollIntoViewMock).toHaveBeenCalledTimes(2);
   });
 
+  it('returns learners to the board from the problem library', () => {
+    render(<ProblemPicker />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Return to board' }));
+
+    expect(useGameStore.getState().appPhase).toBe('game');
+  });
+
   it('continues through the all-problems list after progress', () => {
     act(() => {
       useProgressStore.getState().recordProblemAttempt({
