@@ -197,13 +197,13 @@ export function LearningPath() {
         </section>
 
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          <PathCard title="Lessons" text="Learn one idea at a time." onClick={showLessons} />
-          <PathCard title="Problems" text="Practice reading and tactics." onClick={openProblems} />
-          <PathCard title="Review" text="Repeat weak patterns." onClick={showReview} />
-          <PathCard title="Skills" text="Inspect concept mastery." onClick={showSkillTree} />
+          <PathCard title="Lessons" text="Build one Go idea at a time." onClick={showLessons} />
+          <PathCard title="Problems" text="Read one shape, then check it." onClick={openProblems} />
+          <PathCard title="Review" text="Refresh patterns due today." onClick={showReview} />
+          <PathCard title="Skills" text="See what each concept unlocks." onClick={showSkillTree} />
           <PathCard
             title="Guided game"
-            text={hasStartedIntroGame ? 'Use ideas in play.' : 'Start the first 9x9 board.'}
+            text={hasStartedIntroGame ? 'Keep playing with one clear goal.' : 'Play the first 9x9 with a goal.'}
             onClick={openGuidedGameCard}
           />
         </section>
