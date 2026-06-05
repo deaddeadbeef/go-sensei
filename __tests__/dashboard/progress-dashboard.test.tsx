@@ -62,6 +62,8 @@ describe('ProgressDashboard', () => {
     expect(screen.getByText('Next best move')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'First 9x9 guided game' })).toBeTruthy();
     expect(screen.getByText('Start on a small board with one clear goal at a time.')).toBeTruthy();
+    expect(screen.getByText('Finish line:')).toBeTruthy();
+    expect(screen.getByText('The guided 9x9 is started and the first corner objective is visible on the board.')).toBeTruthy();
     expect(screen.getByText('Corner Openings')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Start guided 9x9' })).toBeTruthy();
   });
