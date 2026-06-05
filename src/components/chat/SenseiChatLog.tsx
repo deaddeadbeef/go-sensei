@@ -19,10 +19,14 @@ const variantIcons: Record<string, string> = {
 
 export function SenseiChatLog() {
   const chatMessages = useGameStore((s) => s.chatMessages);
+  const moveCount = useGameStore((s) => s.game.moveHistory.length);
   const applyTargetHints = useGameStore((s) => s.applyTargetHints);
   const handleAction = useSenseiAction();
   const scrollRef = useRef<HTMLDivElement>(null);
   const activePreviewRef = useRef<{ actionId: string; previousHints: OverlayHighlight[] } | null>(null);
+  const emptyPrompt = moveCount === 0
+    ? 'Place a stone to start learning!'
+    : 'Ask about the current board, a marked target, or why the last move mattered.';
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -120,7 +124,7 @@ export function SenseiChatLog() {
       </AnimatePresence>
       {chatMessages.length === 0 && (
         <p className="text-xs text-center py-4 opacity-40" style={{ color: COLORS.ui.textSecondary }}>
-          Place a stone to start learning!
+          {emptyPrompt}
         </p>
       )}
     </div>
