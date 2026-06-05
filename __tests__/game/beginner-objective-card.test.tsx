@@ -1054,6 +1054,8 @@ describe('BeginnerObjectiveCard', () => {
 
     expect(screen.getByText('F6 and F4 leave the C5-E5-G5 bridge equally stable: G5 has 3 liberties and E5 has 3 liberties either way. F6 attacks F5 from above the line; F4 tests below the line. C5 still supports through D5, so F5 does not need an immediate defense.')).toBeTruthy();
     expect(screen.getByText('You proved F6 above and F4 below both leave the C5-E5-G5 line stable, so F5 does not need an immediate defense.')).toBeTruthy();
+    expect(screen.getByText('Weak-group handoff')).toBeTruthy();
+    expect(screen.getByText('The F5 proof is the weak-group check: G5 and E5 both keep 3 liberties, so no urgent defense is marked. Keep D5 as the bridge liberty back to C5 before choosing the next real move.')).toBeTruthy();
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {
