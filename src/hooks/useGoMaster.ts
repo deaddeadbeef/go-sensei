@@ -6,7 +6,11 @@ import { useReviewStore } from '@/stores/review-store';
 import { useProgressStore } from '@/stores/progress-store';
 import { CONCEPTS } from '@/lib/concepts/concept-data';
 import { getLearningRecommendation } from '@/lib/learning-path/recommendations';
-import { formatObjectiveTargetText, getBeginnerObjective } from '@/lib/coaching/beginner-objectives';
+import {
+  formatObjectiveTargetText,
+  getBeginnerObjective,
+  getFreshAreaFollowUpContext,
+} from '@/lib/coaching/beginner-objectives';
 import { getLocalGuidedFallback } from '@/lib/coaching/local-guided-fallback';
 import {
   getLocalGameReviewAnswer,
@@ -110,7 +114,8 @@ function buildGuidedContext(
   dueReviewCount: number,
   hasStartedIntroGame: boolean,
   beginnerObjective: BeginnerObjective | null,
-  boardSize: BoardSize,
+  game: GameState,
+  teachingLevel: TeachingLevel,
 ): string {
   const mastered: string[] = [];
   const practiced: string[] = [];
@@ -145,7 +150,8 @@ function buildGuidedContext(
     lines.push('Current mode: first guided 9x9 beginner game.');
   }
   if (beginnerObjective) {
-    const targetText = formatObjectiveTargetText(beginnerObjective, boardSize);
+    const followUpContext = getFreshAreaFollowUpContext(game, teachingLevel, beginnerObjective);
+    const targetText = formatObjectiveTargetText(beginnerObjective, game.board.size, 4, followUpContext);
     lines.push(`Current visible objective: ${beginnerObjective.title}`);
     lines.push(`Student instruction: ${beginnerObjective.instruction}`);
     if (targetText) lines.push(`Suggested board points: ${targetText}`);
@@ -316,7 +322,8 @@ export function useGoMaster() {
         dueReviewCount,
         progress.hasStartedIntroGame,
         beginnerObjective,
-        g.board.size,
+        g,
+        s.teachingLevel,
       )
       : undefined;
 
