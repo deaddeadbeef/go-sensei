@@ -19,6 +19,7 @@ import type { BoardSize, GameState, Group, Move, Point } from '@/lib/go-engine/t
 import type { TeachingLevel } from '@/lib/ai/system-prompt';
 import {
   formatObjectiveTargetText,
+  getBoardAreaDirectionLabel,
   getBeginnerObjective,
   getBeginnerObjectiveProgress,
 } from '@/lib/coaching/beginner-objectives';
@@ -745,7 +746,7 @@ function suggestionReason(objective: BeginnerObjective, point: Point, boardSize:
   }
 
   if (objective.id === 'choose-new-area') {
-    return `Consider ${coord} only if it starts a fresh direction away from the settled local shape.`;
+    return `Consider ${coord} as a fresh ${getBoardAreaDirectionLabel(point, boardSize)} away from the settled local shape.`;
   }
 
   return `Give your group room by playing its liberty at ${coord}.`;
