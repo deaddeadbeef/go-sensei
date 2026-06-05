@@ -7,7 +7,7 @@ import { useConceptStore } from '@/stores/concept-store';
 import { useGameStore } from '@/stores/game-store';
 import { useProgressStore } from '@/stores/progress-store';
 import { useReviewStore } from '@/stores/review-store';
-import { createGame, playMove, setStone } from '@/lib/go-engine';
+import { createGame, passMove, playMove, setStone } from '@/lib/go-engine';
 import type { GameState, Point } from '@/lib/go-engine';
 
 function playStoreSequence(points: Point[]) {
@@ -48,6 +48,26 @@ function snapbackGameAfterWhiteCapture(): GameState {
   return whiteCapture.newState;
 }
 
+function settledShapeGame(): GameState {
+  const stones: Point[] = [
+    { x: 2, y: 2 },
+    { x: 4, y: 2 },
+    { x: 6, y: 2 },
+    { x: 2, y: 4 },
+    { x: 3, y: 4 },
+    { x: 4, y: 4 },
+    { x: 6, y: 4 },
+    { x: 2, y: 6 },
+    { x: 4, y: 6 },
+    { x: 6, y: 6 },
+  ];
+
+  return stones.reduce(
+    (game, point) => ({ ...game, board: setStone(game.board, point, 'black') }),
+    createGame(9),
+  );
+}
+
 describe('useGoMaster local answers', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -62,6 +82,7 @@ describe('useGoMaster local answers', () => {
 
   afterEach(() => {
     cleanup();
+    sessionStorage.removeItem('go-sensei-github-token');
     vi.restoreAllMocks();
   });
 
@@ -1624,6 +1645,42 @@ describe('useGoMaster local answers', () => {
     ]);
     expect(useConceptStore.getState().getMastery('snapback').encounterCount).toBeGreaterThan(0);
     expect(useConceptStore.getState().getMastery('reading').encounterCount).toBeGreaterThan(0);
+  });
+
+  it('sends fresh-area follow-up target context to the cloud tutor', async () => {
+    const freshAreaMove = playMove(settledShapeGame(), { x: 7, y: 1 });
+    if (!freshAreaMove.success) throw new Error('test setup fresh-area move failed');
+    const afterWhitePass = passMove(freshAreaMove.newState);
+    sessionStorage.setItem('go-sensei-github-token', 'test-token');
+    act(() => {
+      useGameStore.setState({
+        game: afterWhitePass,
+        appPhase: 'game',
+        phase: 'playing',
+        teachingLevel: 'guided',
+      });
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(
+      JSON.stringify({ text: 'Cloud tutor response' }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    ));
+    const { result } = renderHook(() => useGoMaster());
+
+    await act(async () => {
+      result.current.sendMessage('Give me a vivid proverb for this board');
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    const request = fetchSpy.mock.calls[0]?.[1] as RequestInit;
+    const body = JSON.parse(String(request.body)) as { gameState: { guidedContext: string } };
+
+    expect(body.gameState.guidedContext).toContain('Current visible objective: Make your stones work together');
+    expect(body.gameState.guidedContext).toContain('Suggested board points: Extend H8 into the upper-right area: try H6 or F8.');
+    expect(body.gameState.guidedContext).not.toContain('Suggested board points: Try H6 or F8.');
+
+    sessionStorage.removeItem('go-sensei-github-token');
   });
 
   it('keeps even capture-race questions grounded in the current guided objective', () => {

@@ -139,6 +139,7 @@ Latest completed slice:
 - Added post-move reflection for successful H8/H2 fresh-area choices, while keeping off-target fresh-area moves silent so the D5 bridge handoff does not regress into a false miss.
 - Centralized beginner target suggestion reasons so guided resume overlays, local fallback, illegal-move feedback, and local Q&A all describe H8/H2 as fresh directions instead of weak-group liberties.
 - Added fresh-area follow-up context after H8/H2, so the next H6/F8 or F2/H4 targets are described as extensions of the newly opened area in local tutor answers, guided resume, fallback/illegal feedback, hesitation nudges, and the objective card.
+- Fed that fresh-area follow-up context into the cloud tutor request body, so remote coaching sees H8/H2 follow-up targets as new-area extensions instead of generic one-space jumps.
 
 Next investigation candidates:
-- Whether the cloud prompt context should also carry the H8/H2 follow-up area label instead of only the current objective's generic target list.
+- Whether remaining specialized local Q&A paths that mention target text should use the fresh-area follow-up label when the learner asks topic-specific questions after H8/H2.
