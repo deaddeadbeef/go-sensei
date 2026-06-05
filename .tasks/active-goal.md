@@ -133,6 +133,7 @@ Latest completed slice:
 - Added a quiet D5 real-move handoff after the safe F5 weak-group proof, so the learner can settle the C5-E5 bridge without being told it is an emergency defense.
 - Added a settled-shape transition after the D5 handoff, so the tutor says D5 connected C5 and E5 and tells the learner to choose a new area instead of rereading the same bridge.
 - Replaced the no-target weak-group fallback with a "Choose a new area" objective when the board has no marked weak group or extension target.
+- Added concrete H8/H2 fresh-area targets to the settled-board objective, using empty interior points that are away from the last local shape and not adjacent to existing Black stones.
 
 Next investigation candidates:
-- Whether the "Choose a new area" objective should offer concrete fresh-area candidate targets instead of staying targetless.
+- Whether fresh-area target hover/focus explanations should name the nearby quadrant or direction each target opens.

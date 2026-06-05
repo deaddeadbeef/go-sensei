@@ -232,11 +232,13 @@ function formatPressureHandoffTargetText(
 
 function formatLocalShapeSettledTargetText(
   defaultText: string | null,
+  objective: BeginnerObjective,
   settledCue: PressureLocalShapeSettledCue | null,
   targets: Point[],
   board: BoardState,
 ): string | null {
   if (!settledCue || targets.length === 0) return defaultText;
+  if (objective.id === 'choose-new-area') return defaultText;
 
   const [recommendedTarget, ...otherTargets] = targets;
   const recommendedCoord = pointToCoord(recommendedTarget, board.size);
@@ -1816,7 +1818,8 @@ function getPressureLocalShapeSettledCue(
   }
 
   const isSettledAreaObjective = objective.id === 'look-for-weak-groups' || objective.id === 'choose-new-area';
-  if (recap.repeatRead || !isSettledAreaObjective || targets.length > 0) return null;
+  if (recap.repeatRead || !isSettledAreaObjective) return null;
+  if (objective.id === 'look-for-weak-groups' && targets.length > 0) return null;
 
   const connectedNeighborCoords = getAdjacentPoints(board, recap.point)
     .filter((point) => getStone(board, point) === 'black')
@@ -3888,6 +3891,7 @@ export function BeginnerObjectiveCard() {
   );
   const finalTargetDisplayText = formatLocalShapeSettledTargetText(
     targetDisplayText,
+    objective,
     pressureLocalShapeSettledCue,
     playableTargets,
     game.board,

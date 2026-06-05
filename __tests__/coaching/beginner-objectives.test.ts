@@ -192,10 +192,13 @@ describe('beginner objectives', () => {
       id: 'choose-new-area',
       title: 'Choose a new area',
       instruction: 'Your nearby groups are safe for now. Pick a fresh area instead of rereading the settled shape.',
-      targetPoints: [],
     });
+    expect(objective?.targetPoints).toEqual([
+      { x: 7, y: 1 },
+      { x: 7, y: 7 },
+    ]);
     if (!objective) throw new Error('Expected new-area objective');
-    expect(formatObjectiveTargetText(objective, 9)).toBeNull();
+    expect(formatObjectiveTargetText(objective, 9)).toBe('Try H8 or H2.');
   });
 
   it('reports when the learner completed the marked opening objective', () => {

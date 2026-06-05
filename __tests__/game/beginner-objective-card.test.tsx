@@ -1092,7 +1092,11 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText('D5 connected C5 and E5. No marked Black group is short on liberties here, so this side is quiet now. Choose a new area instead of rereading the same bridge.')).toBeTruthy();
     expect(screen.getByText('Choose a new area')).toBeTruthy();
     expect(screen.getByText('Your nearby groups are safe for now. Pick a fresh area instead of rereading the settled shape.')).toBeTruthy();
+    expect(screen.getByText('Try H8 or H2.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Play H8 target for Choose a new area' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Play H2 target for Choose a new area' })).toBeTruthy();
     expect(screen.queryByText('Before playing, ask which stones have little room to escape.')).toBeNull();
+    expect(screen.queryByText('Progress check: D5 stayed near the settled shape. Look for a fresh direction before rereading the same local area.')).toBeNull();
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {
