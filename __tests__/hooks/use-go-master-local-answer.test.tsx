@@ -191,7 +191,7 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('shape').encounterCount).toBeGreaterThan(0);
   });
 
-  it('answers give-up messages with a salvage target without fetching', () => {
+  it('answers give-up messages with a recovery target without fetching', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());
 
@@ -204,9 +204,9 @@ describe('useGoMaster local answers', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(state.bubble.variant).toBe('teaching');
     expect(state.bubble.text).toContain('Resigning or starting over is allowed, but do it deliberately');
-    expect(state.bubble.text).toContain('Your current salvage job is: Make your stones work together.');
+    expect(state.bubble.text).toContain('Your current recovery job is: Make your stones work together.');
     expect(state.bubble.text).toContain('Play a one-space jump from one of your stones. Try E7 or C5.');
-    expect(state.bubble.text).toContain('play one of them before deciding to throw this board away');
+    expect(state.bubble.text).toContain('play one of them before deciding to restart');
     expect(state.bubble.actions).toEqual([
       { id: 'hint', label: 'Show targets' },
       { id: 'guided:intro', label: 'Start fresh guided game' },
