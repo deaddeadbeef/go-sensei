@@ -2821,9 +2821,14 @@ export function BeginnerObjectiveCard() {
     return result.success;
   }, [canPlayTarget, clearGuidedReadReplay, clearTargetHelp, placeStone, recordInteraction]);
 
-  const handleTargetClick = useCallback((point: Point) => {
-    setPressureHandoffRecap(null);
-    playObjectiveTarget(point);
+  const handleTargetClick = useCallback((point: Point, handoff: PressureExtensionHandoff | null = null) => {
+    const matchingHandoff = handoff && targetKey(handoff.point) === targetKey(point)
+      ? handoff
+      : null;
+
+    setPressureHandoffRecap(matchingHandoff?.recap ?? null);
+    const played = playObjectiveTarget(point);
+    if (matchingHandoff && !played) setPressureHandoffRecap(null);
   }, [playObjectiveTarget]);
 
   const handlePressureHandoffClick = useCallback((handoff: PressureExtensionHandoff) => {
@@ -4434,7 +4439,7 @@ export function BeginnerObjectiveCard() {
                 onFocus={() => scheduleTargetHelp(point)}
                 onBlur={clearTargetHelp}
                 onKeyDown={() => scheduleTargetHelp(point)}
-                onClick={() => handleTargetClick(point)}
+                onClick={() => handleTargetClick(point, activePressureExtensionHandoff)}
               >
                 {coord}
               </button>
