@@ -52,6 +52,35 @@ describe('SenseiBubble actions', () => {
     ]);
   });
 
+  it('keeps medium board explanations in chat instead of covering the board', () => {
+    const mediumAnswer = [
+      'F2 is marked because it extends H2 into the lower-right area: close enough to give that fresh stone a partner, but far enough away to grow space instead of clumping.',
+      'H4 works for the same beginner goal.',
+      'I marked the current targets again; F2 is the one I explained.',
+    ].join(' ');
+
+    expect(mediumAnswer.length).toBeGreaterThan(260);
+    expect(mediumAnswer.length).toBeLessThan(280);
+
+    act(() => {
+      useGameStore.getState().showBubble({
+        text: mediumAnswer,
+        variant: 'teaching',
+        actions: [{ id: 'hint', label: 'Show targets' }],
+      });
+    });
+
+    render(<SenseiBubble />);
+    finishTypewriter();
+
+    expect(screen.queryByText('Go Sensei')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Show targets' })).toBeNull();
+    expect(useGameStore.getState().chatMessages.at(-1)?.text).toBe(mediumAnswer);
+    expect(useGameStore.getState().chatMessages.at(-1)?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+    ]);
+  });
+
   it('routes practice actions to the matching problem category', () => {
     act(() => {
       useGameStore.getState().showBubble({
