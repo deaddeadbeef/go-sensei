@@ -248,6 +248,7 @@ export function ProblemView() {
   const solutionSteps = getPrimarySolutionLine(problem);
   const solutionTakeaway = getProblemSolutionTakeaway(problem, solutionSteps);
   const revealSolution = problemInteraction.status !== 'playing';
+  const hintActionLabel = problemInteraction.showHint ? 'Hint shown' : 'Show hint';
 
   return (
     <div
@@ -502,10 +503,11 @@ export function ProblemView() {
                 <button
                   onClick={requestProblemHint}
                   disabled={problemInteraction.showHint}
+                  aria-label={hintActionLabel}
                   className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-opacity disabled:opacity-30"
                   style={{ backgroundColor: COLORS.ui.bgCard, color: COLORS.ui.textPrimary }}
                 >
-                  💡 Hint
+                  <span aria-hidden="true">💡</span> {hintActionLabel}
                 </button>
                 <button
                   onClick={resetProblem}
