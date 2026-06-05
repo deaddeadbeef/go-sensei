@@ -82,6 +82,25 @@ export function getBoardAreaDirectionLabel(point: Point, boardSize: BoardSize): 
   return 'center';
 }
 
+export function getBeginnerObjectiveSuggestionReason(
+  objective: BeginnerObjective,
+  point: Point,
+  boardSize: BoardSize,
+): string {
+  const coord = pointToCoord(point, boardSize);
+
+  switch (objective.id) {
+    case 'claim-corner':
+      return `Start at ${coord}: the board edge helps this stone make territory.`;
+    case 'extend-from-stone':
+      return `Try ${coord} as a one-space jump that works with your stones.`;
+    case 'choose-new-area':
+      return `Consider ${coord} as a fresh ${getBoardAreaDirectionLabel(point, boardSize)} away from the settled local shape.`;
+    case 'look-for-weak-groups':
+      return `Give your group room by playing its liberty at ${coord}.`;
+  }
+}
+
 export function formatObjectiveTargetText(
   objective: BeginnerObjective,
   boardSize: BoardSize,

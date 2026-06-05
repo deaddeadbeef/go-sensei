@@ -1,5 +1,6 @@
 import {
   formatObjectiveTargetText,
+  getBeginnerObjectiveSuggestionReason,
   getBeginnerObjective,
   getBeginnerObjectiveProgress,
 } from '@/lib/coaching/beginner-objectives';
@@ -66,20 +67,6 @@ function copyPoint(point: Point): Point {
   return { x: point.x, y: point.y };
 }
 
-function suggestionReason(objective: BeginnerObjective, point: Point, boardSize: BoardSize): string {
-  const coord = pointToCoord(point, boardSize);
-
-  if (objective.id === 'claim-corner') {
-    return `Start at ${coord}: the board edge helps this stone make territory.`;
-  }
-
-  if (objective.id === 'extend-from-stone') {
-    return `Try ${coord} as a one-space jump that works with your stones.`;
-  }
-
-  return `Give your group room by playing its liberty at ${coord}.`;
-}
-
 function uniqueConceptIds(conceptIds: string[]): string[] {
   return [...new Set(conceptIds)];
 }
@@ -94,7 +81,7 @@ function buildObjectiveBoardFocus(
     id: `local-fallback-move-${pointKey(point)}`,
     point: copyPoint(point),
     rank: index + 1,
-    reason: suggestionReason(objective, point, boardSize),
+    reason: getBeginnerObjectiveSuggestionReason(objective, point, boardSize),
   }));
   const highlights = move?.type === 'place'
     ? [{

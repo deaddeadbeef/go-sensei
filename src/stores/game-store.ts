@@ -28,6 +28,7 @@ import type { ValidationResult } from '@/lib/problems/validator';
 import type { SenseiAction } from '@/lib/coaching/sensei-actions';
 import {
   formatObjectiveTargetText,
+  getBeginnerObjectiveSuggestionReason,
   getBeginnerObjective,
   getBeginnerObjectiveProgress,
 } from '@/lib/coaching/beginner-objectives';
@@ -551,20 +552,6 @@ function lastBlackPlacedMove(game: GameState): Extract<GameState['moveHistory'][
   return null;
 }
 
-function suggestionReason(objective: BeginnerObjective, point: Point, boardSize: BoardSize): string {
-  const coord = pointToCoord(point, boardSize);
-
-  if (objective.id === 'claim-corner') {
-    return `Start at ${coord}: the board edge helps this stone make territory.`;
-  }
-
-  if (objective.id === 'extend-from-stone') {
-    return `Try ${coord} as a one-space jump that works with your stones.`;
-  }
-
-  return `Give your group room by playing its liberty at ${coord}.`;
-}
-
 function buildObjectiveSuggestions(
   objective: BeginnerObjective,
   boardSize: BoardSize,
@@ -574,7 +561,7 @@ function buildObjectiveSuggestions(
     id: `${idPrefix}-${pointKey(point)}`,
     point: { ...point },
     rank: index + 1,
-    reason: suggestionReason(objective, point, boardSize),
+    reason: getBeginnerObjectiveSuggestionReason(objective, point, boardSize),
   }));
 }
 
