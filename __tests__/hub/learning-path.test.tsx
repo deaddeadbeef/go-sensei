@@ -25,6 +25,8 @@ describe('LearningPath', () => {
     expect(screen.getAllByText('Liberties').length).toBeGreaterThan(0);
     expect(screen.getByText('Start guided 9x9')).toBeTruthy();
     expect(screen.getByText('Place the first stone near a corner instead of the center.')).toBeTruthy();
+    expect(screen.getByText('Finish line:')).toBeTruthy();
+    expect(screen.getByText('The guided 9x9 is started and the first corner objective is visible on the board.')).toBeTruthy();
     expect(screen.queryByText('corner-opening')).toBeNull();
   });
 
