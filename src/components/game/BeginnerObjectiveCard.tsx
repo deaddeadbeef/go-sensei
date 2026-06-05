@@ -2038,7 +2038,7 @@ function getPressureComparisonSummary(
   const insideCoord = pointToCoord(insideRecount.reply, board.size);
   const proofText = hasSameCounts
     ? bridgeContext
-      ? `You proved ${outsideCoord} and ${insideCoord} both leave the ${bridgeContext.lineText} line stable, so ${prompt.gapCoord} does not need an immediate defense.`
+      ? `You proved ${outsideCoord} outside and ${insideCoord} inside both leave the ${bridgeContext.lineText} line stable, so ${prompt.gapCoord} does not need an immediate defense.`
       : `You proved ${firstCoord} and ${secondCoord} both leave ${anchorCoord} and ${stoneCoord} safe, so ${prompt.gapCoord} does not need an immediate defense.`
     : `You proved ${secondCoord} leaves ${anchorCoord} and ${stoneCoord} stable without a short-side defense, so ${prompt.gapCoord} does not need an immediate defense.`;
 

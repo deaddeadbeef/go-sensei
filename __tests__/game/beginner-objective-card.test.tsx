@@ -1026,7 +1026,16 @@ describe('BeginnerObjectiveCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Compare D4 against B4' }));
 
     expect(screen.getByText('B4 and D4 leave the C7-C5-C3 bridge equally stable: C3 has 3 liberties and C5 has 3 liberties either way. B4 attacks C4 from outside the line; D4 tests the inside toward the center. C7 still supports through C6, so C4 does not need an immediate defense.')).toBeTruthy();
-    expect(screen.getByText('You proved B4 and D4 both leave the C7-C5-C3 line stable, so C4 does not need an immediate defense.')).toBeTruthy();
+    const c4BridgeProof = 'You proved B4 outside and D4 inside both leave the C7-C5-C3 line stable, so C4 does not need an immediate defense.';
+    expect(screen.getByText(c4BridgeProof)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Play E5 in the real game after the stable pressure read' }));
+    act(() => {
+      useGameStore.getState().pass();
+    });
+
+    expect(screen.getByText(`E5 applies the C4 read in the real game: ${c4BridgeProof} Black can keep extending instead of answering a cut that has not happened.`)).toBeTruthy();
+    expect(screen.getByText(`Carry forward the proof: ${c4BridgeProof} Now test F5 the same way before the next extension.`)).toBeTruthy();
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {
