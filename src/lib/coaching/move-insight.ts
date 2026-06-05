@@ -1,5 +1,6 @@
 import {
   formatObjectiveTargetText,
+  getBoardAreaDirectionLabel,
   getBeginnerObjective,
   getBeginnerObjectiveProgress,
 } from '@/lib/coaching/beginner-objectives';
@@ -241,6 +242,18 @@ export function getMoveInsight(game: GameState, teachingLevel: TeachingLevel): M
       observation: `${coord} is a one-space jump from ${anchorCoord}. The empty point at ${gapCoord} leaves room to grow while the two stones still work together.`,
       nextStep: next.text,
       conceptIds: ['shape', 'direction-of-play', ...next.concepts],
+    };
+  }
+
+  if (progress?.status === 'met' && progress.objectiveId === 'choose-new-area') {
+    const direction = getBoardAreaDirectionLabel(move.point, game.board.size);
+    const area = direction.replace(/ direction$/, '');
+
+    return {
+      title: 'Fresh direction chosen',
+      observation: `${coord} opens the ${direction} away from the settled local shape. Treat it as a new plan: ask what space it claims and how White might answer nearby.`,
+      nextStep: `Before extending from ${coord}, name the new ${area} area you want Black to build. Then use the marked follow-up targets to make that plan concrete.`,
+      conceptIds: ['direction-of-play', 'territory', ...next.concepts],
     };
   }
 
