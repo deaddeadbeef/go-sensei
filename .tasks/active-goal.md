@@ -127,6 +127,7 @@ Latest completed slice:
 - Turned the B4/D4 comparison summary into a bridge proof, so equal C3/C5 counts now explicitly prove the C7-C5-C3 line is stable and C4 does not need an immediate defense.
 - Carried the outside/inside B4-D4 proof through the real E5 handoff and into the next F5 read prompt, so the learner does not lose the reason the C4 cut was safe.
 - Bridged the F5 read after E5 back to the older G5 stone and the proven C7-C5-C3 line, so the learner sees E5 as a connector rather than a fresh isolated G5-E5 gap.
+- Taught the F5 center-line variation as above/below replies on the C5-E5-G5 bridge, with the same-count proof rendered even when the next objective is weak-group reading instead of another extension.
 
 Next investigation candidates:
-- Whether the F5 variation should name the C5-E5-G5 center-line replies by direction and connect their recounts to both the older G5 side and the proven C5 bridge before choosing.
+- Whether the post-F5 proof should hand the learner into the weak-groups objective with a concrete liberty choice instead of leaving the safe bridge proof and weak-group prompt side by side.
