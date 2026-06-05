@@ -20,7 +20,20 @@ describe('SenseiBar status', () => {
     render(<SenseiBar onSettingsClick={vi.fn()} isLoggedIn={false} />);
 
     expect(screen.getByText('Move 0')).toBeTruthy();
-    expect(screen.getByText('Your turn')).toBeTruthy();
+    expect(screen.getByTestId('sensei-bar-mobile-turn').textContent).toBe('You');
+    expect(screen.getByTestId('sensei-bar-desktop-turn').textContent).toBe('Your turn');
+  });
+
+  it('names the Sensei turn in the compact mobile status', () => {
+    act(() => {
+      useGameStore.getState().pass();
+    });
+
+    render(<SenseiBar onSettingsClick={vi.fn()} isLoggedIn={false} />);
+
+    expect(screen.getByText('Move 1')).toBeTruthy();
+    expect(screen.getByTestId('sensei-bar-mobile-turn').textContent).toBe('Sensei');
+    expect(screen.getByTestId('sensei-bar-desktop-turn').textContent).toBe('Sensei to play');
   });
 
   it('keeps mobile navigation compact and accessible', () => {
