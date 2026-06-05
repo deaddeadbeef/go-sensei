@@ -49,6 +49,8 @@ const FOCUS_PRACTICE_REASON: Record<ProblemCategory, string> = {
   endgame: 'Endgame problems train you to count value and play sente before smaller gote moves.',
 };
 
+const PROBLEM_IDS = new Set(PROBLEMS.map((problem) => problem.id));
+
 function difficultyStars(d: number) {
   return '★'.repeat(d) + '☆'.repeat(5 - d);
 }
@@ -56,7 +58,7 @@ function difficultyStars(d: number) {
 function solvedProblemIds(problemAttempts: ProblemAttempt[]): Set<string> {
   return new Set(
     problemAttempts
-      .filter((attempt) => attempt.solved)
+      .filter((attempt) => attempt.solved && PROBLEM_IDS.has(attempt.problemId))
       .map((attempt) => attempt.problemId),
   );
 }
