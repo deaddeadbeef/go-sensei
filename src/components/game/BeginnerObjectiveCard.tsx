@@ -272,6 +272,43 @@ function getExtensionAnchor(board: BoardState, target: Point): { anchor: Point; 
   return null;
 }
 
+function getBridgeLineContext(
+  board: BoardState,
+  anchor: Point,
+  stone: Point,
+): {
+  lineText: string;
+  oppositeAnchorCoord: string;
+  oppositeGapCoord: string;
+} | null {
+  const direction = {
+    x: stone.x - anchor.x,
+    y: stone.y - anchor.y,
+  };
+  const oppositeAnchor = {
+    x: stone.x + direction.x,
+    y: stone.y + direction.y,
+  };
+  const oppositeGap = {
+    x: stone.x + direction.x / 2,
+    y: stone.y + direction.y / 2,
+  };
+
+  if (!isOnBoard(board, oppositeAnchor) || !isOnBoard(board, oppositeGap)) return null;
+  if (getStone(board, oppositeAnchor) !== 'black') return null;
+  if (getStone(board, oppositeGap) !== null) return null;
+
+  const oppositeAnchorCoord = pointToCoord(oppositeAnchor, board.size);
+  const stoneCoord = pointToCoord(stone, board.size);
+  const anchorCoord = pointToCoord(anchor, board.size);
+
+  return {
+    lineText: `${oppositeAnchorCoord}-${stoneCoord}-${anchorCoord}`,
+    oppositeAnchorCoord,
+    oppositeGapCoord: pointToCoord(oppositeGap, board.size),
+  };
+}
+
 function getGapPressureReplyPoints(board: BoardState, anchor: Point, stone: Point, gap: Point): Point[] {
   const isHorizontalJump = Math.abs(stone.x - anchor.x) === 2;
   const candidates = isHorizontalJump
@@ -413,12 +450,19 @@ function getOneSpaceJumpReadPrompt(game: GameState): OneSpaceJumpReadPrompt | nu
   const gapCoord = pointToCoord(shape.gap, game.board.size);
   const replyPoints = getGapPressureReplyPoints(game.board, shape.anchor, move.point, shape.gap);
   const replyText = joinCoordinateList(replyPoints.map((point) => pointToCoord(point, game.board.size)));
+  const bridgeContext = getBridgeLineContext(game.board, shape.anchor, move.point);
+  const bridgePromptText = bridgeContext
+    ? ` ${stoneCoord} also reaches back toward ${bridgeContext.oppositeAnchorCoord} through ${bridgeContext.oppositeGapCoord}, so this read tests whether the ${bridgeContext.lineText} line stays stable before Black extends again.`
+    : ' First read whether Black should connect or defend that gap before extending again.';
+  const bridgeVariationText = bridgeContext
+    ? `Keep the ${bridgeContext.lineText} line in mind while you compare three plans`
+    : 'Compare three plans';
 
   return {
     key: `read-pressure-${targetKey(shape.anchor)}-${targetKey(move.point)}-${targetKey(shape.gap)}`,
     title: `Watch ${gapCoord}`,
-    text: `If White plays ${gapCoord}, the jump between ${anchorCoord} and ${stoneCoord} is under pressure. First read whether Black should connect or defend that gap before extending again.`,
-    variationText: `Imagine White plays ${gapCoord}. Compare three plans: connect by attacking the cutting stone${replyText ? ` at ${replyText}` : ''}, defend a Black side that is short on liberties, or keep extending if both stones still have room.`,
+    text: `If White plays ${gapCoord}, the jump between ${anchorCoord} and ${stoneCoord} is under pressure.${bridgePromptText}${bridgeContext ? ' First read whether Black should connect or defend that gap.' : ''}`,
+    variationText: `Imagine White plays ${gapCoord}. ${bridgeVariationText}: connect by attacking the cutting stone${replyText ? ` at ${replyText}` : ''}, defend a Black side that is short on liberties, or keep extending if both stones still have room.`,
     anchor: copyPoint(shape.anchor),
     stone: copyPoint(move.point),
     gap: copyPoint(shape.gap),

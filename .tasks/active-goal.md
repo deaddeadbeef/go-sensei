@@ -122,6 +122,7 @@ Latest completed slice:
 - Settled the lower-edge shape after the C3 handoff, replacing the D3 repeat-read prompt with guidance to look upward at C5 or E5 from a new direction.
 - Recommended C5 as the next upward direction after the lower-edge shape settles, while keeping E5 visible as the alternate upward jump.
 - Named the C5 bridge back toward the earlier C7 corner in the board-side move insight, so the lower-left line is tied to prior corner work before the tutor starts the C4 pressure read.
+- Carried that bridge context into the C4 read-next prompt and pressure variation, so the branch studies the C7-C5-C3 line instead of treating C4 as an isolated C3-C5 gap.
 
 Next investigation candidates:
-- Whether the C4 pressure read after C5 should carry the C7/C3 bridge context into the branch instead of treating C4 as an isolated C3-C5 gap.
+- Whether the C4 branch-choice and recount steps should explain B4 versus D4 in bridge terms instead of only using the generic open-side and alternate-reply copy.
