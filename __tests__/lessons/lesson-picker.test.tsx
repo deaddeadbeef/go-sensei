@@ -28,6 +28,14 @@ describe('LessonPicker', () => {
     expect(useGameStore.getState().appPhase).toBe('path');
   });
 
+  it('returns learners to the board from the lesson library', () => {
+    render(<LessonPicker />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Return to board' }));
+
+    expect(useGameStore.getState().appPhase).toBe('game');
+  });
+
   it('uses an internally scrollable top-aligned shell for mobile lesson lists', () => {
     render(<LessonPicker />);
 

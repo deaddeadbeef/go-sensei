@@ -176,7 +176,7 @@ export function LessonPicker() {
               color: COLORS.ui.textPrimary,
             }}
           >
-            Back to Game
+            Return to board
           </button>
         </motion.div>
       </div>
