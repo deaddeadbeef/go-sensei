@@ -175,7 +175,7 @@ describe('DailyReview', () => {
     expect(screen.getByText('Ready for the next idea')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Practice Capture' })).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Learning path' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Pick up next recommendation' }));
 
     expect(useGameStore.getState().appPhase).toBe('path');
   });
