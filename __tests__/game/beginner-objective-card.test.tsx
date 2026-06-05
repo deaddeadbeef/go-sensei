@@ -1022,6 +1022,11 @@ describe('BeginnerObjectiveCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Recount C3 and C5 after B4' }));
 
     expect(screen.getByText('After B4, recount the C7-C5-C3 line: C3 has 3 liberties at C2, B3, and D3. C5 has 3 liberties at C6, B5, and D5. C7 still supports through C6, so this read is checking whether C3 or C5 becomes short before extending again. Neither side is short yet, so keep building while staying ready to answer C4.')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Compare D4 against B4' }));
+
+    expect(screen.getByText('B4 and D4 leave the C7-C5-C3 bridge equally stable: C3 has 3 liberties and C5 has 3 liberties either way. B4 attacks C4 from outside the line; D4 tests the inside toward the center. C7 still supports through C6, so C4 does not need an immediate defense.')).toBeTruthy();
+    expect(screen.getByText('You proved B4 and D4 both leave the C7-C5-C3 line stable, so C4 does not need an immediate defense.')).toBeTruthy();
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {

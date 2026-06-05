@@ -124,6 +124,7 @@ Latest completed slice:
 - Named the C5 bridge back toward the earlier C7 corner in the board-side move insight, so the lower-left line is tied to prior corner work before the tutor starts the C4 pressure read.
 - Carried that bridge context into the C4 read-next prompt and pressure variation, so the branch studies the C7-C5-C3 line instead of treating C4 as an isolated C3-C5 gap.
 - Taught the first C4 branch choice and B4 recount in bridge terms, naming B4 as the outside reply, D4 as the inside comparison, and preserving C7's support through C6 while counting C3/C5 liberties.
+- Turned the B4/D4 comparison summary into a bridge proof, so equal C3/C5 counts now explicitly prove the C7-C5-C3 line is stable and C4 does not need an immediate defense.
 
 Next investigation candidates:
-- Whether comparing D4 after the B4 recount should produce a bridge-aware comparison summary and handoff instead of generic equal-liberty copy.
+- Whether the real-game E5 handoff after the C4 bridge proof should recap that outside/inside comparison before sending the learner to the next gap.
