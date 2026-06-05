@@ -5,8 +5,9 @@ import {
   getBoardAreaDirectionLabel,
   getBeginnerObjective,
   getBeginnerObjectiveProgress,
+  getFreshAreaFollowUpContext,
 } from '@/lib/coaching/beginner-objectives';
-import type { BeginnerObjective } from '@/lib/coaching/beginner-objectives';
+import type { BeginnerObjective, FreshAreaFollowUpContext } from '@/lib/coaching/beginner-objectives';
 import type { SenseiAction } from '@/lib/coaching/sensei-actions';
 import { getMoveInsight } from '@/lib/coaching/move-insight';
 import {
@@ -467,7 +468,15 @@ function getPressureOpenSideBranchChoiceText(
   return `${replyCoord} was recommended because it starts from the open side of the ${anchorCoord}-${stoneCoord} jump${compareText}.`;
 }
 
-function getExtensionTargetExplanation(point: Point, board: BoardState): string {
+function isFreshAreaFollowUpTarget(point: Point, followUpContext: FreshAreaFollowUpContext | null): boolean {
+  return Boolean(followUpContext?.targetPoints.some((target) => targetKey(target) === targetKey(point)));
+}
+
+function getExtensionTargetExplanation(
+  point: Point,
+  board: BoardState,
+  followUpContext: FreshAreaFollowUpContext | null,
+): string {
   const coord = pointToCoord(point, board.size);
   const anchor = getExtensionAnchor(board, point);
   if (!anchor) {
@@ -476,6 +485,10 @@ function getExtensionTargetExplanation(point: Point, board: BoardState): string 
 
   const anchorCoord = pointToCoord(anchor.anchor, board.size);
   const gapCoord = pointToCoord(anchor.gap, board.size);
+
+  if (followUpContext && isFreshAreaFollowUpTarget(point, followUpContext)) {
+    return `${coord} extends ${followUpContext.anchorCoord} into the ${followUpContext.areaLabel}; ${gapCoord} stays open so the fresh-area stone gets a flexible partner instead of staying isolated.`;
+  }
 
   return `${coord} is a one-space jump from ${anchorCoord}; ${gapCoord} stays open so the two stones can work together without clumping.`;
 }
@@ -501,12 +514,17 @@ function getWeakGroupTargetExplanation(point: Point, board: BoardState): string 
   return `${coord} is a liberty for your ${stoneText}; playing there gives it one more breathing point before White can squeeze it.`;
 }
 
-function getTargetExplanation(objective: BeginnerObjective, point: Point, board: BoardState): string {
+function getTargetExplanation(
+  objective: BeginnerObjective,
+  point: Point,
+  board: BoardState,
+  followUpContext: FreshAreaFollowUpContext | null,
+): string {
   switch (objective.id) {
     case 'claim-corner':
       return getCornerTargetExplanation(point, board);
     case 'extend-from-stone':
-      return getExtensionTargetExplanation(point, board);
+      return getExtensionTargetExplanation(point, board, followUpContext);
     case 'look-for-weak-groups':
       return getWeakGroupTargetExplanation(point, board);
     case 'choose-new-area':
@@ -2621,7 +2639,12 @@ function buildOneSpaceJumpFollowUpDefenseOutcomeHighlights(
   ];
 }
 
-function buildTargetHintHighlights(objective: BeginnerObjective, point: Point, board: BoardState): OverlayHighlight[] {
+function buildTargetHintHighlights(
+  objective: BeginnerObjective,
+  point: Point,
+  board: BoardState,
+  followUpContext: FreshAreaFollowUpContext | null,
+): OverlayHighlight[] {
   const coord = pointToCoord(point, board.size);
 
   switch (objective.id) {
@@ -2634,11 +2657,16 @@ function buildTargetHintHighlights(objective: BeginnerObjective, point: Point, b
       }];
     case 'extend-from-stone': {
       const anchor = getExtensionAnchor(board, point);
+      const freshFollowUpContext = followUpContext && isFreshAreaFollowUpTarget(point, followUpContext)
+        ? followUpContext
+        : null;
       const hints: OverlayHighlight[] = [{
         id: `target-hint-target-${targetKey(point)}`,
         point: { ...point },
         variant: 'positive',
-        label: `${coord}: suggested one-space jump.`,
+        label: freshFollowUpContext
+          ? `${coord}: extends ${freshFollowUpContext.anchorCoord} into the ${freshFollowUpContext.areaLabel}.`
+          : `${coord}: suggested one-space jump.`,
       }];
 
       if (anchor) {
@@ -2650,7 +2678,9 @@ function buildTargetHintHighlights(objective: BeginnerObjective, point: Point, b
             id: `target-hint-anchor-${targetKey(anchor.anchor)}`,
             point: { ...anchor.anchor },
             variant: 'neutral',
-            label: `${anchorCoord}: anchor stone for the jump.`,
+            label: freshFollowUpContext
+              ? `${anchorCoord}: fresh-area anchor for this extension.`
+              : `${anchorCoord}: anchor stone for the jump.`,
           },
           {
             id: `target-hint-gap-${targetKey(anchor.gap)}`,
@@ -2887,6 +2917,9 @@ export function BeginnerObjectiveCard() {
   const readPrompt = progress?.status === 'met' && progress.objectiveId === 'extend-from-stone'
     ? getOneSpaceJumpReadPrompt(game)
     : null;
+  const freshAreaFollowUpContext = objective
+    ? getFreshAreaFollowUpContext(game, teachingLevel, objective)
+    : null;
 
   const cancelTargetHelpTimer = useCallback(() => {
     if (targetHelpTimer.current !== null) {
@@ -2912,7 +2945,7 @@ export function BeginnerObjectiveCard() {
     applyTargetHints([]);
   }, [activeReadPromptKey, applyTargetHints, readPrompt?.key]);
 
-  const showTargetHelp = useCallback((point: Point) => {
+  const showTargetHelp = (point: Point) => {
     if (!objective) return;
 
     clearGuidedReadReplay();
@@ -2925,10 +2958,10 @@ export function BeginnerObjectiveCard() {
     setFollowUpDefenseReadPointKey(null);
     setPinnedPressureSequenceRowKey(null);
     setPressureSequencePinOverride(null);
-    applyTargetHints(buildTargetHintHighlights(objective, point, game.board));
-  }, [applyTargetHints, clearGuidedReadReplay, game.board, objective]);
+    applyTargetHints(buildTargetHintHighlights(objective, point, game.board, freshAreaFollowUpContext));
+  };
 
-  const scheduleTargetHelp = useCallback((point: Point) => {
+  const scheduleTargetHelp = (point: Point) => {
     if (!objective) return;
 
     const nextTargetKey = targetKey(point);
@@ -2941,7 +2974,7 @@ export function BeginnerObjectiveCard() {
       pendingTargetHelpKey.current = null;
       showTargetHelp(point);
     }, TARGET_HELP_DELAY_MS);
-  }, [activeTargetKey, cancelTargetHelpTimer, objective, showTargetHelp]);
+  };
 
   const showReadPressure = useCallback((prompt: OneSpaceJumpReadPrompt) => {
     recordInteraction();
@@ -3400,7 +3433,7 @@ export function BeginnerObjectiveCard() {
 
   if (!objective) return null;
 
-  const targetText = formatObjectiveTargetText(objective, game.board.size);
+  const targetText = formatObjectiveTargetText(objective, game.board.size, 4, freshAreaFollowUpContext);
   const progressColor = progress?.status === 'met' ? COLORS.overlay.positive : COLORS.overlay.warning;
   const playableTargets = objective.targetPoints.slice(0, 4);
   const hasLearnerMove = game.moveHistory.some((move) => move.color === 'black');
@@ -3995,7 +4028,9 @@ export function BeginnerObjectiveCard() {
     )
     : null;
   const activeTargetCoord = activeTarget ? pointToCoord(activeTarget, game.board.size) : null;
-  const activeTargetExplanation = activeTarget ? getTargetExplanation(objective, activeTarget, game.board) : null;
+  const activeTargetExplanation = activeTarget
+    ? getTargetExplanation(objective, activeTarget, game.board, freshAreaFollowUpContext)
+    : null;
   const targetHelpId = 'beginner-objective-target-help';
   const showPressureReadSequenceRow = (row: PressureReadSequenceRow) => {
     setActiveTargetKey(null);

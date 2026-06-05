@@ -31,8 +31,9 @@ import {
   getBeginnerObjectiveSuggestionReason,
   getBeginnerObjective,
   getBeginnerObjectiveProgress,
+  getFreshAreaFollowUpContext,
 } from '@/lib/coaching/beginner-objectives';
-import type { BeginnerObjective } from '@/lib/coaching/beginner-objectives';
+import type { BeginnerObjective, FreshAreaFollowUpContext } from '@/lib/coaching/beginner-objectives';
 import { getBeginnerObjectiveActions } from '@/lib/coaching/beginner-objective-actions';
 import { useProgressStore } from './progress-store';
 
@@ -466,8 +467,9 @@ function buildGuidedResumeBubble(
   passedForWhite: boolean,
   objective = getGuidedResumeObjective(game),
 ): SenseiBubbleState {
+  const followUpContext = objective ? getFreshAreaFollowUpContext(game, 'guided', objective) : null;
   const targetText = objective
-    ? formatObjectiveTargetText(objective, game.board.size)
+    ? formatObjectiveTargetText(objective, game.board.size, 4, followUpContext)
     : null;
   const learnerMoveText = `I restored your paused board ${formatRestoredMoveCount(countLearnerPlacedMoves(game))}.`;
 
@@ -556,12 +558,13 @@ function buildObjectiveSuggestions(
   objective: BeginnerObjective,
   boardSize: BoardSize,
   idPrefix: string,
+  followUpContext?: FreshAreaFollowUpContext | null,
 ): OverlaySuggestion[] {
   return objective.targetPoints.slice(0, 4).map((point, index) => ({
     id: `${idPrefix}-${pointKey(point)}`,
     point: { ...point },
     rank: index + 1,
-    reason: getBeginnerObjectiveSuggestionReason(objective, point, boardSize),
+    reason: getBeginnerObjectiveSuggestionReason(objective, point, boardSize, followUpContext),
   }));
 }
 
@@ -571,6 +574,7 @@ function buildGuidedResumeOverlays(
 ): GameStore['overlays'] {
   const progress = getBeginnerObjectiveProgress(game, 'guided');
   const lastMove = lastBlackPlacedMove(game);
+  const followUpContext = objective ? getFreshAreaFollowUpContext(game, 'guided', objective) : null;
   const highlights: OverlayHighlight[] = lastMove
     ? [{
         id: `guided-resume-learned-${pointKey(lastMove.point)}`,
@@ -580,7 +584,7 @@ function buildGuidedResumeOverlays(
       }]
     : [];
   const suggestions = objective
-    ? buildObjectiveSuggestions(objective, game.board.size, 'guided-resume-move')
+    ? buildObjectiveSuggestions(objective, game.board.size, 'guided-resume-move', followUpContext)
     : [];
 
   return {
