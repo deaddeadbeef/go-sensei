@@ -121,7 +121,7 @@ describe('ProblemView filtered practice flow', () => {
 
     expect(screen.queryByRole('button', { name: 'Next Problem →' })).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: '✕ Back to capture problems' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Return to capture problems' }));
 
     expect(useGameStore.getState().appPhase).toBe('problems');
     expect(useGameStore.getState().preferredProblemFilter).toBe('capture');
