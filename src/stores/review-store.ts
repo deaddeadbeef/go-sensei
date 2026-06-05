@@ -40,6 +40,8 @@ interface ReviewStore {
   resetAll: () => void;
 }
 
+const PROBLEM_IDS = new Set(PROBLEMS.map((problem) => problem.id));
+
 function calculateStreak(history: ReviewRecord[]): number {
   if (history.length === 0) return 0;
 
@@ -113,7 +115,11 @@ export const useReviewStore = create<ReviewStore>()(
       getReviewStats: () => {
         const state = get();
         return {
-          totalReviewed: new Set(state.history.map((r) => r.problemId)).size,
+          totalReviewed: new Set(
+            state.history
+              .filter((record) => PROBLEM_IDS.has(record.problemId))
+              .map((record) => record.problemId),
+          ).size,
           dueToday: get().getDueCount(),
           streak: calculateStreak(state.history),
         };
