@@ -117,6 +117,9 @@ interface PressureLocalShapeSettledCue {
 interface PressureWeakGroupHandoffCue {
   title: string;
   text: string;
+  bridgeAnchorCoord: string;
+  bridgeLibertyCoord: string;
+  highlights: OverlayHighlight[];
 }
 
 interface PressureReadSequenceRow {
@@ -334,7 +337,9 @@ function getBridgeLineContext(
   stone: Point,
 ): {
   lineText: string;
+  oppositeAnchor: Point;
   oppositeAnchorCoord: string;
+  oppositeGap: Point;
   oppositeGapCoord: string;
 } | null {
   const direction = {
@@ -360,7 +365,9 @@ function getBridgeLineContext(
 
   return {
     lineText: `${oppositeAnchorCoord}-${stoneCoord}-${anchorCoord}`,
+    oppositeAnchor: copyPoint(oppositeAnchor),
     oppositeAnchorCoord,
+    oppositeGap: copyPoint(oppositeGap),
     oppositeGapCoord: pointToCoord(oppositeGap, board.size),
   };
 }
@@ -2229,6 +2236,29 @@ function getPressureComparisonProofRowText(
   return recap && comparisonSummary.hasSameCounts ? comparisonSummary.proofText : null;
 }
 
+function buildPressureWeakGroupHandoffHighlights(
+  prompt: OneSpaceJumpReadPrompt,
+  bridgeContext: NonNullable<ReturnType<typeof getBridgeLineContext>>,
+  board: BoardState,
+): OverlayHighlight[] {
+  const stoneCoord = pointToCoord(prompt.stone, board.size);
+
+  return [
+    {
+      id: `read-pressure-weak-bridge-anchor-${targetKey(bridgeContext.oppositeAnchor)}`,
+      point: copyPoint(bridgeContext.oppositeAnchor),
+      variant: 'neutral',
+      label: `${bridgeContext.oppositeAnchorCoord}: proven bridge stone supporting ${stoneCoord} through ${bridgeContext.oppositeGapCoord}.`,
+    },
+    {
+      id: `read-pressure-weak-bridge-liberty-${targetKey(bridgeContext.oppositeGap)}`,
+      point: copyPoint(bridgeContext.oppositeGap),
+      variant: 'positive',
+      label: `${bridgeContext.oppositeGapCoord}: bridge liberty linking ${stoneCoord} back to ${bridgeContext.oppositeAnchorCoord} after the stable ${prompt.gapCoord} proof.`,
+    },
+  ];
+}
+
 function getPressureWeakGroupHandoffCue(
   objective: BeginnerObjective,
   prompt: OneSpaceJumpReadPrompt | null,
@@ -2248,6 +2278,9 @@ function getPressureWeakGroupHandoffCue(
   return {
     title: 'Weak-group handoff',
     text: `The ${prompt.gapCoord} proof is the weak-group check: ${anchorCoord} and ${stoneCoord} both keep ${formatLibertyCount(sharedLibertyCount)}, so no urgent defense is marked. Keep ${bridgeContext.oppositeGapCoord} as the bridge liberty back to ${bridgeContext.oppositeAnchorCoord} before choosing the next real move.`,
+    bridgeAnchorCoord: bridgeContext.oppositeAnchorCoord,
+    bridgeLibertyCoord: bridgeContext.oppositeGapCoord,
+    highlights: buildPressureWeakGroupHandoffHighlights(prompt, bridgeContext, board),
   };
 }
 
@@ -3923,6 +3956,9 @@ export function BeginnerObjectiveCard() {
     setActiveTargetKey(null);
     applyTargetHints(highlights);
   };
+  const showPressureWeakGroupHandoffPreview = () => {
+    showPressureReadSequenceContinuation(pressureWeakGroupHandoffCue?.highlights ?? null);
+  };
   const restorePressureReadHighlights = () => {
     applyTargetHints(pinnedPressureSequenceRow?.highlights ?? activePressureReadHighlights);
   };
@@ -4405,6 +4441,17 @@ export function BeginnerObjectiveCard() {
                               <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
                                 {pressureWeakGroupHandoffCue.text}
                               </p>
+                              <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                                <ReplaySequenceContinuationButton
+                                  mono
+                                  ariaLabel={`Show ${pressureWeakGroupHandoffCue.bridgeLibertyCoord} bridge liberty back to ${pressureWeakGroupHandoffCue.bridgeAnchorCoord}`}
+                                  onPreview={showPressureWeakGroupHandoffPreview}
+                                  onPreviewEnd={restorePressureReadHighlights}
+                                  onClick={showPressureWeakGroupHandoffPreview}
+                                >
+                                  {pressureWeakGroupHandoffCue.bridgeLibertyCoord}
+                                </ReplaySequenceContinuationButton>
+                              </div>
                             </div>
                           )}
                           {pressureComparisonExtensionHandoff && (

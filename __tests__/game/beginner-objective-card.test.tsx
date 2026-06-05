@@ -1056,6 +1056,16 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText('You proved F6 above and F4 below both leave the C5-E5-G5 line stable, so F5 does not need an immediate defense.')).toBeTruthy();
     expect(screen.getByText('Weak-group handoff')).toBeTruthy();
     expect(screen.getByText('The F5 proof is the weak-group check: G5 and E5 both keep 3 liberties, so no urgent defense is marked. Keep D5 as the bridge liberty back to C5 before choosing the next real move.')).toBeTruthy();
+    const bridgeLibertyButton = screen.getByRole('button', { name: 'Show D5 bridge liberty back to C5' });
+    fireEvent.focus(bridgeLibertyButton);
+    expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
+      {
+        id: 'read-pressure-weak-bridge-liberty-3,4',
+        point: { x: 3, y: 4 },
+        variant: 'positive',
+        label: 'D5: bridge liberty linking E5 back to C5 after the stable F5 proof.',
+      },
+    ]));
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {
