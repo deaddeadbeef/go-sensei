@@ -997,7 +997,8 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText('C3 landed after the F3 read, so this lower-edge shape is connected enough for now. Look upward next: C5 or E5 grow the same stones from a new direction.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Show pressure variation for D3' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Repeat F2 first-reply pattern at D2 for D3' })).toBeNull();
-    expect(screen.getByText('Try C5 or E5.')).toBeTruthy();
+    expect(screen.getByText('Recommended next direction: C5. Other upward jump: E5.')).toBeTruthy();
+    expect(screen.queryByText('Try C5 or E5.')).toBeNull();
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {
