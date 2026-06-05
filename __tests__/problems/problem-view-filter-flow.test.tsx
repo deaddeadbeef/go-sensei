@@ -72,6 +72,8 @@ describe('ProblemView filtered practice flow', () => {
     expect(screen.queryByText('👆 Read first, then click your move')).toBeNull();
     expect(screen.getByText('You found A8. Replay the numbered line once so the pattern sticks.')).toBeTruthy();
     expect(screen.getByText('Solution line')).toBeTruthy();
+    expect(screen.getByText('Study routine')).toBeTruthy();
+    expect(screen.getByText('First move to remember: A8. Cover the numbers, say why that move works, then reset and solve from memory.')).toBeTruthy();
     expect(screen.getByText('Why this worked')).toBeTruthy();
     expect(screen.getByText(/The first move at A8 works by attacking liberties/)).toBeTruthy();
   });
