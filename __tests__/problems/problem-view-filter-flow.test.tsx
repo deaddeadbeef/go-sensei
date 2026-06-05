@@ -70,9 +70,26 @@ describe('ProblemView filtered practice flow', () => {
 
     expect(screen.queryByText('Read before you click')).toBeNull();
     expect(screen.queryByText('👆 Read first, then click your move')).toBeNull();
+    expect(screen.getByText('You found A8. Replay the numbered line once so the pattern sticks.')).toBeTruthy();
     expect(screen.getByText('Solution line')).toBeTruthy();
     expect(screen.getByText('Why this worked')).toBeTruthy();
     expect(screen.getByText(/The first move at A8 works by attacking liberties/)).toBeTruthy();
+  });
+
+  it('turns a failed problem into concrete replay guidance', () => {
+    act(() => {
+      useGameStore.getState().startProblem(problemById('capture-001'));
+      useGameStore.getState().submitProblemMove({ x: 5, y: 5 });
+      useGameStore.getState().submitProblemMove({ x: 5, y: 5 });
+      useGameStore.getState().submitProblemMove({ x: 5, y: 5 });
+    });
+
+    render(<ProblemView />);
+
+    expect(screen.getByText('Study the answer')).toBeTruthy();
+    expect(screen.getByText('Start by replaying A8, then try the problem again from the first move.')).toBeTruthy();
+    expect(screen.getByText('Solution line')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Try Again' })).toBeTruthy();
   });
 
   it('renames the problem hint action after the hint is shown', () => {
