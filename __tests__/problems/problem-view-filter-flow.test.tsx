@@ -73,6 +73,23 @@ describe('ProblemView filtered practice flow', () => {
     expect(screen.getByText(/The first move at A8 works by attacking liberties/)).toBeTruthy();
   });
 
+  it('renames the problem hint action after the hint is shown', () => {
+    act(() => {
+      useGameStore.getState().startProblem(problemById('capture-001'));
+    });
+
+    render(<ProblemView />);
+
+    const showHint = screen.getByRole('button', { name: 'Show hint' });
+    expect((showHint as HTMLButtonElement).disabled).toBe(false);
+
+    fireEvent.click(showHint);
+
+    const hintShown = screen.getByRole('button', { name: 'Hint shown' });
+    expect((hintShown as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole('button', { name: 'Show hint' })).toBeNull();
+  });
+
   it('keeps the mobile problem board below the app bar in a scrollable shell', () => {
     act(() => {
       useGameStore.getState().startProblem(problemById('capture-001'));
