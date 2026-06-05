@@ -94,6 +94,7 @@ describe('DailyReview', () => {
     expect(screen.getByText('Read before you click')).toBeTruthy();
     expect(screen.getByText('Target group')).toBeTruthy();
     expect(screen.getByText('Captures are about the final liberty, not just contact.')).toBeTruthy();
+    expect(screen.getByText('👆 Read first, then click your move')).toBeTruthy();
   });
 
   it('reveals the review hint from the action footer', () => {

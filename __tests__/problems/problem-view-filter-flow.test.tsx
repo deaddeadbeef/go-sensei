@@ -62,12 +62,14 @@ describe('ProblemView filtered practice flow', () => {
     expect(screen.getByText('Read before you click')).toBeTruthy();
     expect(screen.getByText('Target group')).toBeTruthy();
     expect(screen.getByText('Count every liberty before choosing a move.')).toBeTruthy();
+    expect(screen.getByText('👆 Read first, then click your move')).toBeTruthy();
 
     act(() => {
       useGameStore.getState().submitProblemMove({ x: 0, y: 1 });
     });
 
     expect(screen.queryByText('Read before you click')).toBeNull();
+    expect(screen.queryByText('👆 Read first, then click your move')).toBeNull();
     expect(screen.getByText('Solution line')).toBeTruthy();
     expect(screen.getByText('Why this worked')).toBeTruthy();
     expect(screen.getByText(/The first move at A8 works by attacking liberties/)).toBeTruthy();
