@@ -166,7 +166,7 @@ describe('ProblemView filtered practice flow', () => {
     render(<ProblemView />);
 
     expect(screen.getByText('Practice goal met')).toBeTruthy();
-    expect(screen.getByText(/Return to the path for:/)).toBeTruthy();
+    expect(screen.getByText(/You reached the life and death practice target. Return to the path for:/)).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Continue: Play a guided game' }));
 
