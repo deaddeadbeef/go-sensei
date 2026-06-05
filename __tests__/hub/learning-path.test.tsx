@@ -37,6 +37,8 @@ describe('LearningPath', () => {
     expect(useGameStore.getState().appPhase).toBe('game');
     expect(useGameStore.getState().teachingLevel).toBe('guided');
     expect(useGameStore.getState().game.board.size).toBe(9);
+    expect(useConceptStore.getState().getMastery('stones-and-board').level).toBe(1);
+    expect(useConceptStore.getState().getUnlockedConcepts()).toContain('groups');
   });
 
   it('restores guided 9x9 from the guided game card when progress has a stale normal game', () => {

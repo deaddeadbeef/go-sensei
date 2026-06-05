@@ -2431,7 +2431,7 @@ describe('useGoMaster local answers', () => {
     expect(state.bubble.variant).toBe('teaching');
     expect(state.bubble.text).toContain('Progress check: you have completed 2 lessons, solved 1 problem, and started a guided 9x9 game.');
     expect(state.bubble.text).toContain('Strongest evidence: Capture and Liberties are moving from vocabulary into practice.');
-    expect(state.bubble.text).toContain('Still fragile: Groups needs more proof.');
+    expect(state.bubble.text).toContain('Still fragile: Groups and Stones & Board need more proof.');
     expect(state.bubble.text).toContain('Next honest step: Capturing Stones. This is the next lesson in the learning path.');
     expect(state.bubble.actions).toEqual([{ id: 'lesson:capture', label: 'Start lesson' }]);
     expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'lesson:capture', label: 'Start lesson' }]);

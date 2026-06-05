@@ -19,7 +19,7 @@ import { useConceptStore } from '@/stores/concept-store';
 import type { BoardSize } from '@/lib/go-engine/types';
 
 const LESSON_CONCEPTS: Record<string, string[]> = {
-  groups: ['groups'],
+  groups: ['stones-and-board', 'groups'],
   liberties: ['liberties'],
   capture: ['capture'],
   territory: ['territory'],

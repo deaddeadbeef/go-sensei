@@ -36,6 +36,7 @@ import {
 import type { BeginnerObjective, FreshAreaFollowUpContext } from '@/lib/coaching/beginner-objectives';
 import { getBeginnerObjectiveActions } from '@/lib/coaching/beginner-objective-actions';
 import { useProgressStore } from './progress-store';
+import { useConceptStore } from './concept-store';
 
 // ---------------------------------------------------------------------------
 // Overlay types
@@ -1281,6 +1282,10 @@ export const useGameStore = create<GameStore>()(
   startGuidedIntroGame: () => {
     const guidedGame = createGame(9);
     useProgressStore.getState().markIntroGameStarted();
+    const conceptStore = useConceptStore.getState();
+    if (conceptStore.getMastery('stones-and-board').level === 0) {
+      conceptStore.recordEvidence('stones-and-board', 'guided_insight');
+    }
     saveGuidedSnapshot(guidedGame, 'guided');
     const nextProgress = useProgressStore.getState();
     const openingObjective = getBeginnerObjective({

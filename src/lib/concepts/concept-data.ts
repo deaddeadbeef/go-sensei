@@ -28,7 +28,7 @@ export const CONCEPTS: Concept[] = [
     name: 'Groups',
     category: 'fundamentals',
     description: 'Connected stones of the same color share liberties.',
-    prerequisites: ['liberties'],
+    prerequisites: ['stones-and-board'],
   },
   {
     id: 'eyes',
