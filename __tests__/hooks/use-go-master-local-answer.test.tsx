@@ -644,7 +644,7 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('shape').encounterCount).toBeGreaterThan(0);
   });
 
-  it('explains the local White pass without fetching', () => {
+  it('explains the guided White pass without implementation-mode wording', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());
 
@@ -661,7 +661,8 @@ describe('useGoMaster local answers', () => {
 
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(state.bubble.variant).toBe('teaching');
-    expect(state.bubble.text).toContain('White passed because I am keeping this guided practice moving locally');
+    expect(state.bubble.text).toContain('White passed as a guided teaching shortcut');
+    expect(state.bubble.text).not.toContain('locally');
     expect(state.bubble.text).toContain('In a real game, players usually pass near the end');
     expect(state.bubble.text).toContain('two passes in a row move the game to scoring');
     expect(state.bubble.text).toContain('Your next focus is: Make your stones work together.');
@@ -673,7 +674,7 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('scoring').encounterCount).toBeGreaterThan(0);
   });
 
-  it('explains undo locally after the guided White pass without fetching', () => {
+  it('explains undo after the guided White pass without implementation-mode wording', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());
 
@@ -690,7 +691,8 @@ describe('useGoMaster local answers', () => {
 
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(state.bubble.variant).toBe('teaching');
-    expect(state.bubble.text).toContain('The Undo button will take back the local White pass and your previous Black move');
+    expect(state.bubble.text).toContain('The Undo button will take back the guided White pass and your previous Black move');
+    expect(state.bubble.text).not.toContain('local White pass');
     expect(state.bubble.text).toContain('Use it for misclicks');
     expect(state.bubble.text).toContain('Your current guided target is: Make your stones work together.');
     expect(state.bubble.text).toContain('I marked the current targets again.');
@@ -854,7 +856,9 @@ describe('useGoMaster local answers', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(state.bubble.variant).toBe('teaching');
     expect(state.bubble.text).toContain('You are playing Black in this guided beginner game.');
-    expect(state.bubble.text).toContain('White just passed locally so you can keep practicing right away');
+    expect(state.bubble.text).toContain('White just passed as a guided teaching shortcut');
+    expect(state.bubble.text).toContain('so you can keep practicing right away');
+    expect(state.bubble.text).not.toContain('locally');
     expect(state.bubble.text).toContain('Your next move should follow the current goal: Make your stones work together.');
     expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
     expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
