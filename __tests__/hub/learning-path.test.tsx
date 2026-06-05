@@ -31,7 +31,7 @@ describe('LearningPath', () => {
   it('starts the first guided board from the guided game path card', () => {
     render(<LearningPath />);
 
-    fireEvent.click(screen.getByRole('button', { name: /Guided game: Start the first 9x9 board\./ }));
+    fireEvent.click(screen.getByRole('button', { name: /Guided game: Play the first 9x9 with a goal\./ }));
 
     expect(useProgressStore.getState().hasStartedIntroGame).toBe(true);
     expect(useGameStore.getState().appPhase).toBe('game');
@@ -62,7 +62,7 @@ describe('LearningPath', () => {
 
     render(<LearningPath />);
 
-    fireEvent.click(screen.getByRole('button', { name: /Guided game: Use ideas in play\./ }));
+    fireEvent.click(screen.getByRole('button', { name: /Guided game: Keep playing with one clear goal\./ }));
 
     expect(useProgressStore.getState().hasStartedIntroGame).toBe(true);
     expect(useGameStore.getState().appPhase).toBe('game');
@@ -74,7 +74,7 @@ describe('LearningPath', () => {
   it('opens the full problem picker from the problems path card', () => {
     render(<LearningPath />);
 
-    fireEvent.click(screen.getByRole('button', { name: /Problems: Practice reading and tactics\./ }));
+    fireEvent.click(screen.getByRole('button', { name: /Problems: Read one shape, then check it\./ }));
 
     expect(useGameStore.getState().appPhase).toBe('problems');
     expect(useGameStore.getState().preferredProblemFilter).toBeNull();
