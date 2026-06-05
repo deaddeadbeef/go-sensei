@@ -37,7 +37,7 @@ describe('LessonView answer reveal', () => {
     });
 
     expect(screen.getByText('Answer shown. Click the highlighted point to continue.')).toBeTruthy();
-    expect((screen.getByRole('button', { name: 'Click highlighted answer...' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'Answer shown on board' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('credits board basics when the first groups lesson is completed', () => {
