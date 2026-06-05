@@ -121,6 +121,7 @@ Latest completed slice:
 - Reset the F3 read after the E3 direction change, so a stable F3 comparison starts a fresh local proof instead of appending a fifth point to the old D7/F7/G6/G4 chain.
 - Settled the lower-edge shape after the C3 handoff, replacing the D3 repeat-read prompt with guidance to look upward at C5 or E5 from a new direction.
 - Recommended C5 as the next upward direction after the lower-edge shape settles, while keeping E5 visible as the alternate upward jump.
+- Named the C5 bridge back toward the earlier C7 corner in the board-side move insight, so the lower-left line is tied to prior corner work before the tutor starts the C4 pressure read.
 
 Next investigation candidates:
-- Whether playing C5 should connect this lower-left work back to the earlier C7 corner stone before the tutor asks for more extensions.
+- Whether the C4 pressure read after C5 should carry the C7/C3 bridge context into the branch instead of treating C4 as an isolated C3-C5 gap.

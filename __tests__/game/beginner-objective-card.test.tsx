@@ -999,6 +999,14 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.queryByRole('button', { name: 'Repeat F2 first-reply pattern at D2 for D3' })).toBeNull();
     expect(screen.getByText('Recommended next direction: C5. Other upward jump: E5.')).toBeTruthy();
     expect(screen.queryByText('Try C5 or E5.')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Play C5 target for Make your stones work together' }));
+    act(() => {
+      useGameStore.getState().pass();
+    });
+
+    expect(screen.getByText('Bridge back to the corner')).toBeTruthy();
+    expect(screen.getByText('C5 links C3 back toward the earlier C7 corner: C6 and C4 stay open, so the corner stone and the lower-side stone now support the same line before you extend again.')).toBeTruthy();
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {

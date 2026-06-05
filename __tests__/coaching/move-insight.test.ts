@@ -21,6 +21,17 @@ function gameWithBoard(board: GameState['board'], moveCount: number): GameState 
   };
 }
 
+function playBlackStone(game: GameState, point: Point): GameState {
+  const result = playMove(game, point);
+  if (!result.success) throw new Error(`test setup move failed at ${point.x},${point.y}`);
+
+  return result.newState;
+}
+
+function playBlackStoneAndPass(game: GameState, point: Point): GameState {
+  return passMove(playBlackStone(game, point));
+}
+
 describe('move insight', () => {
   it('starts a guided game with a concrete corner reason', () => {
     const insight = getMoveInsight(createGame(9), 'guided');
@@ -64,6 +75,27 @@ describe('move insight', () => {
     expect(insight?.observation).toContain('E7 is a one-space jump from C7.');
     expect(insight?.observation).toContain('The empty point at D7 leaves room to grow');
     expect(insight?.nextStep).toContain('Try G7, E5, or C5');
+  });
+
+  it('names when a one-space jump bridges back toward an earlier corner', () => {
+    let game = createGame(9);
+    game = playBlackStoneAndPass(game, { x: 2, y: 2 });
+    game = playBlackStoneAndPass(game, { x: 4, y: 2 });
+    game = playBlackStoneAndPass(game, { x: 6, y: 2 });
+    game = playBlackStoneAndPass(game, { x: 6, y: 4 });
+    game = playBlackStoneAndPass(game, { x: 6, y: 6 });
+    game = playBlackStoneAndPass(game, { x: 4, y: 6 });
+    game = playBlackStoneAndPass(game, { x: 2, y: 6 });
+    const bridgeMove = playBlackStone(game, { x: 2, y: 4 });
+
+    const insight = getMoveInsight(bridgeMove, 'guided');
+
+    expect(insight).toMatchObject({
+      title: 'Bridge back to the corner',
+      conceptIds: expect.arrayContaining(['shape', 'direction-of-play']),
+    });
+    expect(insight?.observation).toBe('C5 links C3 back toward the earlier C7 corner: C6 and C4 stay open, so the corner stone and the lower-side stone now support the same line before you extend again.');
+    expect(insight?.nextStep).toContain('Try E5');
   });
 
   it('coaches center openings toward corners', () => {
