@@ -98,9 +98,15 @@ describe('DailyReview', () => {
 
     render(<DailyReview />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Show hint' }));
+    const showHint = screen.getByRole('button', { name: 'Show hint' });
+    expect((showHint as HTMLButtonElement).disabled).toBe(false);
+
+    fireEvent.click(showHint);
 
     expect(screen.getByText(/A stone in the corner only has two liberties/)).toBeTruthy();
+    const hintShown = screen.getByRole('button', { name: 'Hint shown' });
+    expect((hintShown as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole('button', { name: 'Show hint' })).toBeNull();
   });
 
   it('returns active review learners to the board', () => {
