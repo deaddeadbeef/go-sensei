@@ -34,6 +34,7 @@ describe('ProblemPicker', () => {
     expect(screen.getByText('Recommended next')).toBeTruthy();
     expect(screen.getByText('Start here: it is the gentlest unsolved problem in the library.')).toBeTruthy();
     expect(screen.getByText('0/20 problems solved')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Solve: Corner Capture' })).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Start Corner Capture' }));
 
@@ -67,6 +68,7 @@ describe('ProblemPicker', () => {
     expect(screen.getByText('Continue with the next unsolved problem in the library.')).toBeTruthy();
     expect(screen.getByText('1/20 problems solved')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Start Edge Squeeze' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Retry: Corner Capture' })).toBeTruthy();
   });
 
   it('uses the active filter and progress to choose the next visible problem', () => {
