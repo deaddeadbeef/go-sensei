@@ -2425,11 +2425,12 @@ function buildShapeAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQ
     teachingLevel,
   });
   const lastMove = lastPlacedMove(game);
+  const followUpContext = objective ? getFreshAreaFollowUpContext(game, teachingLevel, objective) : null;
   const suggestions = objective?.id === 'extend-from-stone'
-    ? objectiveSuggestions(objective, game.board.size, 'local-shape-move')
+    ? objectiveSuggestions(objective, game.board.size, 'local-shape-move', followUpContext)
     : [];
-  const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
-  const anchorText = lastMove ? pointToCoord(lastMove.point, game.board.size) : null;
+  const targetText = objective ? formatObjectiveTargetText(objective, game.board.size, 4, followUpContext) : null;
+  const anchorText = followUpContext?.anchorCoord ?? (lastMove ? pointToCoord(lastMove.point, game.board.size) : null);
   const lines = [
     'Shape means your stones are arranged so they help each other instead of crowding each other.',
     'A one-space jump leaves one empty point between friendly stones. It reaches farther than touching, but stays close enough that the stones can still work together.',
