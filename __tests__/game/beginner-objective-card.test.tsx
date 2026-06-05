@@ -1013,6 +1013,15 @@ describe('BeginnerObjectiveCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for C4' }));
 
     expect(screen.getByText('Imagine White plays C4. Keep the C7-C5-C3 line in mind while you compare three plans: connect by attacking the cutting stone at B4 or D4, defend a Black side that is short on liberties, or keep extending if both stones still have room.')).toBeTruthy();
+    expect(screen.getByText('Start with B4: it attacks C4 from outside the C7-C5-C3 line. Recount C3 and C5 while remembering C7 still supports through C6, then compare D4 from the inside.')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Choose B4 as the first reply to C4' }));
+
+    expect(screen.getByText('B4 attacks C4 from outside the C7-C5-C3 line. D4 is the inside comparison toward the center, so recount C3 and C5 before deciding whether the bridge needs a defense.')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Recount C3 and C5 after B4' }));
+
+    expect(screen.getByText('After B4, recount the C7-C5-C3 line: C3 has 3 liberties at C2, B3, and D3. C5 has 3 liberties at C6, B5, and D5. C7 still supports through C6, so this read is checking whether C3 or C5 becomes short before extending again. Neither side is short yet, so keep building while staying ready to answer C4.')).toBeTruthy();
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {
