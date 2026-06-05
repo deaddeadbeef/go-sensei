@@ -135,6 +135,7 @@ Latest completed slice:
 - Replaced the no-target weak-group fallback with a "Choose a new area" objective when the board has no marked weak group or extension target.
 - Added concrete H8/H2 fresh-area targets to the settled-board objective, using empty interior points that are away from the last local shape and not adjacent to existing Black stones.
 - Added direction-aware fresh-area explanations, so H8 is described as upper-right and H2 as lower-right in target hover/focus help and local Q&A suggestions.
+- Added a local comparison answer for H8 vs H2, so the tutor contrasts their upper-right and lower-right plans before the learner commits to a fresh area.
 
 Next investigation candidates:
-- Whether fresh-area targets should support a non-mutating preview that compares H8 and H2 before the learner plays one.
+- Whether choosing H8 or H2 should generate a short post-move reflection that asks the learner what new area they meant to open.
