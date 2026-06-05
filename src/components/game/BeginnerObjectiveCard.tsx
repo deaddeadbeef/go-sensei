@@ -120,6 +120,7 @@ interface PressureWeakGroupHandoffCue {
   bridgeAnchorCoord: string;
   bridgeLibertyCoord: string;
   highlights: OverlayHighlight[];
+  settlingHandoff: PressureExtensionHandoff;
 }
 
 interface PressureReadSequenceRow {
@@ -2274,6 +2275,9 @@ function getPressureWeakGroupHandoffCue(
   const anchorCoord = pointToCoord(prompt.anchor, board.size);
   const stoneCoord = pointToCoord(prompt.stone, board.size);
   const sharedLibertyCount = Math.min(comparisonSummary.anchorLibertyCount, comparisonSummary.stoneLibertyCount);
+  const settlingProofText = `${prompt.gapCoord} is safe: ${anchorCoord} and ${stoneCoord} both kept ${formatLibertyCount(sharedLibertyCount)} in the comparison.`;
+  const settlingMoveText = `Concrete next move: ${bridgeContext.oppositeGapCoord} settles the ${bridgeContext.oppositeAnchorCoord}-${stoneCoord} bridge before you look elsewhere. The ${prompt.gapCoord} proof says this is a quiet connection, not an emergency defense.`;
+  const settlingRecapText = `${bridgeContext.oppositeGapCoord} settles the bridge after the ${prompt.gapCoord} proof: ${comparisonSummary.proofText} Black chose the quiet connection before looking for the next area.`;
 
   return {
     title: 'Weak-group handoff',
@@ -2281,6 +2285,20 @@ function getPressureWeakGroupHandoffCue(
     bridgeAnchorCoord: bridgeContext.oppositeAnchorCoord,
     bridgeLibertyCoord: bridgeContext.oppositeGapCoord,
     highlights: buildPressureWeakGroupHandoffHighlights(prompt, bridgeContext, board),
+    settlingHandoff: {
+      point: copyPoint(bridgeContext.oppositeGap),
+      coord: bridgeContext.oppositeGapCoord,
+      text: settlingMoveText,
+      proofText: settlingProofText,
+      ariaLabel: `Play ${bridgeContext.oppositeGapCoord} as the quiet bridge move after the safe ${prompt.gapCoord} proof`,
+      recap: {
+        point: copyPoint(bridgeContext.oppositeGap),
+        coord: bridgeContext.oppositeGapCoord,
+        text: settlingRecapText,
+        proofText: comparisonSummary.proofText,
+        repeatRead: null,
+      },
+    },
   };
 }
 
@@ -4452,6 +4470,13 @@ export function BeginnerObjectiveCard() {
                                   {pressureWeakGroupHandoffCue.bridgeLibertyCoord}
                                 </ReplaySequenceContinuationButton>
                               </div>
+                              <StablePressureExtensionHandoff
+                                handoff={pressureWeakGroupHandoffCue.settlingHandoff}
+                                canPlayTarget={canPlayTarget}
+                                onPreview={showPressureHandoffPreview}
+                                onPreviewEnd={restorePressureReadHighlights}
+                                onPlay={handlePressureHandoffClick}
+                              />
                             </div>
                           )}
                           {pressureComparisonExtensionHandoff && (

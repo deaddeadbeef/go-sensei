@@ -1066,6 +1066,28 @@ describe('BeginnerObjectiveCard', () => {
         label: 'D5: bridge liberty linking E5 back to C5 after the stable F5 proof.',
       },
     ]));
+    expect(screen.getByText('Concrete next move: D5 settles the C5-E5 bridge before you look elsewhere. The F5 proof says this is a quiet connection, not an emergency defense.')).toBeTruthy();
+    const quietBridgeMove = screen.getByRole('button', { name: 'Play D5 as the quiet bridge move after the safe F5 proof' });
+    fireEvent.focus(quietBridgeMove);
+    expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
+      {
+        id: 'read-pressure-handoff-3,4',
+        point: { x: 3, y: 4 },
+        variant: 'positive',
+        label: 'D5: real move to play after the stable pressure read.',
+      },
+    ]));
+
+    fireEvent.click(quietBridgeMove);
+    expect(useGameStore.getState().game.moveHistory.at(-1)).toMatchObject({
+      type: 'place',
+      color: 'black',
+      point: { x: 3, y: 4 },
+    });
+    act(() => {
+      useGameStore.getState().pass();
+    });
+    expect(screen.getByText('D5 settles the bridge after the F5 proof: You proved F6 above and F4 below both leave the C5-E5-G5 line stable, so F5 does not need an immediate defense. Black chose the quiet connection before looking for the next area.')).toBeTruthy();
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {
