@@ -129,7 +129,7 @@ export function LessonView() {
     ? [{ point: lessonInteraction.expectedMove, color: 'blue' as const, label: 'Answer' }]
     : [];
   const nextButtonLabel = lessonInteraction.answerRevealed
-    ? 'Click highlighted answer...'
+    ? 'Answer shown on board'
     : lessonInteraction.awaitingClick
       ? 'Click the board...'
       : 'Next →';
