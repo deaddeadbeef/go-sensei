@@ -2,6 +2,8 @@
 
 import { getLearningRecommendation } from '@/lib/learning-path/recommendations';
 import { CONCEPTS } from '@/lib/concepts/concept-data';
+import { LESSONS } from '@/lib/lessons/lesson-data';
+import { PROBLEMS } from '@/lib/problems/problem-data';
 import type { Concept, ConceptCategory } from '@/lib/concepts/types';
 import { useConceptStore } from '@/stores/concept-store';
 import { useGameStore } from '@/stores/game-store';
@@ -10,6 +12,8 @@ import { useReviewStore } from '@/stores/review-store';
 import { COLORS } from '@/utils/colors';
 
 const CONCEPT_BY_ID = new Map(CONCEPTS.map((concept) => [concept.id, concept]));
+const LESSON_IDS = new Set(LESSONS.map((lesson) => lesson.id));
+const PROBLEM_IDS = new Set(PROBLEMS.map((problem) => problem.id));
 
 const CATEGORY_LABELS: Record<ConceptCategory, string> = {
   fundamentals: 'Fundamental',
@@ -58,8 +62,11 @@ export function LearningPath() {
     mastery: Object.values(mastery),
   });
 
+  const completedLessonCount = completedLessons.filter((lessonId) => LESSON_IDS.has(lessonId)).length;
   const solvedProblems = new Set(
-    problemAttempts.filter((attempt) => attempt.solved).map((attempt) => attempt.problemId),
+    problemAttempts
+      .filter((attempt) => attempt.solved && PROBLEM_IDS.has(attempt.problemId))
+      .map((attempt) => attempt.problemId),
   ).size;
   const focusConcepts = recommendation.focusConcepts.map(conceptDisplay).slice(0, 4);
 
@@ -175,15 +182,15 @@ export function LearningPath() {
             <dl className="mt-4 space-y-3 text-sm">
               <div className="flex justify-between gap-4">
                 <dt style={{ color: COLORS.ui.textSecondary }}>Lessons completed</dt>
-                <dd className="font-semibold" style={{ color: COLORS.ui.textPrimary }}>{completedLessons.length}</dd>
+                <dd className="font-semibold" style={{ color: COLORS.ui.textPrimary }}>{completedLessonCount}/{LESSONS.length}</dd>
               </div>
               <div className="flex justify-between gap-4">
                 <dt style={{ color: COLORS.ui.textSecondary }}>Problems solved</dt>
-                <dd className="font-semibold" style={{ color: COLORS.ui.textPrimary }}>{solvedProblems}</dd>
+                <dd className="font-semibold" style={{ color: COLORS.ui.textPrimary }}>{solvedProblems}/{PROBLEMS.length}</dd>
               </div>
               <div className="flex justify-between gap-4">
                 <dt style={{ color: COLORS.ui.textSecondary }}>Reviews due</dt>
-                <dd className="font-semibold" style={{ color: COLORS.ui.textPrimary }}>{dueReviewCount}</dd>
+                <dd className="font-semibold" style={{ color: COLORS.ui.textPrimary }}>{dueReviewCount} today</dd>
               </div>
             </dl>
             <button
