@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SkillTree } from '@/components/concepts/SkillTree';
@@ -63,8 +63,9 @@ describe('SkillTree', () => {
     expect(upNext.textContent).toContain('Up next');
     expect(upNext.textContent).toContain('Stones & Board');
     expect(upNext.textContent).toContain('The 19×19 grid, black and white stones, alternating play.');
+    expect(upNext.textContent).toContain('Start lesson: What is a Group?');
 
-    clickButtonText('Start lesson');
+    clickButtonText('Start lesson: What is a Group?');
 
     expect(useGameStore.getState().appPhase).toBe('lesson');
     expect(useGameStore.getState().currentLessonId).toBe('groups');
@@ -79,8 +80,9 @@ describe('SkillTree', () => {
 
     expect(upNext.textContent).toContain('Liberties');
     expect(upNext.textContent).toContain('Empty points adjacent to a stone or group.');
+    expect(upNext.textContent).toContain('Start lesson: Liberties: Breathing Room');
 
-    clickButtonText('Start lesson');
+    clickButtonText('Start lesson: Liberties: Breathing Room');
 
     expect(useGameStore.getState().appPhase).toBe('lesson');
     expect(useGameStore.getState().currentLessonId).toBe('liberties');
@@ -93,9 +95,11 @@ describe('SkillTree', () => {
 
     clickButtonText('Liberties');
 
+    const detail = screen.getByTestId('skill-tree-detail');
+
     expect(screen.getByText('Practice this')).toBeTruthy();
 
-    clickButtonText('Start lesson: Liberties: Breathing Room');
+    fireEvent.click(within(detail).getByRole('button', { name: 'Start lesson: Liberties: Breathing Room' }));
 
     expect(useGameStore.getState().appPhase).toBe('lesson');
     expect(useGameStore.getState().currentLessonId).toBe('liberties');
@@ -168,10 +172,11 @@ describe('SkillTree', () => {
     render(<SkillTree />);
 
     clickButtonText('Sente & Gote');
+    const detail = screen.getByTestId('skill-tree-detail');
 
-    expect(screen.queryByText(/Start lesson:/)).toBeNull();
+    expect(within(detail).queryByText(/Start lesson:/)).toBeNull();
 
-    clickButtonText('Practice endgame problems');
+    fireEvent.click(within(detail).getByRole('button', { name: 'Practice endgame problems' }));
 
     expect(useGameStore.getState().appPhase).toBe('problems');
     expect(useGameStore.getState().preferredProblemFilter).toBe('endgame');

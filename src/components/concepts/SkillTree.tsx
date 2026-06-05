@@ -194,7 +194,7 @@ export function SkillTree() {
                 style={{ backgroundColor: COLORS.accent, color: COLORS.bg }}
               >
                 {nextLesson
-                  ? 'Start lesson'
+                  ? `Start lesson: ${nextLesson.title}`
                   : nextProblemCategory
                     ? `Practice ${problemCategoryTitle(nextProblemCategory).toLowerCase()}`
                     : 'Open concept'}
