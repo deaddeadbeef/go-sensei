@@ -310,6 +310,21 @@ export function DailyReview() {
               <p className="text-center text-sm mb-4" style={{ color: COLORS.ui.textSecondary }}>
                 No problems due for review. Solve more problems to build your review queue.
               </p>
+              <div
+                className="mt-5 border-t pt-5 text-left"
+                style={{ borderColor: 'rgba(255,255,255,0.08)' }}
+              >
+                <p className="text-xs font-semibold uppercase" style={{ color: COLORS.ui.textSecondary }}>
+                  Best next step
+                </p>
+                <h3 className="mt-2 text-lg font-bold" style={{ color: COLORS.ui.textPrimary }}>
+                  Seed tomorrow&apos;s review
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+                  Solve one fresh problem now. If it takes extra attempts or a hint, Go Sensei will bring it back when
+                  the lesson is ready to stick.
+                </p>
+              </div>
               {stats.streak > 0 && (
                 <p className="text-center text-sm mb-4" style={{ color: COLORS.overlay.positive }}>
                   🔥 {stats.streak} day streak — keep it going!
@@ -333,7 +348,7 @@ export function DailyReview() {
                 className="px-6 py-2 rounded-lg text-sm font-medium transition-transform hover:scale-[1.02] active:scale-95"
                 style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
               >
-                Solve a problem
+                Solve a fresh problem
               </button>
             )}
             <button
