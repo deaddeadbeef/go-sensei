@@ -26,6 +26,32 @@ describe('SenseiBubble actions', () => {
     });
   }
 
+  it('keeps paragraph-sized answers in chat instead of covering the board', () => {
+    const longAnswer = [
+      'Territory is empty space your stones surround well enough that the opponent cannot safely live inside.',
+      'Beginners should start with corners and edges because the board edge helps form the border.',
+      'I marked H6 and F8 because they extend H8 into the upper-right area: they help the fresh stone sketch a loose border without touching too closely.',
+    ].join(' ');
+
+    act(() => {
+      useGameStore.getState().showBubble({
+        text: longAnswer,
+        variant: 'teaching',
+        actions: [{ id: 'lesson:territory', label: 'Review territory' }],
+      });
+    });
+
+    render(<SenseiBubble />);
+    finishTypewriter();
+
+    expect(screen.queryByText('Go Sensei')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Review territory' })).toBeNull();
+    expect(useGameStore.getState().chatMessages.at(-1)?.text).toBe(longAnswer);
+    expect(useGameStore.getState().chatMessages.at(-1)?.actions).toEqual([
+      { id: 'lesson:territory', label: 'Review territory' },
+    ]);
+  });
+
   it('routes practice actions to the matching problem category', () => {
     act(() => {
       useGameStore.getState().showBubble({
