@@ -370,6 +370,7 @@ export function DailyReview() {
   const solutionSteps = getPrimarySolutionLine(currentProblem);
   const solutionTakeaway = getProblemSolutionTakeaway(currentProblem, solutionSteps);
   const revealSolution = problemState.status !== 'playing';
+  const hintActionLabel = problemState.showHint ? 'Hint shown' : 'Show hint';
 
   return (
     <div
@@ -612,13 +613,15 @@ export function DailyReview() {
 
         {/* Action buttons */}
         <div className="shrink-0 p-4 border-t flex flex-col gap-3" style={{ borderColor: COLORS.ui.bgCard }}>
-          {currentProblem.hint && !problemState.showHint && problemState.status === 'playing' && (
+          {currentProblem.hint && problemState.status === 'playing' && (
             <button
               onClick={() => setProblemState((s) => ({ ...s, showHint: true }))}
-              className="w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-opacity hover:opacity-90"
+              disabled={problemState.showHint}
+              aria-label={hintActionLabel}
+              className="w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed"
               style={{ backgroundColor: COLORS.ui.bgCard, color: COLORS.ui.textPrimary }}
             >
-              Show hint
+              {hintActionLabel}
             </button>
           )}
           {(problemState.status === 'solved' || problemState.status === 'failed') && (
