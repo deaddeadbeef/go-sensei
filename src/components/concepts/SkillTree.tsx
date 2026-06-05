@@ -49,6 +49,7 @@ export function SkillTree() {
   const [selectedConcept, setSelectedConcept] = useState<Concept | null>(null);
   const detailRef = useRef<HTMLDivElement | null>(null);
   const getMastery = useConceptStore((s) => s.getMastery);
+  const getNextToLearn = useConceptStore((s) => s.getNextToLearn);
   const getStats = useConceptStore((s) => s.getStats);
   const getUnlockedConcepts = useConceptStore((s) => s.getUnlockedConcepts);
   const returnToGame = useGameStore((s) => s.returnToGame);
@@ -58,6 +59,22 @@ export function SkillTree() {
 
   const stats = getStats();
   const unlocked = new Set(getUnlockedConcepts());
+  const nextToLearnIds = getNextToLearn();
+  const nextConcept = (
+    nextToLearnIds
+      .map((conceptId) => CONCEPTS.find((concept) => concept.id === conceptId))
+      .find((concept): concept is Concept => Boolean(concept))
+    ?? CONCEPTS.find((concept) => {
+      const mastery = getMastery(concept.id);
+      return unlocked.has(concept.id) && mastery.level > 0 && mastery.level < 3;
+    })
+    ?? null
+  );
+  const nextLesson = nextConcept ? findLessonForConcept(nextConcept.id) : null;
+  const nextProblemCategory = nextConcept
+    ? findProblemCategoryForConcept(nextConcept.id)
+    : null;
+  const nextMastery = nextConcept ? getMastery(nextConcept.id) : null;
   const selectedLesson = selectedConcept ? findLessonForConcept(selectedConcept.id) : null;
   const selectedProblemCategory = selectedConcept
     ? findProblemCategoryForConcept(selectedConcept.id)
@@ -94,6 +111,24 @@ export function SkillTree() {
     }
   }
 
+  function startConceptPractice(concept: Concept) {
+    const lesson = findLessonForConcept(concept.id);
+
+    if (lesson) {
+      startLesson(lesson.id);
+      return;
+    }
+
+    const problemCategory = findProblemCategoryForConcept(concept.id);
+
+    if (problemCategory) {
+      showProblems(problemCategory);
+      return;
+    }
+
+    selectConcept(concept);
+  }
+
   return (
     <div className="flex-1 overflow-y-auto p-6" style={{ backgroundColor: COLORS.bg }}>
       <div className="max-w-4xl mx-auto">
@@ -123,6 +158,50 @@ export function SkillTree() {
             />
           </div>
         </div>
+
+        {nextConcept && (
+          <div
+            data-testid="skill-tree-up-next"
+            className="mx-auto mb-6 max-w-2xl rounded-lg border p-3 text-left"
+            style={{ backgroundColor: COLORS.card, borderColor: COLORS.border }}
+          >
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-xs font-semibold uppercase" style={{ color: COLORS.textDim }}>
+                    Up next
+                  </p>
+                  <span
+                    className="rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                    style={{
+                      backgroundColor: COLORS.mastery[(nextMastery?.level ?? 0) as MasteryLevel] + '22',
+                      color: COLORS.mastery[(nextMastery?.level ?? 0) as MasteryLevel],
+                    }}
+                  >
+                    {MASTERY_LABELS[(nextMastery?.level ?? 0) as MasteryLevel]}
+                  </span>
+                </div>
+                <h2 className="mt-1 text-base font-bold" style={{ color: COLORS.accent }}>
+                  {nextConcept.name}
+                </h2>
+                <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.text }}>
+                  {nextConcept.description}
+                </p>
+              </div>
+              <button
+                onClick={() => startConceptPractice(nextConcept)}
+                className="shrink-0 rounded-lg px-3 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
+                style={{ backgroundColor: COLORS.accent, color: COLORS.bg }}
+              >
+                {nextLesson
+                  ? 'Start lesson'
+                  : nextProblemCategory
+                    ? `Practice ${problemCategoryTitle(nextProblemCategory).toLowerCase()}`
+                    : 'Open concept'}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Category rows */}
         {conceptsByCategory.map(({ category, concepts }, catIdx) => (
@@ -175,6 +254,7 @@ export function SkillTree() {
         {selectedConcept && (
           <motion.div
             ref={detailRef}
+            data-testid="skill-tree-detail"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className="mt-4 scroll-mt-20 p-4 rounded-xl"
