@@ -28,6 +28,26 @@ describe('LessonPicker', () => {
     expect(useGameStore.getState().appPhase).toBe('path');
   });
 
+  it('does not add an extra period after question-titled lessons', () => {
+    render(<LessonPicker />);
+
+    expect(screen.getByText('Next lesson: What is a Group? 10 lessons left.')).toBeTruthy();
+    expect(screen.queryByText('Next lesson: What is a Group?. 10 lessons left.')).toBeNull();
+  });
+
+  it('keeps stale lesson ids out of lesson-library progress', () => {
+    useProgressStore.setState({
+      completedLessons: ['groups', 'stale-lesson-id'],
+    });
+
+    render(<LessonPicker />);
+
+    expect(screen.getByText('1/10 complete')).toBeTruthy();
+    expect(screen.getByText('Next lesson: Liberties: Breathing Room. 9 lessons left.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Review lesson: What is a Group?' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Start lesson: Liberties: Breathing Room' })).toBeTruthy();
+  });
+
   it('returns learners to the board from the lesson library', () => {
     render(<LessonPicker />);
 
