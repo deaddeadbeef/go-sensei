@@ -972,6 +972,20 @@ describe('BeginnerObjectiveCard', () => {
     });
 
     expect(screen.getByText(`E3 applies the stable read chain in the real game: ${compactFourGapProof}`)).toBeTruthy();
+    expect(screen.getByText('The old chain already forced a direction change at E3. Start this side fresh: read F3 once, then choose from the new board instead of extending by habit.')).toBeTruthy();
+    expect(screen.queryByText('Carry forward the chain: D7, F7, G6, and G4 were all tested and stayed stable. Stopping rule: read F3 once from scratch, then choose the next direction from the new board instead of extending by habit.')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for F3' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Start with F2 as the open-side first reply to F3' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Recount G3 and E3 after F2' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Compare F4 against F2' }));
+
+    const f3LocalProof = 'You proved F2 and F4 both leave G3 and E3 safe, so F3 does not need an immediate defense.';
+    expect(screen.getByText(f3LocalProof)).toBeTruthy();
+    expect(screen.getByText('The read is stable, so turn it into a real move: play C3 for Make your stones work together.')).toBeTruthy();
+    expect(screen.queryByText('Chain proof: D7, F7, G6, G4, and F3 were tested and stayed stable; Black can keep extending.')).toBeNull();
+    expect(screen.queryByText(`D7, F7, G6, and G4 were already tested and stayed stable. ${f3LocalProof}`)).toBeNull();
+    expect(screen.queryByText('The F3 read is stable, so change direction now: play C3 for Make your stones work together.')).toBeNull();
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {

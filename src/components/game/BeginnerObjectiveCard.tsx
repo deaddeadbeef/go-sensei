@@ -1549,9 +1549,17 @@ function getPressureProofStableGapCoords(proofText: string): string[] {
   return getTwoGapProofStableGapCoords(proofText);
 }
 
+function isDirectionChangePressureRecap(recap: PressureHandoffRecap | null): boolean {
+  return Boolean(recap && getPressureProofStableGapCoords(recap.proofText).length >= 4);
+}
+
 function getPressureProofBridgeText(recap: PressureHandoffRecap, prompt: OneSpaceJumpReadPrompt): string {
   const stableGapCoords = getPressureProofStableGapCoords(recap.proofText);
   if (stableGapCoords.length >= 2) {
+    if (stableGapCoords.length >= 4) {
+      return `The old chain already forced a direction change at ${recap.coord}. Start this side fresh: read ${prompt.gapCoord} once, then choose from the new board instead of extending by habit.`;
+    }
+
     if (stableGapCoords.length >= 3) {
       return `Carry forward the chain: ${joinAndCoordinateList(stableGapCoords)} were all tested and stayed stable. Stopping rule: read ${prompt.gapCoord} once from scratch, then choose the next direction from the new board instead of extending by habit.`;
     }
@@ -1954,6 +1962,8 @@ function getPressureComparisonProofRowText(
   recap: PressureHandoffRecap | null,
   comparisonSummary: PressureComparisonSummary,
 ): string | null {
+  if (isDirectionChangePressureRecap(recap)) return null;
+
   const stableGapCoords = recap ? getPressureProofStableGapCoords(recap.proofText) : [];
   if (stableGapCoords.length > 0) {
     return `${joinAndCoordinateList(stableGapCoords)} were already tested and stayed stable. ${comparisonSummary.proofText}`;
@@ -1971,6 +1981,7 @@ function getPressureChainExtensionProofText(
 
   const stableGapCoords = recap ? getPressureProofStableGapCoords(recap.proofText) : [];
   if (stableGapCoords.length < 2) return null;
+  if (isDirectionChangePressureRecap(recap)) return null;
 
   return `Chain proof: ${joinAndCoordinateList([...stableGapCoords, prompt.gapCoord])} were tested and stayed stable; Black can keep extending.`;
 }

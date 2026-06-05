@@ -118,6 +118,7 @@ Latest completed slice:
 - Renamed the four-gap stable-read handoff as a direction change, so the unlocked E3 move answers the stopping-rule prompt instead of sounding like another rote extension.
 - Promoted the active read handoff inside the normal target row, so E3 is labeled as recommended by the read while E5 and C5 remain visible alternatives.
 - Preserved the stable-read recap when the learner accepts E3 from the normal target row, so the tutor explains why the direction change is complete before moving on to F3.
+- Reset the F3 read after the E3 direction change, so a stable F3 comparison starts a fresh local proof instead of appending a fifth point to the old D7/F7/G6/G4 chain.
 
 Next investigation candidates:
-- Whether the next F3 read should teach a new stopping condition instead of starting another rote one-space-jump chain.
+- Whether the post-C3 handoff should explain when this local shape is finished and route the learner toward a new board area.
