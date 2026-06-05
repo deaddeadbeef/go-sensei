@@ -89,6 +89,19 @@ export function LessonPicker() {
                 ? `Next lesson: ${titleAsSentence(nextLesson.title)} ${remainingCount} lesson${remainingCount === 1 ? '' : 's'} left.`
                 : 'All lessons complete. Use the path to choose review, problems, or a guided game.'}
             </p>
+            {nextLesson && (
+              <button
+                onClick={() => startLesson(nextLesson.id)}
+                aria-label={`Start next lesson: ${nextLesson.title}`}
+                className="mt-3 w-full rounded-lg px-3 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
+                style={{
+                  backgroundColor: COLORS.ui.accent,
+                  color: COLORS.ui.bgPrimary,
+                }}
+              >
+                Start next lesson
+              </button>
+            )}
           </div>
         </motion.div>
 
