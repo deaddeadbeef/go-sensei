@@ -11,7 +11,7 @@ import type { MoveNode } from '@/lib/problems/types';
 import type { Point, BoardSize, GameState } from '@/lib/go-engine/types';
 import type { ProblemCategory } from '@/lib/problems/types';
 import { applyProblemMove, buildProblemGame } from '@/lib/problems/runtime';
-import { getPrimarySolutionLine, getProblemSolutionTakeaway } from '@/lib/problems/solution-review';
+import { formatProblemPoint, getPrimarySolutionLine, getProblemSolutionTakeaway } from '@/lib/problems/solution-review';
 import { buildReviewSessionSummary } from '@/lib/review/session-summary';
 import { ProblemReadingPlan } from '@/components/problems/ProblemReadingPlan';
 import { ProblemSolutionOverlay, ProblemSolutionPanel } from '@/components/problems/ProblemSolutionReview';
@@ -384,6 +384,10 @@ export function DailyReview() {
   const playerColor = currentProblem.playerColor;
   const solutionSteps = getPrimarySolutionLine(currentProblem);
   const solutionTakeaway = getProblemSolutionTakeaway(currentProblem, solutionSteps);
+  const firstStudentSolutionStep = solutionSteps.find((step) => step.role === 'student') ?? null;
+  const firstStudentMoveLabel = firstStudentSolutionStep
+    ? formatProblemPoint(firstStudentSolutionStep.move, boardSize)
+    : null;
   const revealSolution = problemState.status !== 'playing';
   const hintActionLabel = problemState.showHint ? 'Hint shown' : 'Show hint';
 
@@ -568,6 +572,11 @@ export function DailyReview() {
                 <p className="text-lg font-bold" style={{ color: COLORS.overlay.positive }}>
                   🎉 Solved!
                 </p>
+                <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
+                  {firstStudentMoveLabel
+                    ? `You found ${firstStudentMoveLabel}. Review the sequence once before finishing this card.`
+                    : 'Review the sequence once before finishing this card.'}
+                </p>
               </motion.div>
             )}
             {problemState.status === 'failed' && (
@@ -580,7 +589,12 @@ export function DailyReview() {
                 exit={{ opacity: 0, y: -10 }}
               >
                 <p className="text-lg font-bold" style={{ color: COLORS.overlay.danger }}>
-                  ✕ Failed
+                  Study the answer
+                </p>
+                <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
+                  {firstStudentMoveLabel
+                    ? `Replay ${firstStudentMoveLabel} before finishing, so this review becomes tomorrow's memory.`
+                    : 'Replay the numbered line before finishing, so this review becomes tomorrow\'s memory.'}
                 </p>
               </motion.div>
             )}
