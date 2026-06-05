@@ -30,6 +30,8 @@ describe('LessonView answer reveal', () => {
   it('tells a stuck learner to click the revealed answer', () => {
     render(<LessonView />);
 
+    expect((screen.getByRole('button', { name: 'Answer on board first' }) as HTMLButtonElement).disabled).toBe(true);
+
     act(() => {
       useGameStore.getState().checkLessonAnswer({ x: 0, y: 0 });
       useGameStore.getState().checkLessonAnswer({ x: 1, y: 0 });
