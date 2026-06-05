@@ -64,6 +64,35 @@ describe('local study plan answer', () => {
     expect(answer?.conceptIds).toEqual(expect.arrayContaining(['capture', 'atari', 'liberties', 'groups']));
   });
 
+  it('keeps stale progress ids out of progress reflection counts', () => {
+    const answer = getLocalStudyPlanAnswer('How is my progress?', {
+      completedLessons: ['groups', 'stale-lesson-id'],
+      problemAttempts: [
+        problemAttempt('capture-001', true),
+        problemAttempt('missing-problem-id', true),
+        problemAttempt('capture-002', false),
+      ],
+      dueReviewCount: 0,
+      hasStartedIntroGame: true,
+      mastery: [mastery('groups', 1, 2)],
+    });
+
+    expect(answer?.text).toContain('Progress check: you have completed 1 lesson, solved 1 problem, and started a guided 9x9 game.');
+  });
+
+  it('does not treat stale-only progress ids as real learning evidence', () => {
+    const answer = getLocalStudyPlanAnswer('How am I doing?', {
+      completedLessons: ['stale-lesson-id'],
+      problemAttempts: [problemAttempt('missing-problem-id', true)],
+      dueReviewCount: 0,
+      hasStartedIntroGame: false,
+      mastery: [],
+    });
+
+    expect(answer?.text).toContain('Progress check: you have completed no lessons, solved no problems, and not started a guided 9x9 game yet.');
+    expect(answer?.text).toContain('That is not a failure; it means the tutor needs one visible move or lesson before it can judge your Go.');
+  });
+
   it('uses daily review language when reviews are due', () => {
     const answer = getLocalStudyPlanAnswer('What should I practice next?', {
       completedLessons: ['groups'],
