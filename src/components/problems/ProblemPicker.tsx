@@ -384,7 +384,7 @@ export function ProblemPicker() {
           })}
         </motion.div>
 
-        {/* Back to Game button */}
+        {/* Return to board button */}
         <motion.div
           className="mt-10 text-center"
           initial={{ opacity: 0 }}
@@ -399,7 +399,7 @@ export function ProblemPicker() {
               color: COLORS.ui.bgPrimary,
             }}
           >
-            ← Back to Game
+            Return to board
           </button>
         </motion.div>
       </div>
