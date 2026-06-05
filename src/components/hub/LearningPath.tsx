@@ -109,6 +109,17 @@ export function LearningPath() {
             <p className="mt-2 max-w-2xl text-sm leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
               {recommendation.reason}
             </p>
+            <div
+              className="mt-3 rounded-md border px-3 py-2 text-sm leading-relaxed"
+              style={{ borderColor: `${COLORS.ui.accent}55`, backgroundColor: `${COLORS.ui.accent}12` }}
+            >
+              <span className="font-semibold" style={{ color: COLORS.ui.accent }}>
+                Finish line:{' '}
+              </span>
+              <span style={{ color: COLORS.ui.textPrimary }}>
+                {recommendation.finishLine}
+              </span>
+            </div>
             {recommendation.focusConcepts.length > 0 && (
               <div className="mt-4 flex flex-wrap gap-2">
                 {focusConcepts.map((concept) => (

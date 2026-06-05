@@ -14,6 +14,7 @@ interface RecommendationGuidance {
   reason: string;
   focusConcepts: string[];
   actionLabel: string;
+  finishLine: string;
   practicePlan: string[];
 }
 
@@ -71,6 +72,7 @@ export function getLearningRecommendation(input: RecommendationInput): LearningR
       reason: `${input.dueReviewCount} review position${input.dueReviewCount === 1 ? ' is' : 's are'} due before new material.`,
       focusConcepts: weakIntroducedConcepts,
       actionLabel: 'Start daily review',
+      finishLine: 'All due review cards are answered, and any miss has been replayed once.',
       practicePlan: [
         'Solve the due review positions before opening new material.',
         'Replay any missed solution line until the first move feels obvious.',
@@ -86,6 +88,7 @@ export function getLearningRecommendation(input: RecommendationInput): LearningR
       reason: 'Start on a small board with one clear goal at a time.',
       focusConcepts: ['corner-opening', 'territory', 'liberties'],
       actionLabel: 'Start guided 9x9',
+      finishLine: 'The guided 9x9 is started and the first corner objective is visible on the board.',
       practicePlan: [
         'Place the first stone near a corner instead of the center.',
         'Use the glowing target as the next board idea to test.',
@@ -143,6 +146,7 @@ function lessonRecommendation(targetId: string, lessonTitle: string): LearningRe
     reason: 'This is the next lesson in the learning path.',
     focusConcepts: [...(LESSON_TO_CONCEPTS[targetId] ?? [])],
     actionLabel: `Start lesson: ${lessonTitle}`,
+    finishLine: 'The lesson is marked complete after you prove the idea on its board checkpoint.',
     practicePlan: [
       'Read the idea, then prove it on the board checkpoint.',
       'If the answer is shown, explain why it matches the hint before continuing.',
@@ -169,6 +173,10 @@ function problemRecommendation(
         : 'Practice problems reinforce the lessons you have already completed.',
     focusConcepts: [...PROBLEM_CATEGORY_TO_CONCEPTS[filter]],
     actionLabel: `Open ${problemCategoryTitle(filter).toLowerCase()} problems`,
+    finishLine:
+      remaining > 0
+        ? `This block is complete after ${remaining} more solved ${practiceCategoryTitle} problem${remaining === 1 ? '' : 's'}.`
+        : `Solve one ${practiceCategoryTitle} problem cleanly, then review any miss.`,
     practicePlan: [
       'Look for the forcing move before tapping the board.',
       'If you miss three times, cover the numbers and explain the first solution move.',
@@ -208,6 +216,7 @@ function guidedGameRecommendation(focusConcepts: string[]): LearningRecommendati
     reason: 'You have enough lesson and problem practice to connect these ideas in play.',
     focusConcepts: [...focusConcepts],
     actionLabel: 'Continue guided game',
+    finishLine: 'Play until the current objective is met and you can name why the move helped.',
     practicePlan: [
       'Choose a move that matches the current objective.',
       'After the tutor replies, compare the move insight with your plan.',

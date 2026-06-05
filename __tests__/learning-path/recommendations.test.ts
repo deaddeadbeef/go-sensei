@@ -45,6 +45,7 @@ describe('learning path recommendations', () => {
       actionLabel: 'Start guided 9x9',
     });
     expect(recommendation.practicePlan).toContain('Place the first stone near a corner instead of the center.');
+    expect(recommendation.finishLine).toBe('The guided 9x9 is started and the first corner objective is visible on the board.');
   });
 
   it('student who started intro gets the first lesson next', () => {
@@ -56,6 +57,7 @@ describe('learning path recommendations', () => {
       actionLabel: 'Start lesson: What is a Group?',
     });
     expect(recommendation.focusConcepts).toEqual(['stones-and-board', 'groups']);
+    expect(recommendation.finishLine).toBe('The lesson is marked complete after you prove the idea on its board checkpoint.');
     expect(recommendation.practicePlan).toContain('If the answer is shown, explain why it matches the hint before continuing.');
   });
 
@@ -66,6 +68,7 @@ describe('learning path recommendations', () => {
     expect(recommendation.title).toBe('Daily review');
     expect(recommendation.reason).toBe('2 review positions are due before new material.');
     expect(recommendation.actionLabel).toBe('Start daily review');
+    expect(recommendation.finishLine).toBe('All due review cards are answered, and any miss has been replayed once.');
     expect(recommendation.practicePlan).toContain('Solve the due review positions before opening new material.');
   });
 
@@ -79,6 +82,7 @@ describe('learning path recommendations', () => {
       filter: 'capture',
       actionLabel: 'Open capture problems',
     });
+    expect(recommendation.finishLine).toBe('This block is complete after 3 more solved capture problems.');
     expect(recommendation.practicePlan).toContain('If you miss three times, cover the numbers and explain the first solution move.');
   });
 
@@ -122,6 +126,7 @@ describe('learning path recommendations', () => {
     expect(recommendation.kind).toBe('guided_game');
     expect(recommendation.actionLabel).toBe('Continue guided game');
     expect(recommendation.focusConcepts).toContain('eyes');
+    expect(recommendation.finishLine).toBe('Play until the current objective is met and you can name why the move helped.');
     expect(recommendation.practicePlan).toContain('After the tutor replies, compare the move insight with your plan.');
   });
 
