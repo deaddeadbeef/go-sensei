@@ -49,12 +49,21 @@ describe('LessonPicker', () => {
     expect(shell.className).not.toContain('min-h-screen');
   });
 
+  it('names each start action by lesson', () => {
+    render(<LessonPicker />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start lesson: Liberties: Breathing Room' }));
+
+    expect(useGameStore.getState().appPhase).toBe('lesson');
+    expect(useGameStore.getState().currentLessonId).toBe('liberties');
+  });
+
   it('still lets learners review completed lessons', () => {
     act(() => useProgressStore.getState().completeLesson('groups'));
 
     render(<LessonPicker />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Review →' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Review lesson: What is a Group?' }));
 
     expect(useGameStore.getState().appPhase).toBe('lesson');
     expect(useGameStore.getState().currentLessonId).toBe('groups');
