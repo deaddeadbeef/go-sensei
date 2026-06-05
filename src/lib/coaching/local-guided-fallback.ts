@@ -53,15 +53,15 @@ function describeLastMove(game: GameState): string {
 
 function introText(reason: LocalFallbackReason): string {
   if (reason === 'auth-expired') {
-    return 'The cloud Sensei session expired, so I will keep the lesson moving locally for now.';
+    return 'I can keep coaching from this board, so your practice does not have to stop.';
   }
   if (reason === 'auth-unavailable') {
     return 'I can coach this guided game from the board in front of us.';
   }
   if (reason === 'network-error') {
-    return 'I could not reach cloud Sensei, so I will keep the lesson moving locally for now.';
+    return 'I can keep coaching from this board while the connection recovers.';
   }
-  return 'Cloud Sensei had trouble answering, so I will keep the lesson moving locally for now.';
+  return 'I can keep the lesson moving from this board while the tutor recovers.';
 }
 
 function copyPoint(point: Point): Point {
@@ -142,8 +142,8 @@ export function getLocalGuidedFallback(
 
   if (shouldPassSensei) {
     lines.push(move?.type === 'place'
-      ? 'I marked your move, passed for White, and marked the next targets so you can immediately try the next idea.'
-      : 'I am passing for White so you can immediately try the next idea.');
+      ? 'I marked your move, gave White a teaching pass, and marked the next targets so you can immediately try the next idea.'
+      : 'White takes a teaching pass so you can immediately try the next idea.');
   } else {
     lines.push('Use the marked targets to make the next move concrete.');
   }

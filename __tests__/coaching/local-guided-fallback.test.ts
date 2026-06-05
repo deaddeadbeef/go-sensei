@@ -54,12 +54,14 @@ describe('local guided fallback', () => {
         reason: 'Try C5 as a one-space jump that works with your stones.',
       },
     ]);
-    expect(fallback?.text).toContain('cloud Sensei session expired');
+    expect(fallback?.text).toContain('I can keep coaching from this board, so your practice does not have to stop.');
     expect(fallback?.text).toContain('Good: C7 hit the marked corner goal');
     expect(fallback?.text).toContain('Lesson: C7 is a useful anchor because the edge helps it surround space.');
     expect(fallback?.text).toContain('Make your stones work together');
     expect(fallback?.text).toContain('Try E7 or C5');
-    expect(fallback?.text).toContain('I marked your move, passed for White, and marked the next targets');
+    expect(fallback?.text).toContain('I marked your move, gave White a teaching pass, and marked the next targets');
+    expect(fallback?.text.toLowerCase()).not.toContain('cloud');
+    expect(fallback?.text.toLowerCase()).not.toContain('locally');
   });
 
   it('names the missed visible objective before repeating the next focus', () => {
@@ -144,6 +146,8 @@ describe('local guided fallback', () => {
     ]);
     expect(fallback?.text).toContain('I can coach this guided game from the board in front of us.');
     expect(fallback?.text).not.toContain('GitHub login');
+    expect(fallback?.text.toLowerCase()).not.toContain('cloud');
+    expect(fallback?.text.toLowerCase()).not.toContain('locally');
     expect(fallback?.text).toContain('Start with a corner');
     expect(fallback?.text).toContain('Use the marked targets to make the next move concrete.');
   });
