@@ -4,6 +4,8 @@ import {
   getLearningRecommendation,
   type LearningRecommendation,
 } from '@/lib/learning-path/recommendations';
+import { LESSONS } from '@/lib/lessons/lesson-data';
+import { PROBLEMS } from '@/lib/problems/problem-data';
 import type { ProblemAttempt } from '@/lib/problems/types';
 import type { LocalQuestionAnswer } from '@/lib/coaching/local-question-answer';
 import type { SenseiAction } from '@/lib/coaching/sensei-actions';
@@ -17,6 +19,8 @@ interface LocalStudyPlanInput {
 }
 
 const conceptNameById = new Map(CONCEPTS.map((concept) => [concept.id, concept.name]));
+const lessonIds = new Set(LESSONS.map((lesson) => lesson.id));
+const problemIds = new Set(PROBLEMS.map((problem) => problem.id));
 
 function normalizedQuestion(question: string): string {
   return question.toLowerCase().replace(/[^a-z0-9\s-]/g, ' ');
@@ -84,16 +88,25 @@ function plural(count: number, singular: string, pluralWord = `${singular}s`): s
   return `${count} ${count === 1 ? singular : pluralWord}`;
 }
 
+function completedLessonCount(completedLessons: string[]): number {
+  return completedLessons.filter((lessonId) => lessonIds.has(lessonId)).length;
+}
+
+function knownProblemAttempts(problemAttempts: ProblemAttempt[]): ProblemAttempt[] {
+  return problemAttempts.filter((attempt) => problemIds.has(attempt.problemId));
+}
+
 function solvedProblemCount(problemAttempts: ProblemAttempt[]): number {
   return new Set(problemAttempts
-    .filter((attempt) => attempt.solved)
+    .filter((attempt) => attempt.solved && problemIds.has(attempt.problemId))
     .map((attempt) => attempt.problemId)).size;
 }
 
 function progressSummary(input: LocalStudyPlanInput): string {
-  const lessonText = input.completedLessons.length === 0
+  const completedCount = completedLessonCount(input.completedLessons);
+  const lessonText = completedCount === 0
     ? 'completed no lessons'
-    : `completed ${plural(input.completedLessons.length, 'lesson')}`;
+    : `completed ${plural(completedCount, 'lesson')}`;
   const solvedCount = solvedProblemCount(input.problemAttempts);
   const problemText = solvedCount === 0
     ? 'solved no problems'
@@ -134,8 +147,8 @@ function buildProgressReflectionAnswer(
   const introducedLabels = introduced.map((item) => conceptLabel(item.conceptId));
   const focusLabels = recommendation.focusConcepts.map(conceptLabel).slice(0, 4);
   const firstStep = recommendation.practicePlan[0];
-  const hasEvidence = input.completedLessons.length > 0
-    || input.problemAttempts.length > 0
+  const hasEvidence = completedLessonCount(input.completedLessons) > 0
+    || knownProblemAttempts(input.problemAttempts).length > 0
     || input.hasStartedIntroGame
     || input.mastery.length > 0;
 
