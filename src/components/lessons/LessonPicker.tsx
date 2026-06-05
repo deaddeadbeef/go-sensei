@@ -94,6 +94,7 @@ export function LessonPicker() {
         >
           {LESSONS.map((lesson) => {
             const completed = completedLessons.includes(lesson.id);
+            const actionLabel = completed ? `Review lesson: ${lesson.title}` : `Start lesson: ${lesson.title}`;
 
             return (
               <motion.div
@@ -138,6 +139,7 @@ export function LessonPicker() {
 
                 <button
                   onClick={() => startLesson(lesson.id)}
+                  aria-label={actionLabel}
                   className="mt-4 w-full rounded-lg px-3 py-2 text-sm font-medium transition-opacity hover:opacity-90"
                   style={{
                     backgroundColor: COLORS.ui.accent,
