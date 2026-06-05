@@ -549,7 +549,7 @@ export function ProblemView() {
             className="text-sm text-center transition-opacity hover:opacity-100"
             style={{ color: COLORS.ui.textSecondary, opacity: 0.7 }}
           >
-            {scopedProblemLabel ? `✕ Back to ${scopedProblemLabel} problems` : '✕ Back to Problems'}
+            {scopedProblemLabel ? `Return to ${scopedProblemLabel} problems` : 'Return to problem library'}
           </button>
         </div>
       </div>
