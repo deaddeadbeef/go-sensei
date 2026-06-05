@@ -166,9 +166,9 @@ export function SenseiBar({ onSettingsClick, isLoggedIn }: SenseiBarProps) {
         {appPhase !== 'game' && (
           <NavButton
             onClick={() => useGameStore.getState().returnToGame()}
-            label="Back to Game"
+            label="Return to board"
             mobileLabel="←"
-            desktopLabel="← Game"
+            desktopLabel="← Board"
           />
         )}
         <NavButton

@@ -90,4 +90,16 @@ describe('SenseiBar status', () => {
       expect(screen.queryByText('Your turn')).toBeNull();
     },
   );
+
+  it('returns learners from secondary surfaces to the board', () => {
+    act(() => {
+      useGameStore.setState({ appPhase: 'skills', phase: 'playing' });
+    });
+
+    render(<SenseiBar onSettingsClick={vi.fn()} isLoggedIn={false} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Return to board' }));
+
+    expect(useGameStore.getState().appPhase).toBe('game');
+  });
 });
