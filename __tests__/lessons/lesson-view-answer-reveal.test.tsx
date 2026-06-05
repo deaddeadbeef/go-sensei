@@ -38,7 +38,7 @@ describe('LessonView answer reveal', () => {
       useGameStore.getState().checkLessonAnswer({ x: 2, y: 0 });
     });
 
-    expect(screen.getByText('Answer shown at E4. Click that highlighted point to continue.')).toBeTruthy();
+    expect(screen.getByText('Answer shown at E4. Before you click the highlighted point to continue, say why it matches the hint.')).toBeTruthy();
     expect((screen.getByRole('button', { name: 'Answer shown on board' }) as HTMLButtonElement).disabled).toBe(true);
   });
 

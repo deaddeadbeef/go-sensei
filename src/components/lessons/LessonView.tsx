@@ -364,7 +364,7 @@ export function LessonView() {
                   )}
                   {lessonInteraction.answerRevealed && (
                     <p className="mt-2 text-xs font-medium" style={{ color: COLORS.ui.textPrimary }}>
-                      Answer shown at {revealedAnswerCoord}. Click that highlighted point to continue.
+                      Answer shown at {revealedAnswerCoord}. Before you click the highlighted point to continue, say why it matches the hint.
                     </p>
                   )}
                   {lessonInteraction.attempts > 0 && (
