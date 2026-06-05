@@ -8,7 +8,11 @@ import {
   getFreshAreaFollowUpContext,
 } from '@/lib/coaching/beginner-objectives';
 import { getSuggestionMarkerLabel } from '@/components/board/overlays/SuggestionOverlay';
-import type { BeginnerObjective, FreshAreaFollowUpContext } from '@/lib/coaching/beginner-objectives';
+import type {
+  BeginnerObjective,
+  BeginnerObjectiveProgress,
+  FreshAreaFollowUpContext,
+} from '@/lib/coaching/beginner-objectives';
 import type { SenseiAction } from '@/lib/coaching/sensei-actions';
 import { getMoveInsight } from '@/lib/coaching/move-insight';
 import {
@@ -2744,6 +2748,21 @@ function getObjectiveReadCue(
   }
 }
 
+function getObjectiveProgressDisplayText(
+  progress: BeginnerObjectiveProgress | null,
+  readPrompt: OneSpaceJumpReadPrompt | null,
+): string | null {
+  if (!progress) return null;
+  if (!readPrompt || progress.status !== 'met' || progress.objectiveId !== 'extend-from-stone') {
+    return progress.text;
+  }
+
+  return progress.text.replace(
+    'Next, check whether any group is short on liberties.',
+    `Read ${readPrompt.gapCoord} before extending again: decide whether Black should connect, defend, or keep extending.`,
+  );
+}
+
 interface StablePressureExtensionHandoffProps {
   handoff: PressureExtensionHandoff;
   canPlayTarget: boolean;
@@ -3457,6 +3476,7 @@ export function BeginnerObjectiveCard() {
 
   const targetText = formatObjectiveTargetText(objective, game.board.size, 4, freshAreaFollowUpContext);
   const progressColor = progress?.status === 'met' ? COLORS.overlay.positive : COLORS.overlay.warning;
+  const progressDisplayText = getObjectiveProgressDisplayText(progress, readPrompt);
   const playableTargets = objective.targetPoints.slice(0, 4);
   const hasLearnerMove = game.moveHistory.some((move) => move.color === 'black');
   const insight = hasLearnerMove ? getMoveInsight(game, teachingLevel) : null;
@@ -4904,9 +4924,9 @@ export function BeginnerObjectiveCard() {
       <div className="mt-1" style={{ color: COLORS.ui.textSecondary }}>
         {objective.instruction}
       </div>
-      {progress && (
+      {progressDisplayText && (
         <div className="mt-1 text-xs font-medium" style={{ color: progressColor }}>
-          {progress.text}
+          {progressDisplayText}
         </div>
       )}
       {finalTargetDisplayText && (

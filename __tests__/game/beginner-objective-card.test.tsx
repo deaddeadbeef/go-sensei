@@ -238,6 +238,8 @@ describe('BeginnerObjectiveCard', () => {
 
     render(<BeginnerObjectiveCard />);
 
+    expect(screen.getByText('Good: E7 made a one-space jump from your stone. Read D7 before extending again: decide whether Black should connect, defend, or keep extending.')).toBeTruthy();
+    expect(screen.queryByText('Good: E7 made a one-space jump from your stone. Next, check whether any group is short on liberties.')).toBeNull();
     expect(screen.getByText('Read next')).toBeTruthy();
     expect(screen.getByText('Watch D7')).toBeTruthy();
     expect(screen.getByText('If White plays D7, the jump between C7 and E7 is under pressure. First read whether Black should connect or defend that gap before extending again.')).toBeTruthy();
