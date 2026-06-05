@@ -120,6 +120,7 @@ Latest completed slice:
 - Preserved the stable-read recap when the learner accepts E3 from the normal target row, so the tutor explains why the direction change is complete before moving on to F3.
 - Reset the F3 read after the E3 direction change, so a stable F3 comparison starts a fresh local proof instead of appending a fifth point to the old D7/F7/G6/G4 chain.
 - Settled the lower-edge shape after the C3 handoff, replacing the D3 repeat-read prompt with guidance to look upward at C5 or E5 from a new direction.
+- Recommended C5 as the next upward direction after the lower-edge shape settles, while keeping E5 visible as the alternate upward jump.
 
 Next investigation candidates:
-- Whether the next C5/E5 choice should teach direction of play explicitly instead of presenting both upward jumps as equivalent.
+- Whether playing C5 should connect this lower-left work back to the earlier C7 corner stone before the tutor asks for more extensions.

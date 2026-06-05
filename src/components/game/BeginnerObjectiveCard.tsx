@@ -219,6 +219,23 @@ function formatPressureHandoffTargetText(
   return `Recommended by the read: ${handoff.coord}. ${otherLabel}: ${joinCoordinateList(otherTargetCoords)}.`;
 }
 
+function formatLocalShapeSettledTargetText(
+  defaultText: string | null,
+  settledCue: PressureLocalShapeSettledCue | null,
+  targets: Point[],
+  board: BoardState,
+): string | null {
+  if (!settledCue || targets.length === 0) return defaultText;
+
+  const [recommendedTarget, ...otherTargets] = targets;
+  const recommendedCoord = pointToCoord(recommendedTarget, board.size);
+  const otherTargetCoords = otherTargets.map((point) => pointToCoord(point, board.size));
+  if (otherTargetCoords.length === 0) return `Recommended next direction: ${recommendedCoord}.`;
+
+  const otherLabel = otherTargetCoords.length === 1 ? 'Other upward jump' : 'Other upward jumps';
+  return `Recommended next direction: ${recommendedCoord}. ${otherLabel}: ${joinCoordinateList(otherTargetCoords)}.`;
+}
+
 function formatLibertyCount(count: number): string {
   return `${count} ${count === 1 ? 'liberty' : 'liberties'}`;
 }
@@ -3552,6 +3569,12 @@ export function BeginnerObjectiveCard() {
     playableTargets,
     game.board,
   );
+  const finalTargetDisplayText = formatLocalShapeSettledTargetText(
+    targetDisplayText,
+    pressureLocalShapeSettledCue,
+    playableTargets,
+    game.board,
+  );
   const projectedPressureRepeatReadPoint = activePressureHandoffRecap && readPrompt
     ? getPressureRepeatReadPoint(activePressureHandoffRecap, readPrompt)
     : null;
@@ -4456,9 +4479,9 @@ export function BeginnerObjectiveCard() {
           {progress.text}
         </div>
       )}
-      {targetDisplayText && (
+      {finalTargetDisplayText && (
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs font-semibold" style={{ color: COLORS.ui.textPrimary }}>
-          <span>{targetDisplayText}</span>
+          <span>{finalTargetDisplayText}</span>
           {playableTargets.map((point) => {
             const coord = pointToCoord(point, game.board.size);
 
