@@ -31,8 +31,10 @@ describe('TeachingPanel', () => {
   it('plays a board-analysis suggestion when the learner clicks it', () => {
     render(<TeachingPanel />);
 
+    expect(screen.getByText('A C7')).toBeTruthy();
+
     fireEvent.click(screen.getByRole('button', {
-      name: /Play C7 suggestion: Start at C7: the board edge helps this stone make territory\./,
+      name: /Play candidate A at C7: Start at C7: the board edge helps this stone make territory\./,
     }));
 
     const state = useGameStore.getState();
