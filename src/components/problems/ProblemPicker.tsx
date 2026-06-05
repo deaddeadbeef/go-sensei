@@ -4,12 +4,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { PROBLEMS } from '@/lib/problems/problem-data';
 import { getLearningRecommendation } from '@/lib/learning-path/recommendations';
+import { getRecommendedProblem, getSolvedProblemIds } from '@/lib/problems/recommendation';
 import { useConceptStore } from '@/stores/concept-store';
 import { useGameStore } from '@/stores/game-store';
 import { useProgressStore } from '@/stores/progress-store';
 import { useReviewStore } from '@/stores/review-store';
 import { COLORS } from '@/utils/colors';
-import type { Problem, ProblemAttempt, ProblemCategory } from '@/lib/problems/types';
+import type { Problem, ProblemCategory } from '@/lib/problems/types';
 
 const container = {
   hidden: { opacity: 0 },
@@ -49,18 +50,8 @@ const FOCUS_PRACTICE_REASON: Record<ProblemCategory, string> = {
   endgame: 'Endgame problems train you to count value and play sente before smaller gote moves.',
 };
 
-const PROBLEM_IDS = new Set(PROBLEMS.map((problem) => problem.id));
-
 function difficultyStars(d: number) {
   return '★'.repeat(d) + '☆'.repeat(5 - d);
-}
-
-function solvedProblemIds(problemAttempts: ProblemAttempt[]): Set<string> {
-  return new Set(
-    problemAttempts
-      .filter((attempt) => attempt.solved && PROBLEM_IDS.has(attempt.problemId))
-      .map((attempt) => attempt.problemId),
-  );
 }
 
 function visibleProgressLabel(filter: FilterKey): string {
@@ -204,9 +195,12 @@ export function ProblemPicker() {
     [filter],
   );
 
-  const solvedIds = useMemo(() => solvedProblemIds(problemAttempts), [problemAttempts]);
+  const solvedIds = useMemo(() => getSolvedProblemIds(problemAttempts), [problemAttempts]);
   const solvedVisibleCount = filtered.filter((problem) => solvedIds.has(problem.id)).length;
-  const recommendedProblem = filtered.find((problem) => !solvedIds.has(problem.id)) ?? filtered[0] ?? null;
+  const recommendedProblem = useMemo(
+    () => getRecommendedProblem(problemAttempts, filtered),
+    [problemAttempts, filtered],
+  );
   const dueReviewCount = useMemo(() => {
     void reviewCards;
     return getDueCount();
