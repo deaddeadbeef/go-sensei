@@ -1131,7 +1131,13 @@ function comparisonTargetReason(
   }
 
   if (objective.id === 'choose-new-area') {
-    return `${coordText} are possible fresh-area checks; choose the one that starts a new direction instead of staying inside the settled shape.`;
+    const directionText = joinList(points.map((point) => {
+      const coord = pointToCoord(point, boardSize);
+      return `${coord} opens the ${getBoardAreaDirectionLabel(point, boardSize)}`;
+    }));
+    const subject = points.length === 2 ? 'Both' : 'These choices';
+
+    return `${directionText}. ${subject} stay away from the settled local shape; choose the direction you want Black's next plan to explore.`;
   }
 
   return `${coordText} are marked liberties for the group that needs room, so either one helps that group breathe.`;
