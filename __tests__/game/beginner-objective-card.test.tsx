@@ -28,6 +28,7 @@ describe('BeginnerObjectiveCard', () => {
 
     expect(screen.getByText('Start with a corner')).toBeTruthy();
     expect(screen.getByText('Try C7, G7, C3, or G3.')).toBeTruthy();
+    expect(screen.getByText('Before you click, name the corner edges this stone will use.')).toBeTruthy();
   });
 
   it('plays a named target from the objective card', () => {
@@ -105,6 +106,7 @@ describe('BeginnerObjectiveCard', () => {
 
     expect(screen.getByText('Make your stones work together')).toBeTruthy();
     expect(screen.getByText('Try E7 or C5.')).toBeTruthy();
+    expect(screen.getByText('Before you click, name the anchor stone and the open one-space gap.')).toBeTruthy();
   });
 
   it('matches target buttons to visible suggestion candidates when suggestions are active', () => {
