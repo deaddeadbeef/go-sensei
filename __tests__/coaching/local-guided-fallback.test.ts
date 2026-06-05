@@ -111,7 +111,7 @@ describe('local guided fallback', () => {
       conceptIds: expect.arrayContaining(['shape', 'direction-of-play']),
       actions: [{ id: 'hint', label: 'Show targets' }],
     });
-    expect(fallback?.text).toContain('Good: E7 made a one-space jump from your stone.');
+    expect(fallback?.text).toContain('Good: E7 made a one-space jump from your stone. Next, read the open gap before extending again.');
     expect(fallback?.text).toContain('Lesson: E7 is a one-space jump from C7. The empty point at D7 leaves room to grow');
     expect(fallback?.text).toContain('Next focus: Make your stones work together. Play a one-space jump from one of your stones. Try G7, E5, or C5.');
     expect(fallback?.boardFocus?.highlights).toEqual([{

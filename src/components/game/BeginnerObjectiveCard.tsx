@@ -2758,7 +2758,7 @@ function getObjectiveProgressDisplayText(
   }
 
   return progress.text.replace(
-    'Next, check whether any group is short on liberties.',
+    'Next, read the open gap before extending again.',
     `Read ${readPrompt.gapCoord} before extending again: decide whether Black should connect, defend, or keep extending.`,
   );
 }
