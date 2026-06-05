@@ -144,6 +144,7 @@ Latest completed slice:
 - Updated shape-question local guidance after H8/H2, so "good shape" practice names the fresh area extension and marks H6/F8 or F2/H4 with fresh-area reasons.
 - Updated reading-routine local guidance after H8/H2, so "read ahead" practice applies the three-question routine to the fresh-area H6/F8 or F2/H4 extension.
 - Updated territory-question local guidance after H8/H2, so fresh-area extension targets are described as loose-border territory practice instead of generic one-space jumps.
+- Browser-smoked the H8 rendered flow and suppressed paragraph-sized floating Sensei bubbles, so long typed Q&A answers stay in chat instead of covering the board.
 
 Next investigation candidates:
-- Browser-smoke the full H8/H2 fresh-area flow and inspect whether any rendered panel or chat copy still falls back to generic one-space-jump language.
+- Browser-smoke the H2 lower-right branch and inspect responsive/mobile layout for the fresh-area follow-up copy.
