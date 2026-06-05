@@ -357,7 +357,16 @@ function getPressureOpenSideFirstReadText(
   const firstCoord = pointToCoord(firstReply, board.size);
   const anchorCoord = pointToCoord(prompt.anchor, board.size);
   const stoneCoord = pointToCoord(prompt.stone, board.size);
+  const bridgeContext = getBridgeLineContext(board, prompt.anchor, prompt.stone);
   const comparePoint = prompt.replyPoints.find((point) => targetKey(point) !== targetKey(firstReply)) ?? null;
+  if (bridgeContext) {
+    const compareText = comparePoint
+      ? `, then compare ${pointToCoord(comparePoint, board.size)} from the inside.`
+      : '.';
+
+    return `Start with ${firstCoord}: it attacks ${prompt.gapCoord} from outside the ${bridgeContext.lineText} line. Recount ${anchorCoord} and ${stoneCoord} while remembering ${bridgeContext.oppositeAnchorCoord} still supports through ${bridgeContext.oppositeGapCoord}${compareText}`;
+  }
+
   const compareText = comparePoint
     ? ` Recount both stones, then compare ${pointToCoord(comparePoint, board.size)}.`
     : ' Recount both stones before extending again.';
@@ -524,6 +533,20 @@ function getPressureChoiceFeedback(prompt: OneSpaceJumpReadPrompt, reply: Point,
   const replyCoord = pointToCoord(reply, board.size);
   const anchorCoord = pointToCoord(prompt.anchor, board.size);
   const stoneCoord = pointToCoord(prompt.stone, board.size);
+  const bridgeContext = getBridgeLineContext(board, prompt.anchor, prompt.stone);
+  const comparePoint = prompt.replyPoints.find((point) => targetKey(point) !== targetKey(reply)) ?? null;
+
+  if (bridgeContext && comparePoint) {
+    const compareCoord = pointToCoord(comparePoint, board.size);
+    const openSideFirstReply = getPressureOpenSideFirstReplyPoint(board, prompt);
+    const isOutsideReply = openSideFirstReply
+      ? targetKey(openSideFirstReply) === targetKey(reply)
+      : true;
+
+    return isOutsideReply
+      ? `${replyCoord} attacks ${prompt.gapCoord} from outside the ${bridgeContext.lineText} line. ${compareCoord} is the inside comparison toward the center, so recount ${anchorCoord} and ${stoneCoord} before deciding whether the bridge needs a defense.`
+      : `${replyCoord} attacks ${prompt.gapCoord} from inside the ${bridgeContext.lineText} line. ${compareCoord} is the outside comparison, so recount ${anchorCoord} and ${stoneCoord} before deciding whether the bridge needs a defense.`;
+  }
 
   return `${replyCoord} is a good first read: it attacks the imagined White stone at ${prompt.gapCoord} and asks whether that cutting stone can live. After that, recount ${anchorCoord} and ${stoneCoord} before extending again.`;
 }
@@ -954,6 +977,7 @@ function getPressureRecount(game: GameState, prompt: OneSpaceJumpReadPrompt, rep
   const stoneCoord = pointToCoord(prompt.stone, boardSize);
   const anchorLibertyText = joinAndCoordinateList(anchorGroup.liberties.map((point) => pointToCoord(point, boardSize)));
   const stoneLibertyText = joinAndCoordinateList(stoneGroup.liberties.map((point) => pointToCoord(point, boardSize)));
+  const bridgeContext = getBridgeLineContext(game.board, prompt.anchor, prompt.stone);
   const followUpText = getPressureRecountFollowUp(
     prompt,
     anchorCoord,
@@ -963,7 +987,9 @@ function getPressureRecount(game: GameState, prompt: OneSpaceJumpReadPrompt, rep
   );
 
   return {
-    text: `After ${replyCoord}, recount the two Black sides: ${anchorCoord} has ${formatLibertyCount(anchorGroup.liberties.length)} at ${anchorLibertyText}. ${stoneCoord} has ${formatLibertyCount(stoneGroup.liberties.length)} at ${stoneLibertyText}. ${followUpText}`,
+    text: bridgeContext
+      ? `After ${replyCoord}, recount the ${bridgeContext.lineText} line: ${anchorCoord} has ${formatLibertyCount(anchorGroup.liberties.length)} at ${anchorLibertyText}. ${stoneCoord} has ${formatLibertyCount(stoneGroup.liberties.length)} at ${stoneLibertyText}. ${bridgeContext.oppositeAnchorCoord} still supports through ${bridgeContext.oppositeGapCoord}, so this read is checking whether ${anchorCoord} or ${stoneCoord} becomes short before extending again. ${followUpText}`
+      : `After ${replyCoord}, recount the two Black sides: ${anchorCoord} has ${formatLibertyCount(anchorGroup.liberties.length)} at ${anchorLibertyText}. ${stoneCoord} has ${formatLibertyCount(stoneGroup.liberties.length)} at ${stoneLibertyText}. ${followUpText}`,
     reply: copyPoint(reply),
     anchorLiberties: anchorGroup.liberties.map(copyPoint),
     stoneLiberties: stoneGroup.liberties.map(copyPoint),
