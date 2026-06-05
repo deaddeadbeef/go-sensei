@@ -2467,9 +2467,10 @@ function buildReadingRoutineAnswer(game: GameState, teachingLevel: TeachingLevel
     currentPlayer: 'black',
     teachingLevel,
   });
-  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-reading-routine-move') : [];
+  const followUpContext = objective ? getFreshAreaFollowUpContext(game, teachingLevel, objective) : null;
+  const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-reading-routine-move', followUpContext) : [];
   const action = suggestions.length > 0 ? { id: 'hint', label: 'Show targets' } : null;
-  const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
+  const targetText = objective ? formatObjectiveTargetText(objective, game.board.size, 4, followUpContext) : null;
   const anchor = lastBlackPlacedMove(game);
   const anchorCoord = anchor ? pointToCoord(anchor.point, game.board.size) : null;
   const firstSuggestion = suggestions[0];
