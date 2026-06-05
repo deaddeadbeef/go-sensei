@@ -63,8 +63,10 @@ describe('learning path recommendations', () => {
     const recommendation = getLearningRecommendation(input({ dueReviewCount: 2 }));
 
     expect(recommendation.kind).toBe('review');
-    expect(recommendation.actionLabel).toBe('Review due cards');
-    expect(recommendation.practicePlan).toContain('Solve the due positions before opening new material.');
+    expect(recommendation.title).toBe('Daily review');
+    expect(recommendation.reason).toBe('2 review positions are due before new material.');
+    expect(recommendation.actionLabel).toBe('Start daily review');
+    expect(recommendation.practicePlan).toContain('Solve the due review positions before opening new material.');
   });
 
   it('capture lesson completion recommends capture problems', () => {
