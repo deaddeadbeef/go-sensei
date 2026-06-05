@@ -1768,15 +1768,16 @@ describe('local question answer', () => {
     ]);
   });
 
-  it('explains a local guided White pass without cloud help', () => {
+  it('explains a guided White pass without implementation-mode wording', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
     const afterWhitePass = passMove(firstMove.newState);
 
     const answer = getLocalQuestionAnswer('Why did White pass?', afterWhitePass, 'guided');
 
-    expect(answer?.text).toContain('White passed because I am keeping this guided practice moving locally');
+    expect(answer?.text).toContain('White passed as a guided teaching shortcut');
     expect(answer?.text).toContain('you get the next turn right away');
+    expect(answer?.text).not.toContain('locally');
     expect(answer?.text).toContain('In a real game, players usually pass near the end');
     expect(answer?.text).toContain('two passes in a row move the game to scoring');
     expect(answer?.text).toContain("do not treat White's pass as endgame strategy");
@@ -2005,7 +2006,7 @@ describe('local question answer', () => {
     ]);
   });
 
-  it('explains the learner color and turn after the local White pass', () => {
+  it('explains the learner color and turn after the guided White pass', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
     const afterWhitePass = passMove(firstMove.newState);
@@ -2015,8 +2016,9 @@ describe('local question answer', () => {
     expect(answer?.text).toContain('You are playing Black in this guided beginner game.');
     expect(answer?.text).toContain('Black moves first; Sensei is White.');
     expect(answer?.text).toContain('It is your turn now');
-    expect(answer?.text).toContain('White just passed locally so you can keep practicing right away');
-    expect(answer?.text).toContain('that teaching shortcut is why you move again');
+    expect(answer?.text).toContain('White just passed as a guided teaching shortcut');
+    expect(answer?.text).toContain('so you can keep practicing right away');
+    expect(answer?.text).not.toContain('locally');
     expect(answer?.text).toContain('Your next move should follow the current goal: Make your stones work together. Play a one-space jump from one of your stones. Try E7 or C5.');
     expect(answer?.text).toContain('I marked the next targets so the turn status connects to the board.');
     expect(answer?.conceptIds).toEqual(expect.arrayContaining(['stones-and-board', 'shape']));

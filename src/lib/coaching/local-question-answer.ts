@@ -1617,7 +1617,7 @@ function buildPassAnswer(game: GameState, teachingLevel: TeachingLevel, q: strin
     const targetText = formatObjectiveTargetText(objective, game.board.size);
     lines.push(`Your better move is: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}`);
   } else if (move?.type === 'pass' && move.color === 'white' && game.currentPlayer === 'black') {
-    lines.push('White passed because I am keeping this guided practice moving locally: you get the next turn right away so you can try the next beginner idea.');
+    lines.push('White passed as a guided teaching shortcut: you get the next turn right away so you can try the next beginner idea.');
   } else if (move?.type === 'pass') {
     lines.push(`${move.color === 'black' ? 'Black' : 'White'} passed, which means that player chose not to place a stone on that turn.`);
   } else {
@@ -1669,7 +1669,7 @@ function buildUndoAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQu
   if (!move) {
     lines.push('There is nothing to undo yet; no stones have been played.');
   } else if (move.type === 'pass' && move.color === 'white' && game.currentPlayer === 'black') {
-    lines.push('Yes. The Undo button will take back the local White pass and your previous Black move, returning you to the choice before that turn.');
+    lines.push('Yes. The Undo button will take back the guided White pass and your previous Black move, returning you to the choice before that turn.');
     lines.push('Use it for misclicks, then replay one of the marked targets.');
   } else if (move.color === 'white') {
     lines.push("Yes. The Undo button will take back White's last move and your previous Black move, returning you to your last decision.");
@@ -2030,7 +2030,7 @@ function buildTurnAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQu
     lines.push('It is your turn now: place one black stone on an empty intersection.');
 
     if (move?.type === 'pass' && move.color === 'white') {
-      lines.push('White just passed locally so you can keep practicing right away; that teaching shortcut is why you move again.');
+      lines.push('White just passed as a guided teaching shortcut, so you can keep practicing right away.');
     } else if (move?.type === 'place' && move.color === 'white') {
       lines.push(`White just played ${pointToCoord(move.point, game.board.size)}, so the turn returned to Black.`);
     } else if (!move) {
