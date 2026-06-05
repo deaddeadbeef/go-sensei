@@ -18,7 +18,7 @@ import { useReviewStore } from '@/stores/review-store';
 import { useConceptStore } from '@/stores/concept-store';
 import { problemCategoryTitle } from '@/lib/learning-path/concept-practice';
 import { getLearningRecommendation } from '@/lib/learning-path/recommendations';
-import { getPrimarySolutionLine, getProblemSolutionTakeaway } from '@/lib/problems/solution-review';
+import { formatProblemPoint, getPrimarySolutionLine, getProblemSolutionTakeaway } from '@/lib/problems/solution-review';
 import { ProblemReadingPlan } from './ProblemReadingPlan';
 import { ProblemSolutionOverlay, ProblemSolutionPanel } from './ProblemSolutionReview';
 import type { BoardSize } from '@/lib/go-engine/types';
@@ -247,6 +247,10 @@ export function ProblemView() {
   const playerColor = problem.playerColor;
   const solutionSteps = getPrimarySolutionLine(problem);
   const solutionTakeaway = getProblemSolutionTakeaway(problem, solutionSteps);
+  const firstStudentSolutionStep = solutionSteps.find((step) => step.role === 'student') ?? null;
+  const firstStudentMoveLabel = firstStudentSolutionStep
+    ? formatProblemPoint(firstStudentSolutionStep.move, boardSize)
+    : null;
   const revealSolution = problemInteraction.status !== 'playing';
   const hintActionLabel = problemInteraction.showHint ? 'Hint shown' : 'Show hint';
 
@@ -407,6 +411,11 @@ export function ProblemView() {
                 <p className="text-lg font-bold" style={{ color: COLORS.overlay.positive }}>
                   🎉 Solved!
                 </p>
+                <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
+                  {firstStudentMoveLabel
+                    ? `You found ${firstStudentMoveLabel}. Replay the numbered line once so the pattern sticks.`
+                    : 'Replay the numbered line once so the pattern sticks.'}
+                </p>
               </motion.div>
             )}
             {problemInteraction.status === 'failed' && (
@@ -419,7 +428,12 @@ export function ProblemView() {
                 exit={{ opacity: 0, y: -10 }}
               >
                 <p className="text-lg font-bold" style={{ color: COLORS.overlay.danger }}>
-                  ✕ Failed
+                  Study the answer
+                </p>
+                <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
+                  {firstStudentMoveLabel
+                    ? `Start by replaying ${firstStudentMoveLabel}, then try the problem again from the first move.`
+                    : 'Replay the numbered line, then try the problem again from the first move.'}
                 </p>
               </motion.div>
             )}
