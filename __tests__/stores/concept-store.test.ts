@@ -92,6 +92,7 @@ describe('concept store', () => {
     act(() => useConceptStore.getState().recordEncounter('stones-and-board'));
     const unlocked = useConceptStore.getState().getUnlockedConcepts();
     expect(unlocked).toContain('liberties');
+    expect(unlocked).toContain('groups');
   });
 
   it('getUnlockedConcepts does NOT unlock when prerequisites unmet', () => {

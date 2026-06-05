@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LessonView } from '@/components/lessons/LessonView';
 import { useConceptStore } from '@/stores/concept-store';
@@ -38,5 +38,19 @@ describe('LessonView answer reveal', () => {
 
     expect(screen.getByText('Answer shown. Click the highlighted point to continue.')).toBeTruthy();
     expect((screen.getByRole('button', { name: 'Click highlighted answer...' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('credits board basics when the first groups lesson is completed', () => {
+    act(() => {
+      useGameStore.getState().startLesson('groups');
+      useGameStore.setState({ currentStep: 4 });
+    });
+
+    render(<LessonView />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Finish/ }));
+
+    expect(useConceptStore.getState().getMastery('stones-and-board').level).toBe(2);
+    expect(useConceptStore.getState().getMastery('groups').level).toBe(2);
   });
 });
