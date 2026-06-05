@@ -336,7 +336,7 @@ function findStateBeforeLastBlackPlacement(game: GameState): {
   return null;
 }
 
-function successText(objective: BeginnerObjective, coord: string): string {
+function successText(objective: BeginnerObjective, coord: string, point: Point, boardSize: BoardSize): string {
   switch (objective.id) {
     case 'claim-corner':
       return `Good: ${coord} hit the marked corner goal. Next, make that stone work with another one.`;
@@ -345,7 +345,7 @@ function successText(objective: BeginnerObjective, coord: string): string {
     case 'look-for-weak-groups':
       return `Good: ${coord} gave the weak group another liberty. Next, look for the biggest safe move.`;
     case 'choose-new-area':
-      return `Good: ${coord} chose a new area after the local shape settled. Now check whether the new shape creates a useful follow-up.`;
+      return `Good: ${coord} chose the ${getBoardAreaDirectionLabel(point, boardSize)} after the local shape settled. Before the next move, say what this ${coord} stone is trying to open so White's reply has context.`;
   }
 }
 
@@ -383,15 +383,17 @@ export function getBeginnerObjectiveProgress(
     teachingLevel,
   });
 
-  if (!priorObjective || priorObjective.id === 'choose-new-area' || priorObjective.targetPoints.length === 0) return null;
+  if (!priorObjective || priorObjective.targetPoints.length === 0) return null;
 
   const coord = pointToCoord(lastBlackPlacement.move.point, game.board.size);
   const metObjective = priorObjective.targetPoints.some((point) => pointEquals(point, lastBlackPlacement.move.point));
 
+  if (priorObjective.id === 'choose-new-area' && !metObjective) return null;
+
   return {
     status: metObjective ? 'met' : 'missed',
     text: metObjective
-      ? successText(priorObjective, coord)
+      ? successText(priorObjective, coord, lastBlackPlacement.move.point, game.board.size)
       : missedText(priorObjective, coord, game.board.size),
     lastMove: lastBlackPlacement.move.point,
     objectiveId: priorObjective.id,

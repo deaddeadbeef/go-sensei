@@ -208,6 +208,34 @@ describe('beginner objectives', () => {
     expect(formatObjectiveTargetText(objective, 9)).toBe('Try H8 or H2.');
   });
 
+  it('reports successful fresh-area choices without warning on off-target local moves', () => {
+    const settledBoard = boardWith([
+      { point: { x: 2, y: 2 }, color: 'black' },
+      { point: { x: 4, y: 2 }, color: 'black' },
+      { point: { x: 6, y: 2 }, color: 'black' },
+      { point: { x: 2, y: 4 }, color: 'black' },
+      { point: { x: 3, y: 4 }, color: 'black' },
+      { point: { x: 4, y: 4 }, color: 'black' },
+      { point: { x: 6, y: 4 }, color: 'black' },
+      { point: { x: 2, y: 6 }, color: 'black' },
+      { point: { x: 4, y: 6 }, color: 'black' },
+      { point: { x: 6, y: 6 }, color: 'black' },
+    ]);
+    const settledGame = { ...createGame(9), board: settledBoard };
+    const freshAreaMove = playMove(settledGame, { x: 7, y: 1 });
+    const offTargetMove = playMove(settledGame, { x: 1, y: 1 });
+    if (!freshAreaMove.success) throw new Error('test setup fresh-area move failed');
+    if (!offTargetMove.success) throw new Error('test setup off-target move failed');
+
+    expect(getBeginnerObjectiveProgress(freshAreaMove.newState, 'guided')).toMatchObject({
+      status: 'met',
+      objectiveId: 'choose-new-area',
+      lastMove: { x: 7, y: 1 },
+      text: 'Good: H8 chose the upper-right direction after the local shape settled. Before the next move, say what this H8 stone is trying to open so White\'s reply has context.',
+    });
+    expect(getBeginnerObjectiveProgress(offTargetMove.newState, 'guided')).toBeNull();
+  });
+
   it('reports when the learner completed the marked opening objective', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
