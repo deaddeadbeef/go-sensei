@@ -107,6 +107,17 @@ function NextMovePanel({
           <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.textDim }}>
             {recommendation.reason}
           </p>
+          <div
+            className="mt-2 rounded-lg border px-3 py-2 text-sm leading-relaxed"
+            style={{ borderColor: `${COLORS.accent}55`, backgroundColor: `${COLORS.accent}12` }}
+          >
+            <span className="font-semibold" style={{ color: COLORS.accent }}>
+              Finish line:{' '}
+            </span>
+            <span style={{ color: COLORS.text }}>
+              {recommendation.finishLine}
+            </span>
+          </div>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
           <button
