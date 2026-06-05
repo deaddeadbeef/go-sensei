@@ -159,6 +159,61 @@ function getWeakGroupLiberties(board: BoardState, color: StoneColor): Point[] {
   return weakGroups[0]?.liberties ?? [];
 }
 
+function distance(a: Point, b: Point): number {
+  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+}
+
+function countAdjacentStones(board: BoardState, point: Point, color: StoneColor): number {
+  return getAdjacentPoints(board, point)
+    .filter((adjacent) => getStone(board, adjacent) === color)
+    .length;
+}
+
+function getFreshAreaAnchor(board: BoardState, color: StoneColor, moveHistory?: Move[]): Point | null {
+  const recent = getRecentPlacedPoints(moveHistory, color)
+    .find((point) => getStone(board, point) === color);
+  if (recent) return recent;
+
+  const center = { x: Math.floor(board.size / 2), y: Math.floor(board.size / 2) };
+  return getStones(board, color)
+    .sort((a, b) => (
+      countAdjacentStones(board, b, color) - countAdjacentStones(board, a, color)
+      || distance(a, center) - distance(b, center)
+    ))[0] ?? null;
+}
+
+function getFreshAreaTargets(board: BoardState, color: StoneColor, moveHistory?: Move[]): Point[] {
+  const anchor = getFreshAreaAnchor(board, color, moveHistory);
+  if (!anchor) return [];
+
+  const stones = getStones(board, color);
+  const candidates: Point[] = [];
+
+  for (let y = 1; y < board.size - 1; y++) {
+    for (let x = 1; x < board.size - 1; x++) {
+      const point = { x, y };
+      if (getStone(board, point) !== null) continue;
+      if (isAdjacentToColor(board, point, color)) continue;
+      candidates.push(point);
+    }
+  }
+
+  return candidates
+    .sort((a, b) => (
+      distance(b, anchor) - distance(a, anchor)
+      || distanceToNearestStone(stones, b) - distanceToNearestStone(stones, a)
+      || a.y - b.y
+      || a.x - b.x
+    ))
+    .slice(0, 2);
+}
+
+function distanceToNearestStone(stones: Point[], point: Point): number {
+  if (stones.length === 0) return 0;
+
+  return Math.min(...stones.map((stone) => distance(point, stone)));
+}
+
 function openingObjective(targetPoints: Point[] = CORNER_TARGETS_9X9): BeginnerObjective {
   return {
     id: 'claim-corner',
@@ -194,13 +249,13 @@ function weakGroupObjective(targetPoints: Point[] = []): BeginnerObjective {
   };
 }
 
-function chooseNewAreaObjective(): BeginnerObjective {
+function chooseNewAreaObjective(targetPoints: Point[] = []): BeginnerObjective {
   return {
     id: 'choose-new-area',
     title: 'Choose a new area',
     instruction: 'Your nearby groups are safe for now. Pick a fresh area instead of rereading the settled shape.',
     why: 'When nothing is short on liberties, the next useful habit is to scan for a new direction.',
-    targetPoints: [],
+    targetPoints,
     conceptIds: ['direction-of-play', 'shape'],
   };
 }
@@ -234,7 +289,7 @@ export function getBeginnerObjective(input: BeginnerObjectiveInput): BeginnerObj
       return openingObjective(openCornerTargets);
     }
 
-    return chooseNewAreaObjective();
+    return chooseNewAreaObjective(getFreshAreaTargets(board, 'black', input.moveHistory));
   }
 
   if (input.moveCount <= 2) {
@@ -316,7 +371,7 @@ export function getBeginnerObjectiveProgress(
     teachingLevel,
   });
 
-  if (!priorObjective || priorObjective.targetPoints.length === 0) return null;
+  if (!priorObjective || priorObjective.id === 'choose-new-area' || priorObjective.targetPoints.length === 0) return null;
 
   const coord = pointToCoord(lastBlackPlacement.move.point, game.board.size);
   const metObjective = priorObjective.targetPoints.some((point) => pointEquals(point, lastBlackPlacement.move.point));

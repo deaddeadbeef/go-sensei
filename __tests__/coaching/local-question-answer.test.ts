@@ -643,8 +643,22 @@ describe('local question answer', () => {
 
     expect(answer?.text).toContain('Your next job is: Choose a new area.');
     expect(answer?.text).toContain('Your nearby groups are safe for now. Pick a fresh area instead of rereading the settled shape.');
+    expect(answer?.text).toContain('Try H8 or H2.');
     expect(answer?.text).not.toContain('Give weak groups room');
-    expect(answer?.boardFocus).toBeUndefined();
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-objective-move-7,1',
+        point: { x: 7, y: 1 },
+        rank: 1,
+        reason: 'Consider H8 only if it starts a fresh direction away from the settled local shape.',
+      },
+      {
+        id: 'local-objective-move-7,7',
+        point: { x: 7, y: 7 },
+        rank: 2,
+        reason: 'Consider H2 only if it starts a fresh direction away from the settled local shape.',
+      },
+    ]);
   });
 
   it('reviews a successful beginner move without cloud help', () => {
