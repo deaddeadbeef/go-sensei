@@ -135,7 +135,7 @@ export function LessonView() {
   const nextButtonLabel = lessonInteraction.answerRevealed
     ? 'Answer shown on board'
     : lessonInteraction.awaitingClick
-      ? 'Click the board...'
+      ? 'Answer on board first'
       : 'Next →';
 
   const handlePrev = useCallback(() => prevStep(), [prevStep]);
