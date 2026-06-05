@@ -17,6 +17,7 @@ import {
 import { COLORS } from '@/utils/colors';
 import { LESSON_TRANSITION } from '@/utils/animation';
 import { useConceptStore } from '@/stores/concept-store';
+import { pointToCoord } from '@/lib/go-engine/serialization';
 import type { BoardSize } from '@/lib/go-engine/types';
 
 // ---------------------------------------------------------------------------
@@ -128,6 +129,9 @@ export function LessonView() {
   const answerHighlight = lessonInteraction.answerRevealed && lessonInteraction.expectedMove
     ? [{ point: lessonInteraction.expectedMove, color: 'blue' as const, label: 'Answer' }]
     : [];
+  const revealedAnswerCoord = lessonInteraction.answerRevealed && lessonInteraction.expectedMove
+    ? pointToCoord(lessonInteraction.expectedMove, boardSize)
+    : null;
   const nextButtonLabel = lessonInteraction.answerRevealed
     ? 'Answer shown on board'
     : lessonInteraction.awaitingClick
@@ -360,7 +364,7 @@ export function LessonView() {
                   )}
                   {lessonInteraction.answerRevealed && (
                     <p className="mt-2 text-xs font-medium" style={{ color: COLORS.ui.textPrimary }}>
-                      Answer shown. Click the highlighted point to continue.
+                      Answer shown at {revealedAnswerCoord}. Click that highlighted point to continue.
                     </p>
                   )}
                   {lessonInteraction.attempts > 0 && (
