@@ -363,14 +363,14 @@ export function SkillTree() {
           </motion.div>
         )}
 
-        {/* Back button */}
+        {/* Return to board button */}
         <div className="text-center mt-8">
           <button
             onClick={returnToGame}
             className="px-6 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-90"
             style={{ backgroundColor: COLORS.card, color: COLORS.text, border: `1px solid ${COLORS.border}` }}
           >
-            ← Back to Game
+            Return to board
           </button>
         </div>
       </div>
