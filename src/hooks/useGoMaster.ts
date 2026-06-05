@@ -254,7 +254,7 @@ export function useGoMaster() {
       }
 
       if (fallback.shouldPassSensei && state.game.currentPlayer !== 'black') {
-        passSenseiIfNeeded('White passes so you can try the next idea.');
+        passSenseiIfNeeded('White takes a teaching pass so you can try the next idea.');
       }
 
       const focus = fallback.boardFocus;
