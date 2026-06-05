@@ -177,7 +177,7 @@ describe('DailyReview', () => {
     expect(screen.getByText('Study the answer')).toBeTruthy();
     expect(screen.getByText("Replay C8 before finishing, so this review becomes tomorrow's memory.")).toBeTruthy();
     expect(screen.getByText('Study routine')).toBeTruthy();
-    expect(screen.getByText('First move to remember: C8. Cover the numbers, say why that move works, then reset and solve from memory.')).toBeTruthy();
+    expect(screen.getByText('First move to remember: C8. Cover the numbers and say why C8 works before moving on.')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Finish Review' }));
 
