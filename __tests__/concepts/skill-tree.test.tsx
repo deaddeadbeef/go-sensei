@@ -119,6 +119,7 @@ describe('SkillTree', () => {
     expect(screen.getByText('Locked for now')).toBeTruthy();
     expect(screen.getByText('Unlock first')).toBeTruthy();
     expect(screen.getByText('Build the prerequisite ideas before practicing this concept directly.')).toBeTruthy();
+    expect(screen.getByText('Start prerequisite lesson: What is a Group?')).toBeTruthy();
     expect(screen.getByText('View Stones & Board requirement')).toBeTruthy();
     expect(screen.queryByText('Practice this')).toBeNull();
     expect(screen.queryByText('Start lesson: Liberties: Breathing Room')).toBeNull();
@@ -126,6 +127,16 @@ describe('SkillTree', () => {
     clickButtonText('View Stones & Board requirement');
 
     expect(screen.getByTestId('skill-tree-detail').textContent).toContain('Stones & Board');
+  });
+
+  it('starts a missing prerequisite lesson from a locked concept detail', () => {
+    render(<SkillTree />);
+
+    clickButtonText('Liberties');
+    clickButtonText('Start prerequisite lesson: What is a Group?');
+
+    expect(useGameStore.getState().appPhase).toBe('lesson');
+    expect(useGameStore.getState().currentLessonId).toBe('groups');
   });
 
   it('returns learners to the board from the skill tree', () => {
