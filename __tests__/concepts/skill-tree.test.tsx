@@ -15,27 +15,32 @@ type MockMotionProps = {
   [key: string]: unknown;
 };
 
-vi.mock('framer-motion', () => ({
-  motion: (() => {
-    const stripMotionProps = (props: MockMotionProps) => {
-      const domProps = { ...props };
-      delete domProps.initial;
-      delete domProps.animate;
-      delete domProps.transition;
+vi.mock('framer-motion', async () => {
+  const { forwardRef } = await vi.importActual<typeof import('react')>('react');
 
-      return domProps;
-    };
+  const stripMotionProps = (props: MockMotionProps) => {
+    const domProps = { ...props };
+    delete domProps.initial;
+    delete domProps.animate;
+    delete domProps.transition;
 
-    return {
-      div: ({ children, ...props }: MockMotionProps) => (
-        <div {...stripMotionProps(props)}>{children}</div>
-      ),
+    return domProps;
+  };
+
+  const MotionDiv = forwardRef<HTMLDivElement, MockMotionProps>(({ children, ...props }, ref) => (
+    <div ref={ref} {...stripMotionProps(props)}>{children}</div>
+  ));
+  MotionDiv.displayName = 'MockMotionDiv';
+
+  return {
+    motion: {
+      div: MotionDiv,
       button: ({ children, ...props }: MockMotionProps) => (
         <button {...stripMotionProps(props)}>{children}</button>
       ),
-    };
-  })(),
-}));
+    },
+  };
+});
 
 function clickButtonText(text: string) {
   const button = screen.getByText(text).closest('button');
@@ -54,6 +59,8 @@ describe('SkillTree', () => {
   afterEach(() => cleanup());
 
   it('offers lesson and problem practice from a concept detail', () => {
+    useConceptStore.getState().setMasteryLevel('stones-and-board', 1);
+
     render(<SkillTree />);
 
     clickButtonText('Liberties');
@@ -72,7 +79,64 @@ describe('SkillTree', () => {
     expect(useGameStore.getState().preferredProblemFilter).toBe('capture');
   });
 
+  it('shows missing prerequisites instead of practice actions for locked concepts', () => {
+    render(<SkillTree />);
+
+    clickButtonText('Liberties');
+
+    expect(screen.getByText('Locked for now')).toBeTruthy();
+    expect(screen.getByText('Unlock first')).toBeTruthy();
+    expect(screen.getByText('Build the prerequisite ideas before practicing this concept directly.')).toBeTruthy();
+    expect(screen.getByText('View Stones & Board requirement')).toBeTruthy();
+    expect(screen.queryByText('Practice this')).toBeNull();
+    expect(screen.queryByText('Start lesson: Liberties: Breathing Room')).toBeNull();
+
+    clickButtonText('View Stones & Board requirement');
+
+    expect(screen.getByRole('heading', { name: 'Stones & Board' })).toBeTruthy();
+  });
+
+  it('scrolls selected concept details into view', () => {
+    const scrollIntoView = vi.fn();
+    let scheduledFrame: FrameRequestCallback | null = null;
+    const originalScrollIntoView = Element.prototype.scrollIntoView;
+    const originalRequestAnimationFrame = window.requestAnimationFrame;
+
+    Object.defineProperty(Element.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoView,
+    });
+    Object.defineProperty(window, 'requestAnimationFrame', {
+      configurable: true,
+      value: (callback: FrameRequestCallback) => {
+        scheduledFrame = callback;
+        return 1;
+      },
+    });
+
+    try {
+      render(<SkillTree />);
+
+      clickButtonText('Liberties');
+      scheduledFrame?.(0);
+
+      expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+    } finally {
+      Object.defineProperty(Element.prototype, 'scrollIntoView', {
+        configurable: true,
+        value: originalScrollIntoView,
+      });
+      Object.defineProperty(window, 'requestAnimationFrame', {
+        configurable: true,
+        value: originalRequestAnimationFrame,
+      });
+    }
+  });
+
   it('routes concepts without a direct lesson to matching problems', () => {
+    useConceptStore.getState().setMasteryLevel('scoring', 1);
+    useConceptStore.getState().setMasteryLevel('atari', 1);
+
     render(<SkillTree />);
 
     clickButtonText('Sente & Gote');

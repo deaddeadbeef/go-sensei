@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { CONCEPTS } from '@/lib/concepts/concept-data';
 import {
@@ -47,6 +47,7 @@ const MASTERY_LABELS: Record<MasteryLevel, string> = {
 
 export function SkillTree() {
   const [selectedConcept, setSelectedConcept] = useState<Concept | null>(null);
+  const detailRef = useRef<HTMLDivElement | null>(null);
   const getMastery = useConceptStore((s) => s.getMastery);
   const getStats = useConceptStore((s) => s.getStats);
   const getUnlockedConcepts = useConceptStore((s) => s.getUnlockedConcepts);
@@ -61,11 +62,37 @@ export function SkillTree() {
   const selectedProblemCategory = selectedConcept
     ? findProblemCategoryForConcept(selectedConcept.id)
     : null;
+  const selectedMastery = selectedConcept ? getMastery(selectedConcept.id) : null;
+  const selectedIsUnlocked = selectedConcept ? unlocked.has(selectedConcept.id) : false;
+  const missingPrerequisites = selectedConcept
+    ? selectedConcept.prerequisites
+      .map((prereqId) => CONCEPTS.find((concept) => concept.id === prereqId))
+      .filter((concept): concept is Concept => Boolean(concept))
+      .filter((concept) => getMastery(concept.id).level < 1)
+    : [];
 
   const conceptsByCategory = CATEGORY_ORDER.map((cat) => ({
     category: cat,
     concepts: CONCEPTS.filter((c) => c.category === cat),
   }));
+
+  function selectConcept(concept: Concept) {
+    const nextConcept = selectedConcept?.id === concept.id ? null : concept;
+
+    setSelectedConcept(nextConcept);
+
+    if (nextConcept) {
+      const scrollDetailIntoView = () => {
+        detailRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+      };
+
+      if (typeof window.requestAnimationFrame === 'function') {
+        window.requestAnimationFrame(scrollDetailIntoView);
+      } else {
+        scrollDetailIntoView();
+      }
+    }
+  }
 
   return (
     <div className="flex-1 overflow-y-auto p-6" style={{ backgroundColor: COLORS.bg }}>
@@ -122,7 +149,7 @@ export function SkillTree() {
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: catIdx * 0.1 + idx * 0.03 }}
-                    onClick={() => setSelectedConcept(isSelected ? null : concept)}
+                    onClick={() => selectConcept(concept)}
                     className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                     style={{
                       backgroundColor: isSelected ? COLORS.cardHover : (isUnlocked ? COLORS.card : COLORS.locked),
@@ -147,9 +174,10 @@ export function SkillTree() {
         {/* Detail panel */}
         {selectedConcept && (
           <motion.div
+            ref={detailRef}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-4 p-4 rounded-xl"
+            className="mt-4 scroll-mt-20 p-4 rounded-xl"
             style={{ backgroundColor: COLORS.card, border: `1px solid ${COLORS.border}` }}
           >
             <div className="flex items-center justify-between mb-2">
@@ -159,11 +187,17 @@ export function SkillTree() {
               <span
                 className="text-xs px-2 py-0.5 rounded-full"
                 style={{
-                  backgroundColor: COLORS.mastery[getMastery(selectedConcept.id).level as MasteryLevel] + '22',
-                  color: COLORS.mastery[getMastery(selectedConcept.id).level as MasteryLevel],
+                  backgroundColor: selectedIsUnlocked
+                    ? COLORS.mastery[(selectedMastery?.level ?? 0) as MasteryLevel] + '22'
+                    : `${COLORS.locked}cc`,
+                  color: selectedIsUnlocked
+                    ? COLORS.mastery[(selectedMastery?.level ?? 0) as MasteryLevel]
+                    : COLORS.textDim,
                 }}
               >
-                {MASTERY_LABELS[getMastery(selectedConcept.id).level as MasteryLevel]}
+                {selectedIsUnlocked
+                  ? MASTERY_LABELS[(selectedMastery?.level ?? 0) as MasteryLevel]
+                  : 'Locked for now'}
               </span>
             </div>
             <p className="text-sm mb-3" style={{ color: COLORS.text }}>
@@ -182,38 +216,70 @@ export function SkillTree() {
                 Encountered {getMastery(selectedConcept.id).encounterCount} times
               </p>
             )}
-            <div className="mt-4 border-t pt-3" style={{ borderColor: COLORS.border }}>
-              <p className="text-xs font-semibold uppercase" style={{ color: COLORS.textDim }}>
-                Practice this
-              </p>
-              <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                {selectedLesson && (
+            {selectedIsUnlocked ? (
+              <div className="mt-4 border-t pt-3" style={{ borderColor: COLORS.border }}>
+                <p className="text-xs font-semibold uppercase" style={{ color: COLORS.textDim }}>
+                  Practice this
+                </p>
+                <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                  {selectedLesson && (
+                    <button
+                      onClick={() => startLesson(selectedLesson.id)}
+                      className="rounded-lg px-3 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
+                      style={{ backgroundColor: COLORS.accent, color: COLORS.bg }}
+                    >
+                      Start lesson: {selectedLesson.title}
+                    </button>
+                  )}
+                  {selectedProblemCategory && (
+                    <button
+                      onClick={() => showProblems(selectedProblemCategory)}
+                      className="rounded-lg px-3 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
+                      style={{ backgroundColor: COLORS.cardHover, color: COLORS.text, border: `1px solid ${COLORS.border}` }}
+                    >
+                      Practice {problemCategoryTitle(selectedProblemCategory).toLowerCase()} problems
+                    </button>
+                  )}
                   <button
-                    onClick={() => startLesson(selectedLesson.id)}
-                    className="rounded-lg px-3 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
-                    style={{ backgroundColor: COLORS.accent, color: COLORS.bg }}
-                  >
-                    Start lesson: {selectedLesson.title}
-                  </button>
-                )}
-                {selectedProblemCategory && (
-                  <button
-                    onClick={() => showProblems(selectedProblemCategory)}
+                    onClick={showLearningPath}
                     className="rounded-lg px-3 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
                     style={{ backgroundColor: COLORS.cardHover, color: COLORS.text, border: `1px solid ${COLORS.border}` }}
                   >
-                    Practice {problemCategoryTitle(selectedProblemCategory).toLowerCase()} problems
+                    Learning path
                   </button>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4 border-t pt-3" style={{ borderColor: COLORS.border }}>
+                <p className="text-xs font-semibold uppercase" style={{ color: COLORS.textDim }}>
+                  Unlock first
+                </p>
+                <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.text }}>
+                  Build the prerequisite ideas before practicing this concept directly.
+                </p>
+                {missingPrerequisites.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {missingPrerequisites.map((concept) => (
+                      <button
+                        key={concept.id}
+                        onClick={() => selectConcept(concept)}
+                        className="rounded-lg px-3 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
+                        style={{ backgroundColor: COLORS.cardHover, color: COLORS.text, border: `1px solid ${COLORS.border}` }}
+                      >
+                        View {concept.name} requirement
+                      </button>
+                    ))}
+                  </div>
                 )}
                 <button
                   onClick={showLearningPath}
-                  className="rounded-lg px-3 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
-                  style={{ backgroundColor: COLORS.cardHover, color: COLORS.text, border: `1px solid ${COLORS.border}` }}
+                  className="mt-3 rounded-lg px-3 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: COLORS.accent, color: COLORS.bg }}
                 >
-                  Learning path
+                  Follow learning path
                 </button>
               </div>
-            </div>
+            )}
           </motion.div>
         )}
 
