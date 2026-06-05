@@ -119,7 +119,7 @@ function NextMovePanel({
             className="rounded-lg px-3 py-2 text-sm font-medium transition-all hover:opacity-90"
             style={{ backgroundColor: COLORS.cardHover, color: COLORS.text }}
           >
-            Learning path
+            See full learning path
           </button>
         </div>
       </div>
