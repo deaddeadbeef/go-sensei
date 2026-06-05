@@ -20,6 +20,37 @@ const SURFACE_STATUS: Record<Exclude<AppPhase, 'game'>, string> = {
   dashboard: 'Progress dashboard',
 };
 
+const NAV_BUTTON_CLASS = [
+  'flex h-7 w-7 shrink-0 items-center justify-center rounded-sm text-sm opacity-70 transition-opacity',
+  'hover:opacity-100',
+  'sm:h-auto sm:w-auto sm:rounded-none sm:opacity-60',
+].join(' ');
+
+function NavButton({
+  label,
+  mobileLabel,
+  desktopLabel,
+  onClick,
+}: {
+  label: string;
+  mobileLabel: string;
+  desktopLabel: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={NAV_BUTTON_CLASS}
+      style={{ color: COLORS.ui.textSecondary }}
+      title={label}
+      aria-label={label}
+    >
+      <span aria-hidden="true" className="leading-none sm:hidden">{mobileLabel}</span>
+      <span className="hidden sm:inline">{desktopLabel}</span>
+    </button>
+  );
+}
+
 export function SenseiBar({ onSettingsClick, isLoggedIn }: SenseiBarProps) {
   const moveCount = useGameStore((s) => s.game.moveHistory.length);
   const captures = useGameStore((s) => s.game.captures);
@@ -36,30 +67,33 @@ export function SenseiBar({ onSettingsClick, isLoggedIn }: SenseiBarProps) {
 
   return (
     <div
-      className="flex items-center justify-between px-4 h-12 shrink-0"
+      data-testid="sensei-bar"
+      className="flex h-12 shrink-0 items-center gap-1 overflow-hidden px-2 sm:gap-4 sm:px-4"
       style={{ backgroundColor: COLORS.ui.bgCard, borderBottom: `1px solid ${COLORS.ui.bgPrimary}` }}
     >
-      <div className="flex items-center gap-2">
-        <span className="text-lg font-bold" style={{ color: COLORS.ui.accent }}>碁 Go Sensei</span>
+      <div className="flex shrink-0 items-center gap-2">
+        <span className="whitespace-nowrap text-base font-bold sm:text-lg" style={{ color: COLORS.ui.accent }}>
+          碁 Go<span className="hidden sm:inline"> Sensei</span>
+        </span>
       </div>
-      <div className="flex items-center gap-4 text-xs" style={{ color: COLORS.ui.textSecondary }}>
+      <div className="flex min-w-0 flex-1 items-center justify-center gap-1.5 text-[11px] sm:gap-4 sm:text-xs" style={{ color: COLORS.ui.textSecondary }}>
         {surfaceStatus && (
-          <span className="font-medium" style={{ color: COLORS.ui.textPrimary }}>
+          <span className="truncate font-medium" style={{ color: COLORS.ui.textPrimary }}>
             {surfaceStatus}
           </span>
         )}
         {!surfaceStatus && phase === 'playing' && (
           <>
-            <span>Move {moveCount}</span>
-            <span className="flex items-center gap-1">
+            <span className="whitespace-nowrap">Move {moveCount}</span>
+            <span className="hidden items-center gap-1 sm:flex">
               <span className="inline-block w-3 h-3 rounded-full bg-black border border-gray-600" />
               {captures.black}
             </span>
-            <span className="flex items-center gap-1">
+            <span className="hidden items-center gap-1 sm:flex">
               <span className="inline-block w-3 h-3 rounded-full bg-white border border-gray-400" />
               {captures.white}
             </span>
-            <div className="flex items-center gap-1">
+            <div className="flex shrink-0 items-center gap-1">
               {isAiThinking ? (
                 <motion.div
                   className="w-3 h-3 rounded-full bg-white border border-gray-400"
@@ -71,7 +105,7 @@ export function SenseiBar({ onSettingsClick, isLoggedIn }: SenseiBarProps) {
                   className={`inline-block w-3 h-3 rounded-full border ${currentPlayer === 'black' ? 'bg-black border-gray-600' : 'bg-white border-gray-400'}`}
                 />
               )}
-              <span>{turnLabel}</span>
+              <span className="hidden sm:inline">{turnLabel}</span>
             </div>
           </>
         )}
@@ -79,80 +113,64 @@ export function SenseiBar({ onSettingsClick, isLoggedIn }: SenseiBarProps) {
         {!surfaceStatus && phase === 'scoring' && <span>Scoring</span>}
         {!surfaceStatus && phase === 'finished' && <span>Game Over</span>}
       </div>
-      <div className="flex items-center gap-2">
+      <div data-testid="sensei-bar-actions" className="flex shrink-0 items-center gap-0.5 sm:gap-2">
         {isLoggedIn && (
-          <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: COLORS.overlay.positive }} title="Connected to GitHub" />
+          <span className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: COLORS.overlay.positive }} title="Connected to GitHub" />
         )}
-        <button
+        <NavButton
           onClick={() => useGameStore.getState().showLearningPath()}
-          className="text-sm opacity-60 hover:opacity-100 transition-opacity"
-          style={{ color: COLORS.ui.textSecondary }}
-          title="Learning Path"
-        >
-          Path
-        </button>
+          label="Learning Path"
+          mobileLabel="Path"
+          desktopLabel="Path"
+        />
         {appPhase === 'game' && (
           <>
-            <button
+            <NavButton
               onClick={() => useGameStore.getState().showLessons()}
-              className="text-sm opacity-60 hover:opacity-100 transition-opacity"
-              style={{ color: COLORS.ui.textSecondary }}
-              title="Learn Go"
-            >
-              📚 Learn
-            </button>
-            <button
+              label="Learn Go"
+              mobileLabel="📚"
+              desktopLabel="📚 Learn"
+            />
+            <NavButton
               onClick={() => useGameStore.getState().showProblems()}
-              className="text-sm opacity-60 hover:opacity-100 transition-opacity"
-              style={{ color: COLORS.ui.textSecondary }}
-              title="Solve Tsumego"
-            >
-              🧩 Problems
-            </button>
-            <button
+              label="Solve Tsumego"
+              mobileLabel="🧩"
+              desktopLabel="🧩 Problems"
+            />
+            <NavButton
               onClick={() => useGameStore.getState().showSkillTree()}
-              className="text-sm opacity-60 hover:opacity-100 transition-opacity"
-              style={{ color: COLORS.ui.textSecondary }}
-              title="Skill Tree"
-            >
-              🌳 Skills
-            </button>
-            <button
+              label="Skill Tree"
+              mobileLabel="🌳"
+              desktopLabel="🌳 Skills"
+            />
+            <NavButton
               onClick={() => useGameStore.getState().showReview()}
-              className="text-sm opacity-60 hover:opacity-100 transition-opacity"
-              style={{ color: COLORS.ui.textSecondary }}
-              title="Daily Review"
-            >
-              📖 Review
-            </button>
-            <button
+              label="Daily Review"
+              mobileLabel="📖"
+              desktopLabel="📖 Review"
+            />
+            <NavButton
               onClick={() => useGameStore.getState().showDashboard()}
-              className="text-sm opacity-60 hover:opacity-100 transition-opacity"
-              style={{ color: COLORS.ui.textSecondary }}
-              title="Progress Dashboard"
-            >
-              📊 Progress
-            </button>
+              label="Progress Dashboard"
+              mobileLabel="📊"
+              desktopLabel="📊 Progress"
+            />
           </>
         )}
         {appPhase !== 'game' && (
-          <button
+          <NavButton
             onClick={() => useGameStore.getState().returnToGame()}
-            className="text-sm opacity-60 hover:opacity-100 transition-opacity"
-            style={{ color: COLORS.ui.textSecondary }}
-            title="Back to Game"
-          >
-            ← Game
-          </button>
+            label="Back to Game"
+            mobileLabel="←"
+            desktopLabel="← Game"
+          />
         )}
-        <button
+        <NavButton
           onClick={onSettingsClick}
-          className="text-sm opacity-60 hover:opacity-100 transition-opacity"
-          style={{ color: COLORS.ui.textSecondary }}
-          title="Settings"
-        >
-          ⚙
-        </button>
+          label="Settings"
+          mobileLabel="⚙"
+          desktopLabel="⚙"
+        />
       </div>
     </div>
   );
