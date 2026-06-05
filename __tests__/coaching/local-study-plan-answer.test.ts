@@ -63,4 +63,19 @@ describe('local study plan answer', () => {
     expect(answer?.actions).toEqual([{ id: 'lesson:capture', label: 'Start lesson: Capturing Stones' }]);
     expect(answer?.conceptIds).toEqual(expect.arrayContaining(['capture', 'atari', 'liberties', 'groups']));
   });
+
+  it('uses daily review language when reviews are due', () => {
+    const answer = getLocalStudyPlanAnswer('What should I practice next?', {
+      completedLessons: ['groups'],
+      problemAttempts: [],
+      dueReviewCount: 1,
+      hasStartedIntroGame: true,
+      mastery: [mastery('groups', 1, 2)],
+    });
+
+    expect(answer?.text).toContain('Study plan: Daily review.');
+    expect(answer?.text).toContain('1 review position is due before new material.');
+    expect(answer?.text).toContain('First: Solve the due review positions before opening new material.');
+    expect(answer?.actions).toEqual([{ id: 'review', label: 'Start daily review' }]);
+  });
 });

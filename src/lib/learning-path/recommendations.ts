@@ -67,12 +67,12 @@ export function getLearningRecommendation(input: RecommendationInput): LearningR
   if (input.dueReviewCount > 0) {
     return {
       kind: 'review',
-      title: 'Review due concepts',
-      reason: `${input.dueReviewCount} review item${input.dueReviewCount === 1 ? ' is' : 's are'} due before new material.`,
+      title: 'Daily review',
+      reason: `${input.dueReviewCount} review position${input.dueReviewCount === 1 ? ' is' : 's are'} due before new material.`,
       focusConcepts: weakIntroducedConcepts,
-      actionLabel: 'Review due cards',
+      actionLabel: 'Start daily review',
       practicePlan: [
-        'Solve the due positions before opening new material.',
+        'Solve the due review positions before opening new material.',
         'Replay any missed solution line until the first move feels obvious.',
         'Return here when reviews are clear for the day.',
       ],
