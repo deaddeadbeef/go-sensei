@@ -801,6 +801,31 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('answers territory questions after H8 with fresh-area extension targets', () => {
+    const freshAreaMove = playMove(settledShapeGame(), { x: 7, y: 1 });
+    if (!freshAreaMove.success) throw new Error('test setup fresh-area move failed');
+    const afterWhitePass = passMove(freshAreaMove.newState);
+
+    const answer = getLocalQuestionAnswer('What is territory?', afterWhitePass, 'guided');
+
+    expect(answer?.text).toContain('I marked H6 and F8 because they extend H8 into the upper-right area: they help the fresh stone sketch a loose border without touching too closely.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['territory', 'shape', 'direction-of-play']));
+    expect(answer?.boardFocus?.suggestions?.slice(0, 2)).toEqual([
+      {
+        id: 'local-territory-move-7,3',
+        point: { x: 7, y: 3 },
+        rank: 1,
+        reason: 'Try H6 to give H8 a partner in the upper-right area while keeping a one-space gap.',
+      },
+      {
+        id: 'local-territory-move-5,1',
+        point: { x: 5, y: 1 },
+        rank: 2,
+        reason: 'Try F8 to give H8 a partner in the upper-right area while keeping a one-space gap.',
+      },
+    ]);
+  });
+
   it('reviews a missed beginner goal constructively', () => {
     const firstMove = playMove(createGame(9), { x: 4, y: 4 });
     if (!firstMove.success) throw new Error('test setup move failed');
