@@ -166,6 +166,38 @@ describe('beginner objectives', () => {
     ]));
   });
 
+  it('switches to a new-area objective when no weak group or extension target is marked', () => {
+    const board = boardWith([
+      { point: { x: 2, y: 2 }, color: 'black' },
+      { point: { x: 4, y: 2 }, color: 'black' },
+      { point: { x: 6, y: 2 }, color: 'black' },
+      { point: { x: 2, y: 4 }, color: 'black' },
+      { point: { x: 3, y: 4 }, color: 'black' },
+      { point: { x: 4, y: 4 }, color: 'black' },
+      { point: { x: 6, y: 4 }, color: 'black' },
+      { point: { x: 2, y: 6 }, color: 'black' },
+      { point: { x: 4, y: 6 }, color: 'black' },
+      { point: { x: 6, y: 6 }, color: 'black' },
+    ]);
+
+    const objective = getBeginnerObjective({
+      boardSize: 9,
+      board,
+      moveCount: 20,
+      currentPlayer: 'black',
+      teachingLevel: 'guided',
+    });
+
+    expect(objective).toMatchObject({
+      id: 'choose-new-area',
+      title: 'Choose a new area',
+      instruction: 'Your nearby groups are safe for now. Pick a fresh area instead of rereading the settled shape.',
+      targetPoints: [],
+    });
+    if (!objective) throw new Error('Expected new-area objective');
+    expect(formatObjectiveTargetText(objective, 9)).toBeNull();
+  });
+
   it('reports when the learner completed the marked opening objective', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');

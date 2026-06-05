@@ -506,6 +506,8 @@ function getTargetExplanation(objective: BeginnerObjective, point: Point, board:
       return getExtensionTargetExplanation(point, board);
     case 'look-for-weak-groups':
       return getWeakGroupTargetExplanation(point, board);
+    case 'choose-new-area':
+      return `${pointToCoord(point, board.size)} is a fresh-area candidate after the nearby shape settled.`;
   }
 }
 
@@ -1813,7 +1815,8 @@ function getPressureLocalShapeSettledCue(
     };
   }
 
-  if (recap.repeatRead || objective.id !== 'look-for-weak-groups' || targets.length > 0) return null;
+  const isSettledAreaObjective = objective.id === 'look-for-weak-groups' || objective.id === 'choose-new-area';
+  if (recap.repeatRead || !isSettledAreaObjective || targets.length > 0) return null;
 
   const connectedNeighborCoords = getAdjacentPoints(board, recap.point)
     .filter((point) => getStone(board, point) === 'black')
@@ -2283,7 +2286,7 @@ function getPressureWeakGroupHandoffCue(
   comparisonSummary: PressureComparisonSummary | null,
   board: BoardState,
 ): PressureWeakGroupHandoffCue | null {
-  if (objective.id !== 'look-for-weak-groups') return null;
+  if (objective.id !== 'look-for-weak-groups' && objective.id !== 'choose-new-area') return null;
   if (!prompt || !comparisonSummary?.hasSameCounts || comparisonSummary.defenseRecommendation) return null;
 
   const bridgeContext = getBridgeLineContext(board, prompt.anchor, prompt.stone);
@@ -2676,6 +2679,13 @@ function buildTargetHintHighlights(objective: BeginnerObjective, point: Point, b
 
       return hints;
     }
+    case 'choose-new-area':
+      return [{
+        id: `target-hint-target-${targetKey(point)}`,
+        point: { ...point },
+        variant: 'positive',
+        label: `${coord}: fresh area to consider after the nearby shape settled.`,
+      }];
   }
 }
 

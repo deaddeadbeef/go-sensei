@@ -42,6 +42,26 @@ function snapbackGameAfterWhiteCapture(): GameState {
   return whiteCapture.newState;
 }
 
+function settledShapeGame(): GameState {
+  const stones: Point[] = [
+    { x: 2, y: 2 },
+    { x: 4, y: 2 },
+    { x: 6, y: 2 },
+    { x: 2, y: 4 },
+    { x: 3, y: 4 },
+    { x: 4, y: 4 },
+    { x: 6, y: 4 },
+    { x: 2, y: 6 },
+    { x: 4, y: 6 },
+    { x: 6, y: 6 },
+  ];
+
+  return stones.reduce(
+    (game, point) => ({ ...game, board: setStone(game.board, point, 'black') }),
+    createGame(9),
+  );
+}
+
 describe('local question answer', () => {
   it('answers next-move questions with the current beginner objective', () => {
     const answer = getLocalQuestionAnswer('What should I do?', createGame(9), 'guided');
@@ -616,6 +636,15 @@ describe('local question answer', () => {
       },
     ]);
     expect(answer?.actions).toEqual([{ id: 'lesson:liberties', label: 'Review liberties' }]);
+  });
+
+  it('answers next-move questions with a fresh-area prompt after local shape settles', () => {
+    const answer = getLocalQuestionAnswer('What should I do?', settledShapeGame(), 'guided');
+
+    expect(answer?.text).toContain('Your next job is: Choose a new area.');
+    expect(answer?.text).toContain('Your nearby groups are safe for now. Pick a fresh area instead of rereading the settled shape.');
+    expect(answer?.text).not.toContain('Give weak groups room');
+    expect(answer?.boardFocus).toBeUndefined();
   });
 
   it('reviews a successful beginner move without cloud help', () => {

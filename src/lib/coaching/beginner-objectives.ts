@@ -12,7 +12,7 @@ export interface BeginnerObjectiveInput {
 }
 
 export interface BeginnerObjective {
-  id: 'claim-corner' | 'extend-from-stone' | 'look-for-weak-groups';
+  id: 'claim-corner' | 'extend-from-stone' | 'look-for-weak-groups' | 'choose-new-area';
   title: string;
   instruction: string;
   why: string;
@@ -194,6 +194,17 @@ function weakGroupObjective(targetPoints: Point[] = []): BeginnerObjective {
   };
 }
 
+function chooseNewAreaObjective(): BeginnerObjective {
+  return {
+    id: 'choose-new-area',
+    title: 'Choose a new area',
+    instruction: 'Your nearby groups are safe for now. Pick a fresh area instead of rereading the settled shape.',
+    why: 'When nothing is short on liberties, the next useful habit is to scan for a new direction.',
+    targetPoints: [],
+    conceptIds: ['direction-of-play', 'shape'],
+  };
+}
+
 export function getBeginnerObjective(input: BeginnerObjectiveInput): BeginnerObjective | null {
   if (input.boardSize !== 9) return null;
   if (input.currentPlayer !== 'black') return null;
@@ -223,7 +234,7 @@ export function getBeginnerObjective(input: BeginnerObjectiveInput): BeginnerObj
       return openingObjective(openCornerTargets);
     }
 
-    return weakGroupObjective();
+    return chooseNewAreaObjective();
   }
 
   if (input.moveCount <= 2) {
@@ -266,6 +277,8 @@ function successText(objective: BeginnerObjective, coord: string): string {
       return `Good: ${coord} made a one-space jump from your stone. Next, check whether any group is short on liberties.`;
     case 'look-for-weak-groups':
       return `Good: ${coord} gave the weak group another liberty. Next, look for the biggest safe move.`;
+    case 'choose-new-area':
+      return `Good: ${coord} chose a new area after the local shape settled. Now check whether the new shape creates a useful follow-up.`;
   }
 }
 
@@ -279,6 +292,8 @@ function missedText(objective: BeginnerObjective, coord: string, boardSize: Boar
       return `Progress check: ${coord} was not one of the marked extension points. ${targets ?? 'Play a one-space jump from one of your stones.'}`;
     case 'look-for-weak-groups':
       return `Progress check: ${coord} did not help the short-on-liberties group. ${targets ?? 'Find the group with the least room before playing.'}`;
+    case 'choose-new-area':
+      return `Progress check: ${coord} stayed near the settled shape. Look for a fresh direction before rereading the same local area.`;
   }
 }
 

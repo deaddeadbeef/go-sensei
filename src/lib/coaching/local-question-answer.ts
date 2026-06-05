@@ -744,6 +744,10 @@ function suggestionReason(objective: BeginnerObjective, point: Point, boardSize:
     return `Try ${coord} as a one-space jump that works with your stones.`;
   }
 
+  if (objective.id === 'choose-new-area') {
+    return `Consider ${coord} only if it starts a fresh direction away from the settled local shape.`;
+  }
+
   return `Give your group room by playing its liberty at ${coord}.`;
 }
 
@@ -1024,6 +1028,10 @@ function candidateMissReason(
     return `${coord} is open, but it is not one of the marked one-space jumps from your anchor stone.`;
   }
 
+  if (objective.id === 'choose-new-area') {
+    return `${coord} is open, but this settled-shape goal is asking for a fresh area rather than one marked coordinate.`;
+  }
+
   return `${coord} is open, but it is not one of the marked liberties for the group that needs breathing room right now.`;
 }
 
@@ -1119,6 +1127,10 @@ function comparisonTargetReason(
   if (objective.id === 'extend-from-stone') {
     const anchorCoord = anchor ? pointToCoord(anchor, boardSize) : 'your anchor stone';
     return `${coordText} are both one-space jumps from ${anchorCoord}. They teach the same idea in different directions: keep a one-point gap so the stones help each other without clumping.`;
+  }
+
+  if (objective.id === 'choose-new-area') {
+    return `${coordText} are possible fresh-area checks; choose the one that starts a new direction instead of staying inside the settled shape.`;
   }
 
   return `${coordText} are marked liberties for the group that needs room, so either one helps that group breathe.`;
@@ -2053,6 +2065,10 @@ function markerObjectiveReason(objective: BeginnerObjective, boardSize: BoardSiz
   if (objective.id === 'extend-from-stone') {
     const coords = objective.targetPoints.slice(0, 4).map((point) => pointToCoord(point, boardSize));
     return `${joinList(coords)} are marked because they are one-space jumps: they keep your stones working together without clumping.`;
+  }
+
+  if (objective.id === 'choose-new-area') {
+    return 'No coordinate is marked because the nearby shape is settled; scan for a fresh direction before choosing.';
   }
 
   return 'These targets are liberties for a group that is short on breathing room; playing one gives that group more ways to escape.';
