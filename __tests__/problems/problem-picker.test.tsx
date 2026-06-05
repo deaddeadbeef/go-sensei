@@ -79,6 +79,23 @@ describe('ProblemPicker', () => {
     expect(screen.getByRole('button', { name: 'Retry: Corner Capture' })).toBeTruthy();
   });
 
+  it('keeps stale problem ids out of problem-library progress', () => {
+    act(() => {
+      useProgressStore.setState({
+        problemAttempts: [
+          { problemId: 'missing-problem-id', solved: true, attempts: 1, moveSequence: [], timestamp: 1 },
+        ],
+      });
+    });
+
+    render(<ProblemPicker />);
+
+    expect(screen.getByText('Start here: it is the gentlest unsolved problem in the library.')).toBeTruthy();
+    expect(screen.getByText('0/20 problems solved')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Start Corner Capture' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Solve: Corner Capture' })).toBeTruthy();
+  });
+
   it('uses the active filter and progress to choose the next visible problem', () => {
     act(() => {
       useProgressStore.getState().recordProblemAttempt({
