@@ -16,6 +16,7 @@ interface ProblemSolutionOverlayProps {
 interface ProblemSolutionPanelProps {
   steps: ProblemSolutionStep[];
   boardSize: BoardSize;
+  takeaway?: string;
 }
 
 function stepColor(step: ProblemSolutionStep): string {
@@ -75,7 +76,7 @@ export function ProblemSolutionOverlay({ steps, boardSize, stoneRadius }: Proble
   );
 }
 
-export function ProblemSolutionPanel({ steps, boardSize }: ProblemSolutionPanelProps) {
+export function ProblemSolutionPanel({ steps, boardSize, takeaway }: ProblemSolutionPanelProps) {
   if (steps.length === 0) return null;
 
   return (
@@ -93,6 +94,19 @@ export function ProblemSolutionPanel({ steps, boardSize }: ProblemSolutionPanelP
           Numbered points on the board show the main answer sequence.
         </p>
       </div>
+      {takeaway && (
+        <div
+          className="mb-3 rounded-lg p-3"
+          style={{ backgroundColor: `${COLORS.ui.accent}12`, border: `1px solid ${COLORS.ui.accent}35` }}
+        >
+          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: COLORS.ui.accent }}>
+            Why this worked
+          </p>
+          <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
+            {takeaway}
+          </p>
+        </div>
+      )}
       <ol className="space-y-2">
         {steps.map((step) => {
           const color = stepColor(step);
