@@ -661,6 +661,29 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('compares fresh-area target directions after local shape settles', () => {
+    const answer = getLocalQuestionAnswer('H8 or H2?', settledShapeGame(), 'guided');
+
+    expect(answer?.text).toContain('Both choices fit the current goal: Choose a new area.');
+    expect(answer?.text).toContain('H8 opens the upper-right direction and H2 opens the lower-right direction.');
+    expect(answer?.text).toContain("Both stay away from the settled local shape; choose the direction you want Black's next plan to explore.");
+    expect(answer?.boardFocus?.highlights).toBeUndefined();
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-candidate-comparison-move-7,1',
+        point: { x: 7, y: 1 },
+        rank: 1,
+        reason: 'Consider H8 as a fresh upper-right direction away from the settled local shape.',
+      },
+      {
+        id: 'local-candidate-comparison-move-7,7',
+        point: { x: 7, y: 7 },
+        rank: 2,
+        reason: 'Consider H2 as a fresh lower-right direction away from the settled local shape.',
+      },
+    ]);
+  });
+
   it('reviews a successful beginner move without cloud help', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
