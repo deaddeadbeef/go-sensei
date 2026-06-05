@@ -87,7 +87,7 @@ export function ScoreCard({ onPlayAgain, onReviewGame }: ScoreCardProps) {
                 border: `1px solid ${COLORS.ui.accent}`,
               }}
             >
-              📋 Review Game
+              Ask Sensei to review
             </button>
           )}
         </motion.div>
