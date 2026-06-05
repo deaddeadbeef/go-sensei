@@ -1,5 +1,5 @@
 import { PROBLEMS } from '@/lib/problems/problem-data';
-import { formatProblemPoint, getPrimarySolutionLine } from '@/lib/problems/solution-review';
+import { formatProblemPoint, getPrimarySolutionLine, getProblemSolutionTakeaway } from '@/lib/problems/solution-review';
 import type { Problem } from '@/lib/problems/types';
 
 function problemById(id: string): Problem {
@@ -53,5 +53,17 @@ describe('problem solution review', () => {
       color: 'white',
       role: 'student',
     });
+  });
+
+  it('summarizes why a capture solution works', () => {
+    expect(getProblemSolutionTakeaway(problemById('capture-001'))).toBe(
+      'The first move at A8 works by attacking liberties. Follow the numbered sequence until the target group has no safe adjacent point left.',
+    );
+  });
+
+  it('summarizes why a life-and-death solution works', () => {
+    expect(getProblemSolutionTakeaway(problemById('life-002'))).toBe(
+      'The first move at B8 is the vital point for eye space. Ask whether the defender can still make two separate eyes after that point is occupied.',
+    );
   });
 });

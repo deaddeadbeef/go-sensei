@@ -18,7 +18,7 @@ import { useReviewStore } from '@/stores/review-store';
 import { useConceptStore } from '@/stores/concept-store';
 import { problemCategoryTitle } from '@/lib/learning-path/concept-practice';
 import { getLearningRecommendation } from '@/lib/learning-path/recommendations';
-import { getPrimarySolutionLine } from '@/lib/problems/solution-review';
+import { getPrimarySolutionLine, getProblemSolutionTakeaway } from '@/lib/problems/solution-review';
 import { ProblemReadingPlan } from './ProblemReadingPlan';
 import { ProblemSolutionOverlay, ProblemSolutionPanel } from './ProblemSolutionReview';
 import type { BoardSize } from '@/lib/go-engine/types';
@@ -246,6 +246,7 @@ export function ProblemView() {
 
   const playerColor = problem.playerColor;
   const solutionSteps = getPrimarySolutionLine(problem);
+  const solutionTakeaway = getProblemSolutionTakeaway(problem, solutionSteps);
   const revealSolution = problemInteraction.status !== 'playing';
 
   return (
@@ -438,7 +439,7 @@ export function ProblemView() {
           )}
 
           {revealSolution && (
-            <ProblemSolutionPanel steps={solutionSteps} boardSize={boardSize} />
+            <ProblemSolutionPanel steps={solutionSteps} boardSize={boardSize} takeaway={solutionTakeaway} />
           )}
 
           {practiceTargetMet && (

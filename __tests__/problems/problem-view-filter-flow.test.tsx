@@ -69,6 +69,8 @@ describe('ProblemView filtered practice flow', () => {
 
     expect(screen.queryByText('Read before you click')).toBeNull();
     expect(screen.getByText('Solution line')).toBeTruthy();
+    expect(screen.getByText('Why this worked')).toBeTruthy();
+    expect(screen.getByText(/The first move at A8 works by attacking liberties/)).toBeTruthy();
   });
 
   it('keeps the mobile problem board below the app bar in a scrollable shell', () => {
