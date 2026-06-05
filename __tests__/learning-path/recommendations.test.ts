@@ -53,7 +53,7 @@ describe('learning path recommendations', () => {
     expect(recommendation).toMatchObject({
       kind: 'lesson',
       targetId: 'groups',
-      actionLabel: 'Start lesson',
+      actionLabel: 'Start lesson: What is a Group?',
     });
     expect(recommendation.focusConcepts).toEqual(['stones-and-board', 'groups']);
     expect(recommendation.practicePlan.length).toBeGreaterThan(0);

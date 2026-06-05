@@ -2508,8 +2508,8 @@ describe('useGoMaster local answers', () => {
     expect(state.bubble.text).toContain('Strongest evidence: Capture and Liberties are moving from vocabulary into practice.');
     expect(state.bubble.text).toContain('Still fragile: Groups and Stones & Board need more proof.');
     expect(state.bubble.text).toContain('Next honest step: Capturing Stones. This is the next lesson in the learning path.');
-    expect(state.bubble.actions).toEqual([{ id: 'lesson:capture', label: 'Start lesson' }]);
-    expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'lesson:capture', label: 'Start lesson' }]);
+    expect(state.bubble.actions).toEqual([{ id: 'lesson:capture', label: 'Start lesson: Capturing Stones' }]);
+    expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'lesson:capture', label: 'Start lesson: Capturing Stones' }]);
     expect(useConceptStore.getState().getMastery('capture').encounterCount).toBeGreaterThan(1);
     expect(useConceptStore.getState().getMastery('liberties').encounterCount).toBeGreaterThan(1);
   });
