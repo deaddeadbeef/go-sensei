@@ -58,6 +58,14 @@ describe('ProgressDashboard', () => {
     expect(useProgressStore.getState().hasStartedIntroGame).toBe(true);
   });
 
+  it('opens the full learning path from the recommendation panel', () => {
+    render(<ProgressDashboard />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'See full learning path' }));
+
+    expect(useGameStore.getState().appPhase).toBe('path');
+  });
+
   it('restores guided 9x9 from a guided-game recommendation when the current game is stale', () => {
     useGameStore.getState().startGuidedIntroGame();
     useGameStore.getState().startNewGame(19);
