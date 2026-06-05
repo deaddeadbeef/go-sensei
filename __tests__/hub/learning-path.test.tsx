@@ -41,6 +41,19 @@ describe('LearningPath', () => {
     expect(useConceptStore.getState().getUnlockedConcepts()).toContain('groups');
   });
 
+  it('names the recommended lesson in the primary path action', () => {
+    useProgressStore.getState().markIntroGameStarted();
+
+    render(<LearningPath />);
+
+    expect(screen.getByRole('button', { name: 'Start lesson: What is a Group?' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start lesson: What is a Group?' }));
+
+    expect(useGameStore.getState().appPhase).toBe('lesson');
+    expect(useGameStore.getState().currentLessonId).toBe('groups');
+  });
+
   it('restores guided 9x9 from the guided game card when progress has a stale normal game', () => {
     useGameStore.getState().startGuidedIntroGame();
     useGameStore.getState().startNewGame(19);

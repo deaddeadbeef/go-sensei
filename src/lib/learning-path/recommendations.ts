@@ -142,7 +142,7 @@ function lessonRecommendation(targetId: string, lessonTitle: string): LearningRe
     title: lessonTitle,
     reason: 'This is the next lesson in the learning path.',
     focusConcepts: [...(LESSON_TO_CONCEPTS[targetId] ?? [])],
-    actionLabel: 'Start lesson',
+    actionLabel: `Start lesson: ${lessonTitle}`,
     practicePlan: [
       'Read the idea, then prove it on the board checkpoint.',
       'Use the hint only after choosing your first answer.',

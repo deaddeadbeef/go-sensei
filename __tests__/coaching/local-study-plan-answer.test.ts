@@ -60,7 +60,7 @@ describe('local study plan answer', () => {
     expect(answer?.text).toContain('Strongest evidence: Liberties and Capture are moving from vocabulary into practice.');
     expect(answer?.text).toContain('Still fragile: Groups needs more proof.');
     expect(answer?.text).toContain('Next honest step: Capturing Stones. This is the next lesson in the learning path.');
-    expect(answer?.actions).toEqual([{ id: 'lesson:capture', label: 'Start lesson' }]);
+    expect(answer?.actions).toEqual([{ id: 'lesson:capture', label: 'Start lesson: Capturing Stones' }]);
     expect(answer?.conceptIds).toEqual(expect.arrayContaining(['capture', 'atari', 'liberties', 'groups']));
   });
 });
