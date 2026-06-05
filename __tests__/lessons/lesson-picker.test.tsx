@@ -28,6 +28,19 @@ describe('LessonPicker', () => {
     expect(useGameStore.getState().appPhase).toBe('path');
   });
 
+  it('uses an internally scrollable top-aligned shell for mobile lesson lists', () => {
+    render(<LessonPicker />);
+
+    const shell = screen.getByTestId('lesson-library');
+
+    expect(shell.className).toContain('flex-1');
+    expect(shell.className).toContain('min-h-0');
+    expect(shell.className).toContain('items-start');
+    expect(shell.className).toContain('overflow-y-auto');
+    expect(shell.className).not.toContain('items-center');
+    expect(shell.className).not.toContain('min-h-screen');
+  });
+
   it('still lets learners review completed lessons', () => {
     act(() => useProgressStore.getState().completeLesson('groups'));
 
