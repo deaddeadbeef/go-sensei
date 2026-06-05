@@ -66,6 +66,14 @@ describe('ProgressDashboard', () => {
     expect(useGameStore.getState().appPhase).toBe('path');
   });
 
+  it('returns learners to the board from the dashboard', () => {
+    render(<ProgressDashboard />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Return to board' }));
+
+    expect(useGameStore.getState().appPhase).toBe('game');
+  });
+
   it('uses explicit labels for dashboard section navigation', () => {
     render(<ProgressDashboard />);
 
