@@ -53,4 +53,18 @@ describe('LessonView answer reveal', () => {
     expect(useConceptStore.getState().getMastery('stones-and-board').level).toBe(2);
     expect(useConceptStore.getState().getMastery('groups').level).toBe(2);
   });
+
+  it('credits companion concepts from the shared lesson map', () => {
+    act(() => {
+      useGameStore.getState().startLesson('capture');
+      useGameStore.setState({ currentStep: 3 });
+    });
+
+    render(<LessonView />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Finish/ }));
+
+    expect(useConceptStore.getState().getMastery('capture').level).toBe(2);
+    expect(useConceptStore.getState().getMastery('atari').level).toBe(2);
+  });
 });
