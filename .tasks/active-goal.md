@@ -117,6 +117,7 @@ Latest completed slice:
 - Kept the fresh G4 comparison on the chain-proof path, so H4/F4 extends D7/F7/G6 into a four-gap proof instead of leaking repeated-pattern copy.
 - Renamed the four-gap stable-read handoff as a direction change, so the unlocked E3 move answers the stopping-rule prompt instead of sounding like another rote extension.
 - Promoted the active read handoff inside the normal target row, so E3 is labeled as recommended by the read while E5 and C5 remain visible alternatives.
+- Preserved the stable-read recap when the learner accepts E3 from the normal target row, so the tutor explains why the direction change is complete before moving on to F3.
 
 Next investigation candidates:
-- Whether the post-E3 recap should explain why changing direction is complete before the tutor moves on to another shape.
+- Whether the next F3 read should teach a new stopping condition instead of starting another rote one-space-jump chain.
