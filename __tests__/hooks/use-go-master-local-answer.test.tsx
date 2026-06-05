@@ -493,7 +493,7 @@ describe('useGoMaster local answers', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(state.game.currentPlayer).toBe('black');
     expect(state.bubble.variant).toBe('teaching');
-    expect(state.bubble.text).toContain('Good: E7 made a one-space jump from your stone.');
+    expect(state.bubble.text).toContain('Good: E7 made a one-space jump from your stone. Next, read the open gap before extending again.');
     expect(state.bubble.text).toContain('Lesson: E7 is a one-space jump from C7. The empty point at D7 leaves room to grow');
     expect(state.bubble.text).toContain('Try G7, E5, or C5.');
     expect(state.overlays.highlights).toEqual([{

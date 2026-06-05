@@ -429,7 +429,7 @@ function successText(objective: BeginnerObjective, coord: string, point: Point, 
     case 'claim-corner':
       return `Good: ${coord} hit the marked corner goal. Next, make that stone work with another one.`;
     case 'extend-from-stone':
-      return `Good: ${coord} made a one-space jump from your stone. Next, check whether any group is short on liberties.`;
+      return `Good: ${coord} made a one-space jump from your stone. Next, read the open gap before extending again.`;
     case 'look-for-weak-groups':
       return `Good: ${coord} gave the weak group another liberty. Next, look for the biggest safe move.`;
     case 'choose-new-area':
