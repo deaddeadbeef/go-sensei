@@ -48,6 +48,17 @@ describe('LessonPicker', () => {
     expect(screen.getByRole('button', { name: 'Start lesson: Liberties: Breathing Room' })).toBeTruthy();
   });
 
+  it('starts the named next lesson from the progress panel', () => {
+    act(() => useProgressStore.getState().completeLesson('groups'));
+
+    render(<LessonPicker />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start next lesson: Liberties: Breathing Room' }));
+
+    expect(useGameStore.getState().appPhase).toBe('lesson');
+    expect(useGameStore.getState().currentLessonId).toBe('liberties');
+  });
+
   it('returns learners to the board from the lesson library', () => {
     render(<LessonPicker />);
 
