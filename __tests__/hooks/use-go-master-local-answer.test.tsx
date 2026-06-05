@@ -1690,7 +1690,7 @@ describe('useGoMaster local answers', () => {
     sessionStorage.removeItem('go-sensei-github-token');
   });
 
-  it('hides raw cloud errors when no local fallback is available', async () => {
+  it('hides raw tutor errors when no local fallback is available', async () => {
     sessionStorage.setItem('go-sensei-github-token', 'test-token');
     act(() => {
       useGameStore.getState().startNewGame(9);
@@ -1717,13 +1717,45 @@ describe('useGoMaster local answers', () => {
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(state.bubble.variant).toBe('warning');
-    expect(state.bubble.text).toContain('Cloud Sensei could not answer this turn.');
+    expect(state.bubble.text).toContain('The tutor could not answer this turn.');
     expect(state.bubble.text).toContain('Use the board for now');
+    expect(state.bubble.text.toLowerCase()).not.toContain('cloud');
     expect(state.bubble.text).not.toContain('provider exploded');
     expect(state.bubble.text).not.toContain('sk-secret-test-value');
 
     consoleErrorSpy.mockRestore();
     sessionStorage.removeItem('go-sensei-github-token');
+  });
+
+  it('uses learner-facing sign-in copy when no local fallback is available', async () => {
+    act(() => {
+      useGameStore.getState().startNewGame(9);
+      useGameStore.setState({
+        appPhase: 'game',
+        phase: 'playing',
+        teachingLevel: 'advanced',
+      });
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(
+      JSON.stringify({ error: 'missing token' }),
+      { status: 401, headers: { 'Content-Type': 'application/json' } },
+    ));
+    const { result } = renderHook(() => useGoMaster());
+
+    await act(async () => {
+      result.current.sendMessage('Can you read this position?');
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(state.bubble.variant).toBe('warning');
+    expect(state.bubble.text).toBe('Open Settings and sign in with GitHub to use live Sensei coaching.');
+    expect(state.bubble.text.toLowerCase()).not.toContain('cloud');
+    expect(state.chatMessages.some((message) => message.text === 'Sign in with GitHub from Settings to use live Sensei coaching.')).toBe(true);
+    expect(state.chatMessages.some((message) => message.text.includes('Cloud Sensei needs'))).toBe(false);
   });
 
   it('keeps even capture-race questions grounded in the current guided objective', () => {
