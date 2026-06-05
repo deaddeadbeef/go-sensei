@@ -149,7 +149,7 @@ describe('ProblemView filtered practice flow', () => {
     expect(screen.getByText('Practice goal met')).toBeTruthy();
     expect(screen.getByText(/Return to the path for:/)).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Continue learning path' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Continue: Play a guided game' }));
 
     expect(useGameStore.getState().appPhase).toBe('path');
   });
