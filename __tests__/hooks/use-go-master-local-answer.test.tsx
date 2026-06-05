@@ -1227,7 +1227,8 @@ describe('useGoMaster local answers', () => {
 
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(state.bubble.variant).toBe('teaching');
-    expect(state.bubble.text).toContain('Local beginner review: here are the board moments I can verify without cloud help.');
+    expect(state.bubble.text).toContain('Beginner game review: here are the board moments to learn from.');
+    expect(state.bubble.text).not.toContain('cloud help');
     expect(state.bubble.text).toContain('Best move: Move 1 C7 followed "Start with a corner".');
     expect(state.bubble.text).toContain('Next practice target: Make your stones work together.');
     expect(state.bubble.actions).toEqual([

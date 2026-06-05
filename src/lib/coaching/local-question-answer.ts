@@ -4285,7 +4285,7 @@ export function getLocalGameReviewAnswer(
   if (reviewedMoves.length === 0) {
     return {
       text: [
-        'Local beginner review: there are no Black moves to review yet.',
+        'Beginner game review: there are no Black moves to review yet.',
         currentObjective
           ? `Start with one useful board job: ${currentObjective.title}. ${currentObjective.instruction}${currentTargetText ? ` ${currentTargetText}` : ''}`
           : 'Start a guided 9x9 game, play one move, then ask for review again.',
@@ -4322,7 +4322,7 @@ export function getLocalGameReviewAnswer(
   ];
 
   const reviewLines = [
-    'Local beginner review: here are the board moments I can verify without cloud help.',
+    'Beginner game review: here are the board moments to learn from.',
     bestMove
       ? `Best move: ${formatReviewedMove(bestMove)} followed "${bestMove.objective.title}". ${bestMove.objective.why}`
       : `Best habit to keep: you played ${reviewedMoves.length} Black move${reviewedMoves.length === 1 ? '' : 's'} and can now turn the review into one clearer target.`,
