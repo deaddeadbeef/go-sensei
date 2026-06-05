@@ -454,7 +454,9 @@ export function ProblemView() {
                 Practice goal met
               </h3>
               <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
-                Return to the path for: {learningRecommendation.title}.
+                {scopedProblemLabel
+                  ? `You reached the ${scopedProblemLabel} practice target. Return to the path for: ${learningRecommendation.title}.`
+                  : `Return to the path for: ${learningRecommendation.title}.`}
               </p>
             </motion.div>
           )}
