@@ -128,6 +128,7 @@ Latest completed slice:
 - Carried the outside/inside B4-D4 proof through the real E5 handoff and into the next F5 read prompt, so the learner does not lose the reason the C4 cut was safe.
 - Bridged the F5 read after E5 back to the older G5 stone and the proven C7-C5-C3 line, so the learner sees E5 as a connector rather than a fresh isolated G5-E5 gap.
 - Taught the F5 center-line variation as above/below replies on the C5-E5-G5 bridge, with the same-count proof rendered even when the next objective is weak-group reading instead of another extension.
+- Added a weak-group handoff after the stable F5 proof, naming D5 as the bridge liberty to keep in mind while clarifying that G5 and E5 have no urgent defense to mark.
 
 Next investigation candidates:
-- Whether the post-F5 proof should hand the learner into the weak-groups objective with a concrete liberty choice instead of leaving the safe bridge proof and weak-group prompt side by side.
+- Whether the post-F5 weak-group handoff should expose D5 as a hoverable board highlight/action instead of only naming it in the proof text.
