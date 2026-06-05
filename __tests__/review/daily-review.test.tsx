@@ -174,7 +174,8 @@ describe('DailyReview', () => {
     clickReviewPoint(container, 1, 1);
     clickReviewPoint(container, 1, 1);
 
-    expect(screen.getByText('✕ Failed')).toBeTruthy();
+    expect(screen.getByText('Study the answer')).toBeTruthy();
+    expect(screen.getByText("Replay C8 before finishing, so this review becomes tomorrow's memory.")).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Finish Review' }));
 
@@ -197,6 +198,7 @@ describe('DailyReview', () => {
     clickReviewPoint(container, 0, 1);
 
     expect(screen.getByText('🎉 Solved!')).toBeTruthy();
+    expect(screen.getByText('You found A8. Review the sequence once before finishing this card.')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Finish Review' }));
 
