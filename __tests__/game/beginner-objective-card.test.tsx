@@ -1088,6 +1088,8 @@ describe('BeginnerObjectiveCard', () => {
       useGameStore.getState().pass();
     });
     expect(screen.getByText('D5 settles the bridge after the F5 proof: You proved F6 above and F4 below both leave the C5-E5-G5 line stable, so F5 does not need an immediate defense. Black chose the quiet connection before looking for the next area.')).toBeTruthy();
+    expect(screen.getByText('Local shape settled')).toBeTruthy();
+    expect(screen.getByText('D5 connected C5 and E5. No marked Black group is short on liberties here, so this side is quiet now. Choose a new area instead of rereading the same bridge.')).toBeTruthy();
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {
