@@ -23,13 +23,20 @@ const card = {
   },
 };
 
+const LESSON_IDS = new Set(LESSONS.map((lesson) => lesson.id));
+
+function titleAsSentence(title: string): string {
+  return /[.!?]$/.test(title) ? title : `${title}.`;
+}
+
 export function LessonPicker() {
   const completedLessons = useProgressStore((s) => s.completedLessons);
   const startLesson = useGameStore((s) => s.startLesson);
   const showLearningPath = useGameStore((s) => s.showLearningPath);
   const returnToGame = useGameStore((s) => s.returnToGame);
-  const nextLesson = LESSONS.find((lesson) => !completedLessons.includes(lesson.id));
-  const completedCount = completedLessons.length;
+  const completedLessonIds = new Set(completedLessons.filter((lessonId) => LESSON_IDS.has(lessonId)));
+  const nextLesson = LESSONS.find((lesson) => !completedLessonIds.has(lesson.id));
+  const completedCount = completedLessonIds.size;
   const remainingCount = Math.max(LESSONS.length - completedCount, 0);
 
   return (
@@ -79,7 +86,7 @@ export function LessonPicker() {
             </div>
             <p className="mt-3 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
               {nextLesson
-                ? `Next lesson: ${nextLesson.title}. ${remainingCount} lesson${remainingCount === 1 ? '' : 's'} left.`
+                ? `Next lesson: ${titleAsSentence(nextLesson.title)} ${remainingCount} lesson${remainingCount === 1 ? '' : 's'} left.`
                 : 'All lessons complete. Use the path to choose review, problems, or a guided game.'}
             </p>
           </div>
@@ -93,7 +100,7 @@ export function LessonPicker() {
           animate="show"
         >
           {LESSONS.map((lesson) => {
-            const completed = completedLessons.includes(lesson.id);
+            const completed = completedLessonIds.has(lesson.id);
             const actionLabel = completed ? `Review lesson: ${lesson.title}` : `Start lesson: ${lesson.title}`;
 
             return (
