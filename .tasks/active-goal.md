@@ -126,6 +126,7 @@ Latest completed slice:
 - Taught the first C4 branch choice and B4 recount in bridge terms, naming B4 as the outside reply, D4 as the inside comparison, and preserving C7's support through C6 while counting C3/C5 liberties.
 - Turned the B4/D4 comparison summary into a bridge proof, so equal C3/C5 counts now explicitly prove the C7-C5-C3 line is stable and C4 does not need an immediate defense.
 - Carried the outside/inside B4-D4 proof through the real E5 handoff and into the next F5 read prompt, so the learner does not lose the reason the C4 cut was safe.
+- Bridged the F5 read after E5 back to the older G5 stone and the proven C7-C5-C3 line, so the learner sees E5 as a connector rather than a fresh isolated G5-E5 gap.
 
 Next investigation candidates:
-- Whether the F5 read after E5 should bridge the earlier C4 proof with the older G5 stone instead of sounding like a fresh isolated G5-E5 gap.
+- Whether the F5 variation should name the C5-E5-G5 center-line replies by direction and connect their recounts to both the older G5 side and the proven C5 bridge before choosing.

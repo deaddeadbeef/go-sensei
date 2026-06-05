@@ -1645,7 +1645,51 @@ function isDirectionChangePressureRecap(recap: PressureHandoffRecap | null): boo
   return Boolean(recap && getPressureProofStableGapCoords(recap.proofText).length >= 4);
 }
 
-function getPressureProofBridgeText(recap: PressureHandoffRecap, prompt: OneSpaceJumpReadPrompt): string {
+function getSingleBridgeProofLineText(proofText: string): string | null {
+  const match = proofText.match(/\bleave the ([A-HJ-T]\d+(?:-[A-HJ-T]\d+)+) line stable\b/);
+
+  return match?.[1] ?? null;
+}
+
+function getPressureSingleBridgeConnectionText(
+  recap: PressureHandoffRecap,
+  prompt: OneSpaceJumpReadPrompt,
+  board: BoardState,
+): string | null {
+  if (targetKey(prompt.stone) !== targetKey(recap.point)) return null;
+
+  const provenBridgeText = getSingleBridgeProofLineText(recap.proofText);
+  if (!provenBridgeText) return null;
+
+  const promptAnchorCoord = pointToCoord(prompt.anchor, board.size);
+  const promptAnchorKey = targetKey(prompt.anchor);
+  const provenBridgeCoords = provenBridgeText.split('-');
+
+  for (const delta of ONE_SPACE_JUMP_DELTAS) {
+    const bridgeAnchor = { x: recap.point.x + delta.x, y: recap.point.y + delta.y };
+    const bridgeGap = { x: recap.point.x + delta.x / 2, y: recap.point.y + delta.y / 2 };
+
+    if (!isOnBoard(board, bridgeAnchor) || !isOnBoard(board, bridgeGap)) continue;
+    if (targetKey(bridgeAnchor) === promptAnchorKey) continue;
+    if (getStone(board, bridgeAnchor) !== 'black') continue;
+    if (getStone(board, bridgeGap) !== null) continue;
+
+    const bridgeAnchorCoord = pointToCoord(bridgeAnchor, board.size);
+    if (!provenBridgeCoords.includes(bridgeAnchorCoord)) continue;
+
+    const bridgeGapCoord = pointToCoord(bridgeGap, board.size);
+
+    return `Carry forward the bridge: ${recap.coord} now links the older ${promptAnchorCoord} stone to the proven ${provenBridgeText} bridge through ${bridgeAnchorCoord} and ${bridgeGapCoord}. Read ${prompt.gapCoord} with that whole connection in mind, not as a fresh isolated ${promptAnchorCoord}-${recap.coord} gap.`;
+  }
+
+  return null;
+}
+
+function getPressureProofBridgeText(
+  recap: PressureHandoffRecap,
+  prompt: OneSpaceJumpReadPrompt,
+  board: BoardState,
+): string {
   const stableGapCoords = getPressureProofStableGapCoords(recap.proofText);
   if (stableGapCoords.length >= 2) {
     if (stableGapCoords.length >= 4) {
@@ -1658,6 +1702,9 @@ function getPressureProofBridgeText(recap: PressureHandoffRecap, prompt: OneSpac
 
     return `Carry forward the chain: ${joinAndCoordinateList(stableGapCoords)} were both tested and stayed stable. Now read ${prompt.gapCoord} from scratch before the next extension.`;
   }
+
+  const singleBridgeConnectionText = getPressureSingleBridgeConnectionText(recap, prompt, board);
+  if (singleBridgeConnectionText) return singleBridgeConnectionText;
 
   return `Carry forward the proof: ${recap.proofText} Now test ${prompt.gapCoord} the same way before the next extension.`;
 }
@@ -3642,7 +3689,7 @@ export function BeginnerObjectiveCard() {
     ? playableTargets.find((point) => targetKey(point) === activeTargetKey) ?? null
     : null;
   const pressureProofBridgeText = activePressureHandoffRecap && readPrompt
-    ? getPressureProofBridgeText(activePressureHandoffRecap, readPrompt)
+    ? getPressureProofBridgeText(activePressureHandoffRecap, readPrompt, game.board)
     : null;
   const pressureLocalShapeSettledCue = getPressureLocalShapeSettledCue(
     activePressureHandoffRecap,
