@@ -143,14 +143,14 @@ describe('SenseiBubble actions', () => {
       useGameStore.getState().showBubble({
         text: 'Reviews are due before new material.',
         variant: 'teaching',
-        actions: [{ id: 'review', label: 'Review due cards' }],
+        actions: [{ id: 'review', label: 'Start daily review' }],
       });
     });
 
     render(<SenseiBubble />);
     finishTypewriter();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Review due cards' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Start daily review' }));
 
     expect(useGameStore.getState().appPhase).toBe('review');
     expect(useGameStore.getState().bubble.visible).toBe(false);
