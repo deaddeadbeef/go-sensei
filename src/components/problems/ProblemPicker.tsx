@@ -377,7 +377,7 @@ export function ProblemPicker() {
                     color: COLORS.ui.bgPrimary,
                   }}
                 >
-                  {solved ? 'Retry →' : 'Solve →'}
+                  {solved ? `Retry: ${problem.title}` : `Solve: ${problem.title}`}
                 </button>
               </motion.div>
             );
