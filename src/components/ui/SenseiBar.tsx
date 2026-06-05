@@ -64,6 +64,11 @@ export function SenseiBar({ onSettingsClick, isLoggedIn }: SenseiBarProps) {
     : currentPlayer === 'black'
       ? 'Your turn'
       : 'Sensei to play';
+  const mobileTurnLabel = isAiThinking
+    ? 'Thinking'
+    : currentPlayer === 'black'
+      ? 'You'
+      : 'Sensei';
 
   return (
     <div
@@ -105,7 +110,8 @@ export function SenseiBar({ onSettingsClick, isLoggedIn }: SenseiBarProps) {
                   className={`inline-block w-3 h-3 rounded-full border ${currentPlayer === 'black' ? 'bg-black border-gray-600' : 'bg-white border-gray-400'}`}
                 />
               )}
-              <span className="hidden sm:inline">{turnLabel}</span>
+              <span data-testid="sensei-bar-mobile-turn" className="max-w-12 truncate sm:hidden">{mobileTurnLabel}</span>
+              <span data-testid="sensei-bar-desktop-turn" className="hidden sm:inline">{turnLabel}</span>
             </div>
           </>
         )}
