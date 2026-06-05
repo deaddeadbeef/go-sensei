@@ -249,6 +249,55 @@ function getReplyDirection(reply: Point, gap: Point): string {
   return 'next to it';
 }
 
+function getBridgeReplyLineSide(reply: Point, gap: Point): {
+  label: string;
+  fromLineText: string;
+  comparisonText: string;
+  testsLineText: string;
+} {
+  const direction = getReplyDirection(reply, gap);
+
+  if (direction === 'above' || direction === 'below') {
+    return {
+      label: direction,
+      fromLineText: `${direction} the`,
+      comparisonText: direction,
+      testsLineText: `${direction} the line`,
+    };
+  }
+
+  if (direction === 'the left') {
+    return {
+      label: 'left',
+      fromLineText: 'left of the',
+      comparisonText: 'left-side',
+      testsLineText: 'left of the line',
+    };
+  }
+
+  if (direction === 'the right') {
+    return {
+      label: 'right',
+      fromLineText: 'right of the',
+      comparisonText: 'right-side',
+      testsLineText: 'right of the line',
+    };
+  }
+
+  return {
+    label: direction,
+    fromLineText: `${direction} the`,
+    comparisonText: direction,
+    testsLineText: `${direction} the line`,
+  };
+}
+
+function getBridgeReplyDirectionSummary(replyPoints: Point[], gap: Point): string | null {
+  const labels = Array.from(new Set(replyPoints.map((point) => getBridgeReplyLineSide(point, gap).label)));
+
+  return labels.length === 2 ? `replies from ${joinAndCoordinateList(labels)}` : null;
+}
+
 function getCornerTargetExplanation(point: Point, board: BoardState): string {
   const coord = pointToCoord(point, board.size);
   const verticalEdge = point.y < board.size / 2 ? 'top' : 'bottom';
@@ -347,6 +396,13 @@ function getPressureOpenSideFirstReplyPoint(board: BoardState, prompt: OneSpaceJ
       ? point.x < prompt.gap.x
       : point.x > prompt.gap.x
   )) ?? null;
+}
+
+function isCenterLinePressureGap(anchor: Point, stone: Point, gap: Point, boardSize: number): boolean {
+  const center = (boardSize - 1) / 2;
+  const isHorizontalJump = Math.abs(stone.x - anchor.x) === 2;
+
+  return isHorizontalJump ? gap.y === center : gap.x === center;
 }
 
 function getPressureOpenSideFirstReadText(
@@ -460,11 +516,15 @@ function getOneSpaceJumpReadPrompt(game: GameState): OneSpaceJumpReadPrompt | nu
   const replyPoints = getGapPressureReplyPoints(game.board, shape.anchor, move.point, shape.gap);
   const replyText = joinCoordinateList(replyPoints.map((point) => pointToCoord(point, game.board.size)));
   const bridgeContext = getBridgeLineContext(game.board, shape.anchor, move.point);
+  const bridgeReplyDirectionSummary = bridgeContext
+    && isCenterLinePressureGap(shape.anchor, move.point, shape.gap, game.board.size)
+    ? getBridgeReplyDirectionSummary(replyPoints, shape.gap)
+    : null;
   const bridgePromptText = bridgeContext
     ? ` ${stoneCoord} also reaches back toward ${bridgeContext.oppositeAnchorCoord} through ${bridgeContext.oppositeGapCoord}, so this read tests whether the ${bridgeContext.lineText} line stays stable before Black extends again.`
     : ' First read whether Black should connect or defend that gap before extending again.';
   const bridgeVariationText = bridgeContext
-    ? `Keep the ${bridgeContext.lineText} line in mind while you compare three plans`
+    ? `Keep the ${bridgeContext.lineText} line in mind while you compare ${bridgeReplyDirectionSummary ?? 'three plans'}`
     : 'Compare three plans';
 
   return {
@@ -542,6 +602,13 @@ function getPressureChoiceFeedback(prompt: OneSpaceJumpReadPrompt, reply: Point,
     const isOutsideReply = openSideFirstReply
       ? targetKey(openSideFirstReply) === targetKey(reply)
       : true;
+
+    if (!openSideFirstReply) {
+      const replyLineSide = getBridgeReplyLineSide(reply, prompt.gap);
+      const compareLineSide = getBridgeReplyLineSide(comparePoint, prompt.gap);
+
+      return `${replyCoord} attacks ${prompt.gapCoord} from ${replyLineSide.fromLineText} ${bridgeContext.lineText} line. ${compareCoord} is the ${compareLineSide.comparisonText} comparison, so recount ${anchorCoord} and ${stoneCoord} before deciding whether the bridge needs a defense.`;
+    }
 
     return isOutsideReply
       ? `${replyCoord} attacks ${prompt.gapCoord} from outside the ${bridgeContext.lineText} line. ${compareCoord} is the inside comparison toward the center, so recount ${anchorCoord} and ${stoneCoord} before deciding whether the bridge needs a defense.`
@@ -2083,9 +2150,21 @@ function getPressureComparisonSummary(
     ? secondRecount
     : firstRecount;
   const insideCoord = pointToCoord(insideRecount.reply, board.size);
+  const firstBridgeLineSide = bridgeContext && !outsideReply
+    ? getBridgeReplyLineSide(firstRecount.reply, prompt.gap)
+    : null;
+  const secondBridgeLineSide = bridgeContext && !outsideReply
+    ? getBridgeReplyLineSide(secondRecount.reply, prompt.gap)
+    : null;
+  const bridgeDirectionalProofText = bridgeContext && firstBridgeLineSide && secondBridgeLineSide
+    ? `You proved ${firstCoord} ${firstBridgeLineSide.label} and ${secondCoord} ${secondBridgeLineSide.label} both leave the ${bridgeContext.lineText} line stable, so ${prompt.gapCoord} does not need an immediate defense.`
+    : null;
+  const bridgeDirectionalSummaryText = bridgeContext && firstBridgeLineSide && secondBridgeLineSide
+    ? `${firstCoord} and ${secondCoord} leave the ${bridgeContext.lineText} bridge equally stable: ${anchorCoord} has ${formatLibertyCount(secondRecount.anchorLiberties.length)} and ${stoneCoord} has ${formatLibertyCount(secondRecount.stoneLiberties.length)} either way. ${firstCoord} attacks ${prompt.gapCoord} from ${firstBridgeLineSide.fromLineText} line; ${secondCoord} tests ${secondBridgeLineSide.testsLineText}. ${bridgeContext.oppositeAnchorCoord} still supports through ${bridgeContext.oppositeGapCoord}, so ${prompt.gapCoord} does not need an immediate defense.`
+    : null;
   const proofText = hasSameCounts
     ? bridgeContext
-      ? `You proved ${outsideCoord} outside and ${insideCoord} inside both leave the ${bridgeContext.lineText} line stable, so ${prompt.gapCoord} does not need an immediate defense.`
+      ? bridgeDirectionalProofText ?? `You proved ${outsideCoord} outside and ${insideCoord} inside both leave the ${bridgeContext.lineText} line stable, so ${prompt.gapCoord} does not need an immediate defense.`
       : `You proved ${firstCoord} and ${secondCoord} both leave ${anchorCoord} and ${stoneCoord} safe, so ${prompt.gapCoord} does not need an immediate defense.`
     : `You proved ${secondCoord} leaves ${anchorCoord} and ${stoneCoord} stable without a short-side defense, so ${prompt.gapCoord} does not need an immediate defense.`;
 
@@ -2096,7 +2175,7 @@ function getPressureComparisonSummary(
     ],
     text: hasSameCounts
       ? bridgeContext
-        ? `${outsideCoord} and ${insideCoord} leave the ${bridgeContext.lineText} bridge equally stable: ${anchorCoord} has ${formatLibertyCount(secondRecount.anchorLiberties.length)} and ${stoneCoord} has ${formatLibertyCount(secondRecount.stoneLiberties.length)} either way. ${outsideCoord} attacks ${prompt.gapCoord} from outside the line; ${insideCoord} tests the inside toward the center. ${bridgeContext.oppositeAnchorCoord} still supports through ${bridgeContext.oppositeGapCoord}, so ${prompt.gapCoord} does not need an immediate defense.`
+        ? bridgeDirectionalSummaryText ?? `${outsideCoord} and ${insideCoord} leave the ${bridgeContext.lineText} bridge equally stable: ${anchorCoord} has ${formatLibertyCount(secondRecount.anchorLiberties.length)} and ${stoneCoord} has ${formatLibertyCount(secondRecount.stoneLiberties.length)} either way. ${outsideCoord} attacks ${prompt.gapCoord} from outside the line; ${insideCoord} tests the inside toward the center. ${bridgeContext.oppositeAnchorCoord} still supports through ${bridgeContext.oppositeGapCoord}, so ${prompt.gapCoord} does not need an immediate defense.`
         : `${firstCoord} and ${secondCoord} leave the same liberty counts: ${anchorCoord} has ${formatLibertyCount(secondRecount.anchorLiberties.length)} and ${stoneCoord} has ${formatLibertyCount(secondRecount.stoneLiberties.length)} either way. The difference is direction: ${directionText}`
       : `Compared with ${firstCoord}, ${secondCoord} changes the count: ${formatLibertyChange(anchorCoord, firstRecount.anchorLiberties.length, secondRecount.anchorLiberties.length)} and ${formatLibertyChange(stoneCoord, firstRecount.stoneLiberties.length, secondRecount.stoneLiberties.length)}. The direction also changes: ${directionText}`,
     proofText,
@@ -2138,7 +2217,7 @@ function getPressureComparisonProofRowText(
     return `${joinAndCoordinateList(stableGapCoords)} were already tested and stayed stable. ${comparisonSummary.proofText}`;
   }
 
-  return null;
+  return recap && comparisonSummary.hasSameCounts ? comparisonSummary.proofText : null;
 }
 
 function getPressureChainExtensionProofText(

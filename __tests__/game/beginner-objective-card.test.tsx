@@ -1037,6 +1037,23 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText(`E5 applies the C4 read in the real game: ${c4BridgeProof} Black can keep extending instead of answering a cut that has not happened.`)).toBeTruthy();
     expect(screen.getByText(`Carry forward the bridge: E5 now links the older G5 stone to the proven C7-C5-C3 bridge through C5 and D5. Read F5 with that whole connection in mind, not as a fresh isolated G5-E5 gap.`)).toBeTruthy();
     expect(screen.queryByText(`Carry forward the proof: ${c4BridgeProof} Now test F5 the same way before the next extension.`)).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for F5' }));
+
+    expect(screen.getByText('Imagine White plays F5. Keep the C5-E5-G5 line in mind while you compare replies from above and below: connect by attacking the cutting stone at F6 or F4, defend a Black side that is short on liberties, or keep extending if both stones still have room.')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Choose F6 as the first reply to F5' }));
+
+    expect(screen.getByText('F6 attacks F5 from above the C5-E5-G5 line. F4 is the below comparison, so recount G5 and E5 before deciding whether the bridge needs a defense.')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Recount G5 and E5 after F6' }));
+
+    expect(screen.getByText('After F6, recount the C5-E5-G5 line: G5 has 3 liberties at G6, G4, and H5. E5 has 3 liberties at E6, E4, and D5. C5 still supports through D5, so this read is checking whether G5 or E5 becomes short before extending again. Neither side is short yet, so keep building while staying ready to answer F5.')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Compare F4 against F6' }));
+
+    expect(screen.getByText('F6 and F4 leave the C5-E5-G5 bridge equally stable: G5 has 3 liberties and E5 has 3 liberties either way. F6 attacks F5 from above the line; F4 tests below the line. C5 still supports through D5, so F5 does not need an immediate defense.')).toBeTruthy();
+    expect(screen.getByText('You proved F6 above and F4 below both leave the C5-E5-G5 line stable, so F5 does not need an immediate defense.')).toBeTruthy();
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {
