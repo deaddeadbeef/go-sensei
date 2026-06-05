@@ -7,6 +7,7 @@ import {
   getBeginnerObjectiveProgress,
   getFreshAreaFollowUpContext,
 } from '@/lib/coaching/beginner-objectives';
+import { getSuggestionMarkerLabel } from '@/components/board/overlays/SuggestionOverlay';
 import type { BeginnerObjective, FreshAreaFollowUpContext } from '@/lib/coaching/beginner-objectives';
 import type { SenseiAction } from '@/lib/coaching/sensei-actions';
 import { getMoveInsight } from '@/lib/coaching/move-insight';
@@ -2887,6 +2888,7 @@ export function BeginnerObjectiveCard() {
   const recordInteraction = useGameStore((s) => s.recordInteraction);
   const addChatMessage = useGameStore((s) => s.addChatMessage);
   const applyTargetHints = useGameStore((s) => s.applyTargetHints);
+  const suggestions = useGameStore((s) => s.overlays.suggestions);
   const guidedReadReplayRequest = useGameStore((s) => s.guidedReadReplayRequest);
   const clearGuidedReadReplay = useGameStore((s) => s.clearGuidedReadReplay);
   const canPlayTarget = phase === 'playing' && game.currentPlayer === 'black' && !isAiThinking;
@@ -4889,6 +4891,12 @@ export function BeginnerObjectiveCard() {
           <span>{finalTargetDisplayText}</span>
           {playableTargets.map((point) => {
             const coord = pointToCoord(point, game.board.size);
+            const suggestion = suggestions.find((candidate) => targetKey(candidate.point) === targetKey(point));
+            const candidateLabel = suggestion ? getSuggestionMarkerLabel(suggestion.rank) : null;
+            const buttonLabel = candidateLabel ? `${candidateLabel} ${coord}` : coord;
+            const actionLabel = candidateLabel
+              ? `Play candidate ${candidateLabel} at ${coord} target for ${objective.title}`
+              : `Play ${coord} target for ${objective.title}`;
 
             return (
               <button
@@ -4901,7 +4909,7 @@ export function BeginnerObjectiveCard() {
                   backgroundColor: `${COLORS.ui.accent}1f`,
                 }}
                 disabled={!canPlayTarget}
-                aria-label={`Play ${coord} target for ${objective.title}`}
+                aria-label={actionLabel}
                 aria-describedby={activeTargetKey === targetKey(point) ? targetHelpId : undefined}
                 onPointerEnter={() => scheduleTargetHelp(point)}
                 onPointerMove={() => scheduleTargetHelp(point)}
@@ -4912,7 +4920,7 @@ export function BeginnerObjectiveCard() {
                 onKeyDown={() => scheduleTargetHelp(point)}
                 onClick={() => handleTargetClick(point, activePressureExtensionHandoff)}
               >
-                {coord}
+                {buttonLabel}
               </button>
             );
           })}
