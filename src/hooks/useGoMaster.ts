@@ -50,6 +50,15 @@ interface ChatResponse {
   toolResults?: ToolResult[];
 }
 
+function cloudRecoveryText(error: unknown, returnedTurn: boolean) {
+  const opener = error instanceof TypeError
+    ? 'I could not reach cloud Sensei this turn.'
+    : 'Cloud Sensei could not answer this turn.';
+  const turnText = returnedTurn ? ' I passed for White so the board is not stuck.' : '';
+
+  return `${opener} Use the board for now: ask for a hint, review the current objective, or play a move that gives your stones more room.${turnText}`;
+}
+
 interface PointPayload {
   x: number;
   y: number;
@@ -490,7 +499,7 @@ export function useGoMaster() {
 
         const returnedTurn = passSenseiIfNeeded('Sensei could not answer and passed for White to keep the board playable.');
         showBubble({
-          text: `Hmm, I had trouble thinking. ${(err as Error).message}${returnedTurn ? ' I passed for White so the board is not stuck.' : ''}`,
+          text: cloudRecoveryText(err, returnedTurn),
           variant: 'warning',
           anchorPoint: null,
         });

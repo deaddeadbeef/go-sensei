@@ -1683,6 +1683,42 @@ describe('useGoMaster local answers', () => {
     sessionStorage.removeItem('go-sensei-github-token');
   });
 
+  it('hides raw cloud errors when no local fallback is available', async () => {
+    sessionStorage.setItem('go-sensei-github-token', 'test-token');
+    act(() => {
+      useGameStore.getState().startNewGame(9);
+      useGameStore.setState({
+        appPhase: 'game',
+        phase: 'playing',
+        teachingLevel: 'advanced',
+      });
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(
+      JSON.stringify({ error: 'provider exploded with sk-secret-test-value' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } },
+    ));
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { result } = renderHook(() => useGoMaster());
+
+    await act(async () => {
+      result.current.sendMessage('Give me a vivid proverb for this board');
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(state.bubble.variant).toBe('warning');
+    expect(state.bubble.text).toContain('Cloud Sensei could not answer this turn.');
+    expect(state.bubble.text).toContain('Use the board for now');
+    expect(state.bubble.text).not.toContain('provider exploded');
+    expect(state.bubble.text).not.toContain('sk-secret-test-value');
+
+    consoleErrorSpy.mockRestore();
+    sessionStorage.removeItem('go-sensei-github-token');
+  });
+
   it('keeps even capture-race questions grounded in the current guided objective', () => {
     act(() => {
       useGameStore.getState().startGuidedIntroGame();
