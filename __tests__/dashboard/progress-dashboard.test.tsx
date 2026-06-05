@@ -66,6 +66,25 @@ describe('ProgressDashboard', () => {
     expect(useGameStore.getState().appPhase).toBe('path');
   });
 
+  it('uses explicit labels for dashboard section navigation', () => {
+    render(<ProgressDashboard />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open lessons →' }));
+    expect(useGameStore.getState().appPhase).toBe('lessons');
+
+    useGameStore.getState().showDashboard();
+    fireEvent.click(screen.getByRole('button', { name: 'Open problem practice →' }));
+    expect(useGameStore.getState().appPhase).toBe('problems');
+
+    useGameStore.getState().showDashboard();
+    fireEvent.click(screen.getByRole('button', { name: 'Open skill tree →' }));
+    expect(useGameStore.getState().appPhase).toBe('skills');
+
+    useGameStore.getState().showDashboard();
+    fireEvent.click(screen.getByRole('button', { name: 'Start daily review →' }));
+    expect(useGameStore.getState().appPhase).toBe('review');
+  });
+
   it('restores guided 9x9 from a guided-game recommendation when the current game is stale', () => {
     useGameStore.getState().startGuidedIntroGame();
     useGameStore.getState().startNewGame(19);
