@@ -165,6 +165,7 @@ function buildProgressReflectionAnswer(
         ? `Still fragile: ${joinList(introducedLabels)} ${introducedLabels.length === 1 ? 'needs' : 'need'} more proof.`
         : '',
       `Next honest step: ${recommendation.title}. ${recommendation.reason}`,
+      `Finish line: ${recommendation.finishLine}`,
       focusLabels.length ? `Keep attention on ${joinList(focusLabels)}.` : '',
       firstStep ? `First: ${firstStep}` : '',
     ].filter(Boolean).join(' '),
@@ -198,6 +199,7 @@ export function getLocalStudyPlanAnswer(
     text: [
       `Study plan: ${recommendation.title}.`,
       recommendation.reason,
+      `Finish line: ${recommendation.finishLine}`,
       focusLabels.length ? `Focus on ${joinList(focusLabels)}.` : '',
       firstStep ? `First: ${firstStep}` : '',
       secondStep ? `Then: ${secondStep}` : '',
