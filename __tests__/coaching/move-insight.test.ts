@@ -32,6 +32,24 @@ function playBlackStoneAndPass(game: GameState, point: Point): GameState {
   return passMove(playBlackStone(game, point));
 }
 
+function settledShapeGame(): GameState {
+  return {
+    ...createGame(9),
+    board: boardWith([
+      { point: { x: 2, y: 2 }, color: 'black' },
+      { point: { x: 4, y: 2 }, color: 'black' },
+      { point: { x: 6, y: 2 }, color: 'black' },
+      { point: { x: 2, y: 4 }, color: 'black' },
+      { point: { x: 3, y: 4 }, color: 'black' },
+      { point: { x: 4, y: 4 }, color: 'black' },
+      { point: { x: 6, y: 4 }, color: 'black' },
+      { point: { x: 2, y: 6 }, color: 'black' },
+      { point: { x: 4, y: 6 }, color: 'black' },
+      { point: { x: 6, y: 6 }, color: 'black' },
+    ]),
+  };
+}
+
 describe('move insight', () => {
   it('starts a guided game with a concrete corner reason', () => {
     const insight = getMoveInsight(createGame(9), 'guided');
@@ -96,6 +114,18 @@ describe('move insight', () => {
     });
     expect(insight?.observation).toBe('C5 links C3 back toward the earlier C7 corner: C6 and C4 stay open, so the corner stone and the lower-side stone now support the same line before you extend again.');
     expect(insight?.nextStep).toContain('Try E5');
+  });
+
+  it('reflects on the direction opened by a fresh-area target', () => {
+    const move = playBlackStone(settledShapeGame(), { x: 7, y: 1 });
+
+    const insight = getMoveInsight(move, 'guided');
+
+    expect(insight).toMatchObject({
+      title: 'Fresh direction chosen',
+      conceptIds: expect.arrayContaining(['direction-of-play', 'territory']),
+    });
+    expect(insight?.observation).toBe('H8 opens the upper-right direction away from the settled local shape. Treat it as a new plan: ask what space it claims and how White might answer nearby.');
   });
 
   it('coaches center openings toward corners', () => {
