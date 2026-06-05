@@ -43,10 +43,7 @@ vi.mock('framer-motion', async () => {
 });
 
 function clickButtonText(text: string) {
-  const button = screen.getByText(text).closest('button');
-  if (!button) throw new Error(`Expected "${text}" to be inside a button.`);
-
-  fireEvent.click(button);
+  fireEvent.click(screen.getByRole('button', { name: text }));
 }
 
 describe('SkillTree', () => {
@@ -57,6 +54,37 @@ describe('SkillTree', () => {
   });
 
   afterEach(() => cleanup());
+
+  it('surfaces the first unlocked concept as the next step', () => {
+    render(<SkillTree />);
+
+    const upNext = screen.getByTestId('skill-tree-up-next');
+
+    expect(upNext.textContent).toContain('Up next');
+    expect(upNext.textContent).toContain('Stones & Board');
+    expect(upNext.textContent).toContain('The 19×19 grid, black and white stones, alternating play.');
+
+    clickButtonText('Start lesson');
+
+    expect(useGameStore.getState().appPhase).toBe('lesson');
+    expect(useGameStore.getState().currentLessonId).toBe('groups');
+  });
+
+  it('advances the next step to the first unseen unlocked concept', () => {
+    useConceptStore.getState().setMasteryLevel('stones-and-board', 1);
+
+    render(<SkillTree />);
+
+    const upNext = screen.getByTestId('skill-tree-up-next');
+
+    expect(upNext.textContent).toContain('Liberties');
+    expect(upNext.textContent).toContain('Empty points adjacent to a stone or group.');
+
+    clickButtonText('Start lesson');
+
+    expect(useGameStore.getState().appPhase).toBe('lesson');
+    expect(useGameStore.getState().currentLessonId).toBe('liberties');
+  });
 
   it('offers lesson and problem practice from a concept detail', () => {
     useConceptStore.getState().setMasteryLevel('stones-and-board', 1);
@@ -93,7 +121,7 @@ describe('SkillTree', () => {
 
     clickButtonText('View Stones & Board requirement');
 
-    expect(screen.getByRole('heading', { name: 'Stones & Board' })).toBeTruthy();
+    expect(screen.getByTestId('skill-tree-detail').textContent).toContain('Stones & Board');
   });
 
   it('scrolls selected concept details into view', () => {
