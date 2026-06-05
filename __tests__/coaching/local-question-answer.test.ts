@@ -949,7 +949,8 @@ describe('local question answer', () => {
 
     const answer = getLocalGameReviewAnswer(firstMove.newState, 'guided');
 
-    expect(answer?.text).toContain('Local beginner review: here are the board moments I can verify without cloud help.');
+    expect(answer?.text).toContain('Beginner game review: here are the board moments to learn from.');
+    expect(answer?.text).not.toContain('cloud help');
     expect(answer?.text).toContain('Best move: Move 1 C7 followed "Start with a corner".');
     expect(answer?.text).toContain('Main fix: after Move 1 C7, do not stop at "good"; ask what the stone helps next.');
     expect(answer?.text).toContain('Next practice target: Make your stones work together. Play a one-space jump from one of your stones. Try E7 or C5.');
@@ -986,7 +987,8 @@ describe('local question answer', () => {
 
     const answer = getLocalQuestionAnswer('Review this game', firstMove.newState, 'guided');
 
-    expect(answer?.text).toContain('Local beginner review');
+    expect(answer?.text).toContain('Beginner game review');
+    expect(answer?.text).not.toContain('cloud help');
     expect(answer?.text).toContain('Best move: Move 1 C7 followed "Start with a corner".');
     expect(answer?.boardFocus?.highlights?.[0]).toMatchObject({
       point: { x: 2, y: 2 },
