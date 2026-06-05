@@ -1792,21 +1792,38 @@ function getPressureProofBridgeText(
 }
 
 function getPressureLocalShapeSettledCue(
+  objective: BeginnerObjective,
   recap: PressureHandoffRecap | null,
   prompt: OneSpaceJumpReadPrompt | null,
   targets: Point[],
   board: BoardState,
 ): PressureLocalShapeSettledCue | null {
-  if (!recap?.repeatRead || !prompt) return null;
-  if (getPressureProofStableGapCoords(recap.proofText).length > 0) return null;
-  if (recap.point.y < board.size - 3) return null;
-  if (targets.length !== 2 || !targets.every((target) => target.y < recap.point.y)) return null;
+  if (!recap) return null;
 
-  const targetText = joinCoordinateList(targets.map((target) => pointToCoord(target, board.size)));
+  if (recap.repeatRead && prompt) {
+    if (getPressureProofStableGapCoords(recap.proofText).length > 0) return null;
+    if (recap.point.y < board.size - 3) return null;
+    if (targets.length !== 2 || !targets.every((target) => target.y < recap.point.y)) return null;
+
+    const targetText = joinCoordinateList(targets.map((target) => pointToCoord(target, board.size)));
+
+    return {
+      title: 'Local shape settled',
+      text: `${recap.coord} landed after the ${recap.repeatRead.previousGapCoord} read, so this lower-edge shape is connected enough for now. Look upward next: ${targetText} grow the same stones from a new direction.`,
+    };
+  }
+
+  if (recap.repeatRead || objective.id !== 'look-for-weak-groups' || targets.length > 0) return null;
+
+  const connectedNeighborCoords = getAdjacentPoints(board, recap.point)
+    .filter((point) => getStone(board, point) === 'black')
+    .map((point) => pointToCoord(point, board.size));
+
+  if (connectedNeighborCoords.length < 2) return null;
 
   return {
     title: 'Local shape settled',
-    text: `${recap.coord} landed after the ${recap.repeatRead.previousGapCoord} read, so this lower-edge shape is connected enough for now. Look upward next: ${targetText} grow the same stones from a new direction.`,
+    text: `${recap.coord} connected ${joinAndCoordinateList(connectedNeighborCoords)}. No marked Black group is short on liberties here, so this side is quiet now. Choose a new area instead of rereading the same bridge.`,
   };
 }
 
@@ -3853,6 +3870,7 @@ export function BeginnerObjectiveCard() {
     ? getPressureProofBridgeText(activePressureHandoffRecap, readPrompt, game.board)
     : null;
   const pressureLocalShapeSettledCue = getPressureLocalShapeSettledCue(
+    objective,
     activePressureHandoffRecap,
     readPrompt,
     playableTargets,
@@ -4202,6 +4220,19 @@ export function BeginnerObjectiveCard() {
           </div>
           <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
             {insight.observation}
+          </p>
+        </div>
+      )}
+      {pressureLocalShapeSettledCue && !readPrompt && (
+        <div className="mb-2 border-b border-white/10 pb-2">
+          <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: COLORS.ui.textSecondary }}>
+            Read next
+          </div>
+          <div className="mt-1 text-xs font-semibold" style={{ color: COLORS.ui.textPrimary }}>
+            {pressureLocalShapeSettledCue.title}
+          </div>
+          <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+            {pressureLocalShapeSettledCue.text}
           </p>
         </div>
       )}
