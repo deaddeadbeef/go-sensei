@@ -249,9 +249,15 @@ export function ProblemView() {
   const revealSolution = problemInteraction.status !== 'playing';
 
   return (
-    <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+    <div
+      data-testid="problem-shell"
+      className="flex-1 min-h-0 flex flex-col overflow-y-auto overflow-x-hidden md:flex-row md:overflow-hidden"
+    >
       {/* ---- Left: Board area ---- */}
-      <div className="flex-[7] flex flex-col relative min-w-0 min-h-0 overflow-hidden">
+      <div
+        data-testid="problem-board-panel"
+        className="flex-none flex min-h-[300px] shrink-0 flex-col relative min-w-0 overflow-hidden md:flex-[7] md:min-h-0 md:shrink md:overflow-hidden"
+      >
         <div
           className="absolute inset-0 pointer-events-none"
           style={{ background: `radial-gradient(circle at center, ${COLORS.board.bg}15 0%, transparent 70%)` }}
@@ -348,7 +354,8 @@ export function ProblemView() {
 
       {/* ---- Right: Sidebar ---- */}
       <div
-        className="flex-[3] flex flex-col md:min-w-[280px] md:max-w-[400px] border-t md:border-t-0 md:border-l"
+        data-testid="problem-sidebar"
+        className="flex-none flex h-[58dvh] min-h-[340px] max-h-[600px] min-w-0 flex-col border-t md:flex-[3] md:min-h-0 md:h-auto md:max-h-none md:min-w-[280px] md:max-w-[400px] md:border-t-0 md:border-l"
         style={{ borderColor: COLORS.ui.bgCard, backgroundColor: COLORS.ui.bgPrimary }}
       >
         {/* Title */}

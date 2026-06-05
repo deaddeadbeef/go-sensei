@@ -71,6 +71,43 @@ describe('ProblemView filtered practice flow', () => {
     expect(screen.getByText('Solution line')).toBeTruthy();
   });
 
+  it('keeps the mobile problem board below the app bar in a scrollable shell', () => {
+    act(() => {
+      useGameStore.getState().startProblem(problemById('capture-001'));
+    });
+
+    render(<ProblemView />);
+
+    const classTokens = (element: HTMLElement) => element.className.split(/\s+/);
+    const shell = screen.getByTestId('problem-shell');
+    const boardPanel = screen.getByTestId('problem-board-panel');
+    const sidebar = screen.getByTestId('problem-sidebar');
+
+    expect(classTokens(shell)).toEqual(expect.arrayContaining([
+      'min-h-0',
+      'overflow-y-auto',
+      'overflow-x-hidden',
+      'md:overflow-hidden',
+    ]));
+    expect(classTokens(boardPanel)).toEqual(expect.arrayContaining([
+      'flex-none',
+      'min-h-[300px]',
+      'shrink-0',
+      'md:flex-[7]',
+      'md:min-h-0',
+    ]));
+    expect(classTokens(sidebar)).toEqual(expect.arrayContaining([
+      'flex-none',
+      'h-[58dvh]',
+      'min-h-[340px]',
+      'max-h-[600px]',
+      'min-w-0',
+      'md:flex-[3]',
+      'md:min-h-0',
+      'md:h-auto',
+    ]));
+  });
+
   it('returns to the active filtered problem list after the last filtered problem', () => {
     act(() => {
       useGameStore.getState().startProblem(problemById('capture-004'));
