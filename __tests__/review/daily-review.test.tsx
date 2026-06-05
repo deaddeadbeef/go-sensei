@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DailyReview } from '@/components/review/DailyReview';
 import { useGameStore } from '@/stores/game-store';
+import { useProgressStore } from '@/stores/progress-store';
 import { useReviewStore } from '@/stores/review-store';
 import { BOARD_PADDING, SVG_SIZE, cellSize } from '@/utils/coordinates';
 
@@ -35,6 +36,7 @@ describe('DailyReview', () => {
   let boardRectSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
+    useProgressStore.getState().resetAll();
     useReviewStore.getState().resetAll();
     useGameStore.getState().startNewGame(19);
     useGameStore.getState().showReview();
@@ -64,10 +66,27 @@ describe('DailyReview', () => {
     expect(screen.getByText("Seed tomorrow's review")).toBeTruthy();
     expect(screen.getByText(/Go Sensei will bring it back when the lesson is ready to stick/)).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Solve a fresh problem' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Start Corner Capture' }));
 
-    expect(useGameStore.getState().appPhase).toBe('problems');
-    expect(useGameStore.getState().preferredProblemFilter).toBeNull();
+    expect(useGameStore.getState().appPhase).toBe('problem');
+    expect(useGameStore.getState().currentProblemId).toBe('capture-001');
+  });
+
+  it('starts the next unsolved seed problem when reviews are clear', () => {
+    useProgressStore.getState().recordProblemAttempt({
+      problemId: 'capture-001',
+      solved: true,
+      attempts: 1,
+      moveSequence: [{ x: 0, y: 1 }],
+      timestamp: Date.now(),
+    });
+
+    render(<DailyReview />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start Edge Squeeze' }));
+
+    expect(useGameStore.getState().appPhase).toBe('problem');
+    expect(useGameStore.getState().currentProblemId).toBe('capture-002');
   });
 
   it('lets all-caught-up learners return to the learning path', () => {

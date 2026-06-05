@@ -5,7 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '@/stores/game-store';
 import { useReviewStore } from '@/stores/review-store';
 import { useConceptStore } from '@/stores/concept-store';
+import { useProgressStore } from '@/stores/progress-store';
 import { PROBLEMS } from '@/lib/problems/problem-data';
+import { getRecommendedProblem } from '@/lib/problems/recommendation';
 import type { Problem } from '@/lib/problems/types';
 import type { MoveNode } from '@/lib/problems/types';
 import type { Point, BoardSize, GameState } from '@/lib/go-engine/types';
@@ -137,6 +139,7 @@ export function DailyReview() {
   const recordAttempt = useReviewStore((s) => s.recordAttempt);
   const getReviewStats = useReviewStore((s) => s.getReviewStats);
   const recordEvidence = useConceptStore((s) => s.recordEvidence);
+  const problemAttempts = useProgressStore((s) => s.problemAttempts);
 
   const [review, setReview] = useState<ReviewState>(() => {
     const problemIds = getDueProblems().filter((id) =>
@@ -246,6 +249,7 @@ export function DailyReview() {
     const stats = getReviewStats();
     const summary = buildReviewSessionSummary(review.results);
     const replayProblem = summary.attentionProblems[0]?.problem ?? null;
+    const seedProblem = getRecommendedProblem(problemAttempts);
     const learningPathLabel = review.results.length > 0 && !summary.practiceCategory
       ? 'Pick up next recommendation'
       : 'Learning path';
@@ -359,11 +363,17 @@ export function DailyReview() {
             )}
             {review.results.length === 0 && (
               <button
-                onClick={() => showProblems()}
+                onClick={() => {
+                  if (seedProblem) {
+                    startProblem(seedProblem);
+                  } else {
+                    showProblems();
+                  }
+                }}
                 className="px-6 py-2 rounded-lg text-sm font-medium transition-transform hover:scale-[1.02] active:scale-95"
                 style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
               >
-                Solve a fresh problem
+                {seedProblem ? `Start ${seedProblem.title}` : 'Solve a fresh problem'}
               </button>
             )}
             <button
