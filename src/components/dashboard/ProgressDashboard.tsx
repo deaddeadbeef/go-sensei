@@ -264,7 +264,7 @@ export function ProgressDashboard() {
         >
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-sm font-semibold" style={{ color: COLORS.text }}>📚 Lessons</h2>
-            <button onClick={showLessons} className="text-xs" style={{ color: COLORS.accent }}>View all →</button>
+            <button onClick={showLessons} className="text-xs" style={{ color: COLORS.accent }}>Open lessons →</button>
           </div>
           <ProgressBar value={completedLessons.length} max={LESSONS.length} color={COLORS.blue} />
           <p className="text-xs mt-1" style={{ color: COLORS.textDim }}>
@@ -282,7 +282,7 @@ export function ProgressDashboard() {
         >
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-sm font-semibold" style={{ color: COLORS.text }}>🧩 Tsumego Problems</h2>
-            <button onClick={() => showProblems()} className="text-xs" style={{ color: COLORS.accent }}>Solve more →</button>
+            <button onClick={() => showProblems()} className="text-xs" style={{ color: COLORS.accent }}>Open problem practice →</button>
           </div>
           <ProgressBar value={solvedProblems} max={PROBLEMS.length} color={COLORS.green} />
           <p className="text-xs mt-1" style={{ color: COLORS.textDim }}>
@@ -300,7 +300,7 @@ export function ProgressDashboard() {
         >
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-sm font-semibold" style={{ color: COLORS.text }}>🧠 Concept Mastery</h2>
-            <button onClick={showSkillTree} className="text-xs" style={{ color: COLORS.accent }}>Skill tree →</button>
+            <button onClick={showSkillTree} className="text-xs" style={{ color: COLORS.accent }}>Open skill tree →</button>
           </div>
           <div className="flex gap-2 mb-2">
             <div className="flex-1">
@@ -328,7 +328,7 @@ export function ProgressDashboard() {
         >
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-sm font-semibold" style={{ color: COLORS.text }}>📖 Spaced Repetition</h2>
-            <button onClick={showReview} className="text-xs" style={{ color: COLORS.accent }}>Start review →</button>
+            <button onClick={showReview} className="text-xs" style={{ color: COLORS.accent }}>Start daily review →</button>
           </div>
           <div className="flex items-center gap-4 text-xs" style={{ color: COLORS.textDim }}>
             <span>🔥 {reviewStats.streak} day streak</span>
