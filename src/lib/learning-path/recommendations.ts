@@ -145,7 +145,7 @@ function lessonRecommendation(targetId: string, lessonTitle: string): LearningRe
     actionLabel: `Start lesson: ${lessonTitle}`,
     practicePlan: [
       'Read the idea, then prove it on the board checkpoint.',
-      'Use the hint only after choosing your first answer.',
+      'If the answer is shown, explain why it matches the hint before continuing.',
       'Finish the lesson to unlock the next recommendation.',
     ],
   };
@@ -171,7 +171,7 @@ function problemRecommendation(
     actionLabel: `Open ${problemCategoryTitle(filter).toLowerCase()} problems`,
     practicePlan: [
       'Look for the forcing move before tapping the board.',
-      'If you miss three times, study the shown solution line.',
+      'If you miss three times, cover the numbers and explain the first solution move.',
       'Solve the same idea again later through review.',
     ],
   };
