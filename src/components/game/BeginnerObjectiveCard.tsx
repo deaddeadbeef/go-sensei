@@ -2724,6 +2724,26 @@ function buildTargetHintHighlights(
   }
 }
 
+function getObjectiveReadCue(
+  objective: BeginnerObjective,
+  followUpContext: FreshAreaFollowUpContext | null,
+): string | null {
+  if (objective.targetPoints.length === 0) return null;
+
+  switch (objective.id) {
+    case 'claim-corner':
+      return 'Before you click, name the corner edges this stone will use.';
+    case 'extend-from-stone':
+      return followUpContext
+        ? `Before you click, name ${followUpContext.anchorCoord} and the one-space gap it keeps open.`
+        : 'Before you click, name the anchor stone and the open one-space gap.';
+    case 'look-for-weak-groups':
+      return 'Before you click, name the group and the liberty it needs.';
+    case 'choose-new-area':
+      return 'Before you click, say why this is away from your settled shape.';
+  }
+}
+
 interface StablePressureExtensionHandoffProps {
   handoff: PressureExtensionHandoff;
   canPlayTarget: boolean;
@@ -3932,6 +3952,9 @@ export function BeginnerObjectiveCard() {
     playableTargets,
     game.board,
   );
+  const objectiveReadCue = finalTargetDisplayText
+    ? getObjectiveReadCue(objective, freshAreaFollowUpContext)
+    : null;
   const projectedPressureRepeatReadPoint = activePressureHandoffRecap && readPrompt
     ? getPressureRepeatReadPoint(activePressureHandoffRecap, readPrompt)
     : null;
@@ -4924,6 +4947,11 @@ export function BeginnerObjectiveCard() {
               </button>
             );
           })}
+        </div>
+      )}
+      {objectiveReadCue && (
+        <div className="mt-1 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+          {objectiveReadCue}
         </div>
       )}
       {activeTargetCoord && activeTargetExplanation && (
