@@ -34,7 +34,8 @@ export function LessonPicker() {
 
   return (
     <div
-      className="flex min-h-screen items-center justify-center px-4 py-12"
+      data-testid="lesson-library"
+      className="flex flex-1 min-h-0 items-start justify-center overflow-y-auto px-4 py-5 sm:py-8"
       style={{ backgroundColor: COLORS.ui.bgPrimary }}
     >
       <div className="w-full max-w-2xl">
