@@ -351,7 +351,7 @@ export function DailyReview() {
               className="px-6 py-2 rounded-lg text-sm font-medium transition-opacity hover:opacity-90"
               style={{ backgroundColor: COLORS.ui.bgCard, color: COLORS.ui.textSecondary }}
             >
-              Back to Game
+              Return to board
             </button>
           </div>
         </motion.div>
@@ -635,7 +635,7 @@ export function DailyReview() {
             className="text-sm text-center transition-opacity hover:opacity-100"
             style={{ color: COLORS.ui.textSecondary, opacity: 0.7 }}
           >
-            ✕ Back to Game
+            Return to board
           </button>
         </div>
       </div>

@@ -75,6 +75,14 @@ describe('DailyReview', () => {
     expect(useGameStore.getState().appPhase).toBe('path');
   });
 
+  it('returns all-caught-up learners to the board', () => {
+    render(<DailyReview />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Return to board' }));
+
+    expect(useGameStore.getState().appPhase).toBe('game');
+  });
+
   it('shows a reading routine for due review problems', () => {
     makeProblemDue('capture-001');
 
@@ -93,6 +101,16 @@ describe('DailyReview', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Show hint' }));
 
     expect(screen.getByText(/A stone in the corner only has two liberties/)).toBeTruthy();
+  });
+
+  it('returns active review learners to the board', () => {
+    makeProblemDue('capture-001');
+
+    render(<DailyReview />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Return to board' }));
+
+    expect(useGameStore.getState().appPhase).toBe('game');
   });
 
   it('keeps the mobile review board square in a scrollable shell', () => {
