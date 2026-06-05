@@ -650,13 +650,13 @@ describe('local question answer', () => {
         id: 'local-objective-move-7,1',
         point: { x: 7, y: 1 },
         rank: 1,
-        reason: 'Consider H8 only if it starts a fresh direction away from the settled local shape.',
+        reason: 'Consider H8 as a fresh upper-right direction away from the settled local shape.',
       },
       {
         id: 'local-objective-move-7,7',
         point: { x: 7, y: 7 },
         rank: 2,
-        reason: 'Consider H2 only if it starts a fresh direction away from the settled local shape.',
+        reason: 'Consider H2 as a fresh lower-right direction away from the settled local shape.',
       },
     ]);
   });

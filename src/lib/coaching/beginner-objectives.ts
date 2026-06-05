@@ -70,6 +70,18 @@ function joinCoordinateList(coords: string[]): string {
   return `${coords.slice(0, -1).join(', ')}, or ${coords[coords.length - 1]}`;
 }
 
+export function getBoardAreaDirectionLabel(point: Point, boardSize: BoardSize): string {
+  const center = (boardSize - 1) / 2;
+  const vertical = point.y < center ? 'upper' : point.y > center ? 'lower' : null;
+  const horizontal = point.x < center ? 'left' : point.x > center ? 'right' : null;
+
+  if (vertical && horizontal) return `${vertical}-${horizontal} direction`;
+  if (vertical) return `${vertical} side`;
+  if (horizontal) return `${horizontal} side`;
+
+  return 'center';
+}
+
 export function formatObjectiveTargetText(
   objective: BeginnerObjective,
   boardSize: BoardSize,

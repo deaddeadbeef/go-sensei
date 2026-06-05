@@ -134,6 +134,7 @@ Latest completed slice:
 - Added a settled-shape transition after the D5 handoff, so the tutor says D5 connected C5 and E5 and tells the learner to choose a new area instead of rereading the same bridge.
 - Replaced the no-target weak-group fallback with a "Choose a new area" objective when the board has no marked weak group or extension target.
 - Added concrete H8/H2 fresh-area targets to the settled-board objective, using empty interior points that are away from the last local shape and not adjacent to existing Black stones.
+- Added direction-aware fresh-area explanations, so H8 is described as upper-right and H2 as lower-right in target hover/focus help and local Q&A suggestions.
 
 Next investigation candidates:
-- Whether fresh-area target hover/focus explanations should name the nearby quadrant or direction each target opens.
+- Whether fresh-area targets should support a non-mutating preview that compares H8 and H2 before the learner plays one.

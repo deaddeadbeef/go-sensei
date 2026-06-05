@@ -2,6 +2,7 @@
 
 import {
   formatObjectiveTargetText,
+  getBoardAreaDirectionLabel,
   getBeginnerObjective,
   getBeginnerObjectiveProgress,
 } from '@/lib/coaching/beginner-objectives';
@@ -509,7 +510,7 @@ function getTargetExplanation(objective: BeginnerObjective, point: Point, board:
     case 'look-for-weak-groups':
       return getWeakGroupTargetExplanation(point, board);
     case 'choose-new-area':
-      return `${pointToCoord(point, board.size)} is a fresh-area candidate after the nearby shape settled.`;
+      return `${pointToCoord(point, board.size)} opens the ${getBoardAreaDirectionLabel(point, board.size)} after the nearby shape settled. It is far enough away to start a new plan without crowding your stones.`;
   }
 }
 
@@ -2687,7 +2688,7 @@ function buildTargetHintHighlights(objective: BeginnerObjective, point: Point, b
         id: `target-hint-target-${targetKey(point)}`,
         point: { ...point },
         variant: 'positive',
-        label: `${coord}: fresh area to consider after the nearby shape settled.`,
+        label: `${coord}: fresh ${getBoardAreaDirectionLabel(point, board.size)} after the nearby shape settled.`,
       }];
   }
 }
