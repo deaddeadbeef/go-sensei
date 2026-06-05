@@ -85,6 +85,58 @@ describe('DailyReview', () => {
     expect(screen.getByText('Captures are about the final liberty, not just contact.')).toBeTruthy();
   });
 
+  it('reveals the review hint from the action footer', () => {
+    makeProblemDue('capture-001');
+
+    render(<DailyReview />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show hint' }));
+
+    expect(screen.getByText(/A stone in the corner only has two liberties/)).toBeTruthy();
+  });
+
+  it('keeps the mobile review board square in a scrollable shell', () => {
+    makeProblemDue('capture-001');
+
+    render(<DailyReview />);
+
+    const classTokens = (element: HTMLElement) => element.className.split(/\s+/);
+    const shell = screen.getByTestId('daily-review-shell');
+    const boardPanel = screen.getByTestId('daily-review-board-panel');
+    const boardFrame = screen.getByTestId('daily-review-board-frame');
+    const sidebar = screen.getByTestId('daily-review-sidebar');
+
+    expect(classTokens(shell)).toEqual(expect.arrayContaining([
+      'min-h-0',
+      'overflow-y-auto',
+      'overflow-x-hidden',
+      'md:overflow-hidden',
+    ]));
+    expect(classTokens(boardPanel)).toEqual(expect.arrayContaining([
+      'flex-none',
+      'min-h-[340px]',
+      'shrink-0',
+      'md:flex-[7]',
+      'md:min-h-0',
+    ]));
+    expect(classTokens(boardFrame)).toEqual(expect.arrayContaining([
+      'aspect-square',
+      'h-full',
+      'max-h-[600px]',
+      'max-w-full',
+    ]));
+    expect(classTokens(sidebar)).toEqual(expect.arrayContaining([
+      'flex-none',
+      'h-[54dvh]',
+      'min-h-[300px]',
+      'max-h-[600px]',
+      'min-w-0',
+      'md:flex-[3]',
+      'md:min-h-0',
+      'md:h-auto',
+    ]));
+  });
+
   it('turns missed reviews into targeted practice', () => {
     makeProblemDue('life-001');
 
