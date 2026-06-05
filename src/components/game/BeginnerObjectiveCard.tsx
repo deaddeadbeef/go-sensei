@@ -107,6 +107,11 @@ interface PressureExtensionHandoff {
   recap: PressureHandoffRecap;
 }
 
+interface PressureLocalShapeSettledCue {
+  title: string;
+  text: string;
+}
+
 interface PressureReadSequenceRow {
   key: string;
   replayKey: string;
@@ -1568,6 +1573,25 @@ function getPressureProofBridgeText(recap: PressureHandoffRecap, prompt: OneSpac
   }
 
   return `Carry forward the proof: ${recap.proofText} Now test ${prompt.gapCoord} the same way before the next extension.`;
+}
+
+function getPressureLocalShapeSettledCue(
+  recap: PressureHandoffRecap | null,
+  prompt: OneSpaceJumpReadPrompt | null,
+  targets: Point[],
+  board: BoardState,
+): PressureLocalShapeSettledCue | null {
+  if (!recap?.repeatRead || !prompt) return null;
+  if (getPressureProofStableGapCoords(recap.proofText).length > 0) return null;
+  if (recap.point.y < board.size - 3) return null;
+  if (targets.length !== 2 || !targets.every((target) => target.y < recap.point.y)) return null;
+
+  const targetText = joinCoordinateList(targets.map((target) => pointToCoord(target, board.size)));
+
+  return {
+    title: 'Local shape settled',
+    text: `${recap.coord} landed after the ${recap.repeatRead.previousGapCoord} read, so this lower-edge shape is connected enough for now. Look upward next: ${targetText} grow the same stones from a new direction.`,
+  };
 }
 
 function getPressureRepeatReadPoint(recap: PressureHandoffRecap, prompt: OneSpaceJumpReadPrompt): Point | null {
@@ -3522,6 +3546,12 @@ export function BeginnerObjectiveCard() {
   const pressureProofBridgeText = activePressureHandoffRecap && readPrompt
     ? getPressureProofBridgeText(activePressureHandoffRecap, readPrompt)
     : null;
+  const pressureLocalShapeSettledCue = getPressureLocalShapeSettledCue(
+    activePressureHandoffRecap,
+    readPrompt,
+    playableTargets,
+    game.board,
+  );
   const projectedPressureRepeatReadPoint = activePressureHandoffRecap && readPrompt
     ? getPressureRepeatReadPoint(activePressureHandoffRecap, readPrompt)
     : null;
@@ -3862,52 +3892,54 @@ export function BeginnerObjectiveCard() {
             Read next
           </div>
           <div className="mt-1 text-xs font-semibold" style={{ color: COLORS.ui.textPrimary }}>
-            {readPrompt.title}
+            {pressureLocalShapeSettledCue?.title ?? readPrompt.title}
           </div>
           <p className="mt-0.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
-            {readPrompt.text}
+            {pressureLocalShapeSettledCue?.text ?? readPrompt.text}
           </p>
-          {pressureProofBridgeText && (
+          {!pressureLocalShapeSettledCue && pressureProofBridgeText && (
             <p className="mt-1 text-xs leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
               {pressureProofBridgeText}
             </p>
           )}
-          {pressureRepeatBoundaryText && (
+          {!pressureLocalShapeSettledCue && pressureRepeatBoundaryText && (
             <p className="mt-1 text-xs leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
               {pressureRepeatBoundaryText}
             </p>
           )}
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              className="rounded border px-2 py-0.5 text-[11px] font-semibold transition hover:bg-white/[0.07]"
-              style={{
-                borderColor: COLORS.ui.accent,
-                color: COLORS.ui.textPrimary,
-                backgroundColor: showReadPressureDetail ? `${COLORS.overlay.warning}26` : `${COLORS.ui.accent}1f`,
-              }}
-              aria-label={`Show pressure variation for ${readPrompt.gapCoord}`}
-              onClick={() => showReadPressure(readPrompt)}
-            >
-              Show pressure
-            </button>
-            {pressureRepeatReadHint && pressureRepeatReadPoint && pressureRepeatReadCoord && (
+          {!pressureLocalShapeSettledCue && (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 className="rounded border px-2 py-0.5 text-[11px] font-semibold transition hover:bg-white/[0.07]"
                 style={{
-                  borderColor: COLORS.overlay.positive,
+                  borderColor: COLORS.ui.accent,
                   color: COLORS.ui.textPrimary,
-                  backgroundColor: `${COLORS.overlay.positive}1f`,
+                  backgroundColor: showReadPressureDetail ? `${COLORS.overlay.warning}26` : `${COLORS.ui.accent}1f`,
                 }}
-                aria-label={`Repeat ${pressureRepeatReadHint.previousReplyCoord} first-reply pattern at ${pressureRepeatReadCoord} for ${readPrompt.gapCoord}`}
-                onClick={() => chooseReadPressureReply(readPrompt, pressureRepeatReadPoint)}
+                aria-label={`Show pressure variation for ${readPrompt.gapCoord}`}
+                onClick={() => showReadPressure(readPrompt)}
               >
-                Repeat {pressureRepeatReadHint.previousReplyCoord} -&gt; {pressureRepeatReadCoord}
+                Show pressure
               </button>
-            )}
-          </div>
-          {showReadPressureDetail && (
+              {pressureRepeatReadHint && pressureRepeatReadPoint && pressureRepeatReadCoord && (
+                <button
+                  type="button"
+                  className="rounded border px-2 py-0.5 text-[11px] font-semibold transition hover:bg-white/[0.07]"
+                  style={{
+                    borderColor: COLORS.overlay.positive,
+                    color: COLORS.ui.textPrimary,
+                    backgroundColor: `${COLORS.overlay.positive}1f`,
+                  }}
+                  aria-label={`Repeat ${pressureRepeatReadHint.previousReplyCoord} first-reply pattern at ${pressureRepeatReadCoord} for ${readPrompt.gapCoord}`}
+                  onClick={() => chooseReadPressureReply(readPrompt, pressureRepeatReadPoint)}
+                >
+                  Repeat {pressureRepeatReadHint.previousReplyCoord} -&gt; {pressureRepeatReadCoord}
+                </button>
+              )}
+            </div>
+          )}
+          {!pressureLocalShapeSettledCue && showReadPressureDetail && (
             <div className="mt-2 rounded border px-2 py-1.5" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
               <div className="text-xs font-semibold" style={{ color: COLORS.ui.textPrimary }}>
                 Pressure variation
