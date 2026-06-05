@@ -1,4 +1,6 @@
 "use client";
+import { useState } from 'react';
+import { useGameStore } from '@/stores/game-store';
 import { COLORS } from '@/utils/colors';
 
 const RULES = [
@@ -12,20 +14,44 @@ const RULES = [
   { icon: '🏁', rule: 'Game ends when both players pass — most territory wins' },
 ];
 
-export function RulesPanel() {
+function RulesPanelDetails({ defaultOpen }: { defaultOpen: boolean }) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
   return (
-    <div className="rounded-lg p-3" style={{ backgroundColor: COLORS.ui.bgCard }}>
-      <h3 className="text-xs font-bold mb-2 uppercase tracking-wider" style={{ color: COLORS.ui.accent }}>
-        Rules of Go
-      </h3>
-      <ul className="space-y-1.5">
-        {RULES.map((r, i) => (
-          <li key={i} className="flex items-start gap-2 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+    <details
+      data-testid="rules-panel"
+      open={isOpen}
+      onToggle={(event) => setIsOpen(event.currentTarget.open)}
+      className="rounded-lg p-3"
+      style={{ backgroundColor: COLORS.ui.bgCard }}
+    >
+      <summary className="cursor-pointer list-none text-xs font-bold uppercase tracking-wider" style={{ color: COLORS.ui.accent }}>
+        <span className="flex items-center justify-between gap-2">
+          <span>Rules of Go</span>
+          <span className="text-[10px] font-medium normal-case tracking-normal" style={{ color: COLORS.ui.textSecondary }}>
+            {isOpen ? 'Hide basics' : 'Show basics'}
+          </span>
+        </span>
+      </summary>
+      <ul className="mt-2 space-y-1.5">
+        {RULES.map((r) => (
+          <li key={r.rule} className="flex items-start gap-2 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
             <span className="shrink-0 text-xs">{r.icon}</span>
             <span>{r.rule}</span>
           </li>
         ))}
       </ul>
-    </div>
+    </details>
+  );
+}
+
+export function RulesPanel() {
+  const hasStarted = useGameStore((s) => s.game.moveHistory.length > 0);
+
+  return (
+    <RulesPanelDetails
+      key={hasStarted ? 'started' : 'fresh'}
+      defaultOpen={!hasStarted}
+    />
   );
 }
