@@ -50,11 +50,11 @@ interface ChatResponse {
   toolResults?: ToolResult[];
 }
 
-function cloudRecoveryText(error: unknown, returnedTurn: boolean) {
+function tutorRecoveryText(error: unknown, returnedTurn: boolean) {
   const opener = error instanceof TypeError
-    ? 'I could not reach cloud Sensei this turn.'
-    : 'Cloud Sensei could not answer this turn.';
-  const turnText = returnedTurn ? ' I passed for White so the board is not stuck.' : '';
+    ? 'I could not reach the tutor this turn.'
+    : 'The tutor could not answer this turn.';
+  const turnText = returnedTurn ? ' I gave White a teaching pass so the board stays playable.' : '';
 
   return `${opener} Use the board for now: ask for a hint, review the current objective, or play a move that gives your stones more room.${turnText}`;
 }
@@ -456,18 +456,18 @@ export function useGoMaster() {
               sessionStorage.removeItem('go-sensei-github-token');
             }
             if (!applyLocalFallback(authReason)) {
-              const returnedTurn = passSenseiIfNeeded('Sensei needs login and passed for White to keep the board playable.');
+              const returnedTurn = passSenseiIfNeeded('Sign-in is needed, so White takes a teaching pass to keep the board playable.');
               const authText = authReason === 'auth-expired'
-                ? 'Your session has expired. Please open Settings and re-login with GitHub.'
-                : 'Please open Settings and login with GitHub to use cloud Sensei.';
+                ? 'Your session has expired. Open Settings and sign in with GitHub again.'
+                : 'Open Settings and sign in with GitHub to use live Sensei coaching.';
               showBubble({
                 text: returnedTurn
-                  ? `${authText} I passed for White so the board is not stuck.`
+                  ? `${authText} White takes a teaching pass so the board stays playable.`
                   : authText,
                 variant: 'warning',
                 anchorPoint: null,
               });
-              addChatMessage('⚠️ Cloud Sensei needs GitHub auth. Open Settings (⚙).', 'system');
+              addChatMessage('Sign in with GitHub from Settings to use live Sensei coaching.', 'system');
             }
             setAiThinking(false);
             return;
@@ -497,9 +497,9 @@ export function useGoMaster() {
           return;
         }
 
-        const returnedTurn = passSenseiIfNeeded('Sensei could not answer and passed for White to keep the board playable.');
+        const returnedTurn = passSenseiIfNeeded('The tutor could not answer, so White takes a teaching pass to keep the board playable.');
         showBubble({
-          text: cloudRecoveryText(err, returnedTurn),
+          text: tutorRecoveryText(err, returnedTurn),
           variant: 'warning',
           anchorPoint: null,
         });
