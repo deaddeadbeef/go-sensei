@@ -1007,6 +1007,12 @@ describe('BeginnerObjectiveCard', () => {
 
     expect(screen.getByText('Bridge back to the corner')).toBeTruthy();
     expect(screen.getByText('C5 links C3 back toward the earlier C7 corner: C6 and C4 stay open, so the corner stone and the lower-side stone now support the same line before you extend again.')).toBeTruthy();
+    expect(screen.getByText('Watch C4')).toBeTruthy();
+    expect(screen.getByText('If White plays C4, the jump between C3 and C5 is under pressure. C5 also reaches back toward C7 through C6, so this read tests whether the C7-C5-C3 line stays stable before Black extends again. First read whether Black should connect or defend that gap.')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show pressure variation for C4' }));
+
+    expect(screen.getByText('Imagine White plays C4. Keep the C7-C5-C3 line in mind while you compare three plans: connect by attacking the cutting stone at B4 or D4, defend a Black side that is short on liberties, or keep extending if both stones still have room.')).toBeTruthy();
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {
