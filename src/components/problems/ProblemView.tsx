@@ -531,7 +531,7 @@ export function ProblemView() {
                 className="flex-1 px-4 py-2.5 rounded-lg text-sm font-bold transition-transform hover:scale-[1.02] active:scale-95"
                 style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
               >
-                Continue learning path
+                Continue: {learningRecommendation.title}
               </button>
             )}
             {problemInteraction.status === 'solved' && !practiceTargetMet && nextProblem && (
