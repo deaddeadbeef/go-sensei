@@ -2154,6 +2154,19 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
   });
 
+  it('explains the turn on restored study boards without calling them empty games', () => {
+    const answer = getLocalQuestionAnswer('Why do I move again?', settledShapeGame(), 'guided');
+
+    expect(answer?.text).toContain('You are playing Black in this guided beginner game.');
+    expect(answer?.text).toContain('This is a restored study position, so Black is to play from the current board.');
+    expect(answer?.text).not.toContain('No moves have been played yet');
+    expect(answer?.text).toContain('Your next move should follow the current goal: Choose a new area.');
+    expect(answer?.boardFocus?.suggestions?.slice(0, 2).map((suggestion) => suggestion.point)).toEqual([
+      { x: 7, y: 1 },
+      { x: 7, y: 7 },
+    ]);
+  });
+
   it('explains what the numbered board targets mean', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
