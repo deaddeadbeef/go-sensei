@@ -202,6 +202,7 @@ describe('DailyReview', () => {
 
     expect(screen.getByText('Next step')).toBeTruthy();
     expect(screen.getByText('Rebuild Life and death')).toBeTruthy();
+    expect(screen.queryByText(/Review finish line reached/)).toBeNull();
     expect(screen.getByText('Make Two Eyes')).toBeTruthy();
     expect(screen.getByText('missed - replay C8')).toBeTruthy();
 
@@ -225,6 +226,7 @@ describe('DailyReview', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Finish Review' }));
 
     expect(screen.getByText('Ready for the next idea')).toBeTruthy();
+    expect(screen.getByText('Review finish line reached: every due card landed cleanly, so the path can move to the next recommendation.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Practice Capture' })).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Pick up next recommendation' }));
