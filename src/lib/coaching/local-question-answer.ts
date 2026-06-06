@@ -4137,6 +4137,21 @@ function buildMoveReviewAnswer(game: GameState, teachingLevel: TeachingLevel): L
   const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-review-next-move', followUpContext) : [];
   const action = objective ? getBeginnerObjectiveLessonAction(objective) : null;
 
+  if (isStudyPositionWithoutMoveHistory(game)) {
+    const targetText = objective ? formatObjectiveTargetText(objective, game.board.size, 4, followUpContext) : null;
+
+    return {
+      text: [
+        'This restored study position has board stones but no move history, so I cannot review a last Black move yet.',
+        objective ? `Use the current target first: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}` : '',
+        suggestions.length > 0 ? 'I marked the current targets so the next review has one concrete move to judge.' : '',
+      ].filter(Boolean).join(' '),
+      conceptIds: uniqueConceptIds(['stones-and-board', ...(objective?.conceptIds ?? [])]),
+      ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
+      ...(action ? { actions: [action] } : {}),
+    };
+  }
+
   if (!progress && !insight) {
     return {
       text: 'Play a stone first, then I can review the move against the beginner goal and point to the next idea.',
