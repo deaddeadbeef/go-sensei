@@ -1672,9 +1672,14 @@ function buildUndoAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQu
   const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-undo-move') : [];
   const action = objective ? getBeginnerObjectiveLessonAction(objective) : null;
   const move = latestMove(game);
+  const isStudyPositionWithoutHistory = !move
+    && countStones(game.board, 'black') + countStones(game.board, 'white') > 0;
   const lines: string[] = [];
 
-  if (!move) {
+  if (isStudyPositionWithoutHistory) {
+    lines.push('There is nothing to undo from this study position because it was restored without move history.');
+    lines.push('Black is to play from the current board, so keep using the marked target instead of trying to rewind the setup stones.');
+  } else if (!move) {
     lines.push('There is nothing to undo yet; no stones have been played.');
   } else if (move.type === 'pass' && move.color === 'white' && game.currentPlayer === 'black') {
     lines.push('Yes. The Undo button will take back the guided White pass and your previous Black move, returning you to the choice before that turn.');
@@ -1693,12 +1698,12 @@ function buildUndoAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQu
 
   if (objective) {
     const targetText = formatObjectiveTargetText(objective, game.board.size);
-    const prefix = move ? 'Your current guided target is' : 'In guided practice, your next useful move is';
+    const prefix = move || isStudyPositionWithoutHistory ? 'Your current guided target is' : 'In guided practice, your next useful move is';
     lines.push(`${prefix}: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}`);
   }
 
   if (suggestions.length > 0) {
-    lines.push(move ? 'I marked the current targets again.' : 'I marked the first targets again.');
+    lines.push(move || isStudyPositionWithoutHistory ? 'I marked the current targets again.' : 'I marked the first targets again.');
   }
 
   return {
