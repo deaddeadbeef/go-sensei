@@ -724,6 +724,19 @@ describe('local question answer', () => {
     expect(answer?.conceptIds).toEqual(expect.arrayContaining(['direction-of-play', 'territory']));
   });
 
+  it('reviews a successful H2 fresh-area move as a named lower-right plan', () => {
+    const freshAreaMove = playMove(settledShapeGame(), { x: 7, y: 7 });
+    if (!freshAreaMove.success) throw new Error('test setup fresh-area move failed');
+
+    const answer = getLocalQuestionAnswer('Was that good?', freshAreaMove.newState, 'guided');
+
+    expect(answer?.text).toContain('Yes. Good: H2 chose the lower-right direction after the local shape settled.');
+    expect(answer?.text).toContain("Before the next move, say what this H2 stone is trying to open so White's reply has context.");
+    expect(answer?.text).toContain('H2 opens the lower-right direction away from the settled local shape.');
+    expect(answer?.text).toContain('Next: Before extending from H2, name the new lower-right area you want Black to build.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['direction-of-play', 'territory']));
+  });
+
   it('answers next-move questions after H8 as an extension of the new area', () => {
     const freshAreaMove = playMove(settledShapeGame(), { x: 7, y: 1 });
     if (!freshAreaMove.success) throw new Error('test setup fresh-area move failed');
