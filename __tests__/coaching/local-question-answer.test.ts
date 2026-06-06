@@ -800,6 +800,32 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('answers shape questions after H2 as fresh-area extension practice', () => {
+    const freshAreaMove = playMove(settledShapeGame(), { x: 7, y: 7 });
+    if (!freshAreaMove.success) throw new Error('test setup fresh-area move failed');
+    const afterWhitePass = passMove(freshAreaMove.newState);
+
+    const answer = getLocalQuestionAnswer('What is good shape?', afterWhitePass, 'guided');
+
+    expect(answer?.text).toContain('On this board, H2 is your anchor. Extend H2 into the lower-right area: try F2 or H4.');
+    expect(answer?.text).toContain('Those jump targets grow from it without piling stones too close.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['shape', 'direction-of-play']));
+    expect(answer?.boardFocus?.suggestions?.slice(0, 2)).toEqual([
+      {
+        id: 'local-shape-move-5,7',
+        point: { x: 5, y: 7 },
+        rank: 1,
+        reason: 'Try F2 to give H2 a partner in the lower-right area while keeping a one-space gap.',
+      },
+      {
+        id: 'local-shape-move-7,5',
+        point: { x: 7, y: 5 },
+        rank: 2,
+        reason: 'Try H4 to give H2 a partner in the lower-right area while keeping a one-space gap.',
+      },
+    ]);
+  });
+
   it('teaches reading after H8 with the fresh-area extension targets', () => {
     const freshAreaMove = playMove(settledShapeGame(), { x: 7, y: 1 });
     if (!freshAreaMove.success) throw new Error('test setup fresh-area move failed');
@@ -826,6 +852,32 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('teaches reading after H2 with the fresh-area extension targets', () => {
+    const freshAreaMove = playMove(settledShapeGame(), { x: 7, y: 7 });
+    if (!freshAreaMove.success) throw new Error('test setup fresh-area move failed');
+    const afterWhitePass = passMove(freshAreaMove.newState);
+
+    const answer = getLocalQuestionAnswer('How do I read ahead?', afterWhitePass, 'guided');
+
+    expect(answer?.text).toContain('On this board, apply the routine to: Make your stones work together. Play a one-space jump from one of your stones. Extend H2 into the lower-right area: try F2 or H4.');
+    expect(answer?.text).toContain('Start by reading F2: what Black gains, how White might touch it, and whether H2 still has enough liberties.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['reading', 'direction-of-play']));
+    expect(answer?.boardFocus?.suggestions?.slice(0, 2)).toEqual([
+      {
+        id: 'local-reading-routine-move-5,7',
+        point: { x: 5, y: 7 },
+        rank: 1,
+        reason: 'Try F2 to give H2 a partner in the lower-right area while keeping a one-space gap.',
+      },
+      {
+        id: 'local-reading-routine-move-7,5',
+        point: { x: 7, y: 5 },
+        rank: 2,
+        reason: 'Try H4 to give H2 a partner in the lower-right area while keeping a one-space gap.',
+      },
+    ]);
+  });
+
   it('answers territory questions after H8 with fresh-area extension targets', () => {
     const freshAreaMove = playMove(settledShapeGame(), { x: 7, y: 1 });
     if (!freshAreaMove.success) throw new Error('test setup fresh-area move failed');
@@ -847,6 +899,31 @@ describe('local question answer', () => {
         point: { x: 5, y: 1 },
         rank: 2,
         reason: 'Try F8 to give H8 a partner in the upper-right area while keeping a one-space gap.',
+      },
+    ]);
+  });
+
+  it('answers territory questions after H2 with fresh-area extension targets', () => {
+    const freshAreaMove = playMove(settledShapeGame(), { x: 7, y: 7 });
+    if (!freshAreaMove.success) throw new Error('test setup fresh-area move failed');
+    const afterWhitePass = passMove(freshAreaMove.newState);
+
+    const answer = getLocalQuestionAnswer('What is territory?', afterWhitePass, 'guided');
+
+    expect(answer?.text).toContain('I marked F2 and H4 because they extend H2 into the lower-right area: they help the fresh stone sketch a loose border without touching too closely.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['territory', 'shape', 'direction-of-play']));
+    expect(answer?.boardFocus?.suggestions?.slice(0, 2)).toEqual([
+      {
+        id: 'local-territory-move-5,7',
+        point: { x: 5, y: 7 },
+        rank: 1,
+        reason: 'Try F2 to give H2 a partner in the lower-right area while keeping a one-space gap.',
+      },
+      {
+        id: 'local-territory-move-7,5',
+        point: { x: 7, y: 5 },
+        rank: 2,
+        reason: 'Try H4 to give H2 a partner in the lower-right area while keeping a one-space gap.',
       },
     ]);
   });
@@ -2116,6 +2193,31 @@ describe('local question answer', () => {
         point: { x: 5, y: 1 },
         rank: 2,
         reason: 'Try F8 to give H8 a partner in the upper-right area while keeping a one-space gap.',
+      },
+    ]);
+  });
+
+  it('explains numbered targets after H2 as extensions of the fresh area', () => {
+    const freshAreaMove = playMove(settledShapeGame(), { x: 7, y: 7 });
+    if (!freshAreaMove.success) throw new Error('test setup fresh-area move failed');
+    const afterWhitePass = passMove(freshAreaMove.newState);
+
+    const answer = getLocalQuestionAnswer('What are these numbered targets?', afterWhitePass, 'guided');
+
+    expect(answer?.text).toContain('Right now the marked target goal is: Make your stones work together. Play a one-space jump from one of your stones. Extend H2 into the lower-right area: try F2 or H4.');
+    expect(answer?.text).toContain('F2 and H4 are marked because they extend H2 into the lower-right area: they give the fresh-area stone a partner without clumping.');
+    expect(answer?.boardFocus?.suggestions?.slice(0, 2)).toEqual([
+      {
+        id: 'local-marker-guide-move-5,7',
+        point: { x: 5, y: 7 },
+        rank: 1,
+        reason: 'Try F2 to give H2 a partner in the lower-right area while keeping a one-space gap.',
+      },
+      {
+        id: 'local-marker-guide-move-7,5',
+        point: { x: 7, y: 5 },
+        rank: 2,
+        reason: 'Try H4 to give H2 a partner in the lower-right area while keeping a one-space gap.',
       },
     ]);
   });
