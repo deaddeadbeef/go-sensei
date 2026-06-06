@@ -62,6 +62,17 @@ describe('move insight', () => {
     expect(insight?.nextStep).toContain('corner');
   });
 
+  it('uses the current objective when a restored settled board has no move history', () => {
+    const insight = getMoveInsight(settledShapeGame(), 'guided');
+
+    expect(insight).toMatchObject({
+      title: 'Choose a fresh direction',
+      conceptIds: expect.arrayContaining(['direction-of-play', 'shape']),
+    });
+    expect(insight?.observation).toBe('Your nearby shape is already settled. Pick a fresh area instead of rereading the same local stones.');
+    expect(insight?.nextStep).toBe('Your nearby groups are safe for now. Pick a fresh area instead of rereading the settled shape. Try H8 or H2.');
+  });
+
   it('explains a first corner move and points to extension work', () => {
     const result = playMove(createGame(9), { x: 2, y: 2 });
     if (!result.success) throw new Error('test setup move failed');

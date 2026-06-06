@@ -1,4 +1,5 @@
 import {
+  type BeginnerObjective,
   formatObjectiveTargetText,
   getBoardAreaDirectionLabel,
   getBeginnerObjective,
@@ -52,7 +53,10 @@ interface OneSpaceJumpAnchor {
   moveIndex: number;
 }
 
-function objectiveNextStep(game: GameState, teachingLevel: TeachingLevel): { text: string; concepts: string[] } {
+function objectiveNextStep(
+  game: GameState,
+  teachingLevel: TeachingLevel,
+): { text: string; concepts: string[]; objectiveId: BeginnerObjective['id'] | null } {
   const objective = getBeginnerObjective({
     boardSize: game.board.size,
     board: game.board,
@@ -66,6 +70,7 @@ function objectiveNextStep(game: GameState, teachingLevel: TeachingLevel): { tex
     return {
       text: 'Look for the move that gives your stones more room or easier territory.',
       concepts: [],
+      objectiveId: null,
     };
   }
 
@@ -74,6 +79,7 @@ function objectiveNextStep(game: GameState, teachingLevel: TeachingLevel): { tex
   return {
     text: targetText ? `${objective.instruction} ${targetText}` : objective.instruction,
     concepts: objective.conceptIds,
+    objectiveId: objective.id,
   };
 }
 
@@ -187,6 +193,15 @@ export function getMoveInsight(game: GameState, teachingLevel: TeachingLevel): M
 
   const move = lastBlackMove(game);
   if (!move) {
+    if (next.objectiveId === 'choose-new-area') {
+      return {
+        title: 'Choose a fresh direction',
+        observation: 'Your nearby shape is already settled. Pick a fresh area instead of rereading the same local stones.',
+        nextStep: next.text,
+        conceptIds: ['direction-of-play', 'shape', ...next.concepts],
+      };
+    }
+
     return {
       title: 'Start from the easiest territory',
       observation: 'Corners use two board edges, so they need fewer stones to become real territory.',
