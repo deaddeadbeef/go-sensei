@@ -99,6 +99,14 @@ function latestMove(game: GameState): Move | null {
   return game.moveHistory[game.moveHistory.length - 1] ?? null;
 }
 
+function hasBoardStones(game: GameState): boolean {
+  return countStones(game.board, 'black') + countStones(game.board, 'white') > 0;
+}
+
+function isStudyPositionWithoutMoveHistory(game: GameState): boolean {
+  return game.moveHistory.length === 0 && hasBoardStones(game);
+}
+
 function joinList(items: string[]): string {
   if (items.length === 0) return '';
   if (items.length === 1) return items[0];
@@ -1672,8 +1680,7 @@ function buildUndoAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQu
   const suggestions = objective ? objectiveSuggestions(objective, game.board.size, 'local-undo-move') : [];
   const action = objective ? getBeginnerObjectiveLessonAction(objective) : null;
   const move = latestMove(game);
-  const isStudyPositionWithoutHistory = !move
-    && countStones(game.board, 'black') + countStones(game.board, 'white') > 0;
+  const isStudyPositionWithoutHistory = isStudyPositionWithoutMoveHistory(game);
   const lines: string[] = [];
 
   if (isStudyPositionWithoutHistory) {
@@ -2554,6 +2561,22 @@ function buildWhiteReplyAnswer(game: GameState, teachingLevel: TeachingLevel): L
   const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
 
   if (!move) {
+    if (isStudyPositionWithoutMoveHistory(game)) {
+      return {
+        text: [
+          'This restored study position has board stones but no move history, so I cannot tell which Black stone White is answering.',
+          objective ? `Use the current target first: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}` : '',
+          suggestions.length > 0 ? 'I marked the current targets so the reply question has a real anchor.' : '',
+        ].filter(Boolean).join(' '),
+        conceptIds: uniqueConceptIds(['reading', 'direction-of-play', ...(objective?.conceptIds ?? [])]),
+        ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
+        actions: [
+          ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+          { id: 'practice:reading', label: 'Practice reading' },
+        ],
+      };
+    }
+
     return {
       text: [
         'Play a Black stone first, then ask what White can do and I will read the reply from that stone.',
@@ -3442,6 +3465,22 @@ function buildThreatAnswer(game: GameState, teachingLevel: TeachingLevel): Local
   const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
 
   if (!move) {
+    if (isStudyPositionWithoutMoveHistory(game)) {
+      return {
+        text: [
+          'This restored study position has board stones but no move history, so I cannot identify a last Black move to turn into a threat.',
+          objective ? `Use the current target first: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}` : '',
+          suggestions.length > 0 ? 'I marked the current targets so your next move can create a real plan.' : '',
+        ].filter(Boolean).join(' '),
+        conceptIds: uniqueConceptIds(['direction-of-play', 'reading', ...(objective?.conceptIds ?? [])]),
+        ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
+        actions: [
+          ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+          { id: 'practice:reading', label: 'Practice reading' },
+        ],
+      };
+    }
+
     return {
       text: [
         'Not yet: you need a Black stone before there is a concrete threat to read.',

@@ -1293,6 +1293,32 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('does not ask for a first Black stone when reading White from a restored study board', () => {
+    const answer = getLocalQuestionAnswer('What can White do?', settledShapeGame(), 'guided');
+
+    expect(answer?.text).toContain('This restored study position has board stones but no move history, so I cannot tell which Black stone White is answering.');
+    expect(answer?.text).toContain('Use the current target first: Choose a new area.');
+    expect(answer?.text).toContain('Try H8 or H2.');
+    expect(answer?.text).toContain('I marked the current targets so the reply question has a real anchor.');
+    expect(answer?.text).not.toContain('Play a Black stone first');
+    expect(answer?.text).not.toContain('first targets');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['reading', 'direction-of-play', 'shape']));
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-white-reply-move-7,1',
+        point: { x: 7, y: 1 },
+        rank: 1,
+        reason: 'Consider H8 as a fresh upper-right direction away from the settled local shape.',
+      },
+      {
+        id: 'local-white-reply-move-7,7',
+        point: { x: 7, y: 7 },
+        rank: 2,
+        reason: 'Consider H2 as a fresh lower-right direction away from the settled local shape.',
+      },
+    ]);
+  });
+
   it('explains the learner threat honestly when there is no capture yet', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
@@ -1346,6 +1372,32 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([
       { id: 'hint', label: 'Show targets' },
       { id: 'practice:reading', label: 'Practice reading' },
+    ]);
+  });
+
+  it('does not ask for a first Black stone when reading threats from a restored study board', () => {
+    const answer = getLocalQuestionAnswer('What am I threatening?', settledShapeGame(), 'guided');
+
+    expect(answer?.text).toContain('This restored study position has board stones but no move history, so I cannot identify a last Black move to turn into a threat.');
+    expect(answer?.text).toContain('Use the current target first: Choose a new area.');
+    expect(answer?.text).toContain('Try H8 or H2.');
+    expect(answer?.text).toContain('I marked the current targets so your next move can create a real plan.');
+    expect(answer?.text).not.toContain('you need a Black stone');
+    expect(answer?.text).not.toContain('first targets');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['direction-of-play', 'reading', 'shape']));
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-threat-move-7,1',
+        point: { x: 7, y: 1 },
+        rank: 1,
+        reason: 'Consider H8 as a fresh upper-right direction away from the settled local shape.',
+      },
+      {
+        id: 'local-threat-move-7,7',
+        point: { x: 7, y: 7 },
+        rank: 2,
+        reason: 'Consider H2 as a fresh lower-right direction away from the settled local shape.',
+      },
     ]);
   });
 
