@@ -3586,6 +3586,9 @@ function buildConnectionAnswer(game: GameState, teachingLevel: TeachingLevel): L
 
   if (context) {
     lines.push(context.sentence);
+  } else if (isStudyPositionWithoutMoveHistory(game)) {
+    lines.push('This restored study position has board stones but no move history, so I cannot choose one last Black group to mark yet.');
+    lines.push('Use the current target first; after you play it, I can mark that group and its liberties for connection reading.');
   } else {
     lines.push('Play a stone first, then I can mark its group and liberties on the board.');
   }
