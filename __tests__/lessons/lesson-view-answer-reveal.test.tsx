@@ -56,6 +56,27 @@ describe('LessonView answer reveal', () => {
     expect(useConceptStore.getState().getMastery('groups').level).toBe(2);
   });
 
+  it('shows the lesson finish line only on the final step', () => {
+    act(() => {
+      useGameStore.getState().startLesson('groups');
+      useGameStore.setState({ currentStep: 3 });
+    });
+
+    render(<LessonView />);
+
+    expect(screen.queryByText('Finish line')).toBeNull();
+
+    cleanup();
+    act(() => {
+      useGameStore.getState().startLesson('groups');
+      useGameStore.setState({ currentStep: 4 });
+    });
+    render(<LessonView />);
+
+    expect(screen.getByText('Finish line')).toBeTruthy();
+    expect(screen.getByText('Finish this lesson after you can explain the board checkpoint in your own words.')).toBeTruthy();
+  });
+
   it('credits companion concepts from the shared lesson map', () => {
     act(() => {
       useGameStore.getState().startLesson('capture');
