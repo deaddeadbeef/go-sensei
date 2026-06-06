@@ -336,6 +336,7 @@ export function SkillTree() {
                   )}
                   <button
                     onClick={showLearningPath}
+                    aria-label="Learning path from skill tree"
                     className="rounded-lg px-3 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
                     style={{ backgroundColor: COLORS.cardHover, color: COLORS.text, border: `1px solid ${COLORS.border}` }}
                   >
@@ -390,6 +391,7 @@ export function SkillTree() {
         <div className="text-center mt-8">
           <button
             onClick={returnToGame}
+            aria-label="Return to board from skill tree"
             className="px-6 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-90"
             style={{ backgroundColor: COLORS.card, color: COLORS.text, border: `1px solid ${COLORS.border}` }}
           >
