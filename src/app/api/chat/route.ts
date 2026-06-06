@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCopilotSession } from '@/lib/ai/copilot-auth';
 import { buildSystemPrompt } from '@/lib/ai/system-prompt';
 import type { TeachingLevel } from '@/lib/ai/system-prompt';
-import { reconstructGame } from '@/lib/ai/tools';
+import { applyBoardSnapshot, reconstructGame } from '@/lib/ai/tools';
 import {
   createGame, playMove, passMove, isValidMove,
   getGroup, getLibertiesOf, countLiberties, boardToText,
@@ -482,7 +482,14 @@ export async function POST(req: Request) {
     let state: GameState;
     try {
       if (Array.isArray(gsData.moveHistory)) {
-        state = reconstructGame(parseMoveHistory(gsData.moveHistory), boardSize, komi);
+        const moves = parseMoveHistory(gsData.moveHistory);
+        state = reconstructGame(moves, boardSize, komi);
+        if (moves.length === 0) {
+          state = applyBoardSnapshot(state, gsData.board);
+          if (gsData.currentPlayer === 'black' || gsData.currentPlayer === 'white') {
+            state = { ...state, currentPlayer: gsData.currentPlayer };
+          }
+        }
       } else {
         state = createGame(9, 6.5);
       }
