@@ -137,6 +137,8 @@ describe('ProblemPicker', () => {
 
     expect(screen.getByText('Path goal')).toBeTruthy();
     expect(screen.getByText('Practice life and death until you solve 2 more life and death problems.')).toBeTruthy();
+    expect(screen.getByText('Finish line:')).toBeTruthy();
+    expect(screen.getByText('This block is complete after 2 more solved life and death problems.')).toBeTruthy();
   });
 
   it('explains why a manually filtered problem set is worth practicing', () => {
