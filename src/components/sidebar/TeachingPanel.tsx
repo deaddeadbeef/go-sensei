@@ -2,12 +2,17 @@
 
 import { CONCEPTS } from '@/lib/concepts/concept-data';
 import { getSuggestionMarkerLabel } from '@/components/board/overlays/SuggestionOverlay';
+import {
+  getBeginnerObjective,
+  getBeginnerObjectiveSuggestionReason,
+  getFreshAreaFollowUpContext,
+} from '@/lib/coaching/beginner-objectives';
 import { getMoveInsight } from '@/lib/coaching/move-insight';
 import { useConceptStore } from '@/stores/concept-store';
 import { useGameStore } from '@/stores/game-store';
 import type { Point } from '@/lib/go-engine';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
 const variantColors: Record<string, string> = {
   positive: '#4ade80',
@@ -32,6 +37,7 @@ export function TeachingPanel() {
   const suggestions = useGameStore((s) => s.overlays.suggestions);
   const game = useGameStore((s) => s.game);
   const teachingLevel = useGameStore((s) => s.teachingLevel);
+  const appPhase = useGameStore((s) => s.appPhase);
   const boardSize = useGameStore((s) => s.game.board.size);
   const phase = useGameStore((s) => s.phase);
   const currentPlayer = useGameStore((s) => s.game.currentPlayer);
@@ -54,8 +60,33 @@ export function TeachingPanel() {
   const labeledArrows = arrows.filter((a) => a.label);
   const labeledGroups = groups.filter((g) => g.label);
   const labeledSuggestions = suggestions.filter((s) => s.reason);
+  const objectiveSuggestions = useMemo(() => {
+    if (labeledSuggestions.length > 0) return [];
+    if (appPhase !== 'game' || phase !== 'playing' || currentPlayer !== 'black') return [];
 
-  const hasBoardAnalysis = labeledHighlights.length + labeledArrows.length + labeledGroups.length + labeledSuggestions.length > 0;
+    const objective = getBeginnerObjective({
+      boardSize: game.board.size,
+      board: game.board,
+      moveHistory: game.moveHistory,
+      moveCount: game.moveHistory.length,
+      currentPlayer: game.currentPlayer,
+      teachingLevel,
+    });
+
+    if (!objective || objective.targetPoints.length === 0) return [];
+
+    const followUpContext = getFreshAreaFollowUpContext(game, teachingLevel, objective);
+
+    return objective.targetPoints.slice(0, 4).map((point, index) => ({
+      id: `objective-analysis-move-${point.x},${point.y}`,
+      point,
+      rank: index + 1,
+      reason: getBeginnerObjectiveSuggestionReason(objective, point, game.board.size, followUpContext),
+    }));
+  }, [appPhase, currentPlayer, game, labeledSuggestions.length, phase, teachingLevel]);
+  const analysisSuggestions = labeledSuggestions.length > 0 ? labeledSuggestions : objectiveSuggestions;
+
+  const hasBoardAnalysis = labeledHighlights.length + labeledArrows.length + labeledGroups.length + analysisSuggestions.length > 0;
   const hasContent = insight !== null || hasBoardAnalysis;
   const canPlaySuggestion = phase === 'playing' && currentPlayer === 'black' && !isAiThinking;
 
@@ -112,7 +143,7 @@ export function TeachingPanel() {
                   Board Analysis
                 </div>
                 <div className="space-y-1">
-                  {labeledSuggestions.map((s) => (
+                  {analysisSuggestions.map((s) => (
                     <button
                       key={s.id}
                       type="button"
