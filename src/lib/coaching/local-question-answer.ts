@@ -2449,7 +2449,7 @@ function buildShapeAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQ
   });
   const lastMove = lastPlacedMove(game);
   const followUpContext = objective ? getFreshAreaFollowUpContext(game, teachingLevel, objective) : null;
-  const suggestions = objective?.id === 'extend-from-stone'
+  const suggestions = objective && (objective.id === 'extend-from-stone' || objective.id === 'choose-new-area')
     ? objectiveSuggestions(objective, game.board.size, 'local-shape-move', followUpContext)
     : [];
   const targetText = objective ? formatObjectiveTargetText(objective, game.board.size, 4, followUpContext) : null;
