@@ -2,8 +2,46 @@ import {
   createGame,
   playMove,
   passMove,
+  boardHash,
 } from '@/lib/go-engine';
-import type { GameState } from '@/lib/go-engine/types';
+import type { CellState, GameState } from '@/lib/go-engine/types';
+
+type JsonRecord = Record<string, unknown>;
+
+function isRecord(value: unknown): value is JsonRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isCellState(value: unknown): value is CellState {
+  return value === 'black' || value === 'white' || value === null;
+}
+
+export function applyBoardSnapshot(state: GameState, boardSnapshot: unknown): GameState {
+  if (!isRecord(boardSnapshot) || boardSnapshot.size !== state.board.size || !Array.isArray(boardSnapshot.grid)) {
+    return state;
+  }
+
+  const grid: CellState[][] = [];
+  for (const row of boardSnapshot.grid) {
+    if (!Array.isArray(row) || row.length !== state.board.size || !row.every(isCellState)) {
+      return state;
+    }
+    grid.push([...row]);
+  }
+
+  if (grid.length !== state.board.size) {
+    return state;
+  }
+
+  const board = { size: state.board.size, grid };
+  const positionHistory = new Set([boardHash(board)]);
+
+  return {
+    ...state,
+    board,
+    positionHistory,
+  };
+}
 
 /**
  * Reconstructs a GameState by replaying a move history from scratch.
