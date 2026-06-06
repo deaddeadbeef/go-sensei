@@ -735,6 +735,31 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('does not ask for a first move when reviewing a restored study board', () => {
+    const answer = getLocalQuestionAnswer('Was that good?', settledShapeGame(), 'guided');
+
+    expect(answer?.text).toContain('This restored study position has board stones but no move history, so I cannot review a last Black move yet.');
+    expect(answer?.text).toContain('Use the current target first: Choose a new area.');
+    expect(answer?.text).toContain('Try H8 or H2.');
+    expect(answer?.text).toContain('I marked the current targets so the next review has one concrete move to judge.');
+    expect(answer?.text).not.toContain('Play a stone first');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['stones-and-board', 'direction-of-play', 'shape']));
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-review-next-move-7,1',
+        point: { x: 7, y: 1 },
+        rank: 1,
+        reason: 'Consider H8 as a fresh upper-right direction away from the settled local shape.',
+      },
+      {
+        id: 'local-review-next-move-7,7',
+        point: { x: 7, y: 7 },
+        rank: 2,
+        reason: 'Consider H2 as a fresh lower-right direction away from the settled local shape.',
+      },
+    ]);
+  });
+
   it('reviews a successful fresh-area move as a named new plan', () => {
     const freshAreaMove = playMove(settledShapeGame(), { x: 7, y: 1 });
     if (!freshAreaMove.success) throw new Error('test setup fresh-area move failed');
