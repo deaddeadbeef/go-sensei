@@ -89,7 +89,9 @@ describe('ProgressDashboard', () => {
   it('returns learners to the board from the dashboard', () => {
     render(<ProgressDashboard />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Return to board' }));
+    expect(screen.getByText('Return to board')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Return to board from progress dashboard' }));
 
     expect(useGameStore.getState().appPhase).toBe('game');
   });

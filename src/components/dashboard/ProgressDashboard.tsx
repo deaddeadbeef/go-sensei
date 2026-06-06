@@ -356,6 +356,7 @@ export function ProgressDashboard() {
         <div className="text-center mt-6">
           <button
             onClick={returnToGame}
+            aria-label="Return to board from progress dashboard"
             className="px-6 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-90"
             style={{ backgroundColor: COLORS.card, color: COLORS.text, border: `1px solid ${COLORS.border}` }}
           >
