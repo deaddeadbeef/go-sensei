@@ -2005,6 +2005,7 @@ function buildCoordinateAnswer(game: GameState, teachingLevel: TeachingLevel, q:
 }
 
 function buildTurnAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
+  const hasBoardStones = game.board.grid.some((row) => row.some((cell) => cell !== null));
   const objective = game.phase === 'playing' && game.currentPlayer === 'black'
     ? getBeginnerObjective({
       boardSize: game.board.size,
@@ -2034,7 +2035,9 @@ function buildTurnAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQu
     } else if (move?.type === 'place' && move.color === 'white') {
       lines.push(`White just played ${pointToCoord(move.point, game.board.size)}, so the turn returned to Black.`);
     } else if (!move) {
-      lines.push('No moves have been played yet, so Black starts.');
+      lines.push(hasBoardStones
+        ? 'This is a restored study position, so Black is to play from the current board.'
+        : 'No moves have been played yet, so Black starts.');
     }
   } else {
     lines.push("It is White's turn now, so wait for Sensei's response before playing another black stone.");
