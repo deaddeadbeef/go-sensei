@@ -20,11 +20,12 @@ const variantIcons: Record<string, string> = {
 export function SenseiChatLog() {
   const chatMessages = useGameStore((s) => s.chatMessages);
   const moveCount = useGameStore((s) => s.game.moveHistory.length);
+  const hasBoardStones = useGameStore((s) => s.game.board.grid.some((row) => row.some((cell) => cell !== null)));
   const applyTargetHints = useGameStore((s) => s.applyTargetHints);
   const handleAction = useSenseiAction();
   const scrollRef = useRef<HTMLDivElement>(null);
   const activePreviewRef = useRef<{ actionId: string; previousHints: OverlayHighlight[] } | null>(null);
-  const emptyPrompt = moveCount === 0
+  const emptyPrompt = moveCount === 0 && !hasBoardStones
     ? 'Place a stone to start learning!'
     : 'Ask about the current board, a marked target, or why the last move mattered.';
 
