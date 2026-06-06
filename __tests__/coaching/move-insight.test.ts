@@ -128,6 +128,19 @@ describe('move insight', () => {
     expect(insight?.observation).toBe('H8 opens the upper-right direction away from the settled local shape. Treat it as a new plan: ask what space it claims and how White might answer nearby.');
   });
 
+  it('reflects on the lower-right direction opened by H2', () => {
+    const move = playBlackStone(settledShapeGame(), { x: 7, y: 7 });
+
+    const insight = getMoveInsight(move, 'guided');
+
+    expect(insight).toMatchObject({
+      title: 'Fresh direction chosen',
+      conceptIds: expect.arrayContaining(['direction-of-play', 'territory']),
+    });
+    expect(insight?.observation).toBe('H2 opens the lower-right direction away from the settled local shape. Treat it as a new plan: ask what space it claims and how White might answer nearby.');
+    expect(insight?.nextStep).toBe('Before extending from H2, name the new lower-right area you want Black to build. Then use the marked follow-up targets to make that plan concrete.');
+  });
+
   it('coaches center openings toward corners', () => {
     const result = playMove(createGame(9), { x: 4, y: 4 });
     if (!result.success) throw new Error('test setup move failed');
