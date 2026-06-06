@@ -95,6 +95,7 @@ function ProblemRecommendation({
   totalCount,
   solved,
   pathGoalReason,
+  pathGoalFinishLine,
   focusedPracticeReason,
   onStart,
 }: {
@@ -104,6 +105,7 @@ function ProblemRecommendation({
   totalCount: number;
   solved: boolean;
   pathGoalReason: string | null;
+  pathGoalFinishLine: string | null;
   focusedPracticeReason: string | null;
   onStart: () => void;
 }) {
@@ -137,6 +139,14 @@ function ProblemRecommendation({
               <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
                 {pathGoalReason}
               </p>
+              {pathGoalFinishLine && (
+                <p className="mt-2 text-sm leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
+                  <span className="font-semibold" style={{ color: COLORS.ui.accent }}>
+                    Finish line:{' '}
+                  </span>
+                  {pathGoalFinishLine}
+                </p>
+              )}
             </div>
           )}
           {!pathGoalReason && focusedPracticeReason && (
@@ -220,6 +230,7 @@ export function ProblemPicker() {
     && learningRecommendation.filter === filter
     ? learningRecommendation.reason
     : null;
+  const pathGoalFinishLine = pathGoalReason ? learningRecommendation.finishLine : null;
   const focusedPracticeReason = filter !== 'all' ? FOCUS_PRACTICE_REASON[filter] : null;
 
   const isSolved = (id: string) =>
@@ -287,6 +298,7 @@ export function ProblemPicker() {
             totalCount={filtered.length}
             solved={isSolved(recommendedProblem.id)}
             pathGoalReason={pathGoalReason}
+            pathGoalFinishLine={pathGoalFinishLine}
             focusedPracticeReason={focusedPracticeReason}
             onStart={() => startProblem(recommendedProblem)}
           />
