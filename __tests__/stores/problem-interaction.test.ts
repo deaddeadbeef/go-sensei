@@ -58,6 +58,26 @@ function settledShapeGame(): GameState {
   );
 }
 
+function settledStudySnapshot(): GameState {
+  const stones: Point[] = [
+    { x: 2, y: 2 },
+    { x: 4, y: 2 },
+    { x: 6, y: 2 },
+    { x: 2, y: 4 },
+    { x: 3, y: 4 },
+    { x: 4, y: 4 },
+    { x: 6, y: 4 },
+    { x: 2, y: 6 },
+    { x: 4, y: 6 },
+    { x: 6, y: 6 },
+  ];
+
+  return stones.reduce(
+    (game, point) => ({ ...game, board: setStone(game.board, point, 'black') }),
+    createGame(9),
+  );
+}
+
 beforeEach(() => {
   act(() => useGameStore.getState().startNewGame(9));
 });
@@ -339,6 +359,31 @@ describe('problem interaction store', () => {
         rank: 2,
         reason: 'Consider H2 as a fresh lower-right direction away from the settled local shape.',
       },
+    ]);
+  });
+
+  it('openGuidedGame restores no-history study snapshots with board-aware resume copy', () => {
+    act(() => useGameStore.getState().startNewGame(19));
+    act(() => useGameStore.getState().setTeachingLevel('beginner'));
+    act(() => {
+      useProgressStore.getState().markIntroGameStarted();
+      useProgressStore.getState().saveGuidedGameSnapshot(settledStudySnapshot());
+    });
+
+    act(() => useGameStore.getState().openGuidedGame());
+
+    const state = useGameStore.getState();
+    expect(state.appPhase).toBe('game');
+    expect(state.teachingLevel).toBe('guided');
+    expect(state.game.board.size).toBe(9);
+    expect(state.game.moveHistory).toHaveLength(0);
+    expect(state.game.board.grid[2][2]).toBe('black');
+    expect(state.bubble.text).toContain('I restored your paused board as a study position.');
+    expect(state.bubble.text).not.toContain('before your first learner move');
+    expect(state.bubble.text).toContain('Your next job is: Choose a new area.');
+    expect(state.overlays.suggestions.slice(0, 2).map((suggestion) => suggestion.point)).toEqual([
+      { x: 7, y: 1 },
+      { x: 7, y: 7 },
     ]);
   });
 
