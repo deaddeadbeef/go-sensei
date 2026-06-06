@@ -53,6 +53,7 @@ function NavButton({
 
 export function SenseiBar({ onSettingsClick, isLoggedIn }: SenseiBarProps) {
   const moveCount = useGameStore((s) => s.game.moveHistory.length);
+  const hasBoardStones = useGameStore((s) => s.game.board.grid.some((row) => row.some((cell) => cell !== null)));
   const captures = useGameStore((s) => s.game.captures);
   const currentPlayer = useGameStore((s) => s.game.currentPlayer);
   const isAiThinking = useGameStore((s) => s.isAiThinking);
@@ -89,7 +90,7 @@ export function SenseiBar({ onSettingsClick, isLoggedIn }: SenseiBarProps) {
         )}
         {!surfaceStatus && phase === 'playing' && (
           <>
-            <span className="whitespace-nowrap">Move {moveCount}</span>
+            <span className="whitespace-nowrap">{moveCount === 0 && hasBoardStones ? 'Study position' : `Move ${moveCount}`}</span>
             <span className="hidden items-center gap-1 sm:flex">
               <span className="inline-block w-3 h-3 rounded-full bg-black border border-gray-600" />
               {captures.black}
