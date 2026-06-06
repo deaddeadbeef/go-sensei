@@ -2022,6 +2022,33 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('explains undo on restored study positions without pretending the board is empty', () => {
+    const answer = getLocalQuestionAnswer('Can I undo?', settledShapeGame(), 'guided');
+
+    expect(answer?.text).toContain('There is nothing to undo from this study position because it was restored without move history.');
+    expect(answer?.text).toContain('Black is to play from the current board, so keep using the marked target instead of trying to rewind the setup stones.');
+    expect(answer?.text).toContain('Your current guided target is: Choose a new area.');
+    expect(answer?.text).toContain('Try H8 or H2.');
+    expect(answer?.text).toContain('I marked the current targets again.');
+    expect(answer?.text).not.toContain('no stones have been played');
+    expect(answer?.text).not.toContain('I marked the first targets again.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['stones-and-board', 'direction-of-play', 'shape']));
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-undo-move-7,1',
+        point: { x: 7, y: 1 },
+        rank: 1,
+        reason: 'Consider H8 as a fresh upper-right direction away from the settled local shape.',
+      },
+      {
+        id: 'local-undo-move-7,7',
+        point: { x: 7, y: 7 },
+        rank: 2,
+        reason: 'Consider H2 as a fresh lower-right direction away from the settled local shape.',
+      },
+    ]);
+  });
+
   it('answers early score questions without pretending territory is settled', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
