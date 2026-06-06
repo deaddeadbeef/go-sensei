@@ -4,7 +4,29 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SenseiChatLog } from '@/components/chat/SenseiChatLog';
 import { BeginnerObjectiveCard } from '@/components/game/BeginnerObjectiveCard';
+import { createGame, setStone } from '@/lib/go-engine';
+import type { GameState, Point } from '@/lib/go-engine';
 import { useGameStore } from '@/stores/game-store';
+
+function settledShapeGame(): GameState {
+  const stones: Point[] = [
+    { x: 2, y: 2 },
+    { x: 4, y: 2 },
+    { x: 6, y: 2 },
+    { x: 2, y: 4 },
+    { x: 3, y: 4 },
+    { x: 4, y: 4 },
+    { x: 6, y: 4 },
+    { x: 2, y: 6 },
+    { x: 4, y: 6 },
+    { x: 6, y: 6 },
+  ];
+
+  return stones.reduce(
+    (game, point) => ({ ...game, board: setStone(game.board, point, 'black') }),
+    createGame(9),
+  );
+}
 
 describe('BeginnerObjectiveCard', () => {
   beforeEach(() => {
@@ -1184,6 +1206,68 @@ describe('BeginnerObjectiveCard', () => {
     ]));
     expect(screen.queryByText('Before playing, ask which stones have little room to escape.')).toBeNull();
     expect(screen.queryByText('Progress check: D5 stayed near the settled shape. Look for a fresh direction before rereading the same local area.')).toBeNull();
+  });
+
+  it('extends H2 into the lower-right area after choosing that fresh direction', () => {
+    vi.useFakeTimers();
+    act(() => {
+      useGameStore.setState({
+        game: settledShapeGame(),
+        teachingLevel: 'guided',
+        phase: 'playing',
+        appPhase: 'game',
+        overlays: {
+          highlights: [],
+          targetHints: [],
+          liberties: [],
+          suggestions: [],
+          arrows: [],
+          influence: [],
+          groups: [],
+        },
+      });
+    });
+
+    render(<BeginnerObjectiveCard />);
+
+    expect(screen.getByText('Choose a new area')).toBeTruthy();
+    expect(screen.getByText('Try H8 or H2.')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Play H2 target for Choose a new area' }));
+    act(() => {
+      useGameStore.getState().pass();
+    });
+
+    expect(screen.getByText('Extend H2 into the lower-right area: try F2 or H4.')).toBeTruthy();
+
+    const f2Target = screen.getByRole('button', { name: 'Play F2 target for Make your stones work together' });
+    fireEvent.focus(f2Target);
+    act(() => vi.runOnlyPendingTimers());
+
+    expect(screen.getByText('Why F2')).toBeTruthy();
+    expect(screen.getByText('F2 extends H2 into the lower-right area; G2 stays open so the fresh-area stone gets a flexible partner instead of staying isolated.')).toBeTruthy();
+    expect(useGameStore.getState().overlays.targetHints).toEqual(expect.arrayContaining([
+      {
+        id: 'target-hint-target-5,7',
+        point: { x: 5, y: 7 },
+        variant: 'positive',
+        label: 'F2: extends H2 into the lower-right area.',
+      },
+      {
+        id: 'target-hint-anchor-7,7',
+        point: { x: 7, y: 7 },
+        variant: 'neutral',
+        label: 'H2: fresh-area anchor for this extension.',
+      },
+    ]));
+
+    fireEvent.blur(f2Target);
+    const h4Target = screen.getByRole('button', { name: 'Play H4 target for Make your stones work together' });
+    fireEvent.focus(h4Target);
+    act(() => vi.runOnlyPendingTimers());
+
+    expect(screen.getByText('Why H4')).toBeTruthy();
+    expect(screen.getByText('H4 extends H2 into the lower-right area; H3 stays open so the fresh-area stone gets a flexible partner instead of staying isolated.')).toBeTruthy();
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {
