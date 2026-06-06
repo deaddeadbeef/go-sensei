@@ -905,6 +905,10 @@ function targetReason(
     return `${coord} is marked because it is a one-space jump from ${anchorCoord}: close enough to work with that stone, but far enough away to grow territory instead of clumping.`;
   }
 
+  if (objective.id === 'choose-new-area') {
+    return `${coord} is marked because it opens a fresh ${getBoardAreaDirectionLabel(point, boardSize)} away from the settled local shape. It gives Black a new area to explore instead of rereading the same safe groups.`;
+  }
+
   return `${coord} is marked because it is a liberty for a group that is short on breathing room. Playing there gives the group more ways to escape.`;
 }
 
@@ -959,13 +963,17 @@ function buildTargetReasonAnswer(game: GameState, teachingLevel: TeachingLevel, 
 
   lines.push(targetReason(objective, targetPoint, game.board.size, anchorMove?.point ?? null, followUpContext));
 
-  const otherTargets = objective.targetPoints
+  const otherTargetPoints = objective.targetPoints
     .filter((point) => !pointEquals(point, targetPoint))
-    .slice(0, 3)
-    .map((point) => pointToCoord(point, game.board.size));
+    .slice(0, 3);
+  const otherTargets = otherTargetPoints.map((point) => pointToCoord(point, game.board.size));
 
   if (otherTargets.length > 0) {
-    lines.push(`${otherTargets.join(' or ')} works for the same beginner goal.`);
+    if (objective.id === 'choose-new-area' && otherTargetPoints.length === 1) {
+      lines.push(`${otherTargets[0]} works for the same beginner goal in the ${getBoardAreaDirectionLabel(otherTargetPoints[0], game.board.size)}.`);
+    } else {
+      lines.push(`${otherTargets.join(' or ')} works for the same beginner goal.`);
+    }
   }
 
   if (requestedPoint && !pointEquals(requestedPoint, targetPoint)) {
