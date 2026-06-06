@@ -289,6 +289,11 @@ export function DailyReview() {
                 <p className="mt-2 text-sm leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
                   {summary.nextStep}
                 </p>
+                {summary.tone === 'advance' && (
+                  <p className="mt-3 text-sm leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
+                    Review finish line reached: every due card landed cleanly, so the path can move to the next recommendation.
+                  </p>
+                )}
                 {summary.attentionProblems.length > 0 && (
                   <div className="mt-4">
                     <p className="text-xs font-semibold uppercase" style={{ color: COLORS.ui.textSecondary }}>
