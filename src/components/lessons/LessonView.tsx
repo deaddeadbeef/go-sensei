@@ -374,6 +374,19 @@ export function LessonView() {
                   )}
                 </motion.div>
               )}
+              {isLastStep && (
+                <div
+                  className="mt-3 rounded-lg p-3"
+                  style={{ backgroundColor: `${COLORS.ui.accent}12`, border: `1px solid ${COLORS.ui.accent}35` }}
+                >
+                  <p className="text-xs font-semibold uppercase" style={{ color: COLORS.ui.accent }}>
+                    Finish line
+                  </p>
+                  <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
+                    Finish this lesson after you can explain the board checkpoint in your own words.
+                  </p>
+                </div>
+              )}
             </motion.div>
           </AnimatePresence>
         </div>
