@@ -3,6 +3,7 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SenseiBar } from '@/components/ui/SenseiBar';
+import { createGame, setStone } from '@/lib/go-engine';
 import { useGameStore } from '@/stores/game-store';
 import type { AppPhase } from '@/stores/game-store';
 
@@ -21,6 +22,25 @@ describe('SenseiBar status', () => {
 
     expect(screen.getByText('Move 0')).toBeTruthy();
     expect(screen.getByTestId('sensei-bar-mobile-turn').textContent).toBe('You');
+    expect(screen.getByTestId('sensei-bar-desktop-turn').textContent).toBe('Your turn');
+  });
+
+  it('labels restored setup boards as a study position instead of move zero', () => {
+    const game = createGame(9);
+
+    act(() => {
+      useGameStore.setState({
+        game: {
+          ...game,
+          board: setStone(game.board, { x: 2, y: 2 }, 'black'),
+        },
+      });
+    });
+
+    render(<SenseiBar onSettingsClick={vi.fn()} isLoggedIn={false} />);
+
+    expect(screen.getByText('Study position')).toBeTruthy();
+    expect(screen.queryByText('Move 0')).toBeNull();
     expect(screen.getByTestId('sensei-bar-desktop-turn').textContent).toBe('Your turn');
   });
 
