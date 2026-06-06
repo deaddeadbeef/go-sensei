@@ -4742,7 +4742,13 @@ export function getLocalQuestionAnswer(
   }
 
   if (/\blibert(y|ies)\b/.test(q) || q.includes('breathing room')) {
-    const context = lastMove ? buildLibertyContext(game, lastMove.point, 'This connected group') : null;
+    const studyGroup = !lastMove && isStudyPositionWithoutMoveHistory(game)
+      ? findLearnerMostRestrictedGroup(game)
+      : null;
+    const contextPoint = lastMove?.point ?? (studyGroup ? groupAnchor(studyGroup) : null);
+    const context = contextPoint
+      ? buildLibertyContext(game, contextPoint, studyGroup ? 'This visible study group' : 'This connected group')
+      : null;
     return {
       text: `A liberty is an empty point directly next to a stone or connected group. Diagonals do not count.${context ? ` ${context.sentence}` : ''} When all liberties are filled by the opponent, that group is captured.`,
       conceptIds: ['liberties', 'groups', 'capture'],
