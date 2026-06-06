@@ -121,6 +121,29 @@ describe('app navigation recovery', () => {
     expect(useGameStore.getState().bubble.text).not.toMatch(/\bsugarcoat\b|no mercy|brutal|punish/i);
   });
 
+  it.each([
+    ['intermediate', 'I will assume you know the rules, then focus on shape, direction, and the priority behind each move.'],
+    ['advanced', 'I will keep the review concise: identify the point of the position, call out the highest-value mistake, and show the cleanest repair.'],
+  ] as const)('keeps %s welcome coaching useful instead of performative', async (level, expectedText) => {
+    vi.stubGlobal('ResizeObserver', class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    });
+
+    act(() => {
+      useGameStore.getState().startNewGame(19);
+      useGameStore.getState().setTeachingLevel(level);
+    });
+
+    render(<GamePage />);
+
+    await waitFor(() => {
+      expect(useGameStore.getState().bubble.text).toContain(expectedText);
+    });
+    expect(useGameStore.getState().bubble.text).not.toMatch(/show me what you've got|impress me/i);
+  });
+
   it('scopes the floating Sensei bubble to the board area', () => {
     vi.stubGlobal('ResizeObserver', class {
       observe() {}
