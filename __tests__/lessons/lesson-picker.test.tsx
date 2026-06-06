@@ -22,8 +22,9 @@ describe('LessonPicker', () => {
 
     expect(screen.getByText('1/10 complete')).toBeTruthy();
     expect(screen.getByText('Next lesson: Liberties: Breathing Room. 9 lessons left.')).toBeTruthy();
+    expect(screen.getByText('Learning path')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Learning path' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Learning path from lesson library' }));
 
     expect(useGameStore.getState().appPhase).toBe('path');
   });
@@ -62,7 +63,9 @@ describe('LessonPicker', () => {
   it('returns learners to the board from the lesson library', () => {
     render(<LessonPicker />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Return to board' }));
+    expect(screen.getByText('Return to board')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Return to board from lesson library' }));
 
     expect(useGameStore.getState().appPhase).toBe('game');
   });
