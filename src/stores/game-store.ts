@@ -417,7 +417,9 @@ export function getRestorableAppPhase(appPhase: AppPhase | undefined): AppPhase 
 }
 
 function isGuidedGameSnapshot(game: GameState | null | undefined): game is GameState {
-  return game?.board.size === 9 && Array.isArray(game.moveHistory) && game.moveHistory.length > 0;
+  return game?.board.size === 9
+    && Array.isArray(game.moveHistory)
+    && (game.moveHistory.length > 0 || hasBoardStones(game));
 }
 
 // ---------------------------------------------------------------------------
@@ -437,7 +439,17 @@ function countLearnerPlacedMoves(game: GameState): number {
   return game.moveHistory.filter((move) => move.type === 'place' && move.color === 'black').length;
 }
 
-function formatRestoredMoveCount(learnerMoveCount: number): string {
+function hasBoardStones(game: GameState): boolean {
+  return game.board.grid.some((row) => row.some((cell) => cell !== null));
+}
+
+function formatRestoredMoveCount(game: GameState): string {
+  const learnerMoveCount = countLearnerPlacedMoves(game);
+
+  if (learnerMoveCount === 0 && hasBoardStones(game)) {
+    return 'as a study position';
+  }
+
   if (learnerMoveCount === 0) return 'before your first learner move';
 
   return `with ${learnerMoveCount} learner ${learnerMoveCount === 1 ? 'move' : 'moves'}`;
@@ -472,7 +484,7 @@ function buildGuidedResumeBubble(
   const targetText = objective
     ? formatObjectiveTargetText(objective, game.board.size, 4, followUpContext)
     : null;
-  const learnerMoveText = `I restored your paused board ${formatRestoredMoveCount(countLearnerPlacedMoves(game))}.`;
+  const learnerMoveText = `I restored your paused board ${formatRestoredMoveCount(game)}.`;
 
   return {
     ...defaultBubble,
