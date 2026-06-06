@@ -383,6 +383,7 @@ export function DailyReview() {
             )}
             <button
               onClick={showLearningPath}
+              aria-label={`${learningPathLabel} from review summary`}
               className="px-6 py-2 rounded-lg text-sm font-medium transition-opacity hover:opacity-90"
               style={{
                 backgroundColor: review.results.length > 0 && !summary.practiceCategory ? COLORS.ui.accent : COLORS.ui.bgCard,
@@ -393,6 +394,7 @@ export function DailyReview() {
             </button>
             <button
               onClick={returnToGame}
+              aria-label="Return to board from review summary"
               className="px-6 py-2 rounded-lg text-sm font-medium transition-opacity hover:opacity-90"
               style={{ backgroundColor: COLORS.ui.bgCard, color: COLORS.ui.textSecondary }}
             >
