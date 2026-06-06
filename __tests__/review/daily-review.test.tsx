@@ -92,7 +92,9 @@ describe('DailyReview', () => {
   it('lets all-caught-up learners return to the learning path', () => {
     render(<DailyReview />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Learning path' }));
+    expect(screen.getByText('Learning path')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Learning path from review summary' }));
 
     expect(useGameStore.getState().appPhase).toBe('path');
   });
@@ -100,7 +102,7 @@ describe('DailyReview', () => {
   it('returns all-caught-up learners to the board', () => {
     render(<DailyReview />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Return to board' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Return to board from review summary' }));
 
     expect(useGameStore.getState().appPhase).toBe('game');
   });
@@ -229,7 +231,7 @@ describe('DailyReview', () => {
     expect(screen.getByText('Review finish line reached: every due card landed cleanly, so the path can move to the next recommendation.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Practice Capture' })).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Pick up next recommendation' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Pick up next recommendation from review summary' }));
 
     expect(useGameStore.getState().appPhase).toBe('path');
   });
