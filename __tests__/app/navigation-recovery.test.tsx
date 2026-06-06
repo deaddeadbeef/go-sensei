@@ -99,6 +99,28 @@ describe('app navigation recovery', () => {
     expect(useGameStore.getState().bubble.text).toBe('');
   });
 
+  it('keeps beginner welcome coaching direct and constructive', async () => {
+    vi.stubGlobal('ResizeObserver', class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    });
+
+    act(() => {
+      useGameStore.getState().startNewGame(19);
+      useGameStore.getState().setTeachingLevel('beginner');
+    });
+
+    render(<GamePage />);
+
+    await waitFor(() => {
+      expect(useGameStore.getState().bubble.text).toContain(
+        "I'll be direct when a move misses its purpose, and I'll always show the next repair so you know how to improve.",
+      );
+    });
+    expect(useGameStore.getState().bubble.text).not.toMatch(/\bsugarcoat\b|no mercy|brutal|punish/i);
+  });
+
   it('scopes the floating Sensei bubble to the board area', () => {
     vi.stubGlobal('ResizeObserver', class {
       observe() {}
