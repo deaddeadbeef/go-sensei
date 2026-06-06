@@ -139,7 +139,9 @@ describe('DailyReview', () => {
 
     render(<DailyReview />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Return to board' }));
+    expect(screen.getByText('Return to board')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Return to board from active review' }));
 
     expect(useGameStore.getState().appPhase).toBe('game');
   });

@@ -696,6 +696,7 @@ export function DailyReview() {
           )}
           <button
             onClick={returnToGame}
+            aria-label="Return to board from active review"
             className="text-sm text-center transition-opacity hover:opacity-100"
             style={{ color: COLORS.ui.textSecondary, opacity: 0.7 }}
           >
