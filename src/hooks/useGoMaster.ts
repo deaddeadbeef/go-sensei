@@ -337,6 +337,8 @@ export function useGoMaster() {
       : undefined;
 
     return {
+      board: g.board,
+      currentPlayer: g.currentPlayer,
       moveHistory: g.moveHistory.map((m) => {
         if (m.type === 'place') return { type: 'place', x: m.point.x, y: m.point.y, color: m.color };
         if (m.type === 'pass') return { type: 'pass', color: m.color };

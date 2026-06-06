@@ -1726,6 +1726,46 @@ describe('useGoMaster local answers', () => {
     sessionStorage.removeItem('go-sensei-github-token');
   });
 
+  it('sends the current board snapshot for restored no-history study positions', async () => {
+    sessionStorage.setItem('go-sensei-github-token', 'test-token');
+    act(() => {
+      useGameStore.setState({
+        game: settledShapeGame(),
+        appPhase: 'game',
+        phase: 'playing',
+        teachingLevel: 'guided',
+      });
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(
+      JSON.stringify({ text: 'Cloud tutor response' }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    ));
+    const { result } = renderHook(() => useGoMaster());
+
+    await act(async () => {
+      result.current.sendMessage('Give me a vivid proverb for this board');
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    const request = fetchSpy.mock.calls[0]?.[1] as RequestInit;
+    const body = JSON.parse(String(request.body)) as {
+      gameState: {
+        board: { grid: Array<Array<'black' | 'white' | null>> };
+        currentPlayer: string;
+        moveHistory: unknown[];
+      };
+    };
+
+    expect(body.gameState.moveHistory).toHaveLength(0);
+    expect(body.gameState.board.grid[2][2]).toBe('black');
+    expect(body.gameState.board.grid[4][3]).toBe('black');
+    expect(body.gameState.currentPlayer).toBe('black');
+
+    sessionStorage.removeItem('go-sensei-github-token');
+  });
+
   it('hides raw tutor errors when no local fallback is available', async () => {
     sessionStorage.setItem('go-sensei-github-token', 'test-token');
     act(() => {
