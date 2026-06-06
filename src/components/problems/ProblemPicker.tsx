@@ -401,6 +401,7 @@ export function ProblemPicker() {
         >
           <button
             onClick={returnToGame}
+            aria-label="Return to board from problem library"
             className="rounded-xl px-8 py-3 text-base font-semibold transition-opacity hover:opacity-90"
             style={{
               backgroundColor: COLORS.ui.accent,
