@@ -888,6 +888,30 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('keeps fresh-area targets visible for shape questions on restored study boards', () => {
+    const answer = getLocalQuestionAnswer('What is good shape?', settledShapeGame(), 'guided');
+
+    expect(answer?.text).toContain('First make the current beginner goal clear: Your nearby groups are safe for now. Pick a fresh area instead of rereading the settled shape.');
+    expect(answer?.text).toContain('Try H8 or H2.');
+    expect(answer?.text).toContain('I marked the current shape targets on the board.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['shape', 'direction-of-play']));
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-shape-move-7,1',
+        point: { x: 7, y: 1 },
+        rank: 1,
+        reason: 'Consider H8 as a fresh upper-right direction away from the settled local shape.',
+      },
+      {
+        id: 'local-shape-move-7,7',
+        point: { x: 7, y: 7 },
+        rank: 2,
+        reason: 'Consider H2 as a fresh lower-right direction away from the settled local shape.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+  });
+
   it('teaches reading after H8 with the fresh-area extension targets', () => {
     const freshAreaMove = playMove(settledShapeGame(), { x: 7, y: 1 });
     if (!freshAreaMove.success) throw new Error('test setup fresh-area move failed');
