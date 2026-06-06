@@ -472,6 +472,11 @@ export function ProblemView() {
                   ? `You reached the ${scopedProblemLabel} practice target. Return to the path for: ${learningRecommendation.title}.`
                   : `Return to the path for: ${learningRecommendation.title}.`}
               </p>
+              {scopedProblemLabel && (
+                <p className="mt-2 text-sm leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
+                  Finish line reached: you solved the last required {scopedProblemLabel} problem for this path block.
+                </p>
+              )}
             </motion.div>
           )}
 
