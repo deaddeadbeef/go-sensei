@@ -1530,6 +1530,32 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('does not ask for a first move when explaining connection on a restored study board', () => {
+    const answer = getLocalQuestionAnswer('How do I connect my stones?', settledShapeGame(), 'guided');
+
+    expect(answer?.text).toContain('Stones become one solid group only when they touch up, down, left, or right.');
+    expect(answer?.text).toContain('This restored study position has board stones but no move history, so I cannot choose one last Black group to mark yet.');
+    expect(answer?.text).toContain('Use the current target first; after you play it, I can mark that group and its liberties for connection reading.');
+    expect(answer?.text).toContain('For the current board, first follow the beginner target: Choose a new area.');
+    expect(answer?.text).toContain('Try H8 or H2.');
+    expect(answer?.text).not.toContain('Play a stone first');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['groups', 'liberties', 'shape', 'direction-of-play']));
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-connection-move-7,1',
+        point: { x: 7, y: 1 },
+        rank: 1,
+        reason: 'Consider H8 as a fresh upper-right direction away from the settled local shape.',
+      },
+      {
+        id: 'local-connection-move-7,7',
+        point: { x: 7, y: 7 },
+        rank: 2,
+        reason: 'Consider H2 as a fresh lower-right direction away from the settled local shape.',
+      },
+    ]);
+  });
+
   it('explains a White cut through a one-space jump gap from the learner anchor', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
