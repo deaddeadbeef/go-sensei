@@ -111,6 +111,22 @@ describe('SkillTree', () => {
     expect(useGameStore.getState().preferredProblemFilter).toBe('capture');
   });
 
+  it('returns unlocked concept practice to the learning path', () => {
+    useConceptStore.getState().setMasteryLevel('stones-and-board', 1);
+
+    render(<SkillTree />);
+
+    clickButtonText('Liberties');
+
+    const detail = screen.getByTestId('skill-tree-detail');
+
+    expect(within(detail).getByText('Learning path')).toBeTruthy();
+
+    fireEvent.click(within(detail).getByRole('button', { name: 'Learning path from skill tree' }));
+
+    expect(useGameStore.getState().appPhase).toBe('path');
+  });
+
   it('shows missing prerequisites instead of practice actions for locked concepts', () => {
     render(<SkillTree />);
 
@@ -142,7 +158,9 @@ describe('SkillTree', () => {
   it('returns learners to the board from the skill tree', () => {
     render(<SkillTree />);
 
-    clickButtonText('Return to board');
+    expect(screen.getByText('Return to board')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Return to board from skill tree' }));
 
     expect(useGameStore.getState().appPhase).toBe('game');
   });
