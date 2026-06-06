@@ -46,7 +46,10 @@ function RulesPanelDetails({ defaultOpen }: { defaultOpen: boolean }) {
 }
 
 export function RulesPanel() {
-  const hasStarted = useGameStore((s) => s.game.moveHistory.length > 0);
+  const hasStarted = useGameStore((s) => (
+    s.game.moveHistory.length > 0
+    || s.game.board.grid.some((row) => row.some((cell) => cell !== null))
+  ));
 
   return (
     <RulesPanelDetails
