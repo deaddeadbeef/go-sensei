@@ -2516,6 +2516,38 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([{ id: 'lesson:liberties', label: 'Review liberties' }]);
   });
 
+  it('grounds liberty questions in restored study board groups', () => {
+    const answer = getLocalQuestionAnswer('What is a liberty?', settledShapeGame(), 'guided');
+
+    expect(answer).toMatchObject({
+      conceptIds: expect.arrayContaining(['liberties', 'groups', 'capture']),
+    });
+    expect(answer?.text).toContain('Your group at C7 currently has 4 liberties');
+    expect(answer?.text).toContain('C8');
+    expect(answer?.text).toContain('C6');
+    expect(answer?.text).toContain('B7');
+    expect(answer?.text).toContain('D7');
+    expect(answer?.boardFocus?.liberties).toEqual([{
+      id: 'local-liberties-2,2',
+      point: { x: 2, y: 2 },
+      count: 4,
+      libertyPoints: [
+        { x: 2, y: 1 },
+        { x: 2, y: 3 },
+        { x: 1, y: 2 },
+        { x: 3, y: 2 },
+      ],
+    }]);
+    expect(answer?.boardFocus?.groups?.[0]).toMatchObject({
+      id: 'local-group-2,2',
+      stones: [{ x: 2, y: 2 }],
+      color: 'black',
+      liberties: 4,
+    });
+    expect(answer?.boardFocus?.groups?.[0].label).toContain('This visible study group has 4 liberties');
+    expect(answer?.actions).toEqual([{ id: 'lesson:liberties', label: 'Review liberties' }]);
+  });
+
   it('answers atari questions with a concrete warning', () => {
     const answer = getLocalQuestionAnswer('What does atari mean?', createGame(9), 'beginner');
 
