@@ -55,7 +55,9 @@ describe('ProblemPicker', () => {
   it('returns learners to the board from the problem library', () => {
     render(<ProblemPicker />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Return to board' }));
+    expect(screen.getByText('Return to board')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Return to board from problem library' }));
 
     expect(useGameStore.getState().appPhase).toBe('game');
   });
