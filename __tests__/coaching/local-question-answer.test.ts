@@ -749,6 +749,31 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('answers next-move questions after H2 as a lower-right fresh-area extension', () => {
+    const freshAreaMove = playMove(settledShapeGame(), { x: 7, y: 7 });
+    if (!freshAreaMove.success) throw new Error('test setup fresh-area move failed');
+    const afterWhitePass = passMove(freshAreaMove.newState);
+
+    const answer = getLocalQuestionAnswer('What should I do?', afterWhitePass, 'guided');
+
+    expect(answer?.text).toContain('Your next job is: Make your stones work together.');
+    expect(answer?.text).toContain('Extend H2 into the lower-right area: try F2 or H4.');
+    expect(answer?.boardFocus?.suggestions?.slice(0, 2)).toEqual([
+      {
+        id: 'local-objective-move-5,7',
+        point: { x: 5, y: 7 },
+        rank: 1,
+        reason: 'Try F2 to give H2 a partner in the lower-right area while keeping a one-space gap.',
+      },
+      {
+        id: 'local-objective-move-7,5',
+        point: { x: 7, y: 5 },
+        rank: 2,
+        reason: 'Try H4 to give H2 a partner in the lower-right area while keeping a one-space gap.',
+      },
+    ]);
+  });
+
   it('answers shape questions after H8 as fresh-area extension practice', () => {
     const freshAreaMove = playMove(settledShapeGame(), { x: 7, y: 1 });
     if (!freshAreaMove.success) throw new Error('test setup fresh-area move failed');
