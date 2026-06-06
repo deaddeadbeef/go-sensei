@@ -1690,6 +1690,42 @@ describe('useGoMaster local answers', () => {
     sessionStorage.removeItem('go-sensei-github-token');
   });
 
+  it('sends lower-right fresh-area follow-up target context to the cloud tutor', async () => {
+    const freshAreaMove = playMove(settledShapeGame(), { x: 7, y: 7 });
+    if (!freshAreaMove.success) throw new Error('test setup fresh-area move failed');
+    const afterWhitePass = passMove(freshAreaMove.newState);
+    sessionStorage.setItem('go-sensei-github-token', 'test-token');
+    act(() => {
+      useGameStore.setState({
+        game: afterWhitePass,
+        appPhase: 'game',
+        phase: 'playing',
+        teachingLevel: 'guided',
+      });
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(
+      JSON.stringify({ text: 'Cloud tutor response' }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    ));
+    const { result } = renderHook(() => useGoMaster());
+
+    await act(async () => {
+      result.current.sendMessage('Give me a vivid proverb for this board');
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    const request = fetchSpy.mock.calls[0]?.[1] as RequestInit;
+    const body = JSON.parse(String(request.body)) as { gameState: { guidedContext: string } };
+
+    expect(body.gameState.guidedContext).toContain('Current visible objective: Make your stones work together');
+    expect(body.gameState.guidedContext).toContain('Suggested board points: Extend H2 into the lower-right area: try F2 or H4.');
+    expect(body.gameState.guidedContext).not.toContain('Suggested board points: Try F2 or H4.');
+
+    sessionStorage.removeItem('go-sensei-github-token');
+  });
+
   it('hides raw tutor errors when no local fallback is available', async () => {
     sessionStorage.setItem('go-sensei-github-token', 'test-token');
     act(() => {
