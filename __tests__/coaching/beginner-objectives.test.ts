@@ -225,8 +225,10 @@ describe('beginner objectives', () => {
     ]);
     const settledGame = { ...createGame(9), board: settledBoard };
     const freshAreaMove = playMove(settledGame, { x: 7, y: 1 });
+    const lowerRightFreshAreaMove = playMove(settledGame, { x: 7, y: 7 });
     const offTargetMove = playMove(settledGame, { x: 1, y: 1 });
     if (!freshAreaMove.success) throw new Error('test setup fresh-area move failed');
+    if (!lowerRightFreshAreaMove.success) throw new Error('test setup lower-right fresh-area move failed');
     if (!offTargetMove.success) throw new Error('test setup off-target move failed');
 
     expect(getBeginnerObjectiveProgress(freshAreaMove.newState, 'guided')).toMatchObject({
@@ -234,6 +236,12 @@ describe('beginner objectives', () => {
       objectiveId: 'choose-new-area',
       lastMove: { x: 7, y: 1 },
       text: 'Good: H8 chose the upper-right direction after the local shape settled. Before the next move, say what this H8 stone is trying to open so White\'s reply has context.',
+    });
+    expect(getBeginnerObjectiveProgress(lowerRightFreshAreaMove.newState, 'guided')).toMatchObject({
+      status: 'met',
+      objectiveId: 'choose-new-area',
+      lastMove: { x: 7, y: 7 },
+      text: 'Good: H2 chose the lower-right direction after the local shape settled. Before the next move, say what this H2 stone is trying to open so White\'s reply has context.',
     });
     expect(getBeginnerObjectiveProgress(offTargetMove.newState, 'guided')).toBeNull();
   });
