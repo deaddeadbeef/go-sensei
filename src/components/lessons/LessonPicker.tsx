@@ -182,6 +182,7 @@ export function LessonPicker() {
         >
           <button
             onClick={showLearningPath}
+            aria-label="Learning path from lesson library"
             className="rounded-xl px-8 py-3 text-base font-semibold transition-opacity hover:opacity-90"
             style={{
               backgroundColor: COLORS.ui.accent,
@@ -192,6 +193,7 @@ export function LessonPicker() {
           </button>
           <button
             onClick={returnToGame}
+            aria-label="Return to board from lesson library"
             className="rounded-xl px-8 py-3 text-base font-semibold transition-opacity hover:opacity-90"
             style={{
               backgroundColor: COLORS.ui.bgCard,
