@@ -3819,6 +3819,22 @@ function buildMoveImpactAnswer(game: GameState, teachingLevel: TeachingLevel): L
   if (!move) {
     const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
 
+    if (isStudyPositionWithoutMoveHistory(game)) {
+      return {
+        text: [
+          'This restored study position has board stones but no move history, so I cannot tie the change to a last Black move.',
+          objective ? `Use the current target first: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}` : '',
+          suggestions.length > 0 ? 'I marked the current targets so your next move creates a change worth reviewing.' : '',
+        ].filter(Boolean).join(' '),
+        conceptIds: uniqueConceptIds(['stones-and-board', 'direction-of-play', ...(objective?.conceptIds ?? [])]),
+        ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
+        actions: [
+          ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+          ...(action ? [action] : []),
+        ],
+      };
+    }
+
     return {
       text: [
         'Play a stone first, then ask what changed and I will tie that move back to the board.',
@@ -3905,6 +3921,23 @@ function buildLearningTakeawayAnswer(game: GameState, teachingLevel: TeachingLev
 
   if (!move) {
     const targetText = objective ? formatObjectiveTargetText(objective, game.board.size) : null;
+
+    if (isStudyPositionWithoutMoveHistory(game)) {
+      return {
+        text: [
+          'This restored study position has board stones but no move history, so I cannot turn a last Black move into a takeaway yet.',
+          'A useful takeaway needs one move to compare with one visible beginner job.',
+          objective ? `Use the current target first: ${objective.title}. ${objective.instruction}${targetText ? ` ${targetText}` : ''}` : '',
+          suggestions.length > 0 ? 'I marked the current targets so the lesson begins with a concrete choice.' : '',
+        ].filter(Boolean).join(' '),
+        conceptIds: uniqueConceptIds(['stones-and-board', 'direction-of-play', ...(objective?.conceptIds ?? [])]),
+        ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
+        actions: [
+          ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+          ...(action ? [action] : []),
+        ],
+      };
+    }
 
     return {
       text: [
