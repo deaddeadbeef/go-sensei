@@ -173,6 +173,16 @@ export function DailyReview() {
     }),
     [completedLessons, problemAttempts, review.problemIds.length, hasStartedIntroGame, mastery],
   );
+  const clearedReviewRecommendation = useMemo(
+    () => getLearningRecommendation({
+      completedLessons,
+      problemAttempts,
+      dueReviewCount: 0,
+      hasStartedIntroGame,
+      mastery: Object.values(mastery),
+    }),
+    [completedLessons, problemAttempts, hasStartedIntroGame, mastery],
+  );
 
   const [problemState, setProblemState] = useState<ProblemState>(() =>
     currentProblem ? initProblemState(currentProblem) : initProblemState(PROBLEMS[0]),
@@ -277,6 +287,9 @@ export function DailyReview() {
     const seedDescription = pathSeedProblem && pathRecommendation.kind === 'problem'
       ? `Your path is asking for ${pathRecommendation.title}. Solve one now so tomorrow's review starts with the skill you are actually studying.`
       : 'Solve one fresh problem now. If it takes extra attempts or a hint, Go Sensei will bring it back when the lesson is ready to stick.';
+    const nextAfterCleanReview = review.results.length > 0 && summary.tone === 'advance'
+      ? clearedReviewRecommendation
+      : null;
     const learningPathLabel = review.results.length > 0 && !summary.practiceCategory
       ? 'Pick up next recommendation'
       : 'Learning path';
@@ -317,9 +330,21 @@ export function DailyReview() {
                   {summary.nextStep}
                 </p>
                 {summary.tone === 'advance' && (
-                  <p className="mt-3 text-sm leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
-                    Review finish line reached: every due card landed cleanly, so the path can move to the next recommendation.
-                  </p>
+                  <>
+                    <p className="mt-3 text-sm leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
+                      Review finish line reached: every due card landed cleanly, so the path can move to the next recommendation.
+                    </p>
+                    {nextAfterCleanReview && (
+                      <>
+                        <p className="mt-2 text-sm leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
+                          Next on the path: {nextAfterCleanReview.title}.
+                        </p>
+                        <p className="mt-1 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+                          Next finish line: {nextAfterCleanReview.finishLine}
+                        </p>
+                      </>
+                    )}
+                  </>
                 )}
                 {summary.attentionProblems.length > 0 && (
                   <div className="mt-4">
