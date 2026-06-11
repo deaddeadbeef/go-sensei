@@ -121,6 +121,8 @@ describe('ProblemPicker', () => {
     expect(screen.getByText('Review due')).toBeTruthy();
     expect(screen.getByText('1 review position is due before new material.')).toBeTruthy();
     expect(screen.getByText('All due review cards are answered, and any miss has been replayed once.')).toBeTruthy();
+    expect(screen.getByText('Daily review is the next move. Corner Capture can wait until your due cards are clear.')).toBeTruthy();
+    expect(screen.queryByText('Start here: it is the gentlest unsolved problem in the library.')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Start Corner Capture' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Solve: Corner Capture' })).toBeNull();
 
