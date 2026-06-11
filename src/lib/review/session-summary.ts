@@ -102,7 +102,7 @@ export function buildReviewSessionSummary(results: ReviewSessionResult[]): Revie
     accuracy,
     tone: 'advance',
     headline: 'Ready for the next idea',
-    nextStep: 'Every review landed cleanly. Move back to the path and pick up the next recommendation.',
+    nextStep: 'Every review landed cleanly. Continue with the next recommendation while the review memory is fresh.',
     practiceCategory: null,
     practiceCategoryTitle: null,
     practiceLabel: null,
