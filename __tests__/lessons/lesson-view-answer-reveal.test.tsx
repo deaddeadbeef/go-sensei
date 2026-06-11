@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LessonView } from '@/components/lessons/LessonView';
 import { useConceptStore } from '@/stores/concept-store';
 import { useGameStore } from '@/stores/game-store';
+import { useProgressStore } from '@/stores/progress-store';
+import { useReviewStore } from '@/stores/review-store';
 
 class ResizeObserverMock {
   observe() {}
@@ -18,6 +20,8 @@ describe('LessonView answer reveal', () => {
       useConceptStore.getState().resetAll();
       useGameStore.getState().startNewGame(9);
       useGameStore.getState().startLesson('liberties');
+      useProgressStore.getState().resetAll();
+      useReviewStore.getState().resetAll();
       useGameStore.setState({ currentStep: 2 });
     });
   });
@@ -75,6 +79,23 @@ describe('LessonView answer reveal', () => {
 
     expect(screen.getByText('Finish line')).toBeTruthy();
     expect(screen.getByText('Finish this lesson after you can explain the board checkpoint in your own words.')).toBeTruthy();
+  });
+
+  it('previews the path recommendation unlocked by finishing the lesson', () => {
+    act(() => {
+      useProgressStore.setState({
+        completedLessons: ['groups', 'liberties'],
+        hasStartedIntroGame: true,
+        problemAttempts: [],
+      });
+      useGameStore.getState().startLesson('capture');
+      useGameStore.setState({ currentStep: 3 });
+    });
+
+    render(<LessonView />);
+
+    expect(screen.getByText('Next on the path: Capture problems.')).toBeTruthy();
+    expect(screen.getByText('Next finish line: This block is complete after 3 more solved capture problems.')).toBeTruthy();
   });
 
   it('credits companion concepts from the shared lesson map', () => {
