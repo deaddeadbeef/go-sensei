@@ -17,12 +17,21 @@ function input(overrides: Partial<RecommendationInput> = {}): RecommendationInpu
 }
 
 function solved(problemId: string): ProblemAttempt {
+  return attempt(problemId, true, 1, 1);
+}
+
+function attempt(
+  problemId: string,
+  solved: boolean,
+  attempts: number,
+  timestamp: number,
+): ProblemAttempt {
   return {
     problemId,
-    solved: true,
-    attempts: 1,
+    solved,
+    attempts,
     moveSequence: [],
-    timestamp: 1,
+    timestamp,
   };
 }
 
@@ -70,6 +79,82 @@ describe('learning path recommendations', () => {
     expect(recommendation.actionLabel).toBe('Start daily review');
     expect(recommendation.finishLine).toBe('All due review cards are answered, and any miss has been replayed once.');
     expect(recommendation.practicePlan).toContain('Solve the due review positions before opening new material.');
+  });
+
+  it('repairs the most recent failed problem before adding new material', () => {
+    const recommendation = getLearningRecommendation(
+      input({
+        completedLessons: ['groups', 'liberties', 'capture'],
+        problemAttempts: [
+          solved('capture-001'),
+          solved('capture-002'),
+          solved('capture-003'),
+          attempt('life-001', false, 3, 20),
+        ],
+      }),
+    );
+
+    expect(recommendation).toMatchObject({
+      kind: 'problem',
+      filter: 'life-and-death',
+      title: 'Repair Life and Death',
+      actionLabel: 'Repair life and death problems',
+    });
+    expect(recommendation.reason).toBe('Your latest miss was Make Two Eyes. Repair that pattern before adding new material.');
+    expect(recommendation.finishLine).toBe('Replay Make Two Eyes once, then solve one life and death problem without a hint.');
+    expect(recommendation.practicePlan).toContain('Start by replaying the first solution move from Make Two Eyes.');
+  });
+
+  it('reinforces a recently solved problem that took extra reading', () => {
+    const recommendation = getLearningRecommendation(
+      input({
+        completedLessons: ['groups', 'liberties', 'capture'],
+        problemAttempts: [
+          solved('capture-001'),
+          attempt('capture-002', true, 2, 30),
+        ],
+      }),
+    );
+
+    expect(recommendation).toMatchObject({
+      kind: 'problem',
+      filter: 'capture',
+      title: 'Reinforce Capture',
+      actionLabel: 'Drill capture problems',
+    });
+    expect(recommendation.reason).toBe('You solved Edge Squeeze, but it took 2 attempts. Repeat the idea while it is fresh.');
+    expect(recommendation.finishLine).toBe('Solve one capture problem on the first try, then return to the path.');
+  });
+
+  it('keeps due review ahead of recent problem repair', () => {
+    const recommendation = getLearningRecommendation(
+      input({
+        dueReviewCount: 1,
+        problemAttempts: [attempt('life-001', false, 3, 20)],
+      }),
+    );
+
+    expect(recommendation.kind).toBe('review');
+  });
+
+  it('lets a newer clean solve clear older repair pressure', () => {
+    const recommendation = getLearningRecommendation(
+      input({
+        completedLessons: ['groups', 'liberties', 'capture'],
+        problemAttempts: [
+          solved('capture-001'),
+          solved('capture-002'),
+          solved('capture-003'),
+          attempt('life-001', false, 3, 20),
+          attempt('life-002', true, 1, 40),
+        ],
+      }),
+    );
+
+    expect(recommendation).toMatchObject({
+      kind: 'lesson',
+      targetId: 'territory',
+    });
   });
 
   it('capture lesson completion recommends capture problems', () => {

@@ -1,7 +1,7 @@
 import type { ConceptMastery } from '@/lib/concepts/types';
 import { LESSONS } from '@/lib/lessons/lesson-data';
 import { PROBLEMS } from '@/lib/problems/problem-data';
-import type { ProblemAttempt, ProblemCategory } from '@/lib/problems/types';
+import type { Problem, ProblemAttempt, ProblemCategory } from '@/lib/problems/types';
 import {
   LESSON_TO_CONCEPTS,
   LESSON_TO_PROBLEM_CATEGORY,
@@ -57,12 +57,14 @@ const GUIDED_GAME_MIN_SOLVED_PROBLEMS = 2;
 const WEAK_MASTERY_LEVEL = 2;
 
 const KNOWN_LESSON_IDS = new Set(LESSONS.map((lesson) => lesson.id));
+const PROBLEM_BY_ID = new Map(PROBLEMS.map((problem) => [problem.id, problem]));
 
 export function getLearningRecommendation(input: RecommendationInput): LearningRecommendation {
   const completedLessonIds = new Set(
     input.completedLessons.filter((lessonId) => KNOWN_LESSON_IDS.has(lessonId)),
   );
   const solvedProblemIds = getSolvedProblemIds(input.problemAttempts);
+  const recentRepair = getRecentRepairCandidate(input.problemAttempts);
   const weakIntroducedConcepts = getWeakIntroducedConcepts(completedLessonIds, input.mastery);
 
   if (input.dueReviewCount > 0) {
@@ -79,6 +81,10 @@ export function getLearningRecommendation(input: RecommendationInput): LearningR
         'Return here when reviews are clear for the day.',
       ],
     };
+  }
+
+  if (recentRepair) {
+    return repairProblemRecommendation(recentRepair.problem, recentRepair.attempt);
   }
 
   if (!input.hasStartedIntroGame && completedLessonIds.size === 0 && solvedProblemIds.size === 0) {
@@ -185,6 +191,31 @@ function problemRecommendation(
   };
 }
 
+function repairProblemRecommendation(problem: Problem, attempt: ProblemAttempt): LearningRecommendation {
+  const practiceCategoryTitle = problemCategoryTitle(problem.category);
+  const practiceCategoryTitleLower = practiceCategoryTitle.toLowerCase();
+  const missed = !attempt.solved;
+
+  return {
+    kind: 'problem',
+    filter: problem.category,
+    title: `${missed ? 'Repair' : 'Reinforce'} ${practiceCategoryTitle}`,
+    reason: missed
+      ? `Your latest miss was ${problem.title}. Repair that pattern before adding new material.`
+      : `You solved ${problem.title}, but it took ${attempt.attempts} attempts. Repeat the idea while it is fresh.`,
+    focusConcepts: [...PROBLEM_CATEGORY_TO_CONCEPTS[problem.category]],
+    actionLabel: `${missed ? 'Repair' : 'Drill'} ${practiceCategoryTitleLower} problems`,
+    finishLine: missed
+      ? `Replay ${problem.title} once, then solve one ${practiceCategoryTitleLower} problem without a hint.`
+      : `Solve one ${practiceCategoryTitleLower} problem on the first try, then return to the path.`,
+    practicePlan: [
+      `Start by replaying the first solution move from ${problem.title}.`,
+      `Name why the move works before trying another ${practiceCategoryTitleLower} problem.`,
+      'Return to new material only after one clean solve.',
+    ],
+  };
+}
+
 function getPendingLessonPractice(
   completedLessonIds: Set<string>,
   solvedProblemIds: Set<string>,
@@ -207,6 +238,19 @@ function getPendingLessonPractice(
   }
 
   return null;
+}
+
+function getRecentRepairCandidate(problemAttempts: ProblemAttempt[]): { problem: Problem; attempt: ProblemAttempt } | null {
+  const candidate = problemAttempts
+    .map((attempt, index) => ({ attempt, index }))
+    .filter(({ attempt }) => PROBLEM_BY_ID.has(attempt.problemId))
+    .sort((a, b) => b.attempt.timestamp - a.attempt.timestamp || b.index - a.index)[0]?.attempt;
+
+  if (!candidate) return null;
+  if (candidate.solved && candidate.attempts === 1) return null;
+
+  const problem = PROBLEM_BY_ID.get(candidate.problemId);
+  return problem ? { problem, attempt: candidate } : null;
 }
 
 function guidedGameRecommendation(focusConcepts: string[]): LearningRecommendation {
