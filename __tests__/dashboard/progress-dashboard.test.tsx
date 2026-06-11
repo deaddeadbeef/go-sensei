@@ -124,12 +124,20 @@ describe('ProgressDashboard', () => {
     expect(useGameStore.getState().appPhase).toBe('skills');
 
     useGameStore.getState().showDashboard();
-    fireEvent.click(screen.getByRole('button', { name: 'Seed review queue →' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Review clear →' }));
     expect(useGameStore.getState().appPhase).toBe('review');
   });
 
   it('uses truthful review entrypoint labels for empty and due queues', () => {
     const { rerender } = render(<ProgressDashboard />);
+
+    expect(screen.getByRole('button', { name: 'Review clear →' })).toBeTruthy();
+
+    useProgressStore.setState({
+      hasStartedIntroGame: true,
+      completedLessons: ['capture'],
+    });
+    rerender(<ProgressDashboard />);
 
     expect(screen.getByRole('button', { name: 'Seed review queue →' })).toBeTruthy();
 
