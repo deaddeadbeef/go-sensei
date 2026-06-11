@@ -9,9 +9,9 @@ describe('review session summary', () => {
     ]);
 
     expect(summary.tone).toBe('repair');
-    expect(summary.headline).toBe('Rebuild Life and death');
+    expect(summary.headline).toBe('Rebuild Life and Death');
     expect(summary.practiceCategory).toBe('life-and-death');
-    expect(summary.practiceLabel).toBe('Practice Life and death');
+    expect(summary.practiceLabel).toBe('Practice Life and Death');
     expect(summary.attentionProblems.map(({ problem }) => problem.title)).toEqual(['Make Two Eyes']);
     expect(summary.attentionProblems[0].replayMoveLabel).toBe('C8');
   });
