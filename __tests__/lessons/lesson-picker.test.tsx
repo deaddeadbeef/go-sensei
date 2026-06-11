@@ -5,10 +5,25 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { LessonPicker } from '@/components/lessons/LessonPicker';
 import { useGameStore } from '@/stores/game-store';
 import { useProgressStore } from '@/stores/progress-store';
+import { useReviewStore } from '@/stores/review-store';
+
+function makeReviewDue(problemId: string) {
+  useReviewStore.getState().recordReview(problemId, 5);
+  useReviewStore.setState((state) => ({
+    cards: {
+      ...state.cards,
+      [problemId]: {
+        ...state.cards[problemId],
+        nextReviewDate: Date.now() - 1000,
+      },
+    },
+  }));
+}
 
 describe('LessonPicker', () => {
   beforeEach(() => {
     useProgressStore.getState().resetAll();
+    useReviewStore.getState().resetAll();
     useGameStore.getState().startNewGame(19);
     useGameStore.getState().showLessons();
   });
@@ -58,6 +73,24 @@ describe('LessonPicker', () => {
 
     expect(useGameStore.getState().appPhase).toBe('lesson');
     expect(useGameStore.getState().currentLessonId).toBe('liberties');
+  });
+
+  it('keeps due review ahead of the next lesson in the lesson library', () => {
+    act(() => {
+      useProgressStore.getState().completeLesson('groups');
+      makeReviewDue('capture-001');
+    });
+
+    render(<LessonPicker />);
+
+    expect(screen.getByText('Review due')).toBeTruthy();
+    expect(screen.getByText('1 review position is due before new lessons.')).toBeTruthy();
+    expect(screen.getByText('After review, next lesson: Liberties: Breathing Room.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Start next lesson: Liberties: Breathing Room' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start daily review from lesson library' }));
+
+    expect(useGameStore.getState().appPhase).toBe('review');
   });
 
   it('returns learners to the board from the lesson library', () => {
