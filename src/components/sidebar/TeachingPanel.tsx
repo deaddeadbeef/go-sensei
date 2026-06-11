@@ -4,6 +4,7 @@ import { CONCEPTS } from '@/lib/concepts/concept-data';
 import { getSuggestionMarkerLabel } from '@/components/board/overlays/SuggestionOverlay';
 import {
   getBeginnerObjective,
+  getBeginnerObjectiveProgress,
   getBeginnerObjectiveSuggestionReason,
   getFreshAreaFollowUpContext,
 } from '@/lib/coaching/beginner-objectives';
@@ -60,6 +61,25 @@ export function TeachingPanel() {
   const labeledArrows = arrows.filter((a) => a.label);
   const labeledGroups = groups.filter((g) => g.label);
   const labeledSuggestions = suggestions.filter((s) => s.reason);
+  const shouldSuppressFreshAreaAnalysis = useMemo(() => {
+    if (appPhase !== 'game' || phase !== 'playing' || currentPlayer !== 'black') return false;
+
+    const objective = getBeginnerObjective({
+      boardSize: game.board.size,
+      board: game.board,
+      moveHistory: game.moveHistory,
+      moveCount: game.moveHistory.length,
+      currentPlayer: game.currentPlayer,
+      teachingLevel,
+    });
+    const progress = getBeginnerObjectiveProgress(game, teachingLevel);
+
+    return Boolean(
+      objective?.id === 'choose-new-area'
+      && progress?.status === 'met'
+      && progress.objectiveId === 'extend-from-stone',
+    );
+  }, [appPhase, currentPlayer, game, phase, teachingLevel]);
   const objectiveSuggestions = useMemo(() => {
     if (labeledSuggestions.length > 0) return [];
     if (appPhase !== 'game' || phase !== 'playing' || currentPlayer !== 'black') return [];
@@ -74,6 +94,7 @@ export function TeachingPanel() {
     });
 
     if (!objective || objective.targetPoints.length === 0) return [];
+    if (shouldSuppressFreshAreaAnalysis) return [];
 
     const followUpContext = getFreshAreaFollowUpContext(game, teachingLevel, objective);
 
@@ -83,8 +104,10 @@ export function TeachingPanel() {
       rank: index + 1,
       reason: getBeginnerObjectiveSuggestionReason(objective, point, game.board.size, followUpContext),
     }));
-  }, [appPhase, currentPlayer, game, labeledSuggestions.length, phase, teachingLevel]);
-  const analysisSuggestions = labeledSuggestions.length > 0 ? labeledSuggestions : objectiveSuggestions;
+  }, [appPhase, currentPlayer, game, labeledSuggestions.length, phase, shouldSuppressFreshAreaAnalysis, teachingLevel]);
+  const analysisSuggestions = shouldSuppressFreshAreaAnalysis
+    ? []
+    : labeledSuggestions.length > 0 ? labeledSuggestions : objectiveSuggestions;
 
   const hasBoardAnalysis = labeledHighlights.length + labeledArrows.length + labeledGroups.length + analysisSuggestions.length > 0;
   const hasContent = insight !== null || hasBoardAnalysis;
