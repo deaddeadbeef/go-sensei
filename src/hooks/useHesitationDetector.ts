@@ -43,7 +43,7 @@ export function buildHesitationNudge(game: GameState, teachingLevel: TeachingLev
   if (!objective) {
     return {
       text: 'Take your time. Want me to suggest a useful move?',
-      actions: [{ id: 'hint', label: 'Show me' }],
+      actions: [{ id: 'hint', label: 'Suggest a move' }],
     };
   }
 
