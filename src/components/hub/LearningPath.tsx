@@ -71,6 +71,9 @@ export function LearningPath() {
       .map((attempt) => attempt.problemId),
   ).size;
   const focusConcepts = recommendation.focusConcepts.map(conceptDisplay).slice(0, 4);
+  const reviewPathText = dueReviewCount > 0
+    ? `${dueReviewCount} due before new material.`
+    : "No reviews due; seed tomorrow's queue.";
 
   const startRecommended = () => {
     switch (recommendation.kind) {
@@ -227,7 +230,7 @@ export function LearningPath() {
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <PathCard title="Lessons" text="Build one Go idea at a time." onClick={showLessons} />
           <PathCard title="Problems" text="Read one shape, then check it." onClick={openProblems} />
-          <PathCard title="Review" text="Refresh patterns due today." onClick={showReview} />
+          <PathCard title="Review" text={reviewPathText} onClick={showReview} />
           <PathCard title="Skills" text="See what each concept unlocks." onClick={showSkillTree} />
           <PathCard
             title="Guided game"
