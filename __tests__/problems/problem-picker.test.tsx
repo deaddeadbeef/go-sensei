@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ProblemPicker } from '@/components/problems/ProblemPicker';
 import { useConceptStore } from '@/stores/concept-store';
@@ -152,5 +152,22 @@ describe('ProblemPicker', () => {
 
     expect(screen.getByText('Focused practice')).toBeTruthy();
     expect(screen.getByText('Reading problems train you to follow forcing moves before touching the board.')).toBeTruthy();
+  });
+
+  it('updates visible practice when a tutor action routes to a category while mounted', async () => {
+    render(<ProblemPicker />);
+
+    expect(screen.getByText('0/20 problems solved')).toBeTruthy();
+
+    act(() => {
+      useGameStore.getState().showProblems('reading');
+    });
+
+    expect(useGameStore.getState().preferredProblemFilter).toBe('reading');
+    await waitFor(() => {
+      expect(screen.getByText('Reading problems train you to follow forcing moves before touching the board.')).toBeTruthy();
+    });
+    expect(screen.getByText('0/4 reading problems solved')).toBeTruthy();
+    expect(screen.queryByText('0/20 problems solved')).toBeNull();
   });
 });
