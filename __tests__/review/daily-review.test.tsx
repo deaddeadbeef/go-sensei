@@ -66,7 +66,9 @@ describe('DailyReview', () => {
     expect(screen.getByText("Seed tomorrow's review")).toBeTruthy();
     expect(screen.getByText(/Go Sensei will bring it back when the lesson is ready to stick/)).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Start Corner Capture' }));
+    expect(screen.queryByRole('button', { name: 'Start Corner Capture' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Seed review queue with Corner Capture' }));
 
     expect(useGameStore.getState().appPhase).toBe('problem');
     expect(useGameStore.getState().currentProblemId).toBe('capture-001');
@@ -84,7 +86,9 @@ describe('DailyReview', () => {
 
     render(<DailyReview />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Start Edge Squeeze' }));
+    expect(screen.queryByRole('button', { name: 'Start Edge Squeeze' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Seed review queue with Edge Squeeze' }));
 
     expect(useGameStore.getState().appPhase).toBe('problem');
     expect(useGameStore.getState().currentProblemId).toBe('capture-002');
@@ -108,7 +112,9 @@ describe('DailyReview', () => {
     expect(screen.getByText(/Your path is asking for Life and Death problems/)).toBeTruthy();
     expect(screen.getByText('This block is complete after 2 more solved life and death problems.')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Start Make Two Eyes' }));
+    expect(screen.queryByRole('button', { name: 'Start Make Two Eyes' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Seed review queue with Make Two Eyes' }));
 
     expect(useGameStore.getState().appPhase).toBe('problem');
     expect(useGameStore.getState().currentProblemId).toBe('life-001');
