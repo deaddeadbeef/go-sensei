@@ -98,6 +98,26 @@ describe('LessonView answer reveal', () => {
     expect(screen.getByText('Next finish line: This block is complete after 3 more solved capture problems.')).toBeTruthy();
   });
 
+  it('continues directly into the previewed practice block after finishing a lesson', () => {
+    act(() => {
+      useProgressStore.setState({
+        completedLessons: ['groups', 'liberties'],
+        hasStartedIntroGame: true,
+        problemAttempts: [],
+      });
+      useGameStore.getState().startLesson('capture');
+      useGameStore.setState({ currentStep: 3 });
+    });
+
+    render(<LessonView />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Finish → Open capture problems' }));
+
+    expect(useProgressStore.getState().completedLessons).toContain('capture');
+    expect(useGameStore.getState().appPhase).toBe('problems');
+    expect(useGameStore.getState().preferredProblemFilter).toBe('capture');
+  });
+
   it('credits companion concepts from the shared lesson map', () => {
     act(() => {
       useGameStore.getState().startLesson('capture');
