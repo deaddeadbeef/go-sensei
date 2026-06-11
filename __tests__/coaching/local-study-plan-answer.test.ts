@@ -12,6 +12,16 @@ function problemAttempt(problemId: string, solved: boolean): ProblemAttempt {
   };
 }
 
+function problemAttemptWithAttempts(problemId: string, attempts: number): ProblemAttempt {
+  return {
+    problemId,
+    solved: true,
+    attempts,
+    moveSequence: [],
+    timestamp: 1,
+  };
+}
+
 function mastery(conceptId: string, level: ConceptMastery['level'], encounterCount = 1): ConceptMastery {
   return {
     conceptId,
@@ -109,5 +119,22 @@ describe('local study plan answer', () => {
     expect(answer?.text).toContain('Finish line: All due review cards are answered, and any miss has been replayed once.');
     expect(answer?.text).toContain('First: Solve the due review positions before opening new material.');
     expect(answer?.actions).toEqual([{ id: 'review', label: 'Start daily review' }]);
+  });
+
+  it('keeps reinforced practice finish lines aligned with direct continuation', () => {
+    const answer = getLocalStudyPlanAnswer('What should I practice next?', {
+      completedLessons: ['groups', 'liberties', 'capture'],
+      problemAttempts: [
+        problemAttempt('capture-001', true),
+        problemAttemptWithAttempts('capture-002', 2),
+      ],
+      dueReviewCount: 0,
+      hasStartedIntroGame: true,
+      mastery: [mastery('capture', 2, 2)],
+    });
+
+    expect(answer?.text).toContain('Study plan: Reinforce Capture.');
+    expect(answer?.text).toContain('Finish line: Solve one capture problem on the first try, then continue with the next recommendation.');
+    expect(answer?.actions).toEqual([{ id: 'problem:capture-002', label: 'Drill Edge Squeeze' }]);
   });
 });
