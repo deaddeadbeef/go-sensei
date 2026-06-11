@@ -6,11 +6,26 @@ import { LearningPath } from '@/components/hub/LearningPath';
 import { useConceptStore } from '@/stores/concept-store';
 import { useGameStore } from '@/stores/game-store';
 import { useProgressStore } from '@/stores/progress-store';
+import { useReviewStore } from '@/stores/review-store';
+
+function makeReviewDue(problemId: string) {
+  useReviewStore.getState().recordReview(problemId, 5);
+  useReviewStore.setState((state) => ({
+    cards: {
+      ...state.cards,
+      [problemId]: {
+        ...state.cards[problemId],
+        nextReviewDate: Date.now() - 1000,
+      },
+    },
+  }));
+}
 
 describe('LearningPath', () => {
   beforeEach(() => {
     useProgressStore.getState().resetAll();
     useConceptStore.getState().resetAll();
+    useReviewStore.getState().resetAll();
     useGameStore.getState().startNewGame(19);
     useGameStore.getState().showLearningPath();
   });
@@ -100,6 +115,21 @@ describe('LearningPath', () => {
 
     expect(useGameStore.getState().appPhase).toBe('problems');
     expect(useGameStore.getState().preferredProblemFilter).toBeNull();
+  });
+
+  it('makes the review path card truthful when no cards are due', () => {
+    render(<LearningPath />);
+
+    expect(screen.getByRole('button', { name: "Review: No reviews due; seed tomorrow's queue." })).toBeTruthy();
+  });
+
+  it('shows the due review count in the review path card', () => {
+    makeReviewDue('capture-001');
+    makeReviewDue('life-001');
+
+    render(<LearningPath />);
+
+    expect(screen.getByRole('button', { name: 'Review: 2 due before new material.' })).toBeTruthy();
   });
 
   it('starts the exact missed problem from a repair recommendation', () => {
