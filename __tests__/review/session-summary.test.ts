@@ -29,13 +29,14 @@ describe('review session summary', () => {
     expect(summary.attentionProblems[0].replayMoveLabel).toBe('A8');
   });
 
-  it('returns learners to the path after clean reviews', () => {
+  it('continues learners to the next recommendation after clean reviews', () => {
     const summary = buildReviewSessionSummary([
       { problemId: 'capture-001', solved: true, attempts: 1 },
     ]);
 
     expect(summary.tone).toBe('advance');
     expect(summary.headline).toBe('Ready for the next idea');
+    expect(summary.nextStep).toBe('Every review landed cleanly. Continue with the next recommendation while the review memory is fresh.');
     expect(summary.practiceCategory).toBeNull();
     expect(summary.practiceLabel).toBeNull();
     expect(summary.attentionProblems).toEqual([]);
