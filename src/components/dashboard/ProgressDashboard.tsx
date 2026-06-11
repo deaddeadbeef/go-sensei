@@ -219,6 +219,7 @@ export function ProgressDashboard() {
     }),
     [completedLessons, problemAttempts, reviewStats.dueToday, hasStartedIntroGame, mastery],
   );
+  const reviewEntryLabel = reviewStats.dueToday > 0 ? 'Start daily review →' : 'Seed review queue →';
 
   const startRecommended = () => {
     switch (recommendation.kind) {
@@ -353,7 +354,7 @@ export function ProgressDashboard() {
         >
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-sm font-semibold" style={{ color: COLORS.text }}>📖 Spaced Repetition</h2>
-            <button onClick={showReview} className="text-xs" style={{ color: COLORS.accent }}>Start daily review →</button>
+            <button onClick={showReview} className="text-xs" style={{ color: COLORS.accent }}>{reviewEntryLabel}</button>
           </div>
           <div className="flex items-center gap-4 text-xs" style={{ color: COLORS.textDim }}>
             <span>🔥 {reviewStats.streak} day streak</span>
