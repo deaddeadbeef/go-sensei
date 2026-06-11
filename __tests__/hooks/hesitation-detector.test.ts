@@ -56,6 +56,6 @@ describe('hesitation detector', () => {
     const nudge = buildHesitationNudge(createGame(19), 'advanced');
 
     expect(nudge.text).toBe('Take your time. Want me to suggest a useful move?');
-    expect(nudge.actions).toEqual([{ id: 'hint', label: 'Show me' }]);
+    expect(nudge.actions).toEqual([{ id: 'hint', label: 'Suggest a move' }]);
   });
 });
