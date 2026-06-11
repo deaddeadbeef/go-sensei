@@ -297,6 +297,9 @@ export function DailyReview() {
       : pathSeedProblem && pathRecommendation.kind === 'problem'
       ? `Your path is asking for ${pathRecommendation.title}. Solve one now so tomorrow's review starts with the skill you are actually studying.`
       : 'Solve one fresh problem now. If it takes extra attempts or a hint, Go Sensei will bring it back when the lesson is ready to stick.';
+    const emptyReviewMessage = pathFirstRecommendation
+      ? 'No reviews are due yet. Follow the learning path first; Go Sensei will build review from your practice.'
+      : 'No problems due for review. Solve more problems to build your review queue.';
     const nextAfterCleanReview = review.results.length > 0 && summary.tone === 'advance'
       ? clearedReviewRecommendation
       : null;
@@ -418,7 +421,7 @@ export function DailyReview() {
                 🎉 All caught up!
               </h2>
               <p className="text-center text-sm mb-4" style={{ color: COLORS.ui.textSecondary }}>
-                No problems due for review. Solve more problems to build your review queue.
+                {emptyReviewMessage}
               </p>
               <div
                 className="mt-5 border-t pt-5 text-left"

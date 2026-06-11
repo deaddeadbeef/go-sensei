@@ -61,7 +61,8 @@ describe('DailyReview', () => {
   it('keeps brand-new learners on the guided path when review is empty', () => {
     render(<DailyReview />);
 
-    expect(screen.getByText('No problems due for review. Solve more problems to build your review queue.')).toBeTruthy();
+    expect(screen.getByText('No reviews are due yet. Follow the learning path first; Go Sensei will build review from your practice.')).toBeTruthy();
+    expect(screen.queryByText('No problems due for review. Solve more problems to build your review queue.')).toBeNull();
     expect(screen.getByText('Best next step')).toBeTruthy();
     expect(screen.getByText('Start path step first')).toBeTruthy();
     expect(screen.getByText(/The next useful move is First 9x9 guided game/)).toBeTruthy();
@@ -92,6 +93,7 @@ describe('DailyReview', () => {
 
     render(<DailyReview />);
 
+    expect(screen.getByText('No problems due for review. Solve more problems to build your review queue.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Start Edge Squeeze' })).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Seed review queue with Edge Squeeze' }));
