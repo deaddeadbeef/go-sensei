@@ -120,6 +120,17 @@ describe('LearningPath', () => {
   it('makes the review path card truthful when no cards are due', () => {
     render(<LearningPath />);
 
+    expect(screen.getByRole('button', { name: 'Review: No reviews due; follow the path first.' })).toBeTruthy();
+  });
+
+  it('offers review seeding after the path reaches problem practice', () => {
+    useProgressStore.setState({
+      hasStartedIntroGame: true,
+      completedLessons: ['capture'],
+    });
+
+    render(<LearningPath />);
+
     expect(screen.getByRole('button', { name: "Review: No reviews due; seed tomorrow's queue." })).toBeTruthy();
   });
 

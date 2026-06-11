@@ -219,7 +219,9 @@ export function ProgressDashboard() {
     }),
     [completedLessons, problemAttempts, reviewStats.dueToday, hasStartedIntroGame, mastery],
   );
-  const reviewEntryLabel = reviewStats.dueToday > 0 ? 'Start daily review →' : 'Seed review queue →';
+  const reviewEntryLabel = reviewStats.dueToday > 0
+    ? 'Start daily review →'
+    : recommendation.kind === 'problem' ? 'Seed review queue →' : 'Review clear →';
 
   const startRecommended = () => {
     switch (recommendation.kind) {

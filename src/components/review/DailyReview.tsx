@@ -8,7 +8,7 @@ import { useConceptStore } from '@/stores/concept-store';
 import { useProgressStore } from '@/stores/progress-store';
 import { PROBLEMS } from '@/lib/problems/problem-data';
 import { getRecommendedProblem } from '@/lib/problems/recommendation';
-import { getLearningRecommendation } from '@/lib/learning-path/recommendations';
+import { getLearningRecommendation, type LearningRecommendation } from '@/lib/learning-path/recommendations';
 import type { Problem } from '@/lib/problems/types';
 import type { MoveNode } from '@/lib/problems/types';
 import type { Point, BoardSize, GameState } from '@/lib/go-engine/types';
@@ -277,6 +277,9 @@ export function DailyReview() {
     const stats = getReviewStats();
     const summary = buildReviewSessionSummary(review.results);
     const replayProblem = summary.attentionProblems[0]?.problem ?? null;
+    const pathFirstRecommendation = review.results.length === 0 && pathRecommendation.kind !== 'problem'
+      ? pathRecommendation
+      : null;
     const pathSeedProblem = review.results.length === 0 && pathRecommendation.kind === 'problem'
       ? pathRecommendation.targetProblemId
         ? PROBLEM_BY_ID.get(pathRecommendation.targetProblemId) ?? null
@@ -285,9 +288,13 @@ export function DailyReview() {
           PROBLEMS.filter((problem) => problem.category === pathRecommendation.filter),
         )
       : null;
-    const seedProblem = pathSeedProblem ?? getRecommendedProblem(problemAttempts);
-    const seedTitle = pathSeedProblem ? 'Seed current path practice' : "Seed tomorrow's review";
-    const seedDescription = pathSeedProblem && pathRecommendation.kind === 'problem'
+    const seedProblem = pathFirstRecommendation ? null : pathSeedProblem ?? getRecommendedProblem(problemAttempts);
+    const seedTitle = pathFirstRecommendation
+      ? 'Start path step first'
+      : pathSeedProblem ? 'Seed current path practice' : "Seed tomorrow's review";
+    const seedDescription = pathFirstRecommendation
+      ? `There is no review to do yet. The next useful move is ${pathFirstRecommendation.title}.`
+      : pathSeedProblem && pathRecommendation.kind === 'problem'
       ? `Your path is asking for ${pathRecommendation.title}. Solve one now so tomorrow's review starts with the skill you are actually studying.`
       : 'Solve one fresh problem now. If it takes extra attempts or a hint, Go Sensei will bring it back when the lesson is ready to stick.';
     const nextAfterCleanReview = review.results.length > 0 && summary.tone === 'advance'
@@ -296,26 +303,24 @@ export function DailyReview() {
     const learningPathLabel = review.results.length > 0 && !summary.practiceCategory && !nextAfterCleanReview
       ? 'Pick up next recommendation'
       : 'Learning path';
-    const startNextAfterCleanReview = () => {
-      if (!nextAfterCleanReview) return;
-
-      switch (nextAfterCleanReview.kind) {
+    const startLearningRecommendation = (recommendation: LearningRecommendation) => {
+      switch (recommendation.kind) {
         case 'guided_intro':
           startGuidedIntroGame();
           break;
         case 'lesson':
-          startLesson(nextAfterCleanReview.targetId);
+          startLesson(recommendation.targetId);
           break;
         case 'problem':
-          if (nextAfterCleanReview.targetProblemId) {
-            const problem = PROBLEM_BY_ID.get(nextAfterCleanReview.targetProblemId);
+          if (recommendation.targetProblemId) {
+            const problem = PROBLEM_BY_ID.get(recommendation.targetProblemId);
             if (problem) {
               showProblems(problem.category);
               startProblem(problem);
               break;
             }
           }
-          showProblems(nextAfterCleanReview.filter);
+          showProblems(recommendation.filter);
           break;
         case 'guided_game':
           openGuidedGame();
@@ -324,6 +329,10 @@ export function DailyReview() {
           showLearningPath();
           break;
       }
+    };
+    const startNextAfterCleanReview = () => {
+      if (!nextAfterCleanReview) return;
+      startLearningRecommendation(nextAfterCleanReview);
     };
 
     return (
@@ -424,7 +433,11 @@ export function DailyReview() {
                 <p className="mt-2 text-sm leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
                   {seedDescription}
                 </p>
-                {pathSeedProblem && pathRecommendation.kind === 'problem' && (
+                {pathFirstRecommendation ? (
+                  <p className="mt-3 text-sm leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
+                    {pathFirstRecommendation.finishLine}
+                  </p>
+                ) : pathSeedProblem && pathRecommendation.kind === 'problem' && (
                   <p className="mt-3 text-sm leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
                     {pathRecommendation.finishLine}
                   </p>
@@ -467,6 +480,10 @@ export function DailyReview() {
             {review.results.length === 0 && (
               <button
                 onClick={() => {
+                  if (pathFirstRecommendation) {
+                    startLearningRecommendation(pathFirstRecommendation);
+                    return;
+                  }
                   if (seedProblem) {
                     showProblems(seedProblem.category);
                     startProblem(seedProblem);
@@ -477,7 +494,9 @@ export function DailyReview() {
                 className="px-6 py-2 rounded-lg text-sm font-medium transition-transform hover:scale-[1.02] active:scale-95"
                 style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
               >
-                {seedProblem ? `Seed review queue with ${seedProblem.title}` : 'Solve a fresh problem to seed reviews'}
+                {pathFirstRecommendation
+                  ? pathFirstRecommendation.actionLabel
+                  : seedProblem ? `Seed review queue with ${seedProblem.title}` : 'Solve a fresh problem to seed reviews'}
               </button>
             )}
             <button

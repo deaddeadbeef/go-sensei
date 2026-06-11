@@ -58,30 +58,36 @@ describe('DailyReview', () => {
     boardRectSpy.mockRestore();
   });
 
-  it('sends all-caught-up learners to problem practice', () => {
+  it('keeps brand-new learners on the guided path when review is empty', () => {
     render(<DailyReview />);
 
     expect(screen.getByText('No problems due for review. Solve more problems to build your review queue.')).toBeTruthy();
     expect(screen.getByText('Best next step')).toBeTruthy();
-    expect(screen.getByText("Seed tomorrow's review")).toBeTruthy();
-    expect(screen.getByText(/Go Sensei will bring it back when the lesson is ready to stick/)).toBeTruthy();
-
+    expect(screen.getByText('Start path step first')).toBeTruthy();
+    expect(screen.getByText(/The next useful move is First 9x9 guided game/)).toBeTruthy();
+    expect(screen.getByText('The guided 9x9 is started and the first corner objective is visible on the board.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Seed review queue with Corner Capture' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Start Corner Capture' })).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Seed review queue with Corner Capture' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Start guided 9x9' }));
 
-    expect(useGameStore.getState().appPhase).toBe('problem');
-    expect(useGameStore.getState().currentProblemId).toBe('capture-001');
-    expect(useGameStore.getState().preferredProblemFilter).toBe('capture');
+    expect(useGameStore.getState().appPhase).toBe('game');
+    expect(useGameStore.getState().teachingLevel).toBe('guided');
+    expect(useGameStore.getState().game.board.size).toBe(9);
+    expect(useProgressStore.getState().hasStartedIntroGame).toBe(true);
   });
 
   it('starts the next unsolved seed problem when reviews are clear', () => {
-    useProgressStore.getState().recordProblemAttempt({
-      problemId: 'capture-001',
-      solved: true,
-      attempts: 1,
-      moveSequence: [{ x: 0, y: 1 }],
-      timestamp: Date.now(),
+    useProgressStore.setState({
+      hasStartedIntroGame: true,
+      completedLessons: ['capture'],
+      problemAttempts: [{
+        problemId: 'capture-001',
+        solved: true,
+        attempts: 1,
+        moveSequence: [{ x: 0, y: 1 }],
+        timestamp: Date.now(),
+      }],
     });
 
     render(<DailyReview />);
