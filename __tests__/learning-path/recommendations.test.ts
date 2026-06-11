@@ -79,6 +79,7 @@ describe('learning path recommendations', () => {
     expect(recommendation.actionLabel).toBe('Start daily review');
     expect(recommendation.finishLine).toBe('All due review cards are answered, and any miss has been replayed once.');
     expect(recommendation.practicePlan).toContain('Solve the due review positions before opening new material.');
+    expect(recommendation.practicePlan).toContain('After the review summary, start the next recommendation while the memory is fresh.');
   });
 
   it('repairs the most recent failed problem before adding new material', () => {

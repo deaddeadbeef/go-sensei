@@ -79,7 +79,7 @@ export function getLearningRecommendation(input: RecommendationInput): LearningR
       practicePlan: [
         'Solve the due review positions before opening new material.',
         'Replay any missed solution line until the first move feels obvious.',
-        'Return here when reviews are clear for the day.',
+        'After the review summary, start the next recommendation while the memory is fresh.',
       ],
     };
   }

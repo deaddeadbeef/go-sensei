@@ -364,7 +364,7 @@ export function DailyReview() {
                 {summary.tone === 'advance' && (
                   <>
                     <p className="mt-3 text-sm leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
-                      Review finish line reached: every due card landed cleanly, so the path can move to the next recommendation.
+                      Review finish line reached: every due card landed cleanly, so you can start the next recommendation now.
                     </p>
                     {nextAfterCleanReview && (
                       <>
