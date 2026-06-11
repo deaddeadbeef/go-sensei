@@ -125,7 +125,8 @@ describe('learning path recommendations', () => {
       actionLabel: 'Drill Edge Squeeze',
     });
     expect(recommendation.reason).toBe('You solved Edge Squeeze, but it took 2 attempts. Repeat the idea while it is fresh.');
-    expect(recommendation.finishLine).toBe('Solve one capture problem on the first try, then return to the path.');
+    expect(recommendation.finishLine).toBe('Solve one capture problem on the first try, then continue with the next recommendation.');
+    expect(recommendation.practicePlan).toContain('Continue to new material only after one clean solve.');
   });
 
   it('keeps due review ahead of recent problem repair', () => {
