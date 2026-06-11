@@ -208,9 +208,9 @@ describe('ProblemView filtered practice flow', () => {
 
     render(<ProblemView />);
 
-    expect(screen.getByText('Practice goal met')).toBeTruthy();
-    expect(screen.getByText(/You reached the capture practice target. Return to the path for:/)).toBeTruthy();
-    expect(screen.getByText('Finish line reached: you solved the last required capture problem for this path block.')).toBeTruthy();
+    expect(screen.getByText('Repair replay complete')).toBeTruthy();
+    expect(screen.getByText(/You replayed Edge Squeeze cleanly. Return to the path for:/)).toBeTruthy();
+    expect(screen.getByText('Finish line reached: the missed repair pattern now has one clean replay.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Continue: What is a Group?' })).toBeTruthy();
   });
 });
