@@ -73,7 +73,9 @@ export function LearningPath() {
   const focusConcepts = recommendation.focusConcepts.map(conceptDisplay).slice(0, 4);
   const reviewPathText = dueReviewCount > 0
     ? `${dueReviewCount} due before new material.`
-    : "No reviews due; seed tomorrow's queue.";
+    : recommendation.kind === 'problem'
+      ? "No reviews due; seed tomorrow's queue."
+      : 'No reviews due; follow the path first.';
 
   const startRecommended = () => {
     switch (recommendation.kind) {
