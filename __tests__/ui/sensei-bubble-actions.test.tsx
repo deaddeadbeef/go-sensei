@@ -100,6 +100,26 @@ describe('SenseiBubble actions', () => {
     expect(useGameStore.getState().bubble.visible).toBe(false);
   });
 
+  it('routes exact problem actions to that problem board', () => {
+    act(() => {
+      useGameStore.getState().showBubble({
+        text: 'Replay the missed life and death problem.',
+        variant: 'teaching',
+        actions: [{ id: 'problem:life-001', label: 'Replay Make Two Eyes' }],
+      });
+    });
+
+    render(<SenseiBubble />);
+    finishTypewriter();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Replay Make Two Eyes' }));
+
+    expect(useGameStore.getState().appPhase).toBe('problem');
+    expect(useGameStore.getState().currentProblemId).toBe('life-001');
+    expect(useGameStore.getState().problemInteraction.problem?.title).toBe('Make Two Eyes');
+    expect(useGameStore.getState().bubble.visible).toBe(false);
+  });
+
   it('routes lesson actions to the matching lesson checkpoint', () => {
     act(() => {
       useGameStore.getState().showBubble({

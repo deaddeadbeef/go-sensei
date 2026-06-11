@@ -1,5 +1,6 @@
 import type { ProblemCategory } from '@/lib/problems/types';
 import { LESSONS } from '@/lib/lessons/lesson-data';
+import { PROBLEMS } from '@/lib/problems/problem-data';
 import type { Point } from '@/lib/go-engine/types';
 
 export interface SenseiActionPreviewHighlight {
@@ -20,6 +21,7 @@ export type SenseiActionRoute =
   | { type: 'review' }
   | { type: 'guided_intro' }
   | { type: 'guided_game' }
+  | { type: 'problem'; problemId: string }
   | {
       type: 'guided_read_pressure';
       mode: 'branch' | 'recount' | 'comparison' | 'defense' | 'follow-up-defense';
@@ -41,6 +43,7 @@ const problemCategories = new Set<string>([
   'endgame',
 ]);
 const lessonIds = new Set(LESSONS.map((lesson) => lesson.id));
+const problemIds = new Set(PROBLEMS.map((problem) => problem.id));
 
 function isProblemCategory(value: string): value is ProblemCategory {
   return problemCategories.has(value);
@@ -155,6 +158,12 @@ export function getSenseiActionRoute(actionId: string): SenseiActionRoute | null
     const category = actionId.slice('practice:'.length);
     if (!isProblemCategory(category)) return null;
     return { type: 'practice', category };
+  }
+
+  if (actionId.startsWith('problem:')) {
+    const problemId = actionId.slice('problem:'.length);
+    if (!problemIds.has(problemId)) return null;
+    return { type: 'problem', problemId };
   }
 
   if (actionId.startsWith('lesson:')) {

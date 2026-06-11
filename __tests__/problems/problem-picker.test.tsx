@@ -143,6 +143,31 @@ describe('ProblemPicker', () => {
     expect(screen.getByText('This block is complete after 2 more solved life and death problems.')).toBeTruthy();
   });
 
+  it('puts the exact repair problem in the recommended slot for filtered practice', () => {
+    act(() => {
+      useProgressStore.setState({
+        hasStartedIntroGame: true,
+        problemAttempts: [
+          { problemId: 'capture-002', solved: false, attempts: 3, moveSequence: [], timestamp: 10 },
+        ],
+      });
+      useGameStore.getState().showProblems('capture');
+    });
+
+    render(<ProblemPicker />);
+
+    expect(screen.getByText('Path goal')).toBeTruthy();
+    expect(screen.getByText('Your latest miss was Edge Squeeze. Repair that pattern before adding new material.')).toBeTruthy();
+    expect(screen.getByText('Replay this exact repair pattern before choosing another capture problem.')).toBeTruthy();
+    expect(screen.getAllByRole('heading', { name: 'Edge Squeeze' }).length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'Start Edge Squeeze' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start Edge Squeeze' }));
+
+    expect(useGameStore.getState().appPhase).toBe('problem');
+    expect(useGameStore.getState().currentProblemId).toBe('capture-002');
+  });
+
   it('explains why a manually filtered problem set is worth practicing', () => {
     act(() => {
       useGameStore.getState().showProblems('reading');

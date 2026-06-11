@@ -101,4 +101,24 @@ describe('LearningPath', () => {
     expect(useGameStore.getState().appPhase).toBe('problems');
     expect(useGameStore.getState().preferredProblemFilter).toBeNull();
   });
+
+  it('starts the exact missed problem from a repair recommendation', () => {
+    useProgressStore.setState({
+      hasStartedIntroGame: true,
+      problemAttempts: [
+        { problemId: 'life-001', solved: false, attempts: 3, moveSequence: [], timestamp: 10 },
+      ],
+    });
+
+    render(<LearningPath />);
+
+    expect(screen.getByRole('heading', { name: 'Repair Life and Death' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Replay Make Two Eyes' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Replay Make Two Eyes' }));
+
+    expect(useGameStore.getState().appPhase).toBe('problem');
+    expect(useGameStore.getState().currentProblemId).toBe('life-001');
+    expect(useGameStore.getState().problemInteraction.problem?.title).toBe('Make Two Eyes');
+  });
 });

@@ -143,4 +143,24 @@ describe('ProgressDashboard', () => {
     expect(useGameStore.getState().game.board.size).toBe(9);
     expect(useGameStore.getState().bubble.text).toContain('Your first job is: Start with a corner.');
   });
+
+  it('starts the exact missed problem from a repair recommendation', () => {
+    useProgressStore.setState({
+      hasStartedIntroGame: true,
+      problemAttempts: [
+        { problemId: 'capture-002', solved: false, attempts: 3, moveSequence: [], timestamp: 10 },
+      ],
+    });
+
+    render(<ProgressDashboard />);
+
+    expect(screen.getByRole('heading', { name: 'Repair Capture' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Replay Edge Squeeze' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Replay Edge Squeeze' }));
+
+    expect(useGameStore.getState().appPhase).toBe('problem');
+    expect(useGameStore.getState().currentProblemId).toBe('capture-002');
+    expect(useGameStore.getState().problemInteraction.problem?.title).toBe('Edge Squeeze');
+  });
 });
