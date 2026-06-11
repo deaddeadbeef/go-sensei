@@ -1,11 +1,8 @@
 import { NextResponse } from 'next/server';
-
-// ⚠️ WARNING: This is the VS Code Copilot OAuth App client ID.
-// Reusing it means our app inherits VS Code's OAuth scopes and rate limits.
-// For production, register a dedicated GitHub OAuth App.
-const CLIENT_ID = 'Iv1.b507a08c87ecfe98';
+import { getGitHubOAuthClientId } from '@/lib/ai/github-oauth';
 
 export async function POST() {
+  const clientId = getGitHubOAuthClientId();
   try {
     const resp = await fetch('https://github.com/login/device/code', {
       method: 'POST',
@@ -14,7 +11,7 @@ export async function POST() {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        client_id: CLIENT_ID,
+        client_id: clientId,
         scope: 'read:user',
       }),
     });
