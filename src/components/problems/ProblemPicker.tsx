@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { PROBLEMS } from '@/lib/problems/problem-data';
 import { getLearningRecommendation } from '@/lib/learning-path/recommendations';
@@ -191,12 +191,13 @@ export function ProblemPicker() {
   const hasStartedIntroGame = useProgressStore((s) => s.hasStartedIntroGame);
   const preferredProblemFilter = useGameStore((s) => s.preferredProblemFilter);
   const startProblem = useGameStore((s) => s.startProblem);
+  const showProblems = useGameStore((s) => s.showProblems);
   const returnToGame = useGameStore((s) => s.returnToGame);
   const reviewCards = useReviewStore((s) => s.cards);
   const getDueCount = useReviewStore((s) => s.getDueCount);
   const mastery = useConceptStore((s) => s.mastery);
   const topRef = useRef<HTMLDivElement>(null);
-  const [filter, setFilter] = useState<FilterKey>(preferredProblemFilter ?? 'all');
+  const filter: FilterKey = preferredProblemFilter ?? 'all';
 
   const filtered = useMemo(
     () => filter === 'all'
@@ -278,7 +279,7 @@ export function ProblemPicker() {
           {FILTERS.map((key) => (
             <button
               key={key}
-              onClick={() => setFilter(key)}
+              onClick={() => showProblems(key === 'all' ? undefined : key)}
               className="rounded-full px-4 py-1.5 text-sm font-medium transition-all"
               style={{
                 backgroundColor: filter === key ? COLORS.ui.accent : COLORS.ui.bgCard,
