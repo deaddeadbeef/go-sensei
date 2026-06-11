@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { getSenseiActionRoute } from '@/lib/coaching/sensei-actions';
+import { PROBLEMS } from '@/lib/problems/problem-data';
 import { useGameStore } from '@/stores/game-store';
 import { useGoMaster } from './useGoMaster';
 
@@ -10,6 +11,7 @@ export function useSenseiAction() {
   const startGuidedIntroGame = useGameStore((s) => s.startGuidedIntroGame);
   const openGuidedGame = useGameStore((s) => s.openGuidedGame);
   const startLesson = useGameStore((s) => s.startLesson);
+  const startProblem = useGameStore((s) => s.startProblem);
   const requestGuidedReadReplay = useGameStore((s) => s.requestGuidedReadReplay);
   const { requestHint } = useGoMaster();
 
@@ -59,6 +61,12 @@ export function useSenseiAction() {
       return;
     }
 
+    if (route.type === 'problem') {
+      const problem = PROBLEMS.find((candidate) => candidate.id === route.problemId);
+      if (problem) startProblem(problem);
+      return;
+    }
+
     startLesson(route.lessonId);
   }, [
     dismissBubble,
@@ -69,5 +77,6 @@ export function useSenseiAction() {
     showReview,
     startGuidedIntroGame,
     startLesson,
+    startProblem,
   ]);
 }
