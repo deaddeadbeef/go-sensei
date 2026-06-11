@@ -70,6 +70,7 @@ describe('DailyReview', () => {
 
     expect(useGameStore.getState().appPhase).toBe('problem');
     expect(useGameStore.getState().currentProblemId).toBe('capture-001');
+    expect(useGameStore.getState().preferredProblemFilter).toBe('capture');
   });
 
   it('starts the next unsolved seed problem when reviews are clear', () => {
@@ -87,6 +88,7 @@ describe('DailyReview', () => {
 
     expect(useGameStore.getState().appPhase).toBe('problem');
     expect(useGameStore.getState().currentProblemId).toBe('capture-002');
+    expect(useGameStore.getState().preferredProblemFilter).toBe('capture');
   });
 
   it('lets all-caught-up learners return to the learning path', () => {
