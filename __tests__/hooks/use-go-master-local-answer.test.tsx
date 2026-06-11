@@ -2544,7 +2544,7 @@ describe('useGoMaster local answers', () => {
     const state = useGameStore.getState();
 
     expect(fetchSpy).not.toHaveBeenCalled();
-    expect(state.bubble.text).toContain('Study plan: Life and death problems.');
+    expect(state.bubble.text).toContain('Study plan: Life and Death problems.');
     expect(state.bubble.text).toContain('Practice life and death until you solve 2 more life and death problems.');
     expect(state.bubble.text).toContain('Focus on Eyes and Life & Death.');
     expect(state.bubble.actions).toEqual([
