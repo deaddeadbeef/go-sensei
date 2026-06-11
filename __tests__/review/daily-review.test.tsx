@@ -91,6 +91,30 @@ describe('DailyReview', () => {
     expect(useGameStore.getState().preferredProblemFilter).toBe('capture');
   });
 
+  it('seeds all-caught-up review practice from the current path category', () => {
+    useProgressStore.setState({
+      completedLessons: ['groups', 'liberties', 'capture', 'territory', 'eyes'],
+      hasStartedIntroGame: true,
+      problemAttempts: [
+        { problemId: 'capture-001', solved: true, attempts: 1, moveSequence: [], timestamp: 1 },
+        { problemId: 'capture-002', solved: true, attempts: 1, moveSequence: [], timestamp: 2 },
+        { problemId: 'capture-003', solved: true, attempts: 1, moveSequence: [], timestamp: 3 },
+      ],
+    });
+
+    render(<DailyReview />);
+
+    expect(screen.getByText('Seed current path practice')).toBeTruthy();
+    expect(screen.getByText(/Your path is asking for Life and Death problems/)).toBeTruthy();
+    expect(screen.getByText('This block is complete after 2 more solved life and death problems.')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start Make Two Eyes' }));
+
+    expect(useGameStore.getState().appPhase).toBe('problem');
+    expect(useGameStore.getState().currentProblemId).toBe('life-001');
+    expect(useGameStore.getState().preferredProblemFilter).toBe('life-and-death');
+  });
+
   it('lets all-caught-up learners return to the learning path', () => {
     render(<DailyReview />);
 

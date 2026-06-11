@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '@/stores/game-store';
 import { useReviewStore } from '@/stores/review-store';
@@ -8,6 +8,7 @@ import { useConceptStore } from '@/stores/concept-store';
 import { useProgressStore } from '@/stores/progress-store';
 import { PROBLEMS } from '@/lib/problems/problem-data';
 import { getRecommendedProblem } from '@/lib/problems/recommendation';
+import { getLearningRecommendation } from '@/lib/learning-path/recommendations';
 import type { Problem } from '@/lib/problems/types';
 import type { MoveNode } from '@/lib/problems/types';
 import type { Point, BoardSize, GameState } from '@/lib/go-engine/types';
@@ -60,6 +61,7 @@ const PROBLEM_CONCEPTS: Record<ProblemCategory, string[]> = {
   reading: ['reading', 'ladder', 'net', 'connect-and-cut'],
   endgame: ['sente-gote', 'endgame-counting'],
 };
+const PROBLEM_BY_ID = new Map(PROBLEMS.map((problem) => [problem.id, problem]));
 
 function ReviewBoardGrid({ boardSize }: { boardSize: BoardSize }) {
   const cell = cellSize(boardSize);
@@ -139,6 +141,9 @@ export function DailyReview() {
   const recordAttempt = useReviewStore((s) => s.recordAttempt);
   const getReviewStats = useReviewStore((s) => s.getReviewStats);
   const recordEvidence = useConceptStore((s) => s.recordEvidence);
+  const mastery = useConceptStore((s) => s.mastery);
+  const completedLessons = useProgressStore((s) => s.completedLessons);
+  const hasStartedIntroGame = useProgressStore((s) => s.hasStartedIntroGame);
   const problemAttempts = useProgressStore((s) => s.problemAttempts);
 
   const [review, setReview] = useState<ReviewState>(() => {
@@ -158,6 +163,16 @@ export function DailyReview() {
   const currentProblem = currentProblemId
     ? PROBLEMS.find((problem) => problem.id === currentProblemId) ?? null
     : null;
+  const pathRecommendation = useMemo(
+    () => getLearningRecommendation({
+      completedLessons,
+      problemAttempts,
+      dueReviewCount: review.problemIds.length,
+      hasStartedIntroGame,
+      mastery: Object.values(mastery),
+    }),
+    [completedLessons, problemAttempts, review.problemIds.length, hasStartedIntroGame, mastery],
+  );
 
   const [problemState, setProblemState] = useState<ProblemState>(() =>
     currentProblem ? initProblemState(currentProblem) : initProblemState(PROBLEMS[0]),
@@ -249,7 +264,19 @@ export function DailyReview() {
     const stats = getReviewStats();
     const summary = buildReviewSessionSummary(review.results);
     const replayProblem = summary.attentionProblems[0]?.problem ?? null;
-    const seedProblem = getRecommendedProblem(problemAttempts);
+    const pathSeedProblem = review.results.length === 0 && pathRecommendation.kind === 'problem'
+      ? pathRecommendation.targetProblemId
+        ? PROBLEM_BY_ID.get(pathRecommendation.targetProblemId) ?? null
+        : getRecommendedProblem(
+          problemAttempts,
+          PROBLEMS.filter((problem) => problem.category === pathRecommendation.filter),
+        )
+      : null;
+    const seedProblem = pathSeedProblem ?? getRecommendedProblem(problemAttempts);
+    const seedTitle = pathSeedProblem ? 'Seed current path practice' : "Seed tomorrow's review";
+    const seedDescription = pathSeedProblem && pathRecommendation.kind === 'problem'
+      ? `Your path is asking for ${pathRecommendation.title}. Solve one now so tomorrow's review starts with the skill you are actually studying.`
+      : 'Solve one fresh problem now. If it takes extra attempts or a hint, Go Sensei will bring it back when the lesson is ready to stick.';
     const learningPathLabel = review.results.length > 0 && !summary.practiceCategory
       ? 'Pick up next recommendation'
       : 'Learning path';
@@ -335,12 +362,16 @@ export function DailyReview() {
                   Best next step
                 </p>
                 <h3 className="mt-2 text-lg font-bold" style={{ color: COLORS.ui.textPrimary }}>
-                  Seed tomorrow&apos;s review
+                  {seedTitle}
                 </h3>
                 <p className="mt-2 text-sm leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
-                  Solve one fresh problem now. If it takes extra attempts or a hint, Go Sensei will bring it back when
-                  the lesson is ready to stick.
+                  {seedDescription}
                 </p>
+                {pathSeedProblem && pathRecommendation.kind === 'problem' && (
+                  <p className="mt-3 text-sm leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
+                    {pathRecommendation.finishLine}
+                  </p>
+                )}
               </div>
               {stats.streak > 0 && (
                 <p className="text-center text-sm mb-4" style={{ color: COLORS.overlay.positive }}>
