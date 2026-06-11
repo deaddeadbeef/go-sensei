@@ -341,23 +341,36 @@ export function SkillTree() {
                   Practice this
                 </p>
                 <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                  {selectedLesson && (
+                  {dueReviewCount > 0 ? (
                     <button
-                      onClick={() => startLesson(selectedLesson.id)}
+                      onClick={showReview}
+                      aria-label="Start daily review before concept practice"
                       className="rounded-lg px-3 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
                       style={{ backgroundColor: COLORS.accent, color: COLORS.bg }}
                     >
-                      Start lesson: {selectedLesson.title}
+                      Start daily review
                     </button>
-                  )}
-                  {selectedProblemCategory && (
-                    <button
-                      onClick={() => showProblems(selectedProblemCategory)}
-                      className="rounded-lg px-3 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
-                      style={{ backgroundColor: COLORS.cardHover, color: COLORS.text, border: `1px solid ${COLORS.border}` }}
-                    >
-                      Practice {problemCategoryTitle(selectedProblemCategory).toLowerCase()} problems
-                    </button>
+                  ) : (
+                    <>
+                      {selectedLesson && (
+                        <button
+                          onClick={() => startLesson(selectedLesson.id)}
+                          className="rounded-lg px-3 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
+                          style={{ backgroundColor: COLORS.accent, color: COLORS.bg }}
+                        >
+                          Start lesson: {selectedLesson.title}
+                        </button>
+                      )}
+                      {selectedProblemCategory && (
+                        <button
+                          onClick={() => showProblems(selectedProblemCategory)}
+                          className="rounded-lg px-3 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
+                          style={{ backgroundColor: COLORS.cardHover, color: COLORS.text, border: `1px solid ${COLORS.border}` }}
+                        >
+                          Practice {problemCategoryTitle(selectedProblemCategory).toLowerCase()} problems
+                        </button>
+                      )}
+                    </>
                   )}
                   <button
                     onClick={showLearningPath}
@@ -368,6 +381,11 @@ export function SkillTree() {
                     Learning path
                   </button>
                 </div>
+                {dueReviewCount > 0 && (
+                  <p className="mt-2 text-sm leading-relaxed" style={{ color: COLORS.textDim }}>
+                    Review due before concept practice.
+                  </p>
+                )}
               </div>
             ) : (
               <div className="mt-4 border-t pt-3" style={{ borderColor: COLORS.border }}>
@@ -378,13 +396,29 @@ export function SkillTree() {
                   Build the prerequisite ideas before practicing this concept directly.
                 </p>
                 {firstActionablePrerequisite && prerequisiteActionLabel && (
-                  <button
-                    onClick={() => startConceptPractice(firstActionablePrerequisite)}
-                    className="mt-3 rounded-lg px-3 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
-                    style={{ backgroundColor: COLORS.accent, color: COLORS.bg }}
-                  >
-                    {prerequisiteActionLabel}
-                  </button>
+                  dueReviewCount > 0 ? (
+                    <>
+                      <button
+                        onClick={showReview}
+                        aria-label="Start daily review before prerequisites"
+                        className="mt-3 rounded-lg px-3 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
+                        style={{ backgroundColor: COLORS.accent, color: COLORS.bg }}
+                      >
+                        Start daily review
+                      </button>
+                      <p className="mt-2 text-sm leading-relaxed" style={{ color: COLORS.textDim }}>
+                        Review due before prerequisites.
+                      </p>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => startConceptPractice(firstActionablePrerequisite)}
+                      className="mt-3 rounded-lg px-3 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
+                      style={{ backgroundColor: COLORS.accent, color: COLORS.bg }}
+                    >
+                      {prerequisiteActionLabel}
+                    </button>
+                  )
                 )}
                 {missingPrerequisites.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-2">
