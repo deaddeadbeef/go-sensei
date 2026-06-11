@@ -3,6 +3,7 @@
 import { useCallback, useRef, useEffect, useMemo, useState } from 'react';
 import { useGameStore } from '@/stores/game-store';
 import { LESSONS } from '@/lib/lessons/lesson-data';
+import { PROBLEMS } from '@/lib/problems/problem-data';
 import { LESSON_TO_CONCEPTS } from '@/lib/learning-path/concept-practice';
 import { getLearningRecommendation } from '@/lib/learning-path/recommendations';
 import { LessonOverlay } from './LessonOverlay';
@@ -29,6 +30,7 @@ import type { BoardSize } from '@/lib/go-engine/types';
 
 const COLUMN_LETTERS = 'ABCDEFGHJKLMNOPQRST'; // skip I
 const boardInset = BOARD_PADDING * 0.75;
+const PROBLEM_BY_ID = new Map(PROBLEMS.map((problem) => [problem.id, problem]));
 
 // ---------------------------------------------------------------------------
 // Board sub-components (accept boardSize as prop — not coupled to game store)
@@ -95,6 +97,13 @@ export function LessonView() {
   const prevStep = useGameStore((s) => s.prevStep);
   const completeLesson = useGameStore((s) => s.completeLesson);
   const showLessons = useGameStore((s) => s.showLessons);
+  const showLearningPath = useGameStore((s) => s.showLearningPath);
+  const showProblems = useGameStore((s) => s.showProblems);
+  const showReview = useGameStore((s) => s.showReview);
+  const startGuidedIntroGame = useGameStore((s) => s.startGuidedIntroGame);
+  const startLesson = useGameStore((s) => s.startLesson);
+  const startProblem = useGameStore((s) => s.startProblem);
+  const openGuidedGame = useGameStore((s) => s.openGuidedGame);
   const lessonInteraction = useGameStore((s) => s.lessonInteraction);
   const setLessonPrompt = useGameStore((s) => s.setLessonPrompt);
   const checkLessonAnswer = useGameStore((s) => s.checkLessonAnswer);
@@ -183,6 +192,51 @@ export function LessonView() {
       }
     }
   }, [completeLesson, currentLessonId, recordEvidence]);
+  const handleCompleteAndContinue = useCallback(() => {
+    const recommendation = nextRecommendationAfterLesson;
+    handleComplete();
+
+    if (!recommendation) {
+      showLearningPath();
+      return;
+    }
+
+    switch (recommendation.kind) {
+      case 'guided_intro':
+        startGuidedIntroGame();
+        break;
+      case 'lesson':
+        startLesson(recommendation.targetId);
+        break;
+      case 'problem':
+        if (recommendation.targetProblemId) {
+          const problem = PROBLEM_BY_ID.get(recommendation.targetProblemId);
+          if (problem) {
+            showProblems(problem.category);
+            startProblem(problem);
+            break;
+          }
+        }
+        showProblems(recommendation.filter);
+        break;
+      case 'review':
+        showReview();
+        break;
+      case 'guided_game':
+        openGuidedGame();
+        break;
+    }
+  }, [
+    handleComplete,
+    nextRecommendationAfterLesson,
+    openGuidedGame,
+    showLearningPath,
+    showProblems,
+    showReview,
+    startGuidedIntroGame,
+    startLesson,
+    startProblem,
+  ]);
   const handleExit = useCallback(() => showLessons(), [showLessons]);
 
   // Set prompt when step changes
@@ -448,11 +502,13 @@ export function LessonView() {
             </button>
             {isLastStep ? (
               <button
-                onClick={handleComplete}
+                onClick={handleCompleteAndContinue}
                 className="flex-1 px-4 py-2.5 rounded-lg text-sm font-bold transition-transform hover:scale-[1.02] active:scale-95"
                 style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
               >
-                Finish → Path
+                {nextRecommendationAfterLesson
+                  ? `Finish → ${nextRecommendationAfterLesson.actionLabel}`
+                  : 'Finish → Path'}
               </button>
             ) : (
               <button
