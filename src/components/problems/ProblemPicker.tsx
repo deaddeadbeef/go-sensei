@@ -118,6 +118,8 @@ function ProblemRecommendation({
   onStartReview: () => void;
   onStart: () => void;
 }) {
+  const mustReviewFirst = Boolean(reviewReminderReason);
+
   return (
     <motion.section
       className="mb-6 border-y py-4"
@@ -214,11 +216,15 @@ function ProblemRecommendation({
           </div>
         </div>
         <button
-          onClick={onStart}
+          onClick={mustReviewFirst ? onStartReview : onStart}
+          aria-label={mustReviewFirst ? 'Start daily review before problem recommendation' : undefined}
           className="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-transform hover:scale-[1.02] active:scale-95"
-          style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
+          style={{
+            backgroundColor: mustReviewFirst ? COLORS.overlay.suggestion : COLORS.ui.accent,
+            color: COLORS.ui.bgPrimary,
+          }}
         >
-          {solved ? `Review ${problem.title}` : `Start ${problem.title}`}
+          {mustReviewFirst ? 'Review first' : solved ? `Review ${problem.title}` : `Start ${problem.title}`}
         </button>
       </div>
     </motion.section>
@@ -382,6 +388,7 @@ export function ProblemPicker() {
         >
           {filtered.map((problem) => {
             const solved = isSolved(problem.id);
+            const mustReviewFirst = dueReviewCount > 0;
 
             return (
               <motion.div
@@ -394,7 +401,13 @@ export function ProblemPicker() {
                     ? COLORS.overlay.positive + '60'
                     : 'rgba(255,255,255,0.06)',
                 }}
-                onClick={() => startProblem(problem)}
+                onClick={() => {
+                  if (mustReviewFirst) {
+                    showReview();
+                    return;
+                  }
+                  startProblem(problem);
+                }}
               >
                 {/* Solved badge */}
                 {solved && (
@@ -445,15 +458,20 @@ export function ProblemPicker() {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (mustReviewFirst) {
+                      showReview();
+                      return;
+                    }
                     startProblem(problem);
                   }}
+                  aria-label={mustReviewFirst ? `Start daily review before ${problem.title}` : undefined}
                   className="mt-4 w-full rounded-lg px-3 py-2 text-sm font-medium transition-opacity hover:opacity-90"
                   style={{
-                    backgroundColor: COLORS.ui.accent,
+                    backgroundColor: mustReviewFirst ? COLORS.overlay.suggestion : COLORS.ui.accent,
                     color: COLORS.ui.bgPrimary,
                   }}
                 >
-                  {solved ? `Retry: ${problem.title}` : `Solve: ${problem.title}`}
+                  {mustReviewFirst ? 'Review first' : solved ? `Retry: ${problem.title}` : `Solve: ${problem.title}`}
                 </button>
               </motion.div>
             );
