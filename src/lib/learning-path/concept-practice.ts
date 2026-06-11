@@ -50,7 +50,7 @@ export function problemCategoryTitle(category: ProblemCategory): string {
     case 'capture':
       return 'Capture';
     case 'life-and-death':
-      return 'Life and death';
+      return 'Life and Death';
     case 'tesuji':
       return 'Tesuji';
     case 'reading':

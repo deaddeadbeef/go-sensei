@@ -205,7 +205,7 @@ describe('DailyReview', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Finish Review' }));
 
     expect(screen.getByText('Next step')).toBeTruthy();
-    expect(screen.getByText('Rebuild Life and death')).toBeTruthy();
+    expect(screen.getByText('Rebuild Life and Death')).toBeTruthy();
     expect(screen.queryByText(/Review finish line reached/)).toBeNull();
     expect(screen.getByText('Make Two Eyes')).toBeTruthy();
     expect(screen.getByText('missed - replay C8')).toBeTruthy();
