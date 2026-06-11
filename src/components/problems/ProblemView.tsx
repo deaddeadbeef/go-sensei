@@ -37,6 +37,7 @@ const PROBLEM_CONCEPTS: Record<ProblemCategory, string[]> = {
   reading: ['reading', 'ladder', 'net', 'connect-and-cut'],
   endgame: ['sente-gote', 'endgame-counting'],
 };
+const PROBLEM_BY_ID = new Map(PROBLEMS.map((problem) => [problem.id, problem]));
 
 function withoutLatestAttemptForProblem(
   problemAttempts: ProblemAttempt[],
@@ -119,8 +120,11 @@ export function ProblemView() {
   const resetProblem = useGameStore((s) => s.resetProblem);
   const requestProblemHint = useGameStore((s) => s.requestProblemHint);
   const showProblems = useGameStore((s) => s.showProblems);
-  const showLearningPath = useGameStore((s) => s.showLearningPath);
+  const showReview = useGameStore((s) => s.showReview);
+  const startGuidedIntroGame = useGameStore((s) => s.startGuidedIntroGame);
+  const startLesson = useGameStore((s) => s.startLesson);
   const startProblem = useGameStore((s) => s.startProblem);
+  const openGuidedGame = useGameStore((s) => s.openGuidedGame);
   const preferredProblemFilter = useGameStore((s) => s.preferredProblemFilter);
   const completedLessons = useProgressStore((s) => s.completedLessons);
   const problemAttempts = useProgressStore((s) => s.problemAttempts);
@@ -213,6 +217,41 @@ export function ProblemView() {
     && learningRecommendation.filter === scopedProblemFilter
     ? learningRecommendation
     : null;
+  const continueToLearningRecommendation = useCallback(() => {
+    switch (learningRecommendation.kind) {
+      case 'guided_intro':
+        startGuidedIntroGame();
+        break;
+      case 'lesson':
+        startLesson(learningRecommendation.targetId);
+        break;
+      case 'problem':
+        if (learningRecommendation.targetProblemId) {
+          const recommendedProblem = PROBLEM_BY_ID.get(learningRecommendation.targetProblemId);
+          if (recommendedProblem) {
+            showProblems(recommendedProblem.category);
+            startProblem(recommendedProblem);
+            break;
+          }
+        }
+        showProblems(learningRecommendation.filter);
+        break;
+      case 'review':
+        showReview();
+        break;
+      case 'guided_game':
+        openGuidedGame();
+        break;
+    }
+  }, [
+    learningRecommendation,
+    openGuidedGame,
+    showProblems,
+    showReview,
+    startGuidedIntroGame,
+    startLesson,
+    startProblem,
+  ]);
 
   const handleBoardClick = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
     if (!problem || !problemInteraction.active || problemInteraction.status !== 'playing') return;
@@ -267,10 +306,10 @@ export function ProblemView() {
   const hintActionLabel = problemInteraction.showHint ? 'Hint shown' : 'Show hint';
   const practiceGoalTitle = repairReplayMet ? 'Repair replay complete' : 'Practice goal met';
   const practiceGoalText = repairReplayMet
-    ? `You replayed ${problem.title} cleanly. Return to the path for: ${learningRecommendation.title}.`
+    ? `You replayed ${problem.title} cleanly. Continue with: ${learningRecommendation.title}.`
     : scopedProblemLabel
-    ? `You reached the ${scopedProblemLabel} practice target. Return to the path for: ${learningRecommendation.title}.`
-    : `Return to the path for: ${learningRecommendation.title}.`;
+    ? `You reached the ${scopedProblemLabel} practice target. Continue with: ${learningRecommendation.title}.`
+    : `Continue with: ${learningRecommendation.title}.`;
   const practiceGoalFinishLine = repairReplayMet
     ? 'Finish line reached: the missed repair pattern now has one clean replay.'
     : scopedProblemLabel
@@ -590,7 +629,7 @@ export function ProblemView() {
             )}
             {practiceTargetMet && (
               <button
-                onClick={showLearningPath}
+                onClick={continueToLearningRecommendation}
                 className="flex-1 px-4 py-2.5 rounded-lg text-sm font-bold transition-transform hover:scale-[1.02] active:scale-95"
                 style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
               >
