@@ -28,6 +28,7 @@ const COLORS = {
 const CONCEPT_NAMES = new Map(CONCEPTS.map((concept) => [concept.id, concept.name]));
 const LESSON_IDS = new Set(LESSONS.map((lesson) => lesson.id));
 const PROBLEM_IDS = new Set(PROBLEMS.map((problem) => problem.id));
+const PROBLEM_BY_ID = new Map(PROBLEMS.map((problem) => [problem.id, problem]));
 
 interface StatCardProps {
   icon: string;
@@ -191,6 +192,7 @@ export function ProgressDashboard() {
   const openGuidedGame = useGameStore((s) => s.openGuidedGame);
   const startGuidedIntroGame = useGameStore((s) => s.startGuidedIntroGame);
   const startLesson = useGameStore((s) => s.startLesson);
+  const startProblem = useGameStore((s) => s.startProblem);
   const showLessons = useGameStore((s) => s.showLessons);
   const showProblems = useGameStore((s) => s.showProblems);
   const showSkillTree = useGameStore((s) => s.showSkillTree);
@@ -227,6 +229,13 @@ export function ProgressDashboard() {
         startLesson(recommendation.targetId);
         break;
       case 'problem':
+        if (recommendation.targetProblemId) {
+          const problem = PROBLEM_BY_ID.get(recommendation.targetProblemId);
+          if (problem) {
+            startProblem(problem);
+            break;
+          }
+        }
         showProblems(recommendation.filter);
         break;
       case 'review':

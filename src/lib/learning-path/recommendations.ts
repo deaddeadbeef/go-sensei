@@ -29,6 +29,7 @@ export type LearningRecommendation =
   | ({
       kind: 'problem';
       filter: ProblemCategory;
+      targetProblemId?: string;
     } & RecommendationGuidance)
   | ({
       kind: 'review';
@@ -199,12 +200,13 @@ function repairProblemRecommendation(problem: Problem, attempt: ProblemAttempt):
   return {
     kind: 'problem',
     filter: problem.category,
+    targetProblemId: problem.id,
     title: `${missed ? 'Repair' : 'Reinforce'} ${practiceCategoryTitle}`,
     reason: missed
       ? `Your latest miss was ${problem.title}. Repair that pattern before adding new material.`
       : `You solved ${problem.title}, but it took ${attempt.attempts} attempts. Repeat the idea while it is fresh.`,
     focusConcepts: [...PROBLEM_CATEGORY_TO_CONCEPTS[problem.category]],
-    actionLabel: `${missed ? 'Repair' : 'Drill'} ${practiceCategoryTitleLower} problems`,
+    actionLabel: `${missed ? 'Replay' : 'Drill'} ${problem.title}`,
     finishLine: missed
       ? `Replay ${problem.title} once, then solve one ${practiceCategoryTitleLower} problem without a hint.`
       : `Solve one ${practiceCategoryTitleLower} problem on the first try, then return to the path.`,

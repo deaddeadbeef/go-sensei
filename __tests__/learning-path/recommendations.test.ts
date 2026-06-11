@@ -97,8 +97,9 @@ describe('learning path recommendations', () => {
     expect(recommendation).toMatchObject({
       kind: 'problem',
       filter: 'life-and-death',
+      targetProblemId: 'life-001',
       title: 'Repair Life and Death',
-      actionLabel: 'Repair life and death problems',
+      actionLabel: 'Replay Make Two Eyes',
     });
     expect(recommendation.reason).toBe('Your latest miss was Make Two Eyes. Repair that pattern before adding new material.');
     expect(recommendation.finishLine).toBe('Replay Make Two Eyes once, then solve one life and death problem without a hint.');
@@ -119,8 +120,9 @@ describe('learning path recommendations', () => {
     expect(recommendation).toMatchObject({
       kind: 'problem',
       filter: 'capture',
+      targetProblemId: 'capture-002',
       title: 'Reinforce Capture',
-      actionLabel: 'Drill capture problems',
+      actionLabel: 'Drill Edge Squeeze',
     });
     expect(recommendation.reason).toBe('You solved Edge Squeeze, but it took 2 attempts. Repeat the idea while it is fresh.');
     expect(recommendation.finishLine).toBe('Solve one capture problem on the first try, then return to the path.');

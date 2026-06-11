@@ -14,6 +14,7 @@ import { COLORS } from '@/utils/colors';
 const CONCEPT_BY_ID = new Map(CONCEPTS.map((concept) => [concept.id, concept]));
 const LESSON_IDS = new Set(LESSONS.map((lesson) => lesson.id));
 const PROBLEM_IDS = new Set(PROBLEMS.map((problem) => problem.id));
+const PROBLEM_BY_ID = new Map(PROBLEMS.map((problem) => [problem.id, problem]));
 
 const CATEGORY_LABELS: Record<ConceptCategory, string> = {
   fundamentals: 'Fundamental',
@@ -42,6 +43,7 @@ export function LearningPath() {
   const hasStartedIntroGame = useProgressStore((s) => s.hasStartedIntroGame);
   const startGuidedIntroGame = useGameStore((s) => s.startGuidedIntroGame);
   const startLesson = useGameStore((s) => s.startLesson);
+  const startProblem = useGameStore((s) => s.startProblem);
   const showLessons = useGameStore((s) => s.showLessons);
   const showProblems = useGameStore((s) => s.showProblems);
   const showReview = useGameStore((s) => s.showReview);
@@ -79,6 +81,13 @@ export function LearningPath() {
         startLesson(recommendation.targetId);
         break;
       case 'problem':
+        if (recommendation.targetProblemId) {
+          const problem = PROBLEM_BY_ID.get(recommendation.targetProblemId);
+          if (problem) {
+            startProblem(problem);
+            break;
+          }
+        }
         showProblems(recommendation.filter);
         break;
       case 'review':

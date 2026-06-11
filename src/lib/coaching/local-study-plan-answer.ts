@@ -76,6 +76,9 @@ function actionForRecommendation(recommendation: LearningRecommendation): Sensei
     case 'lesson':
       return { id: `lesson:${recommendation.targetId}`, label: recommendation.actionLabel };
     case 'problem':
+      if (recommendation.targetProblemId) {
+        return { id: `problem:${recommendation.targetProblemId}`, label: recommendation.actionLabel };
+      }
       return { id: `practice:${recommendation.filter}`, label: recommendation.actionLabel };
     case 'review':
       return { id: 'review', label: recommendation.actionLabel };

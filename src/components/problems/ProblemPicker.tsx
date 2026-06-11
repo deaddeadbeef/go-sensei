@@ -41,6 +41,7 @@ const CATEGORY_LABELS: Record<FilterKey, string> = {
 };
 
 const FILTERS: FilterKey[] = ['all', 'capture', 'life-and-death', 'tesuji', 'reading', 'endgame'];
+const PROBLEM_BY_ID = new Map(PROBLEMS.map((problem) => [problem.id, problem]));
 
 const FOCUS_PRACTICE_REASON: Record<ProblemCategory, string> = {
   capture: 'Capture problems train you to count liberties and take stones only when the final point is ready.',
@@ -94,6 +95,7 @@ function ProblemRecommendation({
   solvedCount,
   totalCount,
   solved,
+  pathTargeted,
   pathGoalReason,
   pathGoalFinishLine,
   focusedPracticeReason,
@@ -104,6 +106,7 @@ function ProblemRecommendation({
   solvedCount: number;
   totalCount: number;
   solved: boolean;
+  pathTargeted: boolean;
   pathGoalReason: string | null;
   pathGoalFinishLine: string | null;
   focusedPracticeReason: string | null;
@@ -126,7 +129,9 @@ function ProblemRecommendation({
             {problem.title}
           </h2>
           <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
-            {recommendationReason({ filter, solvedCount, totalCount })}
+            {pathTargeted
+              ? `Replay this exact repair pattern before choosing another ${CATEGORY_LABELS[problem.category].toLowerCase()} problem.`
+              : recommendationReason({ filter, solvedCount, totalCount })}
           </p>
           {pathGoalReason && (
             <div
@@ -208,7 +213,7 @@ export function ProblemPicker() {
 
   const solvedIds = useMemo(() => getSolvedProblemIds(problemAttempts), [problemAttempts]);
   const solvedVisibleCount = filtered.filter((problem) => solvedIds.has(problem.id)).length;
-  const recommendedProblem = useMemo(
+  const recommendedByProgress = useMemo(
     () => getRecommendedProblem(problemAttempts, filtered),
     [problemAttempts, filtered],
   );
@@ -233,6 +238,22 @@ export function ProblemPicker() {
     : null;
   const pathGoalFinishLine = pathGoalReason ? learningRecommendation.finishLine : null;
   const focusedPracticeReason = filter !== 'all' ? FOCUS_PRACTICE_REASON[filter] : null;
+  const pathTargetProblem = useMemo(() => {
+    if (
+      filter === 'all'
+      || learningRecommendation.kind !== 'problem'
+      || learningRecommendation.filter !== filter
+      || !learningRecommendation.targetProblemId
+    ) {
+      return null;
+    }
+
+    const targetProblem = PROBLEM_BY_ID.get(learningRecommendation.targetProblemId);
+    return targetProblem && filtered.some((problem) => problem.id === targetProblem.id)
+      ? targetProblem
+      : null;
+  }, [filter, filtered, learningRecommendation]);
+  const recommendedProblem = pathTargetProblem ?? recommendedByProgress;
 
   const isSolved = (id: string) =>
     solvedIds.has(id);
@@ -298,6 +319,7 @@ export function ProblemPicker() {
             solvedCount={solvedVisibleCount}
             totalCount={filtered.length}
             solved={isSolved(recommendedProblem.id)}
+            pathTargeted={pathTargetProblem?.id === recommendedProblem.id}
             pathGoalReason={pathGoalReason}
             pathGoalFinishLine={pathGoalFinishLine}
             focusedPracticeReason={focusedPracticeReason}
