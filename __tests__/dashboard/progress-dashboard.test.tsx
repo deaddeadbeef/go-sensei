@@ -161,6 +161,7 @@ describe('ProgressDashboard', () => {
 
     expect(useGameStore.getState().appPhase).toBe('problem');
     expect(useGameStore.getState().currentProblemId).toBe('capture-002');
+    expect(useGameStore.getState().preferredProblemFilter).toBe('capture');
     expect(useGameStore.getState().problemInteraction.problem?.title).toBe('Edge Squeeze');
   });
 });

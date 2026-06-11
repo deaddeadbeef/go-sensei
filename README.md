@@ -30,7 +30,7 @@ The learning loop now starts complete beginners with a guided 9×9 game, then co
 - 🧠 **Concept mastery tracking** — lessons, problems, and review sessions update per-concept evidence
 - 📋 **Post-game review** — full game analysis at the end of each game
 - 🔐 **GitHub OAuth** — login with your GitHub account (Device Flow), no API keys needed
-- 🧪 **650 tests** — engine, lesson, problem, review, prompt, and state-management coverage
+- 🧪 **651 tests** — engine, lesson, problem, review, prompt, and state-management coverage
 
 ## Quick Start
 
