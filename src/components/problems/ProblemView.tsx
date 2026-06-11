@@ -201,6 +201,9 @@ export function ProblemView() {
     && preSolveLearningRecommendation.kind === 'problem'
     && preSolveLearningRecommendation.filter === scopedProblemFilter
     && (learningRecommendation.kind !== 'problem' || learningRecommendation.filter !== scopedProblemFilter);
+  const repairReplayMet = practiceTargetMet
+    && preSolveLearningRecommendation.kind === 'problem'
+    && preSolveLearningRecommendation.targetProblemId === currentProblemId;
 
   const handleBoardClick = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
     if (!problem || !problemInteraction.active || problemInteraction.status !== 'playing') return;
@@ -253,6 +256,17 @@ export function ProblemView() {
     : null;
   const revealSolution = problemInteraction.status !== 'playing';
   const hintActionLabel = problemInteraction.showHint ? 'Hint shown' : 'Show hint';
+  const practiceGoalTitle = repairReplayMet ? 'Repair replay complete' : 'Practice goal met';
+  const practiceGoalText = repairReplayMet
+    ? `You replayed ${problem.title} cleanly. Return to the path for: ${learningRecommendation.title}.`
+    : scopedProblemLabel
+    ? `You reached the ${scopedProblemLabel} practice target. Return to the path for: ${learningRecommendation.title}.`
+    : `Return to the path for: ${learningRecommendation.title}.`;
+  const practiceGoalFinishLine = repairReplayMet
+    ? 'Finish line reached: the missed repair pattern now has one clean replay.'
+    : scopedProblemLabel
+    ? `Finish line reached: you solved the last required ${scopedProblemLabel} problem for this path block.`
+    : null;
 
   return (
     <div
@@ -465,16 +479,14 @@ export function ProblemView() {
               animate={{ opacity: 1, y: 0 }}
             >
               <h3 className="text-sm font-bold" style={{ color: COLORS.ui.accent }}>
-                Practice goal met
+                {practiceGoalTitle}
               </h3>
               <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
-                {scopedProblemLabel
-                  ? `You reached the ${scopedProblemLabel} practice target. Return to the path for: ${learningRecommendation.title}.`
-                  : `Return to the path for: ${learningRecommendation.title}.`}
+                {practiceGoalText}
               </p>
-              {scopedProblemLabel && (
+              {practiceGoalFinishLine && (
                 <p className="mt-2 text-sm leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
-                  Finish line reached: you solved the last required {scopedProblemLabel} problem for this path block.
+                  {practiceGoalFinishLine}
                 </p>
               )}
             </motion.div>
