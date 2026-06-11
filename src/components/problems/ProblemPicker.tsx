@@ -137,9 +137,11 @@ function ProblemRecommendation({
             {problem.title}
           </h2>
           <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
-            {pathTargeted
-              ? `Replay this exact repair pattern before choosing another ${CATEGORY_LABELS[problem.category].toLowerCase()} problem.`
-              : recommendationReason({ filter, solvedCount, totalCount })}
+            {mustReviewFirst
+              ? `Daily review is the next move. ${problem.title} can wait until your due cards are clear.`
+              : pathTargeted
+                ? `Replay this exact repair pattern before choosing another ${CATEGORY_LABELS[problem.category].toLowerCase()} problem.`
+                : recommendationReason({ filter, solvedCount, totalCount })}
           </p>
           {pathGoalReason && (
             <div
