@@ -121,6 +121,20 @@ describe('ProblemPicker', () => {
     expect(screen.getByText('Review due')).toBeTruthy();
     expect(screen.getByText('1 review position is due before new material.')).toBeTruthy();
     expect(screen.getByText('All due review cards are answered, and any miss has been replayed once.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Start Corner Capture' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Solve: Corner Capture' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start daily review before problem recommendation' }));
+
+    expect(useGameStore.getState().appPhase).toBe('review');
+
+    act(() => useGameStore.getState().showProblems());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start daily review before Corner Capture' }));
+
+    expect(useGameStore.getState().appPhase).toBe('review');
+
+    act(() => useGameStore.getState().showProblems());
 
     fireEvent.click(screen.getByRole('button', { name: 'Start daily review from problem recommendation' }));
 
