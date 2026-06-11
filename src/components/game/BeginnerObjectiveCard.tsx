@@ -4062,6 +4062,13 @@ export function BeginnerObjectiveCard() {
     && !pressureDefenseRecommendation
     ? getPressureWeakGroupHandoffCue(objective, readPrompt, pressureComparisonSummary, game.board)
     : null;
+  const shouldPrioritizePendingPressureRead = Boolean(
+    readPrompt
+    && !pressureLocalShapeSettledCue
+    && objective.id === 'choose-new-area'
+    && progress?.status === 'met'
+    && progress.objectiveId === 'extend-from-stone',
+  );
   const completedFirstReadComparisonPreviewHighlights = readPrompt
     && selectedReadRecount
     && compareReadReplyPoints.length > 0
@@ -4918,73 +4925,77 @@ export function BeginnerObjectiveCard() {
           )}
         </div>
       )}
-      <div className="font-semibold" style={{ color: COLORS.ui.textPrimary }}>
-        {objective.title}
-      </div>
-      <div className="mt-1" style={{ color: COLORS.ui.textSecondary }}>
-        {objective.instruction}
-      </div>
-      {progressDisplayText && (
-        <div className="mt-1 text-xs font-medium" style={{ color: progressColor }}>
-          {progressDisplayText}
-        </div>
-      )}
-      {finalTargetDisplayText && (
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs font-semibold" style={{ color: COLORS.ui.textPrimary }}>
-          <span>{finalTargetDisplayText}</span>
-          {playableTargets.map((point) => {
-            const coord = pointToCoord(point, game.board.size);
-            const suggestion = suggestions.find((candidate) => targetKey(candidate.point) === targetKey(point));
-            const candidateLabel = suggestion ? getSuggestionMarkerLabel(suggestion.rank) : null;
-            const buttonLabel = candidateLabel ? `${candidateLabel} ${coord}` : coord;
-            const actionLabel = candidateLabel
-              ? `Play candidate ${candidateLabel} at ${coord} target for ${objective.title}`
-              : `Play ${coord} target for ${objective.title}`;
-
-            return (
-              <button
-                key={`${objective.id}-${point.x}-${point.y}`}
-                type="button"
-                className="rounded border px-2 py-0.5 font-mono text-[11px] font-bold transition hover:bg-white/[0.07] disabled:cursor-default disabled:opacity-70 disabled:hover:bg-transparent"
-                style={{
-                  borderColor: COLORS.ui.accent,
-                  color: COLORS.ui.textPrimary,
-                  backgroundColor: `${COLORS.ui.accent}1f`,
-                }}
-                disabled={!canPlayTarget}
-                aria-label={actionLabel}
-                aria-describedby={activeTargetKey === targetKey(point) ? targetHelpId : undefined}
-                onPointerEnter={() => scheduleTargetHelp(point)}
-                onPointerMove={() => scheduleTargetHelp(point)}
-                onMouseEnter={() => scheduleTargetHelp(point)}
-                onMouseLeave={clearTargetHelp}
-                onFocus={() => scheduleTargetHelp(point)}
-                onBlur={clearTargetHelp}
-                onKeyDown={() => scheduleTargetHelp(point)}
-                onClick={() => handleTargetClick(point, activePressureExtensionHandoff)}
-              >
-                {buttonLabel}
-              </button>
-            );
-          })}
-        </div>
-      )}
-      {objectiveReadCue && (
-        <div className="mt-1 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
-          {objectiveReadCue}
-        </div>
-      )}
-      {activeTargetCoord && activeTargetExplanation && (
-        <div id={targetHelpId} className="mt-1.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+      {!shouldPrioritizePendingPressureRead && (
+        <>
           <div className="font-semibold" style={{ color: COLORS.ui.textPrimary }}>
-            Why {activeTargetCoord}
+            {objective.title}
           </div>
-          <p>{activeTargetExplanation}</p>
-        </div>
+          <div className="mt-1" style={{ color: COLORS.ui.textSecondary }}>
+            {objective.instruction}
+          </div>
+          {progressDisplayText && (
+            <div className="mt-1 text-xs font-medium" style={{ color: progressColor }}>
+              {progressDisplayText}
+            </div>
+          )}
+          {finalTargetDisplayText && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs font-semibold" style={{ color: COLORS.ui.textPrimary }}>
+              <span>{finalTargetDisplayText}</span>
+              {playableTargets.map((point) => {
+                const coord = pointToCoord(point, game.board.size);
+                const suggestion = suggestions.find((candidate) => targetKey(candidate.point) === targetKey(point));
+                const candidateLabel = suggestion ? getSuggestionMarkerLabel(suggestion.rank) : null;
+                const buttonLabel = candidateLabel ? `${candidateLabel} ${coord}` : coord;
+                const actionLabel = candidateLabel
+                  ? `Play candidate ${candidateLabel} at ${coord} target for ${objective.title}`
+                  : `Play ${coord} target for ${objective.title}`;
+
+                return (
+                  <button
+                    key={`${objective.id}-${point.x}-${point.y}`}
+                    type="button"
+                    className="rounded border px-2 py-0.5 font-mono text-[11px] font-bold transition hover:bg-white/[0.07] disabled:cursor-default disabled:opacity-70 disabled:hover:bg-transparent"
+                    style={{
+                      borderColor: COLORS.ui.accent,
+                      color: COLORS.ui.textPrimary,
+                      backgroundColor: `${COLORS.ui.accent}1f`,
+                    }}
+                    disabled={!canPlayTarget}
+                    aria-label={actionLabel}
+                    aria-describedby={activeTargetKey === targetKey(point) ? targetHelpId : undefined}
+                    onPointerEnter={() => scheduleTargetHelp(point)}
+                    onPointerMove={() => scheduleTargetHelp(point)}
+                    onMouseEnter={() => scheduleTargetHelp(point)}
+                    onMouseLeave={clearTargetHelp}
+                    onFocus={() => scheduleTargetHelp(point)}
+                    onBlur={clearTargetHelp}
+                    onKeyDown={() => scheduleTargetHelp(point)}
+                    onClick={() => handleTargetClick(point, activePressureExtensionHandoff)}
+                  >
+                    {buttonLabel}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          {objectiveReadCue && (
+            <div className="mt-1 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+              {objectiveReadCue}
+            </div>
+          )}
+          {activeTargetCoord && activeTargetExplanation && (
+            <div id={targetHelpId} className="mt-1.5 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+              <div className="font-semibold" style={{ color: COLORS.ui.textPrimary }}>
+                Why {activeTargetCoord}
+              </div>
+              <p>{activeTargetExplanation}</p>
+            </div>
+          )}
+          <div className="mt-1 text-xs" style={{ color: COLORS.ui.accent }}>
+            {objective.why}
+          </div>
+        </>
       )}
-      <div className="mt-1 text-xs" style={{ color: COLORS.ui.accent }}>
-        {objective.why}
-      </div>
     </div>
   );
 }

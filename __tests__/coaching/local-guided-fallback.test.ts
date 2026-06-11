@@ -22,6 +22,26 @@ function settledShapeGame(): GameState {
   );
 }
 
+function pendingF5PressureReadGame(): GameState {
+  const moves: Point[] = [
+    { x: 2, y: 2 },
+    { x: 4, y: 2 },
+    { x: 6, y: 2 },
+    { x: 6, y: 4 },
+    { x: 6, y: 6 },
+    { x: 4, y: 6 },
+    { x: 2, y: 6 },
+    { x: 2, y: 4 },
+    { x: 4, y: 4 },
+  ];
+
+  return moves.reduce((game, point) => {
+    const result = playMove(game, point);
+    if (!result.success) throw new Error(`test setup move failed at ${point.x},${point.y}`);
+    return passMove(result.newState);
+  }, createGame(9));
+}
+
 describe('local guided fallback', () => {
   it('keeps a guided learner moving after a failed AI response to a first move', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
@@ -176,6 +196,27 @@ describe('local guided fallback', () => {
         reason: 'Consider H2 as a fresh lower-right direction away from the settled local shape.',
       },
     ]);
+  });
+
+  it('keeps a pending pressure read primary before local fallback offers fresh-area targets', () => {
+    const fallback = getLocalGuidedFallback(pendingF5PressureReadGame(), 'guided', 'auth-unavailable');
+
+    expect(fallback).toMatchObject({
+      shouldPassSensei: false,
+      actions: [],
+    });
+    expect(fallback?.text).toContain('Next focus: Read F5 before choosing a new area: decide whether Black should connect, defend, or can safely move elsewhere.');
+    expect(fallback?.text).toContain('Use the pressure prompt to finish this read before choosing the next area.');
+    expect(fallback?.text).not.toContain('Next focus: Choose a new area.');
+    expect(fallback?.text).not.toContain('Try B8 or H8.');
+    expect(fallback?.text).not.toContain('marked the next targets');
+    expect(fallback?.boardFocus?.highlights).toEqual([{
+      id: 'local-fallback-learned-4,4',
+      point: { x: 4, y: 4 },
+      variant: 'positive',
+      label: 'E5: move to learn from - beginner job met.',
+    }]);
+    expect(fallback?.boardFocus?.suggestions).toBeUndefined();
   });
 
   it('does not take over non-beginner modes', () => {
