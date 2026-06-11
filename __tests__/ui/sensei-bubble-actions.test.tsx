@@ -116,6 +116,7 @@ describe('SenseiBubble actions', () => {
 
     expect(useGameStore.getState().appPhase).toBe('problem');
     expect(useGameStore.getState().currentProblemId).toBe('life-001');
+    expect(useGameStore.getState().preferredProblemFilter).toBe('life-and-death');
     expect(useGameStore.getState().problemInteraction.problem?.title).toBe('Make Two Eyes');
     expect(useGameStore.getState().bubble.visible).toBe(false);
   });

@@ -232,6 +232,7 @@ export function ProgressDashboard() {
         if (recommendation.targetProblemId) {
           const problem = PROBLEM_BY_ID.get(recommendation.targetProblemId);
           if (problem) {
+            showProblems(problem.category);
             startProblem(problem);
             break;
           }
