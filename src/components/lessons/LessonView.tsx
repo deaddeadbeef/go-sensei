@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback, useRef, useEffect, useState } from 'react';
+import { useCallback, useRef, useEffect, useMemo, useState } from 'react';
 import { useGameStore } from '@/stores/game-store';
 import { LESSONS } from '@/lib/lessons/lesson-data';
 import { LESSON_TO_CONCEPTS } from '@/lib/learning-path/concept-practice';
+import { getLearningRecommendation } from '@/lib/learning-path/recommendations';
 import { LessonOverlay } from './LessonOverlay';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -17,6 +18,8 @@ import {
 import { COLORS } from '@/utils/colors';
 import { LESSON_TRANSITION } from '@/utils/animation';
 import { useConceptStore } from '@/stores/concept-store';
+import { useProgressStore } from '@/stores/progress-store';
+import { useReviewStore } from '@/stores/review-store';
 import { pointToCoord } from '@/lib/go-engine/serialization';
 import type { BoardSize } from '@/lib/go-engine/types';
 
@@ -97,6 +100,14 @@ export function LessonView() {
   const checkLessonAnswer = useGameStore((s) => s.checkLessonAnswer);
   const clearLessonPrompt = useGameStore((s) => s.clearLessonPrompt);
   const recordEvidence = useConceptStore((s) => s.recordEvidence);
+  const mastery = useConceptStore((s) => s.mastery);
+  const completedLessons = useProgressStore((s) => s.completedLessons);
+  const problemAttempts = useProgressStore((s) => s.problemAttempts);
+  const hasStartedIntroGame = useProgressStore((s) => s.hasStartedIntroGame);
+  const dueReviewCount = useReviewStore((s) => {
+    void s.cards;
+    return s.getDueCount();
+  });
 
   // Feedback animation state
   const [feedbackPoint, setFeedbackPoint] = useState<{ x: number; y: number; type: 'correct' | 'wrong' } | null>(null);
@@ -137,6 +148,29 @@ export function LessonView() {
     : lessonInteraction.awaitingClick
       ? 'Answer on board first'
       : 'Next →';
+  const nextRecommendationAfterLesson = useMemo(() => {
+    if (!isLastStep || !currentLessonId) return null;
+
+    const nextCompletedLessons = completedLessons.includes(currentLessonId)
+      ? completedLessons
+      : [...completedLessons, currentLessonId];
+
+    return getLearningRecommendation({
+      completedLessons: nextCompletedLessons,
+      problemAttempts,
+      dueReviewCount,
+      hasStartedIntroGame,
+      mastery: Object.values(mastery),
+    });
+  }, [
+    completedLessons,
+    currentLessonId,
+    dueReviewCount,
+    hasStartedIntroGame,
+    isLastStep,
+    mastery,
+    problemAttempts,
+  ]);
 
   const handlePrev = useCallback(() => prevStep(), [prevStep]);
   const handleNext = useCallback(() => nextStep(totalSteps), [nextStep, totalSteps]);
@@ -385,6 +419,16 @@ export function LessonView() {
                   <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
                     Finish this lesson after you can explain the board checkpoint in your own words.
                   </p>
+                  {nextRecommendationAfterLesson && (
+                    <>
+                      <p className="mt-2 text-sm leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
+                        Next on the path: {nextRecommendationAfterLesson.title}.
+                      </p>
+                      <p className="mt-1 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+                        Next finish line: {nextRecommendationAfterLesson.finishLine}
+                      </p>
+                    </>
+                  )}
                 </div>
               )}
             </motion.div>
