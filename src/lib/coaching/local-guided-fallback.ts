@@ -78,13 +78,16 @@ function buildObjectiveBoardFocus(
   move: Move | null,
   progressStatus: 'met' | 'missed' | null,
   followUpContext?: FreshAreaFollowUpContext | null,
+  suppressSuggestions = false,
 ): LocalBoardFocus | undefined {
-  const suggestions: LocalSuggestionFocus[] = objective.targetPoints.slice(0, 4).map((point, index) => ({
-    id: `local-fallback-move-${pointKey(point)}`,
-    point: copyPoint(point),
-    rank: index + 1,
-    reason: getBeginnerObjectiveSuggestionReason(objective, point, boardSize, followUpContext),
-  }));
+  const suggestions: LocalSuggestionFocus[] = suppressSuggestions
+    ? []
+    : objective.targetPoints.slice(0, 4).map((point, index) => ({
+      id: `local-fallback-move-${pointKey(point)}`,
+      point: copyPoint(point),
+      rank: index + 1,
+      reason: getBeginnerObjectiveSuggestionReason(objective, point, boardSize, followUpContext),
+    }));
   const highlights = move?.type === 'place'
     ? [{
       id: `local-fallback-learned-${pointKey(move.point)}`,
@@ -123,6 +126,11 @@ export function getLocalGuidedFallback(
   const move = lastBlackMove(game);
   const shouldPassSensei = game.currentPlayer !== 'black';
   const followUpContext = objective ? getFreshAreaFollowUpContext(game, teachingLevel, objective) : null;
+  const shouldPrioritizePendingPressureRead = Boolean(
+    objective?.id === 'choose-new-area'
+    && progress?.status === 'met'
+    && progress.objectiveId === 'extend-from-stone',
+  );
   const lines = [
     introText(reason),
     progress?.text ?? describeLastMove(game),
@@ -132,7 +140,9 @@ export function getLocalGuidedFallback(
     lines.push(`Lesson: ${insight.observation}`);
   }
 
-  if (objective) {
+  if (shouldPrioritizePendingPressureRead && insight) {
+    lines.push(`Next focus: ${insight.nextStep}`);
+  } else if (objective) {
     const targetText = formatObjectiveTargetText(objective, game.board.size, 4, followUpContext);
     const targetSentence = targetText ? `${targetText} ` : '';
     lines.push(`Next focus: ${objective.title}. ${objective.instruction} ${targetSentence}${objective.why}`);
@@ -142,10 +152,14 @@ export function getLocalGuidedFallback(
 
   if (shouldPassSensei) {
     lines.push(move?.type === 'place'
-      ? 'I marked your move, gave White a teaching pass, and marked the next targets so you can immediately try the next idea.'
+      ? shouldPrioritizePendingPressureRead
+        ? 'I marked your move and gave White a teaching pass so you can finish this read before choosing the next area.'
+        : 'I marked your move, gave White a teaching pass, and marked the next targets so you can immediately try the next idea.'
       : 'White takes a teaching pass so you can immediately try the next idea.');
   } else {
-    lines.push('Use the marked targets to make the next move concrete.');
+    lines.push(shouldPrioritizePendingPressureRead
+      ? 'Use the pressure prompt to finish this read before choosing the next area.'
+      : 'Use the marked targets to make the next move concrete.');
   }
 
   return {
@@ -154,8 +168,17 @@ export function getLocalGuidedFallback(
       ...(objective?.conceptIds ?? []),
       ...(insight?.conceptIds ?? []),
     ]),
-    actions: objective ? getBeginnerObjectiveActions(objective) : [],
-    ...(objective ? { boardFocus: buildObjectiveBoardFocus(objective, game.board.size, move, progress?.status ?? null, followUpContext) } : {}),
+    actions: objective && !shouldPrioritizePendingPressureRead ? getBeginnerObjectiveActions(objective) : [],
+    ...(objective ? {
+      boardFocus: buildObjectiveBoardFocus(
+        objective,
+        game.board.size,
+        move,
+        progress?.status ?? null,
+        followUpContext,
+        shouldPrioritizePendingPressureRead,
+      ),
+    } : {}),
     shouldPassSensei,
   };
 }

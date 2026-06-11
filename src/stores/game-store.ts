@@ -35,6 +35,7 @@ import {
 } from '@/lib/coaching/beginner-objectives';
 import type { BeginnerObjective, FreshAreaFollowUpContext } from '@/lib/coaching/beginner-objectives';
 import { getBeginnerObjectiveActions } from '@/lib/coaching/beginner-objective-actions';
+import { getMoveInsight } from '@/lib/coaching/move-insight';
 import { useProgressStore } from './progress-store';
 import { useConceptStore } from './concept-store';
 
@@ -484,12 +485,26 @@ function buildGuidedResumeBubble(
   const targetText = objective
     ? formatObjectiveTargetText(objective, game.board.size, 4, followUpContext)
     : null;
+  const progress = getBeginnerObjectiveProgress(game, 'guided');
+  const insight = getMoveInsight(game, 'guided');
+  const shouldPrioritizePendingPressureRead = Boolean(
+    objective?.id === 'choose-new-area'
+    && progress?.status === 'met'
+    && progress.objectiveId === 'extend-from-stone',
+  );
   const learnerMoveText = `I restored your paused board ${formatRestoredMoveCount(game)}.`;
 
   return {
     ...defaultBubble,
     visible: true,
-    text: objective
+    text: objective && shouldPrioritizePendingPressureRead && insight
+      ? [
+          'Welcome back to your guided 9x9.',
+          passedForWhite ? 'White passed while I restored this board, so it is your turn again.' : '',
+          learnerMoveText,
+          `Your next job is: ${insight.nextStep}`,
+        ].filter(Boolean).join(' ')
+      : objective
       ? [
           'Welcome back to your guided 9x9.',
           passedForWhite ? 'White passed while I restored this board, so it is your turn again.' : '',
@@ -506,7 +521,7 @@ function buildGuidedResumeBubble(
           'Keep looking for the biggest safe move.',
         ].filter(Boolean).join(' '),
     variant: 'teaching',
-    actions: objective ? getBeginnerObjectiveActions(objective) : [],
+    actions: objective && !shouldPrioritizePendingPressureRead ? getBeginnerObjectiveActions(objective) : [],
     streamingComplete: true,
   };
 }
@@ -588,6 +603,11 @@ function buildGuidedResumeOverlays(
   const progress = getBeginnerObjectiveProgress(game, 'guided');
   const lastMove = lastBlackPlacedMove(game);
   const followUpContext = objective ? getFreshAreaFollowUpContext(game, 'guided', objective) : null;
+  const shouldPrioritizePendingPressureRead = Boolean(
+    objective?.id === 'choose-new-area'
+    && progress?.status === 'met'
+    && progress.objectiveId === 'extend-from-stone',
+  );
   const highlights: OverlayHighlight[] = lastMove
     ? [{
         id: `guided-resume-learned-${pointKey(lastMove.point)}`,
@@ -596,7 +616,7 @@ function buildGuidedResumeOverlays(
         label: `${pointToCoord(lastMove.point, game.board.size)}: move to learn from${progress?.status === 'met' ? ' - beginner job met' : progress?.status === 'missed' ? ' - beginner job missed' : ''}.`,
       }]
     : [];
-  const suggestions = objective
+  const suggestions = objective && !shouldPrioritizePendingPressureRead
     ? buildObjectiveSuggestions(objective, game.board.size, 'guided-resume-move', followUpContext)
     : [];
 
