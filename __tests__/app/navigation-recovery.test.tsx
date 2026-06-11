@@ -144,6 +144,30 @@ describe('app navigation recovery', () => {
     expect(useGameStore.getState().bubble.text).not.toMatch(/show me what you've got|impress me/i);
   });
 
+  it.each([
+    ['beginner', 'This is a 13×13 board.'],
+    ['intermediate', 'Go Sensei. 13×13 board.'],
+    ['advanced', "13×13. You're Black."],
+  ] as const)('welcomes %s learners with the active board size', async (level, expectedText) => {
+    vi.stubGlobal('ResizeObserver', class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    });
+
+    act(() => {
+      useGameStore.getState().startNewGame(13);
+      useGameStore.getState().setTeachingLevel(level);
+    });
+
+    render(<GamePage />);
+
+    await waitFor(() => {
+      expect(useGameStore.getState().bubble.text).toContain(expectedText);
+    });
+    expect(useGameStore.getState().bubble.text).not.toContain('19×19');
+  });
+
   it('scopes the floating Sensei bubble to the board area', () => {
     vi.stubGlobal('ResizeObserver', class {
       observe() {}
