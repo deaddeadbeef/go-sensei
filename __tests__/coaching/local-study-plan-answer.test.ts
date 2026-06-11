@@ -40,7 +40,7 @@ describe('local study plan answer', () => {
     expect(answer?.conceptIds).toEqual(expect.arrayContaining(['corner-opening', 'territory', 'liberties']));
   });
 
-  it('reflects concrete learning evidence before recommending the next step', () => {
+  it('reflects concrete learning evidence before recommending recent mistake repair', () => {
     const answer = getLocalStudyPlanAnswer('What have I learned?', {
       completedLessons: ['groups', 'liberties'],
       problemAttempts: [
@@ -60,8 +60,9 @@ describe('local study plan answer', () => {
     expect(answer?.text).toContain('That is real evidence: lessons build vocabulary, problems test reading, and guided games connect both to live moves.');
     expect(answer?.text).toContain('Strongest evidence: Liberties and Capture are moving from vocabulary into practice.');
     expect(answer?.text).toContain('Still fragile: Groups needs more proof.');
-    expect(answer?.text).toContain('Next honest step: Capturing Stones. This is the next lesson in the learning path.');
-    expect(answer?.actions).toEqual([{ id: 'lesson:capture', label: 'Start lesson: Capturing Stones' }]);
+    expect(answer?.text).toContain('Next honest step: Repair Capture. Your latest miss was Edge Squeeze. Repair that pattern before adding new material.');
+    expect(answer?.text).toContain('Finish line: Replay Edge Squeeze once, then solve one capture problem without a hint.');
+    expect(answer?.actions).toEqual([{ id: 'practice:capture', label: 'Repair capture problems' }]);
     expect(answer?.conceptIds).toEqual(expect.arrayContaining(['capture', 'atari', 'liberties', 'groups']));
   });
 
