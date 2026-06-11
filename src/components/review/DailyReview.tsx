@@ -477,7 +477,7 @@ export function DailyReview() {
                 className="px-6 py-2 rounded-lg text-sm font-medium transition-transform hover:scale-[1.02] active:scale-95"
                 style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
               >
-                {seedProblem ? `Start ${seedProblem.title}` : 'Solve a fresh problem'}
+                {seedProblem ? `Seed review queue with ${seedProblem.title}` : 'Solve a fresh problem to seed reviews'}
               </button>
             )}
             <button
