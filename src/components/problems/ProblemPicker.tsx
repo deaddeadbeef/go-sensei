@@ -99,6 +99,9 @@ function ProblemRecommendation({
   pathGoalReason,
   pathGoalFinishLine,
   focusedPracticeReason,
+  reviewReminderReason,
+  reviewReminderFinishLine,
+  onStartReview,
   onStart,
 }: {
   filter: FilterKey;
@@ -110,6 +113,9 @@ function ProblemRecommendation({
   pathGoalReason: string | null;
   pathGoalFinishLine: string | null;
   focusedPracticeReason: string | null;
+  reviewReminderReason: string | null;
+  reviewReminderFinishLine: string | null;
+  onStartReview: () => void;
   onStart: () => void;
 }) {
   return (
@@ -154,7 +160,36 @@ function ProblemRecommendation({
               )}
             </div>
           )}
-          {!pathGoalReason && focusedPracticeReason && (
+          {!pathGoalReason && reviewReminderReason && (
+            <div
+              className="mt-3 rounded-lg p-3"
+              style={{ backgroundColor: `${COLORS.overlay.suggestion}15`, border: `1px solid ${COLORS.overlay.suggestion}40` }}
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: COLORS.overlay.suggestion }}>
+                Review due
+              </p>
+              <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+                {reviewReminderReason}
+              </p>
+              {reviewReminderFinishLine && (
+                <p className="mt-2 text-sm leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
+                  <span className="font-semibold" style={{ color: COLORS.overlay.suggestion }}>
+                    Finish line:{' '}
+                  </span>
+                  {reviewReminderFinishLine}
+                </p>
+              )}
+              <button
+                onClick={onStartReview}
+                aria-label="Start daily review from problem recommendation"
+                className="mt-3 rounded-lg px-3 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
+                style={{ backgroundColor: COLORS.overlay.suggestion, color: COLORS.ui.bgPrimary }}
+              >
+                Start daily review
+              </button>
+            </div>
+          )}
+          {!pathGoalReason && !reviewReminderReason && focusedPracticeReason && (
             <div
               className="mt-3 rounded-lg p-3"
               style={{ backgroundColor: `${COLORS.ui.bgCard}`, border: '1px solid rgba(255,255,255,0.08)' }}
@@ -197,6 +232,7 @@ export function ProblemPicker() {
   const preferredProblemFilter = useGameStore((s) => s.preferredProblemFilter);
   const startProblem = useGameStore((s) => s.startProblem);
   const showProblems = useGameStore((s) => s.showProblems);
+  const showReview = useGameStore((s) => s.showReview);
   const returnToGame = useGameStore((s) => s.returnToGame);
   const reviewCards = useReviewStore((s) => s.cards);
   const getDueCount = useReviewStore((s) => s.getDueCount);
@@ -237,6 +273,12 @@ export function ProblemPicker() {
     ? learningRecommendation.reason
     : null;
   const pathGoalFinishLine = pathGoalReason ? learningRecommendation.finishLine : null;
+  const reviewReminderReason = learningRecommendation.kind === 'review'
+    ? learningRecommendation.reason
+    : null;
+  const reviewReminderFinishLine = reviewReminderReason
+    ? learningRecommendation.finishLine
+    : null;
   const focusedPracticeReason = filter !== 'all' ? FOCUS_PRACTICE_REASON[filter] : null;
   const pathTargetProblem = useMemo(() => {
     if (
@@ -323,6 +365,9 @@ export function ProblemPicker() {
             pathGoalReason={pathGoalReason}
             pathGoalFinishLine={pathGoalFinishLine}
             focusedPracticeReason={focusedPracticeReason}
+            reviewReminderReason={reviewReminderReason}
+            reviewReminderFinishLine={reviewReminderFinishLine}
+            onStartReview={showReview}
             onStart={() => startProblem(recommendedProblem)}
           />
         )}

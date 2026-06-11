@@ -10,6 +10,19 @@ import { useReviewStore } from '@/stores/review-store';
 
 const scrollIntoViewMock = vi.fn();
 
+function makeReviewDue(problemId: string) {
+  useReviewStore.getState().recordReview(problemId, 5);
+  useReviewStore.setState((state) => ({
+    cards: {
+      ...state.cards,
+      [problemId]: {
+        ...state.cards[problemId],
+        nextReviewDate: Date.now() - 1000,
+      },
+    },
+  }));
+}
+
 describe('ProblemPicker', () => {
   beforeEach(() => {
     scrollIntoViewMock.mockReset();
@@ -96,6 +109,22 @@ describe('ProblemPicker', () => {
     expect(screen.getByText('0/20 problems solved')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Start Corner Capture' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Solve: Corner Capture' })).toBeTruthy();
+  });
+
+  it('keeps due review visible when learners open the problem library', () => {
+    act(() => {
+      makeReviewDue('capture-001');
+    });
+
+    render(<ProblemPicker />);
+
+    expect(screen.getByText('Review due')).toBeTruthy();
+    expect(screen.getByText('1 review position is due before new material.')).toBeTruthy();
+    expect(screen.getByText('All due review cards are answered, and any miss has been replayed once.')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start daily review from problem recommendation' }));
+
+    expect(useGameStore.getState().appPhase).toBe('review');
   });
 
   it('uses the active filter and progress to choose the next visible problem', () => {
