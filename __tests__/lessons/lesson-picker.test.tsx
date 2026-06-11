@@ -35,6 +35,8 @@ describe('LessonPicker', () => {
 
     render(<LessonPicker />);
 
+    expect(screen.getByText('Learn one board idea, then continue with the next review, problem, or game.')).toBeTruthy();
+    expect(screen.queryByText('Learn one board idea, then return to the path for the next step.')).toBeNull();
     expect(screen.getByText('1/10 complete')).toBeTruthy();
     expect(screen.getByText('Next lesson: Liberties: Breathing Room. 9 lessons left.')).toBeTruthy();
     expect(screen.getByText('Learning path')).toBeTruthy();
@@ -87,6 +89,15 @@ describe('LessonPicker', () => {
     expect(screen.getByText('1 review position is due before new lessons.')).toBeTruthy();
     expect(screen.getByText('After review, next lesson: Liberties: Breathing Room.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Start next lesson: Liberties: Breathing Room' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Start lesson: Liberties: Breathing Room' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Review due before lesson: Liberties: Breathing Room' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Review lesson: What is a Group?' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Review due before lesson: Liberties: Breathing Room' }));
+
+    expect(useGameStore.getState().appPhase).toBe('review');
+
+    act(() => useGameStore.getState().showLessons());
 
     fireEvent.click(screen.getByRole('button', { name: 'Start daily review from lesson library' }));
 

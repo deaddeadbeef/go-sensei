@@ -70,7 +70,7 @@ export function LessonPicker() {
             className="mt-2 text-base sm:text-lg"
             style={{ color: COLORS.ui.textSecondary }}
           >
-            Learn one board idea, then return to the path for the next step.
+            Learn one board idea, then continue with the next review, problem, or game.
           </p>
           <div
             className="mx-auto mt-5 max-w-md rounded-xl border p-4 text-left"
@@ -149,7 +149,19 @@ export function LessonPicker() {
         >
           {LESSONS.map((lesson) => {
             const completed = completedLessonIds.has(lesson.id);
-            const actionLabel = completed ? `Review lesson: ${lesson.title}` : `Start lesson: ${lesson.title}`;
+            const mustReviewFirst = dueReviewCount > 0 && !completed;
+            const actionLabel = completed
+              ? `Review lesson: ${lesson.title}`
+              : mustReviewFirst
+                ? `Review due before lesson: ${lesson.title}`
+                : `Start lesson: ${lesson.title}`;
+            const handleLessonAction = () => {
+              if (mustReviewFirst) {
+                showReview();
+                return;
+              }
+              startLesson(lesson.id);
+            };
 
             return (
               <motion.div
@@ -193,15 +205,15 @@ export function LessonPicker() {
                 </p>
 
                 <button
-                  onClick={() => startLesson(lesson.id)}
+                  onClick={handleLessonAction}
                   aria-label={actionLabel}
                   className="mt-4 w-full rounded-lg px-3 py-2 text-sm font-medium transition-opacity hover:opacity-90"
                   style={{
-                    backgroundColor: COLORS.ui.accent,
+                    backgroundColor: mustReviewFirst ? COLORS.overlay.suggestion : COLORS.ui.accent,
                     color: COLORS.ui.bgPrimary,
                   }}
                 >
-                  {completed ? 'Review →' : 'Start →'}
+                  {completed ? 'Review →' : mustReviewFirst ? 'Review first' : 'Start →'}
                 </button>
               </motion.div>
             );
