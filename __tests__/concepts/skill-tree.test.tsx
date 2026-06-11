@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SkillTree } from '@/components/concepts/SkillTree';
 import { useConceptStore } from '@/stores/concept-store';
 import { useGameStore } from '@/stores/game-store';
+import { useReviewStore } from '@/stores/review-store';
 
 type MockMotionProps = {
   children?: ReactNode;
@@ -46,9 +47,23 @@ function clickButtonText(text: string) {
   fireEvent.click(screen.getByRole('button', { name: text }));
 }
 
+function makeReviewDue(problemId: string) {
+  useReviewStore.getState().recordReview(problemId, 5);
+  useReviewStore.setState((state) => ({
+    cards: {
+      ...state.cards,
+      [problemId]: {
+        ...state.cards[problemId],
+        nextReviewDate: Date.now() - 1000,
+      },
+    },
+  }));
+}
+
 describe('SkillTree', () => {
   beforeEach(() => {
     useConceptStore.getState().resetAll();
+    useReviewStore.getState().resetAll();
     useGameStore.getState().startNewGame(19);
     useGameStore.getState().showSkillTree();
   });
@@ -69,6 +84,23 @@ describe('SkillTree', () => {
 
     expect(useGameStore.getState().appPhase).toBe('lesson');
     expect(useGameStore.getState().currentLessonId).toBe('groups');
+  });
+
+  it('keeps due review ahead of new concept practice in the up-next panel', () => {
+    makeReviewDue('capture-001');
+
+    render(<SkillTree />);
+
+    const upNext = screen.getByTestId('skill-tree-up-next');
+
+    expect(upNext.textContent).toContain('Review due');
+    expect(upNext.textContent).toContain('1 review position is due before new concept practice.');
+    expect(upNext.textContent).toContain('After review, next concept: Stones & Board.');
+    expect(within(upNext).queryByRole('button', { name: 'Start lesson: What is a Group?' })).toBeNull();
+
+    fireEvent.click(within(upNext).getByRole('button', { name: 'Start daily review from skill tree' }));
+
+    expect(useGameStore.getState().appPhase).toBe('review');
   });
 
   it('advances the next step to the first unseen unlocked concept', () => {
