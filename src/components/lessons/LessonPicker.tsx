@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { LESSONS } from '@/lib/lessons/lesson-data';
 import { useGameStore } from '@/stores/game-store';
 import { useProgressStore } from '@/stores/progress-store';
+import { useReviewStore } from '@/stores/review-store';
 import { COLORS } from '@/utils/colors';
 
 const container = {
@@ -33,11 +34,17 @@ export function LessonPicker() {
   const completedLessons = useProgressStore((s) => s.completedLessons);
   const startLesson = useGameStore((s) => s.startLesson);
   const showLearningPath = useGameStore((s) => s.showLearningPath);
+  const showReview = useGameStore((s) => s.showReview);
   const returnToGame = useGameStore((s) => s.returnToGame);
+  const dueReviewCount = useReviewStore((s) => {
+    void s.cards;
+    return s.getDueCount();
+  });
   const completedLessonIds = new Set(completedLessons.filter((lessonId) => LESSON_IDS.has(lessonId)));
   const nextLesson = LESSONS.find((lesson) => !completedLessonIds.has(lesson.id));
   const completedCount = completedLessonIds.size;
   const remainingCount = Math.max(LESSONS.length - completedCount, 0);
+  const dueReviewText = `${dueReviewCount} review position${dueReviewCount === 1 ? ' is' : 's are'} due before new lessons.`;
 
   return (
     <div
@@ -84,12 +91,40 @@ export function LessonPicker() {
                 }}
               />
             </div>
-            <p className="mt-3 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
-              {nextLesson
-                ? `Next lesson: ${titleAsSentence(nextLesson.title)} ${remainingCount} lesson${remainingCount === 1 ? '' : 's'} left.`
-                : 'All lessons complete. Use the path to choose review, problems, or a guided game.'}
-            </p>
-            {nextLesson && (
+            {dueReviewCount > 0 ? (
+              <>
+                <p className="mt-3 text-xs font-semibold uppercase" style={{ color: COLORS.overlay.suggestion }}>
+                  Review due
+                </p>
+                <p className="mt-1 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+                  {dueReviewText}
+                </p>
+                <p className="mt-2 text-xs leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
+                  {nextLesson
+                    ? `After review, next lesson: ${titleAsSentence(nextLesson.title)}`
+                    : 'After review, use the path to choose problems or a guided game.'}
+                </p>
+              </>
+            ) : (
+              <p className="mt-3 text-xs leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+                {nextLesson
+                  ? `Next lesson: ${titleAsSentence(nextLesson.title)} ${remainingCount} lesson${remainingCount === 1 ? '' : 's'} left.`
+                  : 'All lessons complete. Use the path to choose review, problems, or a guided game.'}
+              </p>
+            )}
+            {dueReviewCount > 0 ? (
+              <button
+                onClick={showReview}
+                aria-label="Start daily review from lesson library"
+                className="mt-3 w-full rounded-lg px-3 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
+                style={{
+                  backgroundColor: COLORS.overlay.suggestion,
+                  color: COLORS.ui.bgPrimary,
+                }}
+              >
+                Start daily review
+              </button>
+            ) : nextLesson && (
               <button
                 onClick={() => startLesson(nextLesson.id)}
                 aria-label={`Start next lesson: ${nextLesson.title}`}
