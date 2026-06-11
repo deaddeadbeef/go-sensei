@@ -264,10 +264,9 @@ describe('DailyReview', () => {
     expect(screen.getByText('Review finish line reached: every due card landed cleanly, so the path can move to the next recommendation.')).toBeTruthy();
     expect(screen.getByText('Next on the path: Capture problems.')).toBeTruthy();
     expect(screen.getByText('Next finish line: This block is complete after 3 more solved capture problems.')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Practice Capture' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Open capture problems from review summary' }));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Pick up next recommendation from review summary' }));
-
-    expect(useGameStore.getState().appPhase).toBe('path');
+    expect(useGameStore.getState().appPhase).toBe('problems');
+    expect(useGameStore.getState().preferredProblemFilter).toBe('capture');
   });
 });
