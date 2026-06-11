@@ -2,6 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { getSenseiActionRoute } from '@/lib/coaching/sensei-actions';
 
 describe('getSenseiActionRoute', () => {
+  it('routes exact problem replay actions', () => {
+    expect(getSenseiActionRoute('problem:life-001')).toEqual({
+      type: 'problem',
+      problemId: 'life-001',
+    });
+  });
+
+  it('rejects unknown exact problem replay actions', () => {
+    expect(getSenseiActionRoute('problem:not-real')).toBeNull();
+  });
+
   it('routes pressure comparison replay actions with both reply keys', () => {
     expect(getSenseiActionRoute(
       'guided:read-pressure:comparison:read-pressure-2,2-4,2-3,2:3,3:3,1',

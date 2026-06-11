@@ -60,6 +60,24 @@ describe('SenseiChatLog actions', () => {
     expect(useGameStore.getState().preferredProblemFilter).toBe('capture');
   });
 
+  it('routes exact problem replay actions from the chat transcript', () => {
+    act(() => {
+      useGameStore.getState().showBubble({
+        text: 'Replay the missed capture pattern.',
+        variant: 'teaching',
+        actions: [{ id: 'problem:capture-002', label: 'Replay Edge Squeeze' }],
+      });
+      useGameStore.getState().dismissBubble();
+    });
+
+    render(<SenseiChatLog />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Replay Edge Squeeze' }));
+
+    expect(useGameStore.getState().appPhase).toBe('problem');
+    expect(useGameStore.getState().currentProblemId).toBe('capture-002');
+  });
+
   it('uses a board-aware empty prompt after the learner has moved', () => {
     act(() => {
       useGameStore.getState().placeStone({ x: 2, y: 2 });

@@ -62,7 +62,7 @@ describe('local study plan answer', () => {
     expect(answer?.text).toContain('Still fragile: Groups needs more proof.');
     expect(answer?.text).toContain('Next honest step: Repair Capture. Your latest miss was Edge Squeeze. Repair that pattern before adding new material.');
     expect(answer?.text).toContain('Finish line: Replay Edge Squeeze once, then solve one capture problem without a hint.');
-    expect(answer?.actions).toEqual([{ id: 'practice:capture', label: 'Repair capture problems' }]);
+    expect(answer?.actions).toEqual([{ id: 'problem:capture-002', label: 'Replay Edge Squeeze' }]);
     expect(answer?.conceptIds).toEqual(expect.arrayContaining(['capture', 'atari', 'liberties', 'groups']));
   });
 
