@@ -192,4 +192,25 @@ describe('ProblemView filtered practice flow', () => {
 
     expect(useGameStore.getState().appPhase).toBe('path');
   });
+
+  it('returns learners to the path after replaying an exact repair problem cleanly', () => {
+    act(() => {
+      useProgressStore.setState({
+        hasStartedIntroGame: true,
+        problemAttempts: [
+          { problemId: 'capture-002', solved: false, attempts: 3, moveSequence: [], timestamp: 10 },
+        ],
+      });
+      useGameStore.getState().showProblems('capture');
+      useGameStore.getState().startProblem(problemById('capture-002'));
+      useGameStore.getState().submitProblemMove({ x: 4, y: 1 });
+    });
+
+    render(<ProblemView />);
+
+    expect(screen.getByText('Practice goal met')).toBeTruthy();
+    expect(screen.getByText(/You reached the capture practice target. Return to the path for:/)).toBeTruthy();
+    expect(screen.getByText('Finish line reached: you solved the last required capture problem for this path block.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Continue: What is a Group?' })).toBeTruthy();
+  });
 });

@@ -63,7 +63,10 @@ export function useSenseiAction() {
 
     if (route.type === 'problem') {
       const problem = PROBLEMS.find((candidate) => candidate.id === route.problemId);
-      if (problem) startProblem(problem);
+      if (problem) {
+        showProblems(problem.category);
+        startProblem(problem);
+      }
       return;
     }
 
