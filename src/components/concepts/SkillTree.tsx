@@ -10,6 +10,7 @@ import {
 } from '@/lib/learning-path/concept-practice';
 import { useConceptStore } from '@/stores/concept-store';
 import { useGameStore } from '@/stores/game-store';
+import { useReviewStore } from '@/stores/review-store';
 import type { Concept, ConceptCategory, MasteryLevel } from '@/lib/concepts/types';
 
 const COLORS = {
@@ -55,7 +56,12 @@ export function SkillTree() {
   const returnToGame = useGameStore((s) => s.returnToGame);
   const showLearningPath = useGameStore((s) => s.showLearningPath);
   const showProblems = useGameStore((s) => s.showProblems);
+  const showReview = useGameStore((s) => s.showReview);
   const startLesson = useGameStore((s) => s.startLesson);
+  const dueReviewCount = useReviewStore((s) => {
+    void s.cards;
+    return s.getDueCount();
+  });
 
   const stats = getStats();
   const unlocked = new Set(getUnlockedConcepts());
@@ -101,6 +107,7 @@ export function SkillTree() {
     : prerequisiteProblemCategory
       ? `Practice prerequisite ${problemCategoryTitle(prerequisiteProblemCategory).toLowerCase()} problems`
       : null;
+  const dueReviewText = `${dueReviewCount} review position${dueReviewCount === 1 ? ' is' : 's are'} due before new concept practice.`;
 
   const conceptsByCategory = CATEGORY_ORDER.map((cat) => ({
     category: cat,
@@ -183,31 +190,49 @@ export function SkillTree() {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-xs font-semibold uppercase" style={{ color: COLORS.textDim }}>
-                    Up next
+                    {dueReviewCount > 0 ? 'Review due' : 'Up next'}
                   </p>
-                  <span
-                    className="rounded-full px-2 py-0.5 text-[11px] font-semibold"
-                    style={{
-                      backgroundColor: COLORS.mastery[(nextMastery?.level ?? 0) as MasteryLevel] + '22',
-                      color: COLORS.mastery[(nextMastery?.level ?? 0) as MasteryLevel],
-                    }}
-                  >
-                    {MASTERY_LABELS[(nextMastery?.level ?? 0) as MasteryLevel]}
-                  </span>
+                  {dueReviewCount === 0 && (
+                    <span
+                      className="rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                      style={{
+                        backgroundColor: COLORS.mastery[(nextMastery?.level ?? 0) as MasteryLevel] + '22',
+                        color: COLORS.mastery[(nextMastery?.level ?? 0) as MasteryLevel],
+                      }}
+                    >
+                      {MASTERY_LABELS[(nextMastery?.level ?? 0) as MasteryLevel]}
+                    </span>
+                  )}
                 </div>
                 <h2 className="mt-1 text-base font-bold" style={{ color: COLORS.accent }}>
-                  {nextConcept.name}
+                  {dueReviewCount > 0 ? 'Daily review' : nextConcept.name}
                 </h2>
                 <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.text }}>
-                  {nextConcept.description}
+                  {dueReviewCount > 0
+                    ? dueReviewText
+                    : nextConcept.description}
                 </p>
+                {dueReviewCount > 0 && (
+                  <p className="mt-2 text-sm leading-relaxed" style={{ color: COLORS.textDim }}>
+                    After review, next concept: {nextConcept.name}.
+                  </p>
+                )}
               </div>
               <button
-                onClick={() => startConceptPractice(nextConcept)}
+                onClick={() => {
+                  if (dueReviewCount > 0) {
+                    showReview();
+                  } else {
+                    startConceptPractice(nextConcept);
+                  }
+                }}
+                aria-label={dueReviewCount > 0 ? 'Start daily review from skill tree' : undefined}
                 className="shrink-0 rounded-lg px-3 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
                 style={{ backgroundColor: COLORS.accent, color: COLORS.bg }}
               >
-                {nextLesson
+                {dueReviewCount > 0
+                  ? 'Start daily review'
+                  : nextLesson
                   ? `Start lesson: ${nextLesson.title}`
                   : nextProblemCategory
                     ? `Practice ${problemCategoryTitle(nextProblemCategory).toLowerCase()}`
