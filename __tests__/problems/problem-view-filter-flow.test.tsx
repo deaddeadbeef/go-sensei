@@ -186,7 +186,7 @@ describe('ProblemView filtered practice flow', () => {
     expect(useGameStore.getState().preferredProblemFilter).toBe('capture');
   });
 
-  it('returns learners to the path when recommended filtered practice is satisfied', () => {
+  it('continues to the next recommendation when recommended filtered practice is satisfied', () => {
     act(() => {
       useProgressStore.setState({
         completedLessons: ['groups', 'liberties', 'capture', 'territory', 'eyes'],
@@ -206,15 +206,16 @@ describe('ProblemView filtered practice flow', () => {
     render(<ProblemView />);
 
     expect(screen.getByText('Practice goal met')).toBeTruthy();
-    expect(screen.getByText(/You reached the life and death practice target. Return to the path for:/)).toBeTruthy();
+    expect(screen.getByText(/You reached the life and death practice target. Continue with:/)).toBeTruthy();
     expect(screen.getByText('Finish line reached: you solved the last required life and death problem for this path block.')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Continue: Play a guided game' }));
 
-    expect(useGameStore.getState().appPhase).toBe('path');
+    expect(useGameStore.getState().appPhase).toBe('game');
+    expect(useGameStore.getState().teachingLevel).toBe('guided');
   });
 
-  it('returns learners to the path after replaying an exact repair problem cleanly', () => {
+  it('continues to the next lesson after replaying an exact repair problem cleanly', () => {
     act(() => {
       useProgressStore.setState({
         hasStartedIntroGame: true,
@@ -230,8 +231,12 @@ describe('ProblemView filtered practice flow', () => {
     render(<ProblemView />);
 
     expect(screen.getByText('Repair replay complete')).toBeTruthy();
-    expect(screen.getByText(/You replayed Edge Squeeze cleanly. Return to the path for:/)).toBeTruthy();
+    expect(screen.getByText(/You replayed Edge Squeeze cleanly. Continue with:/)).toBeTruthy();
     expect(screen.getByText('Finish line reached: the missed repair pattern now has one clean replay.')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Continue: What is a Group?' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Continue: What is a Group?' }));
+
+    expect(useGameStore.getState().appPhase).toBe('lesson');
+    expect(useGameStore.getState().currentLessonId).toBe('groups');
   });
 });
