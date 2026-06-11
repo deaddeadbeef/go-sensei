@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-
-const CLIENT_ID = 'Iv1.b507a08c87ecfe98';
+import { getGitHubOAuthClientId } from '@/lib/ai/github-oauth';
 
 export async function POST(req: Request) {
   try {
@@ -9,6 +8,7 @@ export async function POST(req: Request) {
     if (!device_code) {
       return NextResponse.json({ error: 'device_code required' }, { status: 400 });
     }
+    const clientId = getGitHubOAuthClientId();
 
     const resp = await fetch('https://github.com/login/oauth/access_token', {
       method: 'POST',
@@ -17,7 +17,7 @@ export async function POST(req: Request) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        client_id: CLIENT_ID,
+        client_id: clientId,
         device_code,
         grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
       }),

@@ -49,6 +49,16 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000), click ⚙ Settings → **Login with GitHub** → authorize → play!
 
+### Production OAuth Client
+
+For production deploys, register a dedicated GitHub OAuth App with Device Flow enabled and set its client ID:
+
+```bash
+GITHUB_OAUTH_CLIENT_ID=Iv1_your_client_id
+```
+
+If this variable is unset, Go Sensei falls back to the VS Code Copilot OAuth client ID for local development compatibility. Do not treat that fallback as production release configuration.
+
 ### Alternative: Environment Variable
 
 If you prefer, set a GitHub token directly:
