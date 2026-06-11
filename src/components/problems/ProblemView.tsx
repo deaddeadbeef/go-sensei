@@ -204,6 +204,15 @@ export function ProblemView() {
   const repairReplayMet = practiceTargetMet
     && preSolveLearningRecommendation.kind === 'problem'
     && preSolveLearningRecommendation.targetProblemId === currentProblemId;
+  const pathProgressRecommendation = problemInteraction.status === 'solved'
+    && !practiceTargetMet
+    && scopedProblemFilter !== null
+    && preSolveLearningRecommendation.kind === 'problem'
+    && preSolveLearningRecommendation.filter === scopedProblemFilter
+    && learningRecommendation.kind === 'problem'
+    && learningRecommendation.filter === scopedProblemFilter
+    ? learningRecommendation
+    : null;
 
   const handleBoardClick = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
     if (!problem || !problemInteraction.active || problemInteraction.status !== 'playing') return;
@@ -469,6 +478,25 @@ export function ProblemView() {
 
           {revealSolution && (
             <ProblemSolutionPanel steps={solutionSteps} boardSize={boardSize} takeaway={solutionTakeaway} />
+          )}
+
+          {pathProgressRecommendation && (
+            <motion.div
+              className="mb-3 rounded-lg p-3"
+              style={{ backgroundColor: COLORS.ui.bgCard, border: `1px solid ${COLORS.ui.accent}35` }}
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <h3 className="text-sm font-bold" style={{ color: COLORS.ui.accent }}>
+                Path progress
+              </h3>
+              <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
+                Keep going: {pathProgressRecommendation.title}.
+              </p>
+              <p className="mt-2 text-sm leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
+                {pathProgressRecommendation.finishLine}
+              </p>
+            </motion.div>
           )}
 
           {practiceTargetMet && (

@@ -78,6 +78,27 @@ describe('ProblemView filtered practice flow', () => {
     expect(screen.getByText(/The first move at A8 works by attacking liberties/)).toBeTruthy();
   });
 
+  it('shows path progress after solving a problem before the practice block is complete', () => {
+    act(() => {
+      useProgressStore.setState({
+        completedLessons: ['groups', 'liberties', 'capture'],
+        hasStartedIntroGame: true,
+        problemAttempts: [],
+      });
+      useGameStore.getState().showProblems('capture');
+      useGameStore.getState().startProblem(problemById('capture-001'));
+      useGameStore.getState().submitProblemMove({ x: 0, y: 1 });
+    });
+
+    render(<ProblemView />);
+
+    expect(screen.getByText('Path progress')).toBeTruthy();
+    expect(screen.getByText('Keep going: Capture problems.')).toBeTruthy();
+    expect(screen.getByText('This block is complete after 2 more solved capture problems.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Next capture problem →' })).toBeTruthy();
+    expect(screen.queryByText('Practice goal met')).toBeNull();
+  });
+
   it('turns a failed problem into concrete replay guidance', () => {
     act(() => {
       useGameStore.getState().startProblem(problemById('capture-001'));
