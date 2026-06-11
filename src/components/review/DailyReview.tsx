@@ -370,6 +370,7 @@ export function DailyReview() {
               <button
                 onClick={() => {
                   if (seedProblem) {
+                    showProblems(seedProblem.category);
                     startProblem(seedProblem);
                   } else {
                     showProblems();
