@@ -143,6 +143,25 @@ describe('SkillTree', () => {
     expect(useGameStore.getState().preferredProblemFilter).toBe('capture');
   });
 
+  it('keeps due review ahead of unlocked concept detail practice', () => {
+    useConceptStore.getState().setMasteryLevel('stones-and-board', 1);
+    makeReviewDue('capture-001');
+
+    render(<SkillTree />);
+
+    clickButtonText('Liberties');
+
+    const detail = screen.getByTestId('skill-tree-detail');
+
+    expect(within(detail).getByText('Review due before concept practice.')).toBeTruthy();
+    expect(within(detail).queryByRole('button', { name: 'Start lesson: Liberties: Breathing Room' })).toBeNull();
+    expect(within(detail).queryByRole('button', { name: 'Practice capture problems' })).toBeNull();
+
+    fireEvent.click(within(detail).getByRole('button', { name: 'Start daily review before concept practice' }));
+
+    expect(useGameStore.getState().appPhase).toBe('review');
+  });
+
   it('returns unlocked concept practice to the learning path', () => {
     useConceptStore.getState().setMasteryLevel('stones-and-board', 1);
 
@@ -185,6 +204,23 @@ describe('SkillTree', () => {
 
     expect(useGameStore.getState().appPhase).toBe('lesson');
     expect(useGameStore.getState().currentLessonId).toBe('groups');
+  });
+
+  it('keeps due review ahead of locked prerequisite practice', () => {
+    makeReviewDue('capture-001');
+
+    render(<SkillTree />);
+
+    clickButtonText('Liberties');
+
+    const detail = screen.getByTestId('skill-tree-detail');
+
+    expect(within(detail).getByText('Review due before prerequisites.')).toBeTruthy();
+    expect(within(detail).queryByRole('button', { name: 'Start prerequisite lesson: What is a Group?' })).toBeNull();
+
+    fireEvent.click(within(detail).getByRole('button', { name: 'Start daily review before prerequisites' }));
+
+    expect(useGameStore.getState().appPhase).toBe('review');
   });
 
   it('returns learners to the board from the skill tree', () => {
