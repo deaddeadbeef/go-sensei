@@ -19,6 +19,19 @@ function solved(problemId: string): ProblemAttempt {
   };
 }
 
+function makeReviewDue(problemId: string) {
+  useReviewStore.getState().recordReview(problemId, 5);
+  useReviewStore.setState((state) => ({
+    cards: {
+      ...state.cards,
+      [problemId]: {
+        ...state.cards[problemId],
+        nextReviewDate: Date.now() - 1000,
+      },
+    },
+  }));
+}
+
 describe('ProgressDashboard', () => {
   beforeEach(() => {
     useProgressStore.getState().resetAll();
@@ -111,8 +124,19 @@ describe('ProgressDashboard', () => {
     expect(useGameStore.getState().appPhase).toBe('skills');
 
     useGameStore.getState().showDashboard();
-    fireEvent.click(screen.getByRole('button', { name: 'Start daily review →' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Seed review queue →' }));
     expect(useGameStore.getState().appPhase).toBe('review');
+  });
+
+  it('uses truthful review entrypoint labels for empty and due queues', () => {
+    const { rerender } = render(<ProgressDashboard />);
+
+    expect(screen.getByRole('button', { name: 'Seed review queue →' })).toBeTruthy();
+
+    makeReviewDue('capture-001');
+    rerender(<ProgressDashboard />);
+
+    expect(screen.getByRole('button', { name: 'Start daily review →' })).toBeTruthy();
   });
 
   it('restores guided 9x9 from a guided-game recommendation when the current game is stale', () => {
