@@ -209,11 +209,11 @@ function repairProblemRecommendation(problem: Problem, attempt: ProblemAttempt):
     actionLabel: `${missed ? 'Replay' : 'Drill'} ${problem.title}`,
     finishLine: missed
       ? `Replay ${problem.title} once, then solve one ${practiceCategoryTitleLower} problem without a hint.`
-      : `Solve one ${practiceCategoryTitleLower} problem on the first try, then return to the path.`,
+      : `Solve one ${practiceCategoryTitleLower} problem on the first try, then continue with the next recommendation.`,
     practicePlan: [
       `Start by replaying the first solution move from ${problem.title}.`,
       `Name why the move works before trying another ${practiceCategoryTitleLower} problem.`,
-      'Return to new material only after one clean solve.',
+      'Continue to new material only after one clean solve.',
     ],
   };
 }
