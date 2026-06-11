@@ -4,7 +4,7 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SenseiChatLog } from '@/components/chat/SenseiChatLog';
 import { BeginnerObjectiveCard } from '@/components/game/BeginnerObjectiveCard';
-import { createGame, setStone } from '@/lib/go-engine';
+import { createGame, passMove, playMove, setStone } from '@/lib/go-engine';
 import type { GameState, Point } from '@/lib/go-engine';
 import { useGameStore } from '@/stores/game-store';
 
@@ -26,6 +26,26 @@ function settledShapeGame(): GameState {
     (game, point) => ({ ...game, board: setStone(game.board, point, 'black') }),
     createGame(9),
   );
+}
+
+function pendingF5PressureReadGame(): GameState {
+  const moves: Point[] = [
+    { x: 2, y: 2 },
+    { x: 4, y: 2 },
+    { x: 6, y: 2 },
+    { x: 6, y: 4 },
+    { x: 6, y: 6 },
+    { x: 4, y: 6 },
+    { x: 2, y: 6 },
+    { x: 2, y: 4 },
+    { x: 4, y: 4 },
+  ];
+
+  return moves.reduce((game, point) => {
+    const result = playMove(game, point);
+    if (!result.success) throw new Error(`test setup move failed at ${point.x},${point.y}`);
+    return passMove(result.newState);
+  }, createGame(9));
 }
 
 describe('BeginnerObjectiveCard', () => {
@@ -1268,6 +1288,36 @@ describe('BeginnerObjectiveCard', () => {
 
     expect(screen.getByText('Why H4')).toBeTruthy();
     expect(screen.getByText('H4 extends H2 into the lower-right area; H3 stays open so the fresh-area stone gets a flexible partner instead of staying isolated.')).toBeTruthy();
+  });
+
+  it('keeps an unresolved pressure read primary before offering fresh-area targets', () => {
+    act(() => {
+      useGameStore.setState({
+        game: pendingF5PressureReadGame(),
+        teachingLevel: 'guided',
+        phase: 'playing',
+        appPhase: 'game',
+        overlays: {
+          highlights: [],
+          targetHints: [],
+          liberties: [],
+          suggestions: [],
+          arrows: [],
+          influence: [],
+          groups: [],
+        },
+      });
+    });
+
+    render(<BeginnerObjectiveCard />);
+
+    expect(screen.getByText('Read next')).toBeTruthy();
+    expect(screen.getByText('Watch F5')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Show pressure variation for F5' })).toBeTruthy();
+    expect(screen.queryByText('Choose a new area')).toBeNull();
+    expect(screen.queryByText('Try B8 or H8.')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Play candidate A at B8 target for Choose a new area' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Play candidate B at H8 target for Choose a new area' })).toBeNull();
   });
 
   it('recommends defending the short side after an asymmetric pressure comparison', () => {
