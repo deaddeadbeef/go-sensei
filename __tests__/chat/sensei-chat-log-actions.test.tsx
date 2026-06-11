@@ -76,6 +76,7 @@ describe('SenseiChatLog actions', () => {
 
     expect(useGameStore.getState().appPhase).toBe('problem');
     expect(useGameStore.getState().currentProblemId).toBe('capture-002');
+    expect(useGameStore.getState().preferredProblemFilter).toBe('capture');
   });
 
   it('uses a board-aware empty prompt after the learner has moved', () => {
