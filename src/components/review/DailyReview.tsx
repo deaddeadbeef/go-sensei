@@ -134,6 +134,9 @@ function initProblemState(problem: Problem): ProblemState {
 
 export function DailyReview() {
   const returnToGame = useGameStore((s) => s.returnToGame);
+  const startGuidedIntroGame = useGameStore((s) => s.startGuidedIntroGame);
+  const startLesson = useGameStore((s) => s.startLesson);
+  const openGuidedGame = useGameStore((s) => s.openGuidedGame);
   const showLearningPath = useGameStore((s) => s.showLearningPath);
   const showProblems = useGameStore((s) => s.showProblems);
   const startProblem = useGameStore((s) => s.startProblem);
@@ -290,9 +293,38 @@ export function DailyReview() {
     const nextAfterCleanReview = review.results.length > 0 && summary.tone === 'advance'
       ? clearedReviewRecommendation
       : null;
-    const learningPathLabel = review.results.length > 0 && !summary.practiceCategory
+    const learningPathLabel = review.results.length > 0 && !summary.practiceCategory && !nextAfterCleanReview
       ? 'Pick up next recommendation'
       : 'Learning path';
+    const startNextAfterCleanReview = () => {
+      if (!nextAfterCleanReview) return;
+
+      switch (nextAfterCleanReview.kind) {
+        case 'guided_intro':
+          startGuidedIntroGame();
+          break;
+        case 'lesson':
+          startLesson(nextAfterCleanReview.targetId);
+          break;
+        case 'problem':
+          if (nextAfterCleanReview.targetProblemId) {
+            const problem = PROBLEM_BY_ID.get(nextAfterCleanReview.targetProblemId);
+            if (problem) {
+              showProblems(problem.category);
+              startProblem(problem);
+              break;
+            }
+          }
+          showProblems(nextAfterCleanReview.filter);
+          break;
+        case 'guided_game':
+          openGuidedGame();
+          break;
+        case 'review':
+          showLearningPath();
+          break;
+      }
+    };
 
     return (
       <div className="flex-1 flex items-center justify-center p-6" style={{ backgroundColor: COLORS.ui.bgPrimary }}>
@@ -422,6 +454,16 @@ export function DailyReview() {
                 {replayProblem ? `Replay ${replayProblem.title}` : summary.practiceLabel}
               </button>
             )}
+            {review.results.length > 0 && !summary.practiceCategory && nextAfterCleanReview && (
+              <button
+                onClick={startNextAfterCleanReview}
+                aria-label={`${nextAfterCleanReview.actionLabel} from review summary`}
+                className="px-6 py-2 rounded-lg text-sm font-medium transition-transform hover:scale-[1.02] active:scale-95"
+                style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
+              >
+                {nextAfterCleanReview.actionLabel}
+              </button>
+            )}
             {review.results.length === 0 && (
               <button
                 onClick={() => {
@@ -443,8 +485,8 @@ export function DailyReview() {
               aria-label={`${learningPathLabel} from review summary`}
               className="px-6 py-2 rounded-lg text-sm font-medium transition-opacity hover:opacity-90"
               style={{
-                backgroundColor: review.results.length > 0 && !summary.practiceCategory ? COLORS.ui.accent : COLORS.ui.bgCard,
-                color: review.results.length > 0 && !summary.practiceCategory ? COLORS.ui.bgPrimary : COLORS.ui.textPrimary,
+                backgroundColor: COLORS.ui.bgCard,
+                color: COLORS.ui.textPrimary,
               }}
             >
               {learningPathLabel}
