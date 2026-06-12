@@ -47,6 +47,7 @@ export default function GamePage() {
   const setPhase = useGameStore((s) => s.setPhase);
   const appPhase = useGameStore((s) => s.appPhase);
   const startNewGame = useGameStore((s) => s.startNewGame);
+  const openGuidedGame = useGameStore((s) => s.openGuidedGame);
   const pass = useGameStore((s) => s.pass);
   const undo = useGameStore((s) => s.undo);
   const game = useGameStore((s) => s.game);
@@ -123,13 +124,19 @@ export default function GamePage() {
   const handleUndo = useCallback(() => undo(), [undo]);
   const handleSettingsSave = useCallback(
     (settings: { boardSize: BoardSize; teachingLevel: 'beginner' | 'intermediate' | 'advanced' | 'guided' }) => {
+      if (settings.teachingLevel === 'guided') {
+        welcomeShown.current = false;
+        openGuidedGame();
+        return;
+      }
+
       if (settings.boardSize !== game.board.size) {
         welcomeShown.current = false;
         startNewGame(settings.boardSize);
       }
       setTeachingLevel(settings.teachingLevel);
     },
-    [game.board.size, startNewGame, setTeachingLevel],
+    [game.board.size, openGuidedGame, startNewGame, setTeachingLevel],
   );
 
   if (!hasMounted) {
