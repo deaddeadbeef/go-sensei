@@ -45,6 +45,21 @@ describe('OAuth routes', () => {
     });
   });
 
+  it('rejects production device flow startup without a dedicated OAuth client id', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    const response = await startDeviceCode();
+    const body = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(body).toMatchObject({
+      error: expect.stringContaining('GITHUB_OAUTH_CLIENT_ID must be set for production deploys'),
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('polls the device flow with the configured GitHub OAuth client id', async () => {
     vi.stubEnv('GITHUB_OAUTH_CLIENT_ID', 'Iv1.productionClient');
     const fetchMock = mockJsonFetch({ access_token: 'gho_token', token_type: 'bearer', scope: 'read:user' });
@@ -61,5 +76,23 @@ describe('OAuth routes', () => {
       device_code: 'device-code',
       grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
     });
+  });
+
+  it('rejects production device flow polling without a dedicated OAuth client id', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    const response = await pollDeviceCode(new Request('http://localhost/api/auth/poll', {
+      method: 'POST',
+      body: JSON.stringify({ device_code: 'device-code' }),
+    }));
+    const body = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(body).toMatchObject({
+      error: expect.stringContaining('GITHUB_OAUTH_CLIENT_ID must be set for production deploys'),
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
