@@ -157,6 +157,14 @@ npm test        # Watch mode
 npm run test:run # Single run
 ```
 
+### Release Readiness
+
+Before tagging `v1.0.0`, run the release gate and complete the [1.0.0 readiness checklist](docs/release/1.0.0-readiness.md):
+
+```bash
+npm run release:check
+```
+
 ### Build
 
 ```bash
