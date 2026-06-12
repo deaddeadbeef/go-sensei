@@ -48,6 +48,7 @@ export default function GamePage() {
   const appPhase = useGameStore((s) => s.appPhase);
   const startNewGame = useGameStore((s) => s.startNewGame);
   const openGuidedGame = useGameStore((s) => s.openGuidedGame);
+  const startGuidedIntroGame = useGameStore((s) => s.startGuidedIntroGame);
   const pass = useGameStore((s) => s.pass);
   const undo = useGameStore((s) => s.undo);
   const game = useGameStore((s) => s.game);
@@ -113,9 +114,14 @@ export default function GamePage() {
   }, [game.moveHistory.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleNewGame = useCallback(() => {
+    if (teachingLevel === 'guided') {
+      startGuidedIntroGame();
+      return;
+    }
+
     welcomeShown.current = false;
     startNewGame(game.board.size as BoardSize);
-  }, [startNewGame, game.board.size]);
+  }, [game.board.size, startGuidedIntroGame, startNewGame, teachingLevel]);
   const handleReviewGame = useCallback(() => {
     setPhase('review');
     requestReview();
