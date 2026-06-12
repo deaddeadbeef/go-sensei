@@ -1114,9 +1114,9 @@ export const useGameStore = create<GameStore>()(
           timestamp: Date.now(),
         };
         useProgressStore.getState().recordProblemAttempt(attempt);
-        set((s) => ({
-          problemAttempts: [...s.problemAttempts, attempt],
-        }));
+        set({
+          problemAttempts: useProgressStore.getState().problemAttempts,
+        });
       }
       return result;
     }
@@ -1144,9 +1144,9 @@ export const useGameStore = create<GameStore>()(
         timestamp: Date.now(),
       };
       useProgressStore.getState().recordProblemAttempt(attempt);
-      set((s) => ({
-        problemAttempts: [...s.problemAttempts, attempt],
-      }));
+      set({
+        problemAttempts: useProgressStore.getState().problemAttempts,
+      });
       return result;
     }
 
