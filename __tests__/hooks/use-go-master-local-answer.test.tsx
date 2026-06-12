@@ -646,6 +646,40 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('shape').encounterCount).toBeGreaterThan(0);
   });
 
+  it('routes White split questions to one-space jump pressure without fetching', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendPlayerMove(false, 0);
+      const move = useGameStore.getState().placeStone({ x: 4, y: 2 });
+      if (!move.success) throw new Error('test setup extension move failed');
+      result.current.sendPlayerMove(false, 0);
+    });
+
+    act(() => {
+      result.current.sendMessage('Can White split my stones?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('D7 is the one-point gap between C7 and E7.');
+    expect(state.bubble.text).toContain('White can test that gap by playing D7, but that is pressure, not an immediate capture.');
+    expect(state.bubble.text).toContain('If White actually attacks D7, count liberties before reacting');
+    expect(state.chatMessages.at(-1)?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'practice:reading', label: 'Practice reading' },
+    ]);
+    expect(state.overlays.highlights?.[2]).toMatchObject({
+      point: { x: 3, y: 2 },
+      variant: 'warning',
+      label: 'D7: gap White could pressure; count liberties before answering.',
+    });
+    expect(useConceptStore.getState().getMastery('reading').encounterCount).toBeGreaterThan(0);
+  });
+
   it('explains the guided White pass without implementation-mode wording', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());
