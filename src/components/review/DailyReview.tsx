@@ -303,6 +303,9 @@ export function DailyReview() {
     const nextAfterCleanReview = review.results.length > 0 && summary.tone === 'advance'
       ? clearedReviewRecommendation
       : null;
+    const attentionActionLabel = replayProblem
+      ? `${summary.tone === 'reinforce' ? 'Drill' : 'Replay'} ${replayProblem.title}`
+      : summary.practiceLabel;
     const learningPathLabel = review.results.length > 0 && !summary.practiceCategory && !nextAfterCleanReview
       ? 'Pick up next recommendation'
       : 'Learning path';
@@ -467,7 +470,7 @@ export function DailyReview() {
                 className="px-6 py-2 rounded-lg text-sm font-medium transition-transform hover:scale-[1.02] active:scale-95"
                 style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
               >
-                {replayProblem ? `Replay ${replayProblem.title}` : summary.practiceLabel}
+                {attentionActionLabel}
               </button>
             )}
             {review.results.length > 0 && !summary.practiceCategory && nextAfterCleanReview && (
