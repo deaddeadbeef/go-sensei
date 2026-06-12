@@ -575,6 +575,8 @@ function isCandidateMoveQuestion(q: string, boardSize: BoardSize): boolean {
     || /\b(should|could|would)\s+i\s+have\s+(played|tried|moved)\b/.test(q)
     || /\b(should|could|would)\s+i\s+have\s+gone\s+(at|to|for)\b/.test(q)
     || (/\binstead\b/.test(q) && /\b(play|played|try|tried|move|moved)\b/.test(q))
+    || /\b(would|could|should)\s+[a-hj-t]\d{1,2}\s+(have\s+been|be)\s+(better|good|right|ok|okay|safer|playable)\b/.test(q)
+    || /\bwas\s+[a-hj-t]\d{1,2}\s+(better|good|right|ok|okay|safer|playable)\b/.test(q)
     || /\b(should|can|could|would|do)\s+i\s+connect\s+(at\s+)?[a-hj-t]\d{1,2}\b/.test(q)
     || /\bwhat\s+about\b/.test(q)
     || /\bhow\s+about\b/.test(q)
