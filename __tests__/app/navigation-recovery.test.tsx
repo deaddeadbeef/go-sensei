@@ -258,6 +258,47 @@ describe('app navigation recovery', () => {
     expect(screen.queryByText('19×19 is the standard board size')).toBeNull();
   });
 
+  it('locks settings board size to 9x9 when Guided is selected', async () => {
+    vi.stubGlobal('ResizeObserver', class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    });
+
+    act(() => {
+      useGameStore.getState().startNewGame(19);
+      useGameStore.getState().setTeachingLevel('beginner');
+    });
+
+    render(<GamePage />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    fireEvent.click(screen.getByRole('button', { name: '📖 Guided' }));
+
+    const nineByNineButton = screen.getByRole('button', { name: '9×9' }) as HTMLButtonElement;
+    const thirteenByThirteenButton = screen.getByRole('button', { name: '13×13' }) as HTMLButtonElement;
+    const nineteenByNineteenButton = screen.getByRole('button', { name: '19×19' }) as HTMLButtonElement;
+
+    expect(screen.getByText('Guided starts or resumes a 9×9 board with visible targets')).toBeTruthy();
+    expect(nineByNineButton.disabled).toBe(true);
+    expect(thirteenByThirteenButton.disabled).toBe(true);
+    expect(nineteenByNineteenButton.disabled).toBe(true);
+
+    fireEvent.click(thirteenByThirteenButton);
+
+    expect(screen.getByText('Guided starts or resumes a 9×9 board with visible targets')).toBeTruthy();
+    expect(screen.queryByText('13×13 adds room for direction without making the whole board hard to read')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      const state = useGameStore.getState();
+      expect(state.teachingLevel).toBe('guided');
+      expect(state.game.board.size).toBe(9);
+      expect(state.hasStartedIntroGame).toBe(true);
+    });
+  });
+
   it('restarts guided New Game with the first objective and a fresh guided snapshot', async () => {
     vi.stubGlobal('ResizeObserver', class {
       observe() {}
