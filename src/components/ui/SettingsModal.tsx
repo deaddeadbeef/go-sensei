@@ -30,6 +30,13 @@ function SettingsModalPanel({
 }: SettingsModalPanelProps) {
   const [boardSize, setBoardSize] = useState<BoardSize>(currentBoardSize);
   const [teachingLevel, setTeachingLevel] = useState<'beginner' | 'intermediate' | 'advanced' | 'guided'>(currentTeachingLevel);
+  const boardSizeHelpText = teachingLevel === 'guided'
+    ? 'Guided starts or resumes a 9×9 board with visible targets'
+    : boardSize === 9
+      ? '9×9 keeps the whole board readable while you practice corners, captures, and territory'
+      : boardSize === 13
+        ? '13×13 adds room for direction without making the whole board hard to read'
+        : '19×19 is the standard board size';
 
   const handleSave = () => {
     onSave({ boardSize, teachingLevel });
@@ -150,9 +157,7 @@ function SettingsModalPanel({
                 ))}
               </div>
               <p className="text-xs mt-1 opacity-50" style={{ color: COLORS.ui.textSecondary }}>
-                {teachingLevel === 'guided'
-                  ? 'Guided starts or resumes a 9×9 board with visible targets'
-                  : '19×19 is the standard board size'}
+                {boardSizeHelpText}
               </p>
             </div>
 
