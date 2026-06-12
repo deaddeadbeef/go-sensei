@@ -80,12 +80,16 @@ export default function GamePage() {
     if (phase === 'welcome' && !welcomeShown.current) {
       welcomeShown.current = true;
       const { teachingLevel: level, game: currentGame } = useGameStore.getState();
+      if (level === 'guided') {
+        startGuidedIntroGame();
+        return;
+      }
+
       const boardSizeLabel = `${currentGame.board.size}×${currentGame.board.size}`;
       const welcomeMessages: Record<string, string> = {
         beginner: `I'm Go Sensei. Go is a 4,000-year-old strategy game — two players, black and white stones, one simple goal: surround more territory than your opponent. Stones go on intersections, not squares. Once placed, they don't move. You capture enemy stones by surrounding them completely. That's it — those are the rules. Everything else, you'll learn by doing.\n\nThis is a ${boardSizeLabel} board. You're Black, you move first. Click any intersection. I'll be direct when a move misses its purpose, and I'll always show the next repair so you know how to improve.`,
         intermediate: `Go Sensei. ${boardSizeLabel} board. You're Black. I will assume you know the rules, then focus on shape, direction, and the priority behind each move.`,
         advanced: `${boardSizeLabel}. You're Black. I will keep the review concise: identify the point of the position, call out the highest-value mistake, and show the cleanest repair.`,
-        guided: "Welcome to Guided Mode. I'm Go Sensei, and I'll walk you through every concept as it appears on the board. I'll name each idea, explain why it matters, and track what you've learned.\n\nYou're Black, you move first. Place a stone anywhere — I'll teach you what happens next.",
       };
       showBubble({
         text: welcomeMessages[level],
@@ -95,7 +99,7 @@ export default function GamePage() {
       });
       setTimeout(() => setPhase('playing'), 500);
     }
-  }, [appPhase, phase, showBubble, setPhase]);
+  }, [appPhase, phase, showBubble, setPhase, startGuidedIntroGame]);
 
   const prevMoveCountRef = useRef(0);
   useEffect(() => {
