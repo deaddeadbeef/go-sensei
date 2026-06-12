@@ -165,6 +165,8 @@ Before tagging `v1.0.0`, run the release gate and complete the [1.0.0 readiness 
 npm run release:check
 ```
 
+Use the [v1.0.0 release notes draft](docs/release/v1.0.0-notes.md) for learner-facing changes, setup requirements, verification evidence, and known limitations.
+
 ### Build
 
 ```bash
