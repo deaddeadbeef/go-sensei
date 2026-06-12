@@ -12,6 +12,15 @@ describe('progress store', () => {
     expect(useProgressStore.getState().completedLessons).toEqual(['capture']);
   });
 
+  it('ignores unknown lesson ids when completing lessons', () => {
+    act(() => {
+      useProgressStore.getState().completeLesson('missing-lesson-id');
+      useProgressStore.getState().completeLesson('capture');
+    });
+
+    expect(useProgressStore.getState().completedLessons).toEqual(['capture']);
+  });
+
   it('tracks that the guided intro game has started', () => {
     act(() => useProgressStore.getState().markIntroGameStarted());
 
@@ -36,6 +45,18 @@ describe('progress store', () => {
         timestamp: 123,
       },
     ]);
+  });
+
+  it('ignores unknown problem ids when recording attempts', () => {
+    act(() => useProgressStore.getState().recordProblemAttempt({
+      problemId: 'missing-problem-id',
+      solved: true,
+      attempts: 1,
+      moveSequence: [{ x: 0, y: 1 }],
+      timestamp: 123,
+    }));
+
+    expect(useProgressStore.getState().problemAttempts).toEqual([]);
   });
 
   it('stores a durable guided game snapshot with position history', () => {

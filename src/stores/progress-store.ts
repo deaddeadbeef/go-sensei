@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { GameState } from '@/lib/go-engine/types';
 import type { ProblemAttempt } from '@/lib/problems/types';
+import { LESSONS } from '@/lib/lessons/lesson-data';
+import { PROBLEMS } from '@/lib/problems/problem-data';
 
 interface ProgressStore {
   completedLessons: string[];
@@ -22,16 +24,22 @@ const defaultProgress = {
   problemAttempts: [] as ProblemAttempt[],
 };
 
+const LESSON_IDS = new Set(LESSONS.map((lesson) => lesson.id));
+const PROBLEM_IDS = new Set(PROBLEMS.map((problem) => problem.id));
+
 export const useProgressStore = create<ProgressStore>()(
   persist(
     (set) => ({
       ...defaultProgress,
 
-      completeLesson: (lessonId: string) => set((state) => ({
-        completedLessons: state.completedLessons.includes(lessonId)
-          ? state.completedLessons
-          : [...state.completedLessons, lessonId],
-      })),
+      completeLesson: (lessonId: string) => {
+        if (!LESSON_IDS.has(lessonId)) return;
+        set((state) => ({
+          completedLessons: state.completedLessons.includes(lessonId)
+            ? state.completedLessons
+            : [...state.completedLessons, lessonId],
+        }));
+      },
 
       markIntroGameStarted: () => set({ hasStartedIntroGame: true }),
 
@@ -39,9 +47,12 @@ export const useProgressStore = create<ProgressStore>()(
         guidedGameSnapshot: game,
       }),
 
-      recordProblemAttempt: (attempt: ProblemAttempt) => set((state) => ({
-        problemAttempts: [...state.problemAttempts, attempt],
-      })),
+      recordProblemAttempt: (attempt: ProblemAttempt) => {
+        if (!PROBLEM_IDS.has(attempt.problemId)) return;
+        set((state) => ({
+          problemAttempts: [...state.problemAttempts, attempt],
+        }));
+      },
 
       resetAll: () => set({ ...defaultProgress }),
     }),
