@@ -3325,6 +3325,35 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('routes atari-fear questions to the occupied-cut reply', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup first move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+    const extensionMove = playMove(afterWhitePass, { x: 4, y: 2 });
+    if (!extensionMove.success) throw new Error('test setup extension move failed');
+    const whiteCut = playMove(extensionMove.newState, { x: 3, y: 2 });
+    if (!whiteCut.success) throw new Error('test setup white cut failed');
+
+    const answer = getLocalQuestionAnswer('Am I in atari?', whiteCut.newState, 'guided');
+
+    expect(answer?.text).toContain('White has played into the one-space jump gap at D7.');
+    expect(answer?.text).toContain('C7 and E7 are separate Black groups by the rules now, but neither is captured.');
+    expect(answer?.text).toContain('Because both Black groups have more than one liberty, this is a cut, not atari yet.');
+    expect(answer?.text).toContain('Answer the cut by attacking the marked White liberties, starting with D8 or D6.');
+    expect(answer?.text).not.toContain('Atari means a stone or group has exactly one liberty left.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['connect-and-cut', 'reading', 'liberties', 'groups', 'atari']));
+    expect(answer?.boardFocus?.highlights).toEqual([{
+      id: 'local-occupied-cut-stone-3,2',
+      point: { x: 3, y: 2 },
+      variant: 'danger',
+      label: 'D7: White occupies the gap between C7 and E7.',
+    }]);
+    expect(answer?.boardFocus?.suggestions?.map((suggestion) => suggestion.point)).toEqual([
+      { x: 3, y: 1 },
+      { x: 3, y: 3 },
+    ]);
+  });
+
   it('turns occupied-cut plan questions into a short reading sequence', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup first move failed');
