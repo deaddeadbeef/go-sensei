@@ -421,7 +421,11 @@ function isGameReviewQuestion(q: string): boolean {
   return /\bgame\s+review\b/.test(q)
     || /\breview\s+(this|the|my)\s+(game|board|position)\b/.test(q)
     || /\b(analyze|analyse)\s+(this|the|my)\s+(game|board|position)\b/.test(q)
-    || /\bhow\s+did\s+i\s+do\s+(in\s+)?(this|the)\s+game\b/.test(q);
+    || /\bhow\s+did\s+i\s+do\s+(in\s+)?(this|the)\s+game\b/.test(q)
+    || /\bwhat\s+(was|is)\s+my\s+(biggest|main|worst)\s+(mistake|miss|problem|fix)\b/.test(q)
+    || /\bwhere\s+did\s+i\s+go\s+wrong\b/.test(q)
+    || /\bwhat\s+did\s+i\s+do\s+wrong\b/.test(q)
+    || /\bwhat\s+should\s+i\s+fix\s+from\s+(this|the)\s+(game|board|position)\b/.test(q);
 }
 
 function isShapeQuestion(q: string): boolean {
