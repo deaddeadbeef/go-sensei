@@ -199,6 +199,39 @@ describe('app navigation recovery', () => {
     expect(screen.getByText('Try C7, G7, C3, or G3.')).toBeTruthy();
   });
 
+  it('restarts guided New Game with the first objective and a fresh guided snapshot', async () => {
+    vi.stubGlobal('ResizeObserver', class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    });
+
+    act(() => {
+      useGameStore.getState().startGuidedIntroGame();
+      const result = useGameStore.getState().placeStone({ x: 2, y: 2 });
+      expect(result.success).toBe(true);
+    });
+    expect(useProgressStore.getState().guidedGameSnapshot?.moveHistory).toHaveLength(1);
+
+    render(<GamePage />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'New Game' }));
+
+    await waitFor(() => {
+      const state = useGameStore.getState();
+      expect(state.appPhase).toBe('game');
+      expect(state.phase).toBe('playing');
+      expect(state.teachingLevel).toBe('guided');
+      expect(state.game.board.size).toBe(9);
+      expect(state.game.moveHistory).toHaveLength(0);
+    });
+
+    expect(useProgressStore.getState().guidedGameSnapshot?.moveHistory).toHaveLength(0);
+    expect(useGameStore.getState().bubble.text).toContain('Your first job is: Start with a corner.');
+    expect(useGameStore.getState().bubble.text).toContain('Try C7, G7, C3, or G3.');
+    expect(useGameStore.getState().bubble.text).not.toContain('Place a stone anywhere');
+  });
+
   it('scopes the floating Sensei bubble to the board area', () => {
     vi.stubGlobal('ResizeObserver', class {
       observe() {}
