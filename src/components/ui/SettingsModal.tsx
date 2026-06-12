@@ -22,10 +22,12 @@ interface SettingsModalProps {
   onLogout: () => void;
 }
 
-export function SettingsModal({
-  isOpen, onClose, onSave, currentBoardSize, currentTeachingLevel,
+type SettingsModalPanelProps = Omit<SettingsModalProps, 'isOpen'>;
+
+function SettingsModalPanel({
+  onClose, onSave, currentBoardSize, currentTeachingLevel,
   isLoggedIn, authState, onLogin, onLogout,
-}: SettingsModalProps) {
+}: SettingsModalPanelProps) {
   const [boardSize, setBoardSize] = useState<BoardSize>(currentBoardSize);
   const [teachingLevel, setTeachingLevel] = useState<'beginner' | 'intermediate' | 'advanced' | 'guided'>(currentTeachingLevel);
 
@@ -34,16 +36,20 @@ export function SettingsModal({
     onClose();
   };
 
+  const handleCancel = () => {
+    setBoardSize(currentBoardSize);
+    setTeachingLevel(currentTeachingLevel);
+    onClose();
+  };
+
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+    <motion.div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+          <div className="absolute inset-0 bg-black/60" onClick={handleCancel} />
           <motion.div
             className="relative z-10 rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl"
             style={{ backgroundColor: COLORS.ui.bgCard }}
@@ -181,7 +187,7 @@ export function SettingsModal({
 
             {/* Actions */}
             <div className="flex gap-2 justify-end">
-              <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm"
+              <button onClick={handleCancel} className="px-4 py-2 rounded-lg text-sm"
                 style={{ color: COLORS.ui.textSecondary }}>
                 Cancel
               </button>
@@ -191,7 +197,21 @@ export function SettingsModal({
               </button>
             </div>
           </motion.div>
-        </motion.div>
+    </motion.div>
+  );
+}
+
+export function SettingsModal({
+  isOpen,
+  ...panelProps
+}: SettingsModalProps) {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <SettingsModalPanel
+          key={`${panelProps.currentBoardSize}-${panelProps.currentTeachingLevel}`}
+          {...panelProps}
+        />
       )}
     </AnimatePresence>
   );
