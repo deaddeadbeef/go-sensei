@@ -1033,6 +1033,23 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('routes natural last-move mistake questions to local move review', () => {
+    const firstMove = playMove(createGame(9), { x: 4, y: 4 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+
+    const answer = getLocalQuestionAnswer('Was that a mistake?', firstMove.newState, 'guided');
+
+    expect(answer?.text).toContain('Not for this beginner goal.');
+    expect(answer?.text).toContain('E5 was not one of the marked corner points.');
+    expect(answer?.text).toContain('Next: Place your next stone near an empty corner. Try C7, G7, C3, or G3.');
+    expect(answer?.boardFocus?.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 2, y: 2 },
+      { x: 6, y: 2 },
+      { x: 2, y: 6 },
+      { x: 6, y: 6 },
+    ]);
+  });
+
   it('explains what the last successful move changed', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
