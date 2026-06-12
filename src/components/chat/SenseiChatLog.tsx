@@ -103,7 +103,10 @@ export function SenseiChatLog() {
                   <button
                     key={action.id}
                     type="button"
-                    onClick={() => handleAction(action.id)}
+                    onClick={() => {
+                      clearActionPreview(action);
+                      handleAction(action.id);
+                    }}
                     onPointerEnter={() => showActionPreview(action)}
                     onMouseEnter={() => showActionPreview(action)}
                     onMouseLeave={() => clearActionPreview(action)}
