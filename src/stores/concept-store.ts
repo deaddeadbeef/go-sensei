@@ -149,7 +149,9 @@ export const useConceptStore = create<ConceptStore>()(
         let introduced = 0;
         let practiced = 0;
         let mastered = 0;
-        for (const m of Object.values(state.mastery)) {
+        for (const concept of CONCEPTS) {
+          const m = state.mastery[concept.id];
+          if (!m) continue;
           if (m.level >= 3) mastered++;
           else if (m.level >= 2) practiced++;
           else if (m.level >= 1) introduced++;
