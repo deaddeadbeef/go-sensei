@@ -45,6 +45,10 @@ function uniqueConceptIds(conceptIds: string[]): string[] {
   return [...new Set(conceptIds)];
 }
 
+function knownMastery(mastery: ConceptMastery[]): ConceptMastery[] {
+  return mastery.filter((item) => conceptNameById.has(item.conceptId));
+}
+
 function isProgressReflectionQuestionText(q: string): boolean {
   return /\bhow\s+(am|m)\s+i\s+doing\b/.test(q)
     || /\bam\s+i\s+(doing\s+)?(well|ok|okay|improving|getting\s+better)\b/.test(q)
@@ -192,11 +196,15 @@ export function getLocalStudyPlanAnswer(
 ): LocalQuestionAnswer | null {
   if (!isStudyPlanQuestion(question)) return null;
 
-  const recommendation = getLearningRecommendation(input);
+  const normalizedInput = {
+    ...input,
+    mastery: knownMastery(input.mastery),
+  };
+  const recommendation = getLearningRecommendation(normalizedInput);
   const q = normalizedQuestion(question);
 
   if (isProgressReflectionQuestionText(q)) {
-    return buildProgressReflectionAnswer(input, recommendation);
+    return buildProgressReflectionAnswer(normalizedInput, recommendation);
   }
 
   const focusLabels = recommendation.focusConcepts.map(conceptLabel).slice(0, 4);
