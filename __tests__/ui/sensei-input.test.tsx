@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SenseiInput } from '@/components/ui/SenseiInput';
 import { createGame, setStone } from '@/lib/go-engine';
@@ -58,6 +58,42 @@ describe('SenseiInput prompt', () => {
     render(<SenseiInput onSendMessage={vi.fn()} />);
 
     const input = screen.getByPlaceholderText('Sensei is thinking...') as HTMLInputElement;
+    const button = screen.getByRole('button', { name: 'Send message' }) as HTMLButtonElement;
     expect(input.disabled).toBe(true);
+    expect(button.disabled).toBe(true);
+  });
+
+  it('sends the suggested question when the input is empty', () => {
+    const onSendMessage = vi.fn();
+
+    render(<SenseiInput onSendMessage={onSendMessage} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ask suggested question' }));
+
+    expect(onSendMessage).toHaveBeenCalledWith('Where should I start?');
+  });
+
+  it('sends typed text instead of the suggested question', () => {
+    const onSendMessage = vi.fn();
+
+    render(<SenseiInput onSendMessage={onSendMessage} />);
+
+    const input = screen.getByPlaceholderText('Ask: Where should I start?') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'What is a liberty?' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
+
+    expect(onSendMessage).toHaveBeenCalledWith('What is a liberty?');
+    expect(input.value).toBe('');
+  });
+
+  it('submits the suggested question with Enter when the input is empty', () => {
+    const onSendMessage = vi.fn();
+
+    render(<SenseiInput onSendMessage={onSendMessage} />);
+
+    const input = screen.getByPlaceholderText('Ask: Where should I start?');
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    expect(onSendMessage).toHaveBeenCalledWith('Where should I start?');
   });
 });
