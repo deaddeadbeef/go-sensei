@@ -2386,6 +2386,30 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('direction-of-play').encounterCount).toBeGreaterThan(0);
   });
 
+  it('routes candidate-help questions locally without fetching', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('How does E7 help?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('E7 would help the current goal: Make your stones work together.');
+    expect(state.bubble.text).toContain('E7 is marked because it is a one-space jump from C7');
+    expect(state.bubble.text).toContain('I marked the current targets again so you can see what E7 is doing before playing.');
+    expect(state.bubble.text).not.toContain('Yes. E7 fits the current goal');
+    expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+    ]);
+    expect(useConceptStore.getState().getMastery('direction-of-play').encounterCount).toBeGreaterThan(0);
+  });
+
   it('answers what is wrong with a candidate coordinate locally without fetching', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());
