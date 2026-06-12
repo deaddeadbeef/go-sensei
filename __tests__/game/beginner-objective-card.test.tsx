@@ -73,6 +73,23 @@ describe('BeginnerObjectiveCard', () => {
     expect(screen.getByText('Before you click, name the corner edges this stone will use.')).toBeTruthy();
   });
 
+  it('shows playable opening targets on a default 19x19 beginner board', () => {
+    act(() => {
+      useGameStore.getState().startNewGame(19);
+      useGameStore.getState().setTeachingLevel('beginner');
+      useGameStore.getState().setPhase('playing');
+    });
+
+    render(<BeginnerObjectiveCard />);
+
+    expect(screen.getByText('Start with a corner')).toBeTruthy();
+    expect(screen.getByText('Try D16, Q16, D4, or Q4.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Play D16 target for Start with a corner' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Play Q16 target for Start with a corner' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Play D4 target for Start with a corner' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Play Q4 target for Start with a corner' })).toBeTruthy();
+  });
+
   it('plays a named target from the objective card', () => {
     render(<BeginnerObjectiveCard />);
 

@@ -4300,6 +4300,9 @@ function buildMoveReviewAnswer(game: GameState, teachingLevel: TeachingLevel): L
 }
 
 function buildObjectiveAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer | null {
+  const openBoardOpeningAnswer = buildOpenBoardOpeningAnswer(game);
+  if (openBoardOpeningAnswer) return openBoardOpeningAnswer;
+
   const objective = getBeginnerObjective({
     boardSize: game.board.size,
     board: game.board,
@@ -4309,7 +4312,7 @@ function buildObjectiveAnswer(game: GameState, teachingLevel: TeachingLevel): Lo
     teachingLevel,
   });
 
-  if (!objective) return buildOpenBoardOpeningAnswer(game);
+  if (!objective) return null;
 
   const followUpContext = getFreshAreaFollowUpContext(game, teachingLevel, objective);
   const targetText = formatObjectiveTargetText(objective, game.board.size, 4, followUpContext);
