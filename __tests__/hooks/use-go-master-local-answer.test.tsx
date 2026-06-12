@@ -2235,6 +2235,47 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('reading').encounterCount).toBeGreaterThan(0);
   });
 
+  it('routes atari-fear questions to the occupied-cut reply without fetching', () => {
+    act(() => {
+      useGameStore.getState().startGuidedIntroGame();
+      useGameStore.getState().placeStone({ x: 2, y: 2 });
+      useGameStore.getState().pass();
+      useGameStore.getState().placeStone({ x: 4, y: 2 });
+      useGameStore.getState().placeStone({ x: 3, y: 2 });
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('Am I in atari?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.text).toContain('White has played into the one-space jump gap at D7.');
+    expect(state.bubble.text).toContain('C7 and E7 are separate Black groups by the rules now, but neither is captured.');
+    expect(state.bubble.text).toContain('Because both Black groups have more than one liberty, this is a cut, not atari yet.');
+    expect(state.bubble.text).toContain('Answer the cut by attacking the marked White liberties, starting with D8 or D6.');
+    expect(state.bubble.text).not.toContain('Atari means a stone or group has exactly one liberty left.');
+    expect(state.chatMessages.at(-1)?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'practice:reading', label: 'Practice reading' },
+    ]);
+    expect(state.overlays.highlights).toEqual([{
+      id: 'local-occupied-cut-stone-3,2',
+      point: { x: 3, y: 2 },
+      variant: 'danger',
+      label: 'D7: White occupies the gap between C7 and E7.',
+    }]);
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 3, y: 1 },
+      { x: 3, y: 3 },
+    ]);
+    expect(useConceptStore.getState().getMastery('connect-and-cut').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('atari').encounterCount).toBeGreaterThan(0);
+  });
+
   it('answers occupied-cut plan follow-ups locally from the guided chat', () => {
     act(() => {
       useGameStore.getState().startGuidedIntroGame();
