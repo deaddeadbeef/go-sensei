@@ -153,6 +153,69 @@ describe('lesson interaction state', () => {
     expect(s.lessonInteraction.answerRevealed).toBe(false);
   });
 
+  it('clears stale lesson prompts when lesson mode changes', () => {
+    act(() => {
+      useGameStore.getState().setLessonPrompt({
+        prompt: 'Click here',
+        expectedMove: { x: 4, y: 4 },
+        wrongMoveHint: 'Wrong',
+        branchOnFail: null,
+        acceptRadius: 0,
+      });
+      useGameStore.getState().checkLessonAnswer({ x: 0, y: 0 });
+      useGameStore.getState().checkLessonAnswer({ x: 1, y: 0 });
+      useGameStore.getState().checkLessonAnswer({ x: 2, y: 0 });
+      useGameStore.getState().startLesson('liberties');
+    });
+
+    expect(useGameStore.getState().lessonInteraction).toMatchObject({
+      awaitingClick: false,
+      prompt: null,
+      expectedMove: null,
+      attempts: 0,
+      answerRevealed: false,
+    });
+
+    act(() => {
+      useGameStore.getState().setLessonPrompt({
+        prompt: 'Click again',
+        expectedMove: { x: 5, y: 5 },
+        wrongMoveHint: 'Wrong',
+        branchOnFail: null,
+        acceptRadius: 0,
+      });
+      useGameStore.getState().showLessons();
+    });
+
+    expect(useGameStore.getState().lessonInteraction).toMatchObject({
+      awaitingClick: false,
+      prompt: null,
+      expectedMove: null,
+      attempts: 0,
+      answerRevealed: false,
+    });
+
+    act(() => {
+      useGameStore.getState().startLesson('groups');
+      useGameStore.getState().setLessonPrompt({
+        prompt: 'Finish cleanly',
+        expectedMove: { x: 6, y: 6 },
+        wrongMoveHint: 'Wrong',
+        branchOnFail: null,
+        acceptRadius: 0,
+      });
+      useGameStore.getState().completeLesson();
+    });
+
+    expect(useGameStore.getState().lessonInteraction).toMatchObject({
+      awaitingClick: false,
+      prompt: null,
+      expectedMove: null,
+      attempts: 0,
+      answerRevealed: false,
+    });
+  });
+
   it('completeLesson records progress and returns to the learning path', () => {
     act(() => {
       useGameStore.getState().startLesson('groups');
