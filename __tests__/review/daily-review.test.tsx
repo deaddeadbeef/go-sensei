@@ -257,6 +257,27 @@ describe('DailyReview', () => {
     expect(useGameStore.getState().preferredProblemFilter).toBe('life-and-death');
   });
 
+  it('labels solved-but-slow review follow-up as a drill', () => {
+    makeProblemDue('capture-001');
+
+    const { container } = render(<DailyReview />);
+
+    clickReviewPoint(container, 1, 1);
+    clickReviewPoint(container, 0, 1);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Finish Review' }));
+
+    expect(screen.getByText('Make Capture automatic')).toBeTruthy();
+    expect(screen.getByText('You found the answer, but it took extra reading. Repeat the pattern once while it is fresh.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Replay Corner Capture' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Drill Corner Capture' }));
+
+    expect(useGameStore.getState().appPhase).toBe('problem');
+    expect(useGameStore.getState().currentProblemId).toBe('capture-001');
+    expect(useGameStore.getState().preferredProblemFilter).toBe('capture');
+  });
+
   it('sends clean reviews back to the path recommendation', () => {
     useProgressStore.setState({
       completedLessons: ['groups', 'liberties', 'capture'],
