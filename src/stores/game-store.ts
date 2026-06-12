@@ -964,10 +964,20 @@ export const useGameStore = create<GameStore>()(
   },
 
   // Lesson
-  startLesson: (lessonId: string) => set({ appPhase: 'lesson', currentLessonId: lessonId, currentStep: 0 }),
+  startLesson: (lessonId: string) => set({
+    appPhase: 'lesson',
+    currentLessonId: lessonId,
+    currentStep: 0,
+    lessonInteraction: { ...defaultLessonInteraction },
+  }),
 
   // Lesson navigation
-  showLessons: () => set({ appPhase: 'lessons', currentLessonId: null, currentStep: 0 }),
+  showLessons: () => set({
+    appPhase: 'lessons',
+    currentLessonId: null,
+    currentStep: 0,
+    lessonInteraction: { ...defaultLessonInteraction },
+  }),
 
   nextStep: (maxSteps: number) => set((state) => ({ currentStep: Math.min(state.currentStep + 1, maxSteps - 1) })),
 
@@ -985,6 +995,7 @@ export const useGameStore = create<GameStore>()(
       completedLessons: nextProgress.completedLessons,
       currentLessonId: null,
       currentStep: 0,
+      lessonInteraction: { ...defaultLessonInteraction },
     });
   },
 
