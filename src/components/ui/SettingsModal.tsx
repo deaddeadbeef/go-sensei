@@ -60,6 +60,11 @@ function SettingsModalPanel({
     onClose();
   };
 
+  const handleStartGuidedPractice = () => {
+    onSave({ boardSize: 9, teachingLevel: 'guided' });
+    onClose();
+  };
+
   return (
     <motion.div
       className="fixed inset-0 z-50 flex items-center justify-center"
@@ -135,9 +140,18 @@ function SettingsModalPanel({
                     Login with GitHub
                   </button>
                   {authState.error && (
-                    <p className="text-xs mt-2" style={{ color: COLORS.overlay.danger }}>
-                      {authState.error}
-                    </p>
+                    <div className="mt-2 space-y-2">
+                      <p className="text-xs" style={{ color: COLORS.overlay.danger }}>
+                        {authState.error}
+                      </p>
+                      <button
+                        onClick={handleStartGuidedPractice}
+                        className="w-full rounded-lg px-3 py-2 text-sm font-medium transition-all hover:brightness-110"
+                        style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
+                      >
+                        Start guided practice
+                      </button>
+                    </div>
                   )}
                   <p className="text-xs mt-2 opacity-50" style={{ color: COLORS.ui.textSecondary }}>
                     Requires a GitHub Copilot subscription
