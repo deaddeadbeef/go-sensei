@@ -140,7 +140,20 @@ describe('LearningPath', () => {
 
     render(<LearningPath />);
 
-    expect(screen.getByRole('button', { name: 'Review: 2 due before new material.' })).toBeTruthy();
+    expect(screen.getByText('Up now: 2 due: Corner Capture, Make Two Eyes.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Review: 2 due: Corner Capture, Make Two Eyes.' })).toBeTruthy();
+  });
+
+  it('keeps long due review previews concise', () => {
+    makeReviewDue('capture-001');
+    makeReviewDue('capture-002');
+    makeReviewDue('capture-003');
+    makeReviewDue('capture-004');
+
+    render(<LearningPath />);
+
+    expect(screen.getByText('Up now: 4 due: Corner Capture, Edge Squeeze, Loose Ladder, +1 more.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Review: 4 due: Corner Capture, Edge Squeeze, Loose Ladder, +1 more.' })).toBeTruthy();
   });
 
   it('starts the exact missed problem from a repair recommendation', () => {

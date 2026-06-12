@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { getLearningRecommendation } from '@/lib/learning-path/recommendations';
 import { CONCEPTS } from '@/lib/concepts/concept-data';
 import { LESSONS } from '@/lib/lessons/lesson-data';
@@ -15,6 +16,7 @@ const CONCEPT_BY_ID = new Map(CONCEPTS.map((concept) => [concept.id, concept]));
 const LESSON_IDS = new Set(LESSONS.map((lesson) => lesson.id));
 const PROBLEM_IDS = new Set(PROBLEMS.map((problem) => problem.id));
 const PROBLEM_BY_ID = new Map(PROBLEMS.map((problem) => [problem.id, problem]));
+const DUE_REVIEW_PREVIEW_LIMIT = 3;
 
 const CATEGORY_LABELS: Record<ConceptCategory, string> = {
   fundamentals: 'Fundamental',
@@ -37,6 +39,22 @@ function conceptDisplay(conceptId: string): Concept {
   };
 }
 
+function formatDueReviewPreview(problemIds: string[]): string | null {
+  const dueProblems = problemIds
+    .map((problemId) => PROBLEM_BY_ID.get(problemId))
+    .filter((problem): problem is NonNullable<typeof problem> => problem !== undefined);
+
+  if (dueProblems.length === 0) return null;
+
+  const previewTitles = dueProblems
+    .slice(0, DUE_REVIEW_PREVIEW_LIMIT)
+    .map((problem) => problem.title);
+  const hiddenCount = dueProblems.length - previewTitles.length;
+  const hiddenText = hiddenCount > 0 ? `, +${hiddenCount} more` : '';
+
+  return `${dueProblems.length} due: ${previewTitles.join(', ')}${hiddenText}.`;
+}
+
 export function LearningPath() {
   const completedLessons = useProgressStore((s) => s.completedLessons);
   const problemAttempts = useProgressStore((s) => s.problemAttempts);
@@ -51,10 +69,14 @@ export function LearningPath() {
   const showDashboard = useGameStore((s) => s.showDashboard);
   const openGuidedGame = useGameStore((s) => s.openGuidedGame);
   const mastery = useConceptStore((s) => s.mastery);
-  const dueReviewCount = useReviewStore((s) => {
-    void s.cards;
-    return s.getDueCount();
-  });
+  const reviewCards = useReviewStore((s) => s.cards);
+  const getDueProblems = useReviewStore((s) => s.getDueProblems);
+  const dueReviewProblemIds = useMemo(() => {
+    void reviewCards;
+    return getDueProblems();
+  }, [getDueProblems, reviewCards]);
+  const dueReviewCount = dueReviewProblemIds.length;
+  const dueReviewPreview = formatDueReviewPreview(dueReviewProblemIds);
 
   const recommendation = getLearningRecommendation({
     completedLessons,
@@ -72,7 +94,7 @@ export function LearningPath() {
   ).size;
   const focusConcepts = recommendation.focusConcepts.map(conceptDisplay).slice(0, 4);
   const reviewPathText = dueReviewCount > 0
-    ? `${dueReviewCount} due before new material.`
+    ? dueReviewPreview ?? `${dueReviewCount} due before new material.`
     : recommendation.kind === 'problem'
       ? "No reviews due; seed tomorrow's queue."
       : 'No reviews due; follow the path first.';
@@ -124,6 +146,11 @@ export function LearningPath() {
             <p className="mt-2 max-w-2xl text-sm leading-relaxed" style={{ color: COLORS.ui.textSecondary }}>
               {recommendation.reason}
             </p>
+            {recommendation.kind === 'review' && dueReviewPreview && (
+              <p className="mt-2 text-sm leading-relaxed" style={{ color: COLORS.ui.textPrimary }}>
+                Up now: {dueReviewPreview}
+              </p>
+            )}
             <div
               className="mt-3 rounded-md border px-3 py-2 text-sm leading-relaxed"
               style={{ borderColor: `${COLORS.ui.accent}55`, backgroundColor: `${COLORS.ui.accent}12` }}
