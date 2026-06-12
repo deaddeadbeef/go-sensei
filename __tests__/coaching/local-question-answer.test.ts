@@ -3134,6 +3134,28 @@ describe('local question answer', () => {
     });
   });
 
+  it('routes White endpoint-separate questions to one-space jump gap pressure', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup first move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+    const extensionMove = playMove(afterWhitePass, { x: 4, y: 2 });
+    if (!extensionMove.success) throw new Error('test setup extension move failed');
+    const game = passMove(extensionMove.newState);
+
+    const answer = getLocalQuestionAnswer('Can White separate C7 and E7?', game, 'guided');
+
+    expect(answer?.text).toContain('D7 is the one-point gap between C7 and E7.');
+    expect(answer?.text).toContain('White can test that gap by playing D7, but that is pressure, not an immediate capture.');
+    expect(answer?.text).toContain('If White actually attacks D7, count liberties before reacting');
+    expect(answer?.text).not.toContain('C7 and E7 are not one solid group by the rules yet.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['shape', 'reading', 'liberties', 'groups']));
+    expect(answer?.boardFocus?.highlights?.[2]).toMatchObject({
+      point: { x: 3, y: 2 },
+      variant: 'warning',
+      label: 'D7: gap White could pressure; count liberties before answering.',
+    });
+  });
+
   it('answers when White occupies the one-space jump gap between two Black stones', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup first move failed');
