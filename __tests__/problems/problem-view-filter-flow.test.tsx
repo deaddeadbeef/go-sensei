@@ -169,7 +169,7 @@ describe('ProblemView filtered practice flow', () => {
     ]));
   });
 
-  it('returns to the active filtered problem list after the last filtered problem', () => {
+  it('wraps from the last filtered problem to an earlier unsolved problem', () => {
     act(() => {
       useGameStore.getState().startProblem(problemById('capture-004'));
       useGameStore.getState().submitProblemMove({ x: 2, y: 2 });
@@ -178,7 +178,30 @@ describe('ProblemView filtered practice flow', () => {
 
     render(<ProblemView />);
 
-    expect(screen.queryByRole('button', { name: 'Next Problem →' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Next capture problem →' }));
+
+    expect(useGameStore.getState().appPhase).toBe('problem');
+    expect(useGameStore.getState().currentProblemId).toBe('capture-001');
+    expect(useGameStore.getState().preferredProblemFilter).toBe('capture');
+  });
+
+  it('returns to the active filtered problem list when every filtered problem is solved', () => {
+    act(() => {
+      useProgressStore.setState({
+        problemAttempts: [
+          { problemId: 'capture-001', solved: true, attempts: 1, moveSequence: [], timestamp: 1 },
+          { problemId: 'capture-002', solved: true, attempts: 1, moveSequence: [], timestamp: 2 },
+          { problemId: 'capture-003', solved: true, attempts: 1, moveSequence: [], timestamp: 3 },
+        ],
+      });
+      useGameStore.getState().startProblem(problemById('capture-004'));
+      useGameStore.getState().submitProblemMove({ x: 2, y: 2 });
+      useGameStore.getState().submitProblemMove({ x: 2, y: 2 });
+    });
+
+    render(<ProblemView />);
+
+    expect(screen.queryByRole('button', { name: 'Next capture problem →' })).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Return to capture problems' }));
 
