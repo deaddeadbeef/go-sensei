@@ -486,7 +486,6 @@ export function getBeginnerObjectiveProgress(
   game: GameState,
   teachingLevel: TeachingLevel,
 ): BeginnerObjectiveProgress | null {
-  if (game.board.size !== 9) return null;
   if (teachingLevel !== 'beginner' && teachingLevel !== 'guided') return null;
 
   const lastBlackPlacement = findStateBeforeLastBlackPlacement(game);

@@ -183,7 +183,7 @@ describe('local guided fallback', () => {
       conceptIds: expect.arrayContaining(['corner-opening', 'territory']),
       actions: [{ id: 'lesson:territory', label: 'Review territory' }],
     });
-    expect(fallback?.text).toContain('Your first stone at D16 gives us a real board position to learn from.');
+    expect(fallback?.text).toContain('Good: D16 hit the marked corner goal. Next, make that stone work with another one.');
     expect(fallback?.text).toContain('D16 starts an upper-left corner framework.');
     expect(fallback?.text).toContain('Next focus: choose a second corner framework. Try Q16, D4, or Q4.');
     expect(fallback?.text).toContain('I marked your move, gave White a teaching pass, and marked the next corner choices.');
@@ -212,6 +212,34 @@ describe('local guided fallback', () => {
         rank: 3,
         reason: 'Try Q4 next: another corner gives Black a second easy framework before fighting starts.',
       },
+    ]);
+  });
+
+  it('warns when a 19x19 learner ignores the marked opening corner targets', () => {
+    const firstMove = playMove(createGame(19), { x: 9, y: 9 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+
+    const fallback = getLocalGuidedFallback(firstMove.newState, 'beginner', 'auth-unavailable');
+
+    expect(fallback).toMatchObject({
+      shouldPassSensei: true,
+      conceptIds: expect.arrayContaining(['corner-opening', 'territory', 'influence']),
+      actions: expect.arrayContaining([{ id: 'lesson:territory', label: 'Review territory' }]),
+    });
+    expect(fallback?.text).toContain('Progress check: K10 was not one of the marked corner points. Try D16, Q16, D4, or Q4.');
+    expect(fallback?.text).toContain('Lesson: K10 reaches in every direction, but it does not use the board edge.');
+    expect(fallback?.text).toContain('Next focus: Start with a corner.');
+    expect(fallback?.boardFocus?.highlights).toEqual([{
+      id: 'local-fallback-learned-9,9',
+      point: { x: 9, y: 9 },
+      variant: 'warning',
+      label: 'K10: move to learn from - beginner job missed.',
+    }]);
+    expect(fallback?.boardFocus?.suggestions?.map((suggestion) => suggestion.point)).toEqual([
+      { x: 3, y: 3 },
+      { x: 15, y: 3 },
+      { x: 3, y: 15 },
+      { x: 15, y: 15 },
     ]);
   });
 
