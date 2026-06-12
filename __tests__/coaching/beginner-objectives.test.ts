@@ -102,6 +102,34 @@ describe('beginner objectives', () => {
     expect(formatObjectiveTargetText(objective, 13)).toBe('Try D10, K10, D4, or K4.');
   });
 
+  it('reports when a 19x19 learner misses the marked opening objective', () => {
+    const firstMove = playMove(createGame(19), { x: 9, y: 9 });
+    if (!firstMove.success) throw new Error('test setup center move failed');
+
+    const progress = getBeginnerObjectiveProgress(firstMove.newState, 'beginner');
+
+    expect(progress).toMatchObject({
+      status: 'missed',
+      objectiveId: 'claim-corner',
+      lastMove: { x: 9, y: 9 },
+      text: 'Progress check: K10 was not one of the marked corner points. Try D16, Q16, D4, or Q4.',
+    });
+  });
+
+  it('reports when a 19x19 learner completes the marked opening objective', () => {
+    const firstMove = playMove(createGame(19), { x: 3, y: 3 });
+    if (!firstMove.success) throw new Error('test setup corner move failed');
+
+    const progress = getBeginnerObjectiveProgress(firstMove.newState, 'beginner');
+
+    expect(progress).toMatchObject({
+      status: 'met',
+      objectiveId: 'claim-corner',
+      lastMove: { x: 3, y: 3 },
+      text: 'Good: D16 hit the marked corner goal. Next, make that stone work with another one.',
+    });
+  });
+
   it('moves from corners to extensions after the opening moves', () => {
     const objective = getBeginnerObjective({
       boardSize: 9,
