@@ -131,6 +131,31 @@ describe('concept store', () => {
     expect(stats.total).toBeGreaterThanOrEqual(25);
   });
 
+  it('getStats ignores stale persisted concept ids', () => {
+    useConceptStore.setState({
+      mastery: {
+        'stones-and-board': {
+          conceptId: 'stones-and-board',
+          level: 1,
+          lastSeen: 1,
+          encounterCount: 1,
+        },
+        'removed-concept-id': {
+          conceptId: 'removed-concept-id',
+          level: 3,
+          lastSeen: 1,
+          encounterCount: 10,
+        },
+      },
+    });
+
+    const stats = useConceptStore.getState().getStats();
+
+    expect(stats.introduced).toBe(1);
+    expect(stats.practiced).toBe(0);
+    expect(stats.mastered).toBe(0);
+  });
+
   it('resetAll clears all mastery data', () => {
     act(() => useConceptStore.getState().recordEncounter('ko'));
     act(() => useConceptStore.getState().resetAll());
