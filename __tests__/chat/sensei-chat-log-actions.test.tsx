@@ -79,6 +79,47 @@ describe('SenseiChatLog actions', () => {
     expect(useGameStore.getState().preferredProblemFilter).toBe('capture');
   });
 
+  it('clears action preview highlights when a chat action is clicked', () => {
+    const originalHints = [{
+      id: 'original-target',
+      point: { x: 2, y: 2 },
+      variant: 'positive' as const,
+      label: 'Original target',
+    }];
+    const previewHints = [{
+      id: 'preview-target',
+      point: { x: 4, y: 2 },
+      variant: 'warning' as const,
+      label: 'Preview target',
+    }];
+
+    act(() => {
+      useGameStore.getState().applyTargetHints(originalHints);
+      useGameStore.getState().showBubble({
+        text: 'Try this reading problem next.',
+        variant: 'teaching',
+        actions: [{
+          id: 'practice:reading',
+          label: 'Practice reading',
+          previewHighlights: previewHints,
+        }],
+      });
+      useGameStore.getState().dismissBubble();
+    });
+
+    render(<SenseiChatLog />);
+    const action = screen.getByRole('button', { name: 'Practice reading' });
+
+    fireEvent.pointerEnter(action);
+    expect(useGameStore.getState().overlays.targetHints).toEqual(previewHints);
+
+    fireEvent.click(action);
+
+    expect(useGameStore.getState().appPhase).toBe('problems');
+    expect(useGameStore.getState().preferredProblemFilter).toBe('reading');
+    expect(useGameStore.getState().overlays.targetHints).toEqual(originalHints);
+  });
+
   it('uses a board-aware empty prompt after the learner has moved', () => {
     act(() => {
       useGameStore.getState().placeStone({ x: 2, y: 2 });
