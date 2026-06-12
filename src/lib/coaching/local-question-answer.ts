@@ -1527,7 +1527,10 @@ function buildOneSpaceJumpPressureAnswer(game: GameState, teachingLevel: Teachin
   if (!shape) return null;
 
   const requestedPoint = mentionedCoordinate(q, game.board.size);
-  if (requestedPoint && !pointEquals(requestedPoint, shape.gap)) return null;
+  const requestedPoints = mentionedCoordinates(q, game.board.size);
+  const mentionsBothShapeStones = requestedPoints.some((point) => pointEquals(point, shape.anchor))
+    && requestedPoints.some((point) => pointEquals(point, shape.stone));
+  if (requestedPoint && !pointEquals(requestedPoint, shape.gap) && !mentionsBothShapeStones) return null;
   if (getStone(game.board, shape.gap) !== null) return null;
 
   const objective = getBeginnerObjective({
