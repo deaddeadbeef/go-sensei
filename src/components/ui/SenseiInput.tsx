@@ -1,15 +1,52 @@
 "use client";
 import { useState, useCallback } from 'react';
 import { useGameStore } from '@/stores/game-store';
+import { pointToCoord } from '@/lib/go-engine';
+import type { BoardState, Move } from '@/lib/go-engine/types';
 import { COLORS } from '@/utils/colors';
 
 interface SenseiInputProps {
   onSendMessage: (text: string) => void;
 }
 
+function hasBoardStones(board: BoardState): boolean {
+  return board.grid.some((row) => row.some((cell) => cell !== null));
+}
+
+function latestPlaceMove(moveHistory: Move[]): Extract<Move, { type: 'place' }> | null {
+  for (let index = moveHistory.length - 1; index >= 0; index -= 1) {
+    const move = moveHistory[index];
+    if (move.type === 'place') return move;
+  }
+
+  return null;
+}
+
+function buildQuestionPrompt(board: BoardState, moveHistory: Move[]): string {
+  if (moveHistory.length === 0) {
+    return hasBoardStones(board)
+      ? 'Ask: Which group needs help?'
+      : 'Ask: Where should I start?';
+  }
+
+  const lastPlace = latestPlaceMove(moveHistory);
+  if (lastPlace?.color === 'black') {
+    return `Ask: What did ${pointToCoord(lastPlace.point, board.size)} change?`;
+  }
+
+  if (lastPlace?.color === 'white') {
+    return 'Ask: What is White threatening?';
+  }
+
+  return 'Ask: What should I play now?';
+}
+
 export function SenseiInput({ onSendMessage }: SenseiInputProps) {
   const [text, setText] = useState('');
   const isAiThinking = useGameStore((s) => s.isAiThinking);
+  const board = useGameStore((s) => s.game.board);
+  const moveHistory = useGameStore((s) => s.game.moveHistory);
+  const placeholder = isAiThinking ? 'Sensei is thinking...' : buildQuestionPrompt(board, moveHistory);
 
   const handleSend = useCallback(() => {
     if (!text.trim() || isAiThinking) return;
@@ -34,7 +71,7 @@ export function SenseiInput({ onSendMessage }: SenseiInputProps) {
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder={isAiThinking ? 'Sensei is thinking...' : 'Ask Sensei anything...'}
+        placeholder={placeholder}
         disabled={isAiThinking}
         className="flex-1 bg-transparent text-sm outline-none placeholder:opacity-40 disabled:opacity-40"
         style={{ color: COLORS.ui.textPrimary }}
