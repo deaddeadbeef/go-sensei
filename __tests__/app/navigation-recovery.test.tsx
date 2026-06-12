@@ -99,6 +99,39 @@ describe('app navigation recovery', () => {
     expect(useGameStore.getState().bubble.text).toBe('');
   });
 
+  it('continues from the finished-game scorecard into the learning path', async () => {
+    vi.stubGlobal('ResizeObserver', class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    });
+
+    act(() => {
+      useGameStore.setState({
+        appPhase: 'game',
+        phase: 'playing',
+        scorecard: {
+          visible: true,
+          blackScore: 12,
+          whiteScore: 10.5,
+          blackTerritory: 10,
+          whiteTerritory: 4,
+          blackCaptures: 2,
+          whiteCaptures: 0,
+          komi: 6.5,
+          winner: 'black',
+        },
+      });
+    });
+
+    render(<GamePage />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Learning path from score card' }));
+
+    await waitFor(() => expect(useGameStore.getState().appPhase).toBe('path'));
+    expect(screen.getByText('First 9x9 guided game')).toBeTruthy();
+  });
+
   it('keeps beginner welcome coaching direct and constructive', async () => {
     vi.stubGlobal('ResizeObserver', class {
       observe() {}

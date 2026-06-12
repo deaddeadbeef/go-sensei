@@ -39,4 +39,24 @@ describe('ScoreCard', () => {
     expect(onReviewGame).toHaveBeenCalledTimes(1);
     expect(onPlayAgain).not.toHaveBeenCalled();
   });
+
+  it('lets learners continue from a finished game to the learning path', () => {
+    const onPlayAgain = vi.fn();
+    const onReviewGame = vi.fn();
+    const onLearningPath = vi.fn();
+
+    render(
+      <ScoreCard
+        onPlayAgain={onPlayAgain}
+        onReviewGame={onReviewGame}
+        onLearningPath={onLearningPath}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Learning path from score card' }));
+
+    expect(onLearningPath).toHaveBeenCalledTimes(1);
+    expect(onPlayAgain).not.toHaveBeenCalled();
+    expect(onReviewGame).not.toHaveBeenCalled();
+  });
 });
