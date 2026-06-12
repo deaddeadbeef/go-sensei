@@ -578,7 +578,7 @@ function isCandidateMoveQuestion(q: string, boardSize: BoardSize): boolean {
     || /\b(would|could|should)\s+[a-hj-t]\d{1,2}\s+(have\s+been|be)\s+(better|good|right|ok|okay|safer|playable)\b/.test(q)
     || /\bis\s+[a-hj-t]\d{1,2}\s+(better|right|ok|okay|safer|playable)\b/.test(q)
     || /\bis\s+[a-hj-t]\d{1,2}\s+worth\s+(playing|trying)\b/.test(q)
-    || /\bwhat\s+(would|will|could|can)\s+[a-hj-t]\d{1,2}\s+(do|change|accomplish|help)\b/.test(q)
+    || isCandidatePurposeQuestion(q, boardSize)
     || /\bwas\s+[a-hj-t]\d{1,2}\s+(better|good|right|ok|okay|safer|playable)\b/.test(q)
     || /\b(should|can|could|would|do)\s+i\s+connect\s+(at\s+)?[a-hj-t]\d{1,2}\b/.test(q)
     || /\bwhat\s+about\b/.test(q)
@@ -586,6 +586,12 @@ function isCandidateMoveQuestion(q: string, boardSize: BoardSize): boolean {
     || /\bwhat\s+(is|s)\s+wrong\s+with\s+[a-hj-t]\d{1,2}\b/.test(q)
     || /\bis\s+[a-hj-t]\d{1,2}\s+(a\s+)?(good|bad|ok|okay|right|wrong|playable|safe)(\s+(move|play))?\b/.test(q)
     || /\bplay\s+(at\s+)?[a-hj-t]\d{1,2}\b/.test(q);
+}
+
+function isCandidatePurposeQuestion(q: string, boardSize: BoardSize): boolean {
+  if (!mentionedCoordinate(q, boardSize)) return false;
+
+  return /\bwhat\s+(would|will|could|can)\s+[a-hj-t]\d{1,2}\s+(do|change|accomplish|help)\b/.test(q);
 }
 
 function isCandidateComparisonQuestion(q: string, boardSize: BoardSize): boolean {
@@ -1084,6 +1090,7 @@ function buildCandidateMoveAnswer(game: GameState, teachingLevel: TeachingLevel,
   const action = getBeginnerObjectiveLessonAction(objective);
   const targetCoordText = objectiveTargetCoordList(objective, game.board.size);
   const isMarkedTarget = objective.targetPoints.some((point) => pointEquals(point, requestedPoint));
+  const isPurposeQuestion = isCandidatePurposeQuestion(q, game.board.size);
   const anchorMove = lastBlackPlacedMove(game);
   const blockedContext = !isMarkedTarget
     ? blockedOneSpaceJumpContext(game.board, requestedPoint, anchorMove?.point ?? null, 'local-candidate-move')
@@ -1102,11 +1109,18 @@ function buildCandidateMoveAnswer(game: GameState, teachingLevel: TeachingLevel,
   }
 
   if (isMarkedTarget) {
+    const intro = isPurposeQuestion
+      ? `${coord} would help the current goal: ${objective.title}.`
+      : `Yes. ${coord} fits the current goal: ${objective.title}.`;
+    const closing = isPurposeQuestion
+      ? `I marked the current targets again so you can see what ${coord} is doing before playing.`
+      : 'I marked the current targets again so you can compare the options before playing.';
+
     return {
       text: [
-        `Yes. ${coord} fits the current goal: ${objective.title}.`,
+        intro,
         targetReason(objective, requestedPoint, game.board.size, anchorMove?.point ?? null, followUpContext),
-        'I marked the current targets again so you can compare the options before playing.',
+        closing,
       ].join(' '),
       conceptIds: objective.conceptIds,
       boardFocus: { suggestions },
