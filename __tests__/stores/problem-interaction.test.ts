@@ -148,6 +148,8 @@ describe('problem interaction store', () => {
     expect(result.status).toBe('solved');
     expect(useGameStore.getState().problemInteraction.game?.board.grid[0][0]).toBeNull();
     expect(useGameStore.getState().problemInteraction.game?.board.grid[1][0]).toBe('black');
+    expect(useProgressStore.getState().problemAttempts).toEqual([]);
+    expect(useGameStore.getState().problemAttempts).toEqual([]);
 
     act(() => useGameStore.getState().resetProblem());
 
