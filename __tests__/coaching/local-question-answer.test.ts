@@ -118,6 +118,42 @@ describe('local question answer', () => {
     }
   });
 
+  it('answers empty 19x19 start questions with local corner targets', () => {
+    const answer = getLocalQuestionAnswer('Where should I start?', createGame(19), 'beginner');
+
+    expect(answer?.text).toContain('On this 19x19 board, start by choosing one corner framework.');
+    expect(answer?.text).toContain('Try D16, Q16, D4, or Q4.');
+    expect(answer?.text).toContain('I marked the four 4-4 corner points so you can make the first move without needing live AI.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['corner-opening', 'territory']));
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-opening-19-move-3,3',
+        point: { x: 3, y: 3 },
+        rank: 1,
+        reason: 'Start at D16: the nearby edges help this corner framework grow.',
+      },
+      {
+        id: 'local-opening-19-move-15,3',
+        point: { x: 15, y: 3 },
+        rank: 2,
+        reason: 'Start at Q16: the nearby edges help this corner framework grow.',
+      },
+      {
+        id: 'local-opening-19-move-3,15',
+        point: { x: 3, y: 15 },
+        rank: 3,
+        reason: 'Start at D4: the nearby edges help this corner framework grow.',
+      },
+      {
+        id: 'local-opening-19-move-15,15',
+        point: { x: 15, y: 15 },
+        rank: 4,
+        reason: 'Start at Q4: the nearby edges help this corner framework grow.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([{ id: 'lesson:territory', label: 'Review territory' }]);
+  });
+
   it('explains board star points without confusing them with numbered targets', () => {
     const answer = getLocalQuestionAnswer('What are the dots on the board?', createGame(9), 'guided');
 
