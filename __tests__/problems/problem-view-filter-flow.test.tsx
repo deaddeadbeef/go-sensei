@@ -209,6 +209,34 @@ describe('ProblemView filtered practice flow', () => {
     expect(useGameStore.getState().preferredProblemFilter).toBe('capture');
   });
 
+  it('sends solved standalone practice with no next problem back to the learning path', () => {
+    act(() => {
+      useProgressStore.setState({
+        problemAttempts: PROBLEMS
+          .filter((problem) => problem.id !== 'capture-004')
+          .map((problem, index) => ({
+            problemId: problem.id,
+            solved: true,
+            attempts: 1,
+            moveSequence: [],
+            timestamp: index + 1,
+          })),
+      });
+      useGameStore.getState().showProblems();
+      useGameStore.getState().startProblem(problemById('capture-004'));
+      useGameStore.getState().submitProblemMove({ x: 2, y: 2 });
+      useGameStore.getState().submitProblemMove({ x: 2, y: 2 });
+    });
+
+    render(<ProblemView />);
+
+    expect(screen.queryByRole('button', { name: 'Next Problem →' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Continue learning path' }));
+
+    expect(useGameStore.getState().appPhase).toBe('path');
+  });
+
   it('continues to the next recommendation when recommended filtered practice is satisfied', () => {
     act(() => {
       useProgressStore.setState({

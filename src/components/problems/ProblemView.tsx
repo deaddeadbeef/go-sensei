@@ -122,6 +122,7 @@ export function ProblemView() {
   const requestProblemHint = useGameStore((s) => s.requestProblemHint);
   const showProblems = useGameStore((s) => s.showProblems);
   const showReview = useGameStore((s) => s.showReview);
+  const showLearningPath = useGameStore((s) => s.showLearningPath);
   const startGuidedIntroGame = useGameStore((s) => s.startGuidedIntroGame);
   const startLesson = useGameStore((s) => s.startLesson);
   const startProblem = useGameStore((s) => s.startProblem);
@@ -217,6 +218,9 @@ export function ProblemView() {
   const repairReplayMet = practiceTargetMet
     && preSolveLearningRecommendation.kind === 'problem'
     && preSolveLearningRecommendation.targetProblemId === currentProblemId;
+  const solvedWithoutNextProblem = problemInteraction.status === 'solved'
+    && !practiceTargetMet
+    && !nextProblem;
   const pathProgressRecommendation = problemInteraction.status === 'solved'
     && !practiceTargetMet
     && scopedProblemFilter !== null
@@ -652,6 +656,15 @@ export function ProblemView() {
                 style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
               >
                 {scopedProblemLabel ? `Next ${scopedProblemLabel} problem →` : 'Next Problem →'}
+              </button>
+            )}
+            {solvedWithoutNextProblem && (
+              <button
+                onClick={showLearningPath}
+                className="flex-1 px-4 py-2.5 rounded-lg text-sm font-bold transition-transform hover:scale-[1.02] active:scale-95"
+                style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
+              >
+                Continue learning path
               </button>
             )}
           </div>
