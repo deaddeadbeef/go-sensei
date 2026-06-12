@@ -3295,6 +3295,36 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('routes capture-fear questions to the occupied-cut reply', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup first move failed');
+    const afterWhitePass = passMove(firstMove.newState);
+    const extensionMove = playMove(afterWhitePass, { x: 4, y: 2 });
+    if (!extensionMove.success) throw new Error('test setup extension move failed');
+    const whiteCut = playMove(extensionMove.newState, { x: 3, y: 2 });
+    if (!whiteCut.success) throw new Error('test setup white cut failed');
+
+    const answer = getLocalQuestionAnswer('Did White capture my stones?', whiteCut.newState, 'guided');
+
+    expect(answer?.text).toContain('White has played into the one-space jump gap at D7.');
+    expect(answer?.text).toContain('C7 and E7 are separate Black groups by the rules now, but neither is captured.');
+    expect(answer?.text).toContain('Black at C7 has 3 liberties: C8, C6, and B7.');
+    expect(answer?.text).toContain('Black at E7 has 3 liberties: E8, E6, and F7.');
+    expect(answer?.text).toContain('Answer the cut by attacking the marked White liberties, starting with D8 or D6.');
+    expect(answer?.text).not.toContain('To capture, fill every liberty of one connected enemy group.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['connect-and-cut', 'reading', 'liberties', 'groups', 'capture']));
+    expect(answer?.boardFocus?.highlights).toEqual([{
+      id: 'local-occupied-cut-stone-3,2',
+      point: { x: 3, y: 2 },
+      variant: 'danger',
+      label: 'D7: White occupies the gap between C7 and E7.',
+    }]);
+    expect(answer?.boardFocus?.suggestions?.map((suggestion) => suggestion.point)).toEqual([
+      { x: 3, y: 1 },
+      { x: 3, y: 3 },
+    ]);
+  });
+
   it('turns occupied-cut plan questions into a short reading sequence', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup first move failed');

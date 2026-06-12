@@ -628,7 +628,8 @@ function isOneSpaceJumpPressureQuestion(q: string): boolean {
 function isOccupiedCutRecoveryQuestion(q: string): boolean {
   return /\b(can|could|do|should)\s+i\s+(still\s+)?(connect|re-?connect)\b/.test(q)
     || /\b(can|could|do|should)\s+(my\s+)?(stones?|groups?)\s+(still\s+)?(connect|re-?connect)\b/.test(q)
-    || /\b(am|are)\s+(i|my\s+stones?|my\s+groups?|these\s+stones?|those\s+stones?)\s+(still\s+)?(connected|cut|separated)\b/.test(q);
+    || /\b(am|are)\s+(i|my\s+stones?|my\s+groups?|these\s+stones?|those\s+stones?)\s+(still\s+)?(connected|cut|separated|captured|dead|lost)\b/.test(q)
+    || /\bdid\s+(white|opponent|sensei)\s+(capture|cut\s+off|kill)\s+(me|my\s+stones?|my\s+groups?)\b/.test(q);
 }
 
 function isOneSpaceJumpConnectionQuestion(q: string, boardSize: BoardSize): boolean {
