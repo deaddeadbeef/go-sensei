@@ -9,4 +9,10 @@ describe('GitHub OAuth client configuration', () => {
   it('falls back to the development Copilot OAuth client id', () => {
     expect(getGitHubOAuthClientId({})).toBe(DEVELOPMENT_COPILOT_CLIENT_ID);
   });
+
+  it('requires a dedicated OAuth app client id in production', () => {
+    expect(() => getGitHubOAuthClientId({ NODE_ENV: 'production' })).toThrow(
+      'GITHUB_OAUTH_CLIENT_ID must be set for production deploys',
+    );
+  });
 });
