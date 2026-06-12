@@ -114,14 +114,11 @@ export const useReviewStore = create<ReviewStore>()(
 
       getReviewStats: () => {
         const state = get();
+        const knownHistory = state.history.filter((record) => PROBLEM_IDS.has(record.problemId));
         return {
-          totalReviewed: new Set(
-            state.history
-              .filter((record) => PROBLEM_IDS.has(record.problemId))
-              .map((record) => record.problemId),
-          ).size,
+          totalReviewed: new Set(knownHistory.map((record) => record.problemId)).size,
           dueToday: get().getDueCount(),
-          streak: calculateStreak(state.history),
+          streak: calculateStreak(knownHistory),
         };
       },
 
