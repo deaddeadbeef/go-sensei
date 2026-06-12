@@ -7,9 +7,10 @@ import { SCORE_LINE_STAGGER } from '@/utils/animation';
 interface ScoreCardProps {
   onPlayAgain: () => void;
   onReviewGame?: () => void;
+  onLearningPath?: () => void;
 }
 
-export function ScoreCard({ onPlayAgain, onReviewGame }: ScoreCardProps) {
+export function ScoreCard({ onPlayAgain, onReviewGame, onLearningPath }: ScoreCardProps) {
   const scorecard = useGameStore((s) => s.scorecard);
   if (!scorecard?.visible) return null;
 
@@ -65,14 +66,27 @@ export function ScoreCard({ onPlayAgain, onReviewGame }: ScoreCardProps) {
           {scorecard.winner === 'black' ? '● Black wins!' : scorecard.winner === 'white' ? '○ White wins!' : "It's a draw!"}
         </motion.div>
         <motion.div
-          className="flex gap-2 mt-3"
+          className="mt-3 flex flex-col gap-2 sm:flex-row"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: (lines.length + 1) * SCORE_LINE_STAGGER }}
         >
+          {onLearningPath && (
+            <button
+              onClick={onLearningPath}
+              aria-label="Learning path from score card"
+              className="w-full rounded-lg px-3 py-2 text-sm font-semibold transition-opacity hover:opacity-90 sm:flex-1"
+              style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
+            >
+              Learning path
+            </button>
+          )}
           <button
-            className="flex-1 py-2 rounded-lg text-sm font-medium"
-            style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
+            className="w-full rounded-lg px-3 py-2 text-sm font-medium transition-opacity hover:opacity-90 sm:flex-1"
+            style={{
+              backgroundColor: onLearningPath ? COLORS.ui.bgCard : COLORS.ui.accent,
+              color: onLearningPath ? COLORS.ui.textPrimary : COLORS.ui.bgPrimary,
+            }}
             onClick={onPlayAgain}
           >
             Play Again
@@ -80,7 +94,7 @@ export function ScoreCard({ onPlayAgain, onReviewGame }: ScoreCardProps) {
           {onReviewGame && (
             <button
               onClick={onReviewGame}
-              className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+              className="w-full rounded-lg px-4 py-2 text-sm font-medium transition-all sm:w-auto"
               style={{
                 backgroundColor: 'transparent',
                 color: COLORS.ui.accent,

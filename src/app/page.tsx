@@ -200,7 +200,11 @@ export default function GamePage() {
               </div>
               <GameControls onNewGame={handleNewGame} onPass={handlePass} onUndo={handleUndo} />
             </div>
-            <ScoreCard onPlayAgain={handleNewGame} onReviewGame={handleReviewGame} />
+            <ScoreCard
+              onPlayAgain={handleNewGame}
+              onReviewGame={handleReviewGame}
+              onLearningPath={showLearningPath}
+            />
           </div>
 
           {/* Right: Sidebar — full-width on mobile, side panel on desktop */}
