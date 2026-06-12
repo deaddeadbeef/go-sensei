@@ -2,6 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { getSenseiActionRoute } from '@/lib/coaching/sensei-actions';
 
 describe('getSenseiActionRoute', () => {
+  it('routes learning path actions', () => {
+    expect(getSenseiActionRoute('path')).toEqual({
+      type: 'learning_path',
+    });
+  });
+
   it('routes exact problem replay actions', () => {
     expect(getSenseiActionRoute('problem:life-001')).toEqual({
       type: 'problem',

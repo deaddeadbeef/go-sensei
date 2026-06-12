@@ -1326,6 +1326,7 @@ describe('local question answer', () => {
     ]);
     expect(answer?.actions).toEqual([
       { id: 'hint', label: 'Show targets' },
+      { id: 'path', label: 'Learning path' },
       { id: 'guided:intro', label: 'Start fresh guided game' },
     ]);
   });
@@ -1400,6 +1401,7 @@ describe('local question answer', () => {
     ]);
     expect(answer?.actions).toEqual([
       { id: 'hint', label: 'Show targets' },
+      { id: 'path', label: 'Learning path' },
       { id: 'guided:intro', label: 'Start fresh guided game' },
       { id: 'lesson:territory', label: 'Review territory' },
     ]);

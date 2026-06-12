@@ -4545,6 +4545,7 @@ export function getLocalGameReviewAnswer(
       ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
       actions: [
         ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+        { id: 'path', label: 'Learning path' },
         { id: 'guided:intro', label: 'Start fresh guided game' },
         ...(lessonAction ? [lessonAction] : []),
       ],
@@ -4601,6 +4602,7 @@ export function getLocalGameReviewAnswer(
     },
     actions: [
       ...(suggestions.length > 0 ? [{ id: 'hint', label: 'Show targets' }] : []),
+      { id: 'path', label: 'Learning path' },
       { id: 'guided:intro', label: 'Start fresh guided game' },
       ...(lessonAction ? [lessonAction] : []),
     ],

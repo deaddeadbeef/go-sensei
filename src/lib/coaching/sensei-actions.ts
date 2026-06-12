@@ -19,6 +19,7 @@ export interface SenseiAction {
 export type SenseiActionRoute =
   | { type: 'hint' }
   | { type: 'review' }
+  | { type: 'learning_path' }
   | { type: 'guided_intro' }
   | { type: 'guided_game' }
   | { type: 'problem'; problemId: string }
@@ -70,6 +71,10 @@ export function getSenseiActionRoute(actionId: string): SenseiActionRoute | null
 
   if (actionId === 'review') {
     return { type: 'review' };
+  }
+
+  if (actionId === 'path') {
+    return { type: 'learning_path' };
   }
 
   if (actionId === 'guided:intro') {

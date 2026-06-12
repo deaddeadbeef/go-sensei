@@ -1172,6 +1172,7 @@ describe('useGoMaster local answers', () => {
     expect(state.bubble.text).toContain('Main fix: after Move 1 C7, do not stop at "good"; ask what the stone helps next.');
     expect(state.chatMessages.at(-1)?.actions).toEqual([
       { id: 'hint', label: 'Show targets' },
+      { id: 'path', label: 'Learning path' },
       { id: 'guided:intro', label: 'Start fresh guided game' },
     ]);
     expect(state.overlays.highlights).toEqual([{
@@ -1446,10 +1447,12 @@ describe('useGoMaster local answers', () => {
     expect(state.bubble.text).toContain('Next practice target: Make your stones work together.');
     expect(state.bubble.actions).toEqual([
       { id: 'hint', label: 'Show targets' },
+      { id: 'path', label: 'Learning path' },
       { id: 'guided:intro', label: 'Start fresh guided game' },
     ]);
     expect(state.chatMessages.at(-1)?.actions).toEqual([
       { id: 'hint', label: 'Show targets' },
+      { id: 'path', label: 'Learning path' },
       { id: 'guided:intro', label: 'Start fresh guided game' },
     ]);
     expect(state.overlays.highlights).toEqual([{
