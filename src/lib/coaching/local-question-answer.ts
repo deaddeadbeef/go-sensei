@@ -591,7 +591,7 @@ function isCandidateMoveQuestion(q: string, boardSize: BoardSize): boolean {
 function isCandidatePurposeQuestion(q: string, boardSize: BoardSize): boolean {
   if (!mentionedCoordinate(q, boardSize)) return false;
 
-  return /\bwhat\s+(would|will|could|can)\s+[a-hj-t]\d{1,2}\s+(do|change|accomplish|help)\b/.test(q)
+  return /\bwhat\s+(would|will|could|can|does|did)\s+[a-hj-t]\d{1,2}\s+(do|change|accomplish|help)\b/.test(q)
     || /\bhow\s+(would|will|could|can|does|do)\s+[a-hj-t]\d{1,2}\s+(help|work|change|matter|accomplish)(\s+(me|my\s+stones?|this|the\s+position))?\b/.test(q);
 }
 
@@ -700,6 +700,7 @@ function isCoordinateQuestion(q: string, boardSize: BoardSize): boolean {
   const mentionsPoint = mentionedCoordinate(q, boardSize) !== null;
   if (mentionsPoint) {
     if (/\bwhat\s+about\b/.test(q) || /\bhow\s+about\b/.test(q)) return false;
+    if (isCandidatePurposeQuestion(q, boardSize)) return false;
 
     return /\b(where|show|find|locate)\b/.test(q)
       || /\bwhat\s+(is|does)\s+[a-hj-t]\d{1,2}\b/.test(q)
