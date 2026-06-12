@@ -35,12 +35,19 @@ export interface FreshAreaFollowUpContext {
   targetPoints: Point[];
 }
 
-const CORNER_TARGETS_9X9: Point[] = [
-  { x: 2, y: 2 },
-  { x: 6, y: 2 },
-  { x: 2, y: 6 },
-  { x: 6, y: 6 },
-];
+function getOpeningCornerTargets(boardSize: BoardSize): Point[] {
+  const offset = boardSize === 9 ? 2 : 3;
+  const high = boardSize - 1 - offset;
+
+  return [
+    { x: offset, y: offset },
+    { x: high, y: offset },
+    { x: offset, y: high },
+    { x: high, y: high },
+  ];
+}
+
+const CORNER_TARGETS_9X9: Point[] = getOpeningCornerTargets(9);
 
 const SIDE_TARGETS_9X9: Point[] = [
   { x: 2, y: 4 },
@@ -314,12 +321,15 @@ function distanceToNearestStone(stones: Point[], point: Point): number {
   return Math.min(...stones.map((stone) => distance(point, stone)));
 }
 
-function openingObjective(targetPoints: Point[] = CORNER_TARGETS_9X9): BeginnerObjective {
+function openingObjective(
+  targetPoints: Point[] = CORNER_TARGETS_9X9,
+  copy: Partial<Pick<BeginnerObjective, 'title' | 'instruction' | 'why'>> = {},
+): BeginnerObjective {
   return {
     id: 'claim-corner',
-    title: 'Start with a corner',
-    instruction: 'Place your next stone near an empty corner.',
-    why: 'Corners are easier to surround because the board edge helps you.',
+    title: copy.title ?? 'Start with a corner',
+    instruction: copy.instruction ?? 'Place your next stone near an empty corner.',
+    why: copy.why ?? 'Corners are easier to surround because the board edge helps you.',
     targetPoints,
     conceptIds: ['corner-opening', 'territory'],
   };
@@ -361,9 +371,29 @@ function chooseNewAreaObjective(targetPoints: Point[] = []): BeginnerObjective {
 }
 
 export function getBeginnerObjective(input: BeginnerObjectiveInput): BeginnerObjective | null {
-  if (input.boardSize !== 9) return null;
   if (input.currentPlayer !== 'black') return null;
   if (input.teachingLevel !== 'beginner' && input.teachingLevel !== 'guided') return null;
+
+  if (input.boardSize !== 9) {
+    const openingTargets = getOpeningCornerTargets(input.boardSize);
+    const board = input.board?.size === input.boardSize ? input.board : undefined;
+
+    if (!board) {
+      return input.moveCount <= 2 ? openingObjective(openingTargets) : null;
+    }
+
+    const openCornerTargets = getOpenTargets(board, openingTargets);
+    if (openCornerTargets.length === 0) return null;
+
+    const hasCorner = hasCornerStone(board, 'black');
+    return hasCorner
+      ? openingObjective(openCornerTargets, {
+        title: 'Choose another corner',
+        instruction: 'Play near another empty corner before the fight gets crowded.',
+        why: 'A second corner gives your stones separate places to build before the center becomes urgent.',
+      })
+      : openingObjective(openCornerTargets);
+  }
 
   const board = input.board?.size === 9 ? input.board : undefined;
 

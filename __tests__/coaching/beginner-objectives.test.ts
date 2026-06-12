@@ -58,6 +58,50 @@ describe('beginner objectives', () => {
     })).toBeNull();
   });
 
+  it('recommends real opening corners at the start of a 19x19 beginner game', () => {
+    const objective = getBeginnerObjective({
+      boardSize: 19,
+      board: createGame(19).board,
+      moveHistory: [],
+      moveCount: 0,
+      currentPlayer: 'black',
+      teachingLevel: 'beginner',
+    });
+
+    expect(objective).toMatchObject({
+      id: 'claim-corner',
+      title: 'Start with a corner',
+      targetPoints: [
+        { x: 3, y: 3 },
+        { x: 15, y: 3 },
+        { x: 3, y: 15 },
+        { x: 15, y: 15 },
+      ],
+    });
+    if (!objective) throw new Error('Expected 19x19 opening objective');
+    expect(formatObjectiveTargetText(objective, 19)).toBe('Try D16, Q16, D4, or Q4.');
+  });
+
+  it('uses 4-4 opening corners on a 13x13 beginner board', () => {
+    const objective = getBeginnerObjective({
+      boardSize: 13,
+      board: createGame(13).board,
+      moveHistory: [],
+      moveCount: 0,
+      currentPlayer: 'black',
+      teachingLevel: 'beginner',
+    });
+
+    expect(objective?.targetPoints).toEqual([
+      { x: 3, y: 3 },
+      { x: 9, y: 3 },
+      { x: 3, y: 9 },
+      { x: 9, y: 9 },
+    ]);
+    if (!objective) throw new Error('Expected 13x13 opening objective');
+    expect(formatObjectiveTargetText(objective, 13)).toBe('Try D10, K10, D4, or K4.');
+  });
+
   it('moves from corners to extensions after the opening moves', () => {
     const objective = getBeginnerObjective({
       boardSize: 9,
