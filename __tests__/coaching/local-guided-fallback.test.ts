@@ -181,9 +181,9 @@ describe('local guided fallback', () => {
     expect(fallback).toMatchObject({
       shouldPassSensei: true,
       conceptIds: expect.arrayContaining(['corner-opening', 'territory']),
-      actions: [{ id: 'lesson:territory', label: 'Review territory' }],
+      actions: expect.arrayContaining([{ id: 'lesson:territory', label: 'Review territory' }]),
     });
-    expect(fallback?.text).toContain('Good: D16 hit the marked corner goal. Next, make that stone work with another one.');
+    expect(fallback?.text).toContain('Good: D16 started a corner framework. Next, choose another open corner: Q16, D4, or Q4.');
     expect(fallback?.text).toContain('D16 starts an upper-left corner framework.');
     expect(fallback?.text).toContain('Next focus: choose a second corner framework. Try Q16, D4, or Q4.');
     expect(fallback?.text).toContain('I marked your move, gave White a teaching pass, and marked the next corner choices.');
@@ -212,6 +212,33 @@ describe('local guided fallback', () => {
         rank: 3,
         reason: 'Try Q4 next: another corner gives Black a second easy framework before fighting starts.',
       },
+    ]);
+  });
+
+  it('keeps naming the next open corners after a second 19x19 corner candidate', () => {
+    const firstMove = playMove(createGame(19), { x: 3, y: 3 });
+    if (!firstMove.success) throw new Error('test setup first move failed');
+    const secondMove = playMove(passMove(firstMove.newState), { x: 15, y: 3 });
+    if (!secondMove.success) throw new Error('test setup second move failed');
+
+    const fallback = getLocalGuidedFallback(secondMove.newState, 'beginner', 'auth-unavailable');
+
+    expect(fallback).toMatchObject({
+      shouldPassSensei: true,
+      conceptIds: expect.arrayContaining(['corner-opening', 'territory']),
+      actions: expect.arrayContaining([{ id: 'lesson:territory', label: 'Review territory' }]),
+    });
+    expect(fallback?.text).toContain('Good: Q16 claimed another corner framework. Next, choose another open corner: D4 or Q4.');
+    expect(fallback?.text).toContain('Next focus: Choose another corner. Play near another empty corner before the fight gets crowded. Try D4 or Q4.');
+    expect(fallback?.boardFocus?.highlights).toEqual([{
+      id: 'local-fallback-learned-15,3',
+      point: { x: 15, y: 3 },
+      variant: 'positive',
+      label: 'Q16: move to learn from - beginner job met.',
+    }]);
+    expect(fallback?.boardFocus?.suggestions?.map((suggestion) => suggestion.point)).toEqual([
+      { x: 3, y: 15 },
+      { x: 15, y: 15 },
     ]);
   });
 
