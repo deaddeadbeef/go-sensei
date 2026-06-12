@@ -2066,6 +2066,22 @@ describe('local question answer', () => {
     expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
   });
 
+  it('routes candidate-purpose questions to local target guidance', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+
+    const answer = getLocalQuestionAnswer('What would E7 do?', firstMove.newState, 'guided');
+
+    expect(answer?.text).toContain('Yes. E7 fits the current goal: Make your stones work together.');
+    expect(answer?.text).toContain('E7 is marked because it is a one-space jump from C7');
+    expect(answer?.text).toContain('I marked the current targets again so you can compare the options before playing.');
+    expect(answer?.boardFocus?.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+    ]);
+    expect(answer?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+  });
+
   it('redirects an unmarked candidate move to the current beginner target', () => {
     const firstMove = playMove(createGame(9), { x: 2, y: 2 });
     if (!firstMove.success) throw new Error('test setup move failed');
