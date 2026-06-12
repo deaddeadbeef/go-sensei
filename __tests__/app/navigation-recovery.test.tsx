@@ -232,6 +232,37 @@ describe('app navigation recovery', () => {
     expect(useGameStore.getState().bubble.text).not.toContain('Place a stone anywhere');
   });
 
+  it('recovers stale guided welcome state into the first guided objective', async () => {
+    vi.stubGlobal('ResizeObserver', class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    });
+
+    act(() => {
+      useGameStore.getState().startNewGame(9);
+      useGameStore.setState({
+        appPhase: 'game',
+        phase: 'welcome',
+        teachingLevel: 'guided',
+      });
+    });
+
+    render(<GamePage />);
+
+    await waitFor(() => {
+      const state = useGameStore.getState();
+      expect(state.phase).toBe('playing');
+      expect(state.teachingLevel).toBe('guided');
+      expect(state.game.board.size).toBe(9);
+      expect(state.hasStartedIntroGame).toBe(true);
+    });
+
+    expect(useGameStore.getState().bubble.text).toContain('Your first job is: Start with a corner.');
+    expect(useGameStore.getState().bubble.text).toContain('Try C7, G7, C3, or G3.');
+    expect(useGameStore.getState().bubble.text).not.toContain('Place a stone anywhere');
+  });
+
   it('scopes the floating Sensei bubble to the board area', () => {
     vi.stubGlobal('ResizeObserver', class {
       observe() {}
