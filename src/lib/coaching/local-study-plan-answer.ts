@@ -57,6 +57,8 @@ function isProgressReflectionQuestionText(q: string): boolean {
 
 function isStudyPlanQuestionText(q: string): boolean {
   return /\bwhat\s+should\s+i\s+(study|learn|practice)\b/.test(q)
+    || /\bwhat\s+should\s+i\s+(focus|work)\s+on\b/.test(q)
+    || /\bwhat\s+do\s+i\s+need\s+to\s+work\s+on\b/.test(q)
     || /\bwhat\s+should\s+i\s+do\s+next\b/.test(q)
     || /\bwhere\s+should\s+i\s+go\s+next\b/.test(q)
     || /\bwhat\s+do\s+i\s+do\s+next\b/.test(q)
