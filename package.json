@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "release:check": "npm run lint && npm run test:run && npm run build && npm audit --audit-level=high"
   },
   "dependencies": {
     "framer-motion": "^12.35.2",
