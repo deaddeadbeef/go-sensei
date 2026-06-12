@@ -2273,6 +2273,29 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('direction-of-play').encounterCount).toBeGreaterThan(0);
   });
 
+  it('routes regret-style candidate questions locally without fetching', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('Should I have played E7 instead?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('Yes. E7 fits the current goal: Make your stones work together.');
+    expect(state.bubble.text).toContain('E7 is marked because it is a one-space jump from C7');
+    expect(state.bubble.text).toContain('I marked the current targets again so you can compare the options before playing.');
+    expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+    ]);
+    expect(useConceptStore.getState().getMastery('direction-of-play').encounterCount).toBeGreaterThan(0);
+  });
+
   it('answers what is wrong with a candidate coordinate locally without fetching', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());

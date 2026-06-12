@@ -572,6 +572,9 @@ function isCandidateMoveQuestion(q: string, boardSize: BoardSize): boolean {
   if (!mentionedCoordinate(q, boardSize)) return false;
 
   return /\b(should|can|could|would)\s+i\s+(play|try|move)\b/.test(q)
+    || /\b(should|could|would)\s+i\s+have\s+(played|tried|moved)\b/.test(q)
+    || /\b(should|could|would)\s+i\s+have\s+gone\s+(at|to|for)\b/.test(q)
+    || (/\binstead\b/.test(q) && /\b(play|played|try|tried|move|moved)\b/.test(q))
     || /\b(should|can|could|would|do)\s+i\s+connect\s+(at\s+)?[a-hj-t]\d{1,2}\b/.test(q)
     || /\bwhat\s+about\b/.test(q)
     || /\bhow\s+about\b/.test(q)
