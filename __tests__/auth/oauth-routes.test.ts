@@ -55,7 +55,9 @@ describe('OAuth routes', () => {
 
     expect(response.status).toBe(500);
     expect(body).toMatchObject({
-      error: expect.stringContaining('GITHUB_OAUTH_CLIENT_ID must be set for production deploys'),
+      code: 'AUTH_CONFIG_MISSING',
+      error: 'GitHub sign-in is not configured for this deployment.',
+      detail: expect.stringContaining('GITHUB_OAUTH_CLIENT_ID must be set for production deploys'),
     });
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -91,7 +93,9 @@ describe('OAuth routes', () => {
 
     expect(response.status).toBe(500);
     expect(body).toMatchObject({
-      error: expect.stringContaining('GITHUB_OAUTH_CLIENT_ID must be set for production deploys'),
+      code: 'AUTH_CONFIG_MISSING',
+      error: 'GitHub sign-in is not configured for this deployment.',
+      detail: expect.stringContaining('GITHUB_OAUTH_CLIENT_ID must be set for production deploys'),
     });
     expect(fetchMock).not.toHaveBeenCalled();
   });

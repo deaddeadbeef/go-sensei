@@ -18,7 +18,20 @@ interface AuthState {
 }
 
 const STORAGE_KEY = 'go-sensei-github-token';
+const AUTH_CONFIG_MISSING_CODE = 'AUTH_CONFIG_MISSING';
+const AUTH_CONFIG_MISSING_MESSAGE = 'GitHub sign-in is not configured for this deployment yet. You can still use guided lessons, problems, and local coaching without signing in.';
 // Security: sessionStorage ensures tokens don't persist across browser sessions
+
+type AuthErrorPayload = {
+  code?: string;
+  error?: string;
+  error_description?: string;
+};
+
+function authErrorMessage(data: AuthErrorPayload, fallback: string): string {
+  if (data.code === AUTH_CONFIG_MISSING_CODE) return AUTH_CONFIG_MISSING_MESSAGE;
+  return data.error_description || data.error || fallback;
+}
 
 async function copyUserCodeToClipboard(userCode: string): Promise<boolean> {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
@@ -112,8 +125,8 @@ export function useGitHubAuth() {
       // Step 1: Request device code
       const resp = await fetch('/api/auth/device-code', { method: 'POST' });
       if (!resp.ok) {
-        const data = await resp.json();
-        throw new Error(data.error || 'Failed to start login');
+        const data = await resp.json() as AuthErrorPayload;
+        throw new Error(authErrorMessage(data, 'Failed to start login'));
       }
 
       const deviceData: DeviceCodeResponse = await resp.json();
@@ -187,7 +200,7 @@ export function useGitHubAuth() {
           // Unknown error
           if (data.error) {
             stopPolling();
-            setAuthState(s => ({ ...s, status: 'error', error: data.error_description || data.error }));
+            setAuthState(s => ({ ...s, status: 'error', error: authErrorMessage(data, data.error) }));
           }
         } catch (err) {
           // Network error — keep polling, might be transient
