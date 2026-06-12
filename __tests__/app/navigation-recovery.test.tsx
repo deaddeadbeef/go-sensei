@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { renderToString } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import GamePage from '@/app/page';
@@ -166,6 +166,37 @@ describe('app navigation recovery', () => {
       expect(useGameStore.getState().bubble.text).toContain(expectedText);
     });
     expect(useGameStore.getState().bubble.text).not.toContain('19×19');
+  });
+
+  it('starts a real guided 9x9 board when Guided is selected from settings', async () => {
+    vi.stubGlobal('ResizeObserver', class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    });
+
+    act(() => {
+      useGameStore.getState().startNewGame(19);
+      useGameStore.getState().setTeachingLevel('beginner');
+    });
+
+    render(<GamePage />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    fireEvent.click(screen.getByRole('button', { name: '📖 Guided' }));
+    expect(screen.getByText('Guided starts or resumes a 9×9 board with visible targets')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      const state = useGameStore.getState();
+      expect(state.appPhase).toBe('game');
+      expect(state.teachingLevel).toBe('guided');
+      expect(state.game.board.size).toBe(9);
+      expect(state.hasStartedIntroGame).toBe(true);
+    });
+
+    expect(screen.getByText('Start with a corner')).toBeTruthy();
+    expect(screen.getByText('Try C7, G7, C3, or G3.')).toBeTruthy();
   });
 
   it('scopes the floating Sensei bubble to the board area', () => {
