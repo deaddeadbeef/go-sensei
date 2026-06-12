@@ -8,6 +8,7 @@ import { useGameStore } from '@/stores/game-store';
 import { useProgressStore } from '@/stores/progress-store';
 import { useReviewStore } from '@/stores/review-store';
 import type { ProblemAttempt } from '@/lib/problems/types';
+import { CONCEPTS } from '@/lib/concepts/concept-data';
 
 function solved(problemId: string): ProblemAttempt {
   return {
@@ -60,6 +61,22 @@ describe('ProgressDashboard', () => {
         { problemId: 'capture-002', solved: false, attempts: 2, moveSequence: [], timestamp: 1 },
       ],
     });
+    useConceptStore.setState({
+      mastery: {
+        'stones-and-board': {
+          conceptId: 'stones-and-board',
+          level: 1,
+          lastSeen: 1,
+          encounterCount: 1,
+        },
+        'stale-concept-id': {
+          conceptId: 'stale-concept-id',
+          level: 3,
+          lastSeen: 1,
+          encounterCount: 10,
+        },
+      },
+    });
 
     render(<ProgressDashboard />);
 
@@ -67,6 +84,9 @@ describe('ProgressDashboard', () => {
     expect(screen.getByText('9 remaining')).toBeTruthy();
     expect(screen.getByText('1/20')).toBeTruthy();
     expect(screen.getByText('1/20 solved · 50% accuracy')).toBeTruthy();
+    expect(screen.getByText(`0/${CONCEPTS.length}`)).toBeTruthy();
+    expect(screen.getByText('0 mastered')).toBeTruthy();
+    expect(screen.getByText('Introduced: 1')).toBeTruthy();
   });
 
   it('turns dashboard metrics into a recommended next move', () => {
