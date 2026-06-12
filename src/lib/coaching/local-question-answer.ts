@@ -319,11 +319,13 @@ function isResignRestartQuestion(q: string): boolean {
 
 function isMoveReviewQuestion(q: string): boolean {
   return /\b(was|is)\s+(that|this|my\s+move)\s+(good|bad|ok|okay|right|wrong)\b/.test(q)
+    || /\b(was|is)\s+(that|this|it|my\s+move)\s+(an?\s+)?(good|bad|ok|okay|right|wrong)\s+move\b/.test(q)
     || /\b(was|is)\s+(that|this|my\s+move)\s+(a\s+)?(mistake|blunder|misplay)\b/.test(q)
     || /\bhow\s+(was|is)\s+(that|this|my\s+move)\b/.test(q)
     || /\bdid\s+i\s+(make\s+a\s+mistake|play\s+(well|badly|good|right|wrong))\b/.test(q)
     || /\bdid\s+i\s+(make\s+a\s+)?(blunder|misplay)\b/.test(q)
     || /\bwhy\s+(was|is)\s+(that|this|my\s+move)\s+(good|bad|right|wrong)\b/.test(q)
+    || /\bwhy\s+(was|is)\s+(that|this|it|my\s+move)\s+(an?\s+)?(good|bad|ok|okay|right|wrong)\s+move\b/.test(q)
     || /\breview\s+(that|this|my)\s+move\b/.test(q);
 }
 
