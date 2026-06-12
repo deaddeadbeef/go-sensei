@@ -9,6 +9,8 @@ interface SenseiInputProps {
   onSendMessage: (text: string) => void;
 }
 
+const QUESTION_PROMPT_PREFIX = 'Ask: ';
+
 function hasBoardStones(board: BoardState): boolean {
   return board.grid.some((row) => row.some((cell) => cell !== null));
 }
@@ -41,18 +43,34 @@ function buildQuestionPrompt(board: BoardState, moveHistory: Move[]): string {
   return 'Ask: What should I play now?';
 }
 
+function questionFromPrompt(prompt: string): string | null {
+  return prompt.startsWith(QUESTION_PROMPT_PREFIX)
+    ? prompt.slice(QUESTION_PROMPT_PREFIX.length)
+    : null;
+}
+
 export function SenseiInput({ onSendMessage }: SenseiInputProps) {
   const [text, setText] = useState('');
   const isAiThinking = useGameStore((s) => s.isAiThinking);
   const board = useGameStore((s) => s.game.board);
   const moveHistory = useGameStore((s) => s.game.moveHistory);
   const placeholder = isAiThinking ? 'Sensei is thinking...' : buildQuestionPrompt(board, moveHistory);
+  const suggestedQuestion = isAiThinking ? null : questionFromPrompt(placeholder);
+  const trimmedText = text.trim();
+  const hasTypedText = trimmedText.length > 0;
+  const sendButtonLabel = hasTypedText || isAiThinking ? 'Send' : 'Ask';
+  const sendButtonAriaLabel = hasTypedText || isAiThinking ? 'Send message' : 'Ask suggested question';
 
   const handleSend = useCallback(() => {
-    if (!text.trim() || isAiThinking) return;
-    onSendMessage(text.trim());
+    if (isAiThinking) return;
+
+    const typedText = text.trim();
+    const message = typedText || suggestedQuestion;
+    if (!message) return;
+
+    onSendMessage(message);
     setText('');
-  }, [text, isAiThinking, onSendMessage]);
+  }, [text, suggestedQuestion, isAiThinking, onSendMessage]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -78,11 +96,12 @@ export function SenseiInput({ onSendMessage }: SenseiInputProps) {
       />
       <button
         onClick={handleSend}
-        disabled={!text.trim() || isAiThinking}
+        disabled={isAiThinking || (!hasTypedText && !suggestedQuestion)}
+        aria-label={sendButtonAriaLabel}
         className="text-xs px-3 py-1.5 rounded-lg font-medium transition-opacity hover:opacity-80 disabled:opacity-40"
         style={{ backgroundColor: COLORS.ui.accent, color: COLORS.ui.bgPrimary }}
       >
-        Send
+        {sendButtonLabel}
       </button>
     </div>
   );
