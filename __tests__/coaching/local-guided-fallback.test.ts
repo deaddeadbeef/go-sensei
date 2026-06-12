@@ -172,6 +172,49 @@ describe('local guided fallback', () => {
     expect(fallback?.text).toContain('Use the marked targets to make the next move concrete.');
   });
 
+  it('keeps an empty-board 19x19 learner moving after the first corner candidate', () => {
+    const firstMove = playMove(createGame(19), { x: 3, y: 3 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+
+    const fallback = getLocalGuidedFallback(firstMove.newState, 'beginner', 'auth-unavailable');
+
+    expect(fallback).toMatchObject({
+      shouldPassSensei: true,
+      conceptIds: expect.arrayContaining(['corner-opening', 'territory']),
+      actions: [{ id: 'lesson:territory', label: 'Review territory' }],
+    });
+    expect(fallback?.text).toContain('Your first stone at D16 gives us a real board position to learn from.');
+    expect(fallback?.text).toContain('D16 starts an upper-left corner framework.');
+    expect(fallback?.text).toContain('Next focus: choose a second corner framework. Try Q16, D4, or Q4.');
+    expect(fallback?.text).toContain('I marked your move, gave White a teaching pass, and marked the next corner choices.');
+    expect(fallback?.boardFocus?.highlights).toEqual([{
+      id: 'local-fallback-learned-3,3',
+      point: { x: 3, y: 3 },
+      variant: 'positive',
+      label: 'D16: first corner framework started.',
+    }]);
+    expect(fallback?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-fallback-opening-19-move-15,3',
+        point: { x: 15, y: 3 },
+        rank: 1,
+        reason: 'Try Q16 next: another corner gives Black a second easy framework before fighting starts.',
+      },
+      {
+        id: 'local-fallback-opening-19-move-3,15',
+        point: { x: 3, y: 15 },
+        rank: 2,
+        reason: 'Try D4 next: another corner gives Black a second easy framework before fighting starts.',
+      },
+      {
+        id: 'local-fallback-opening-19-move-15,15',
+        point: { x: 15, y: 15 },
+        rank: 3,
+        reason: 'Try Q4 next: another corner gives Black a second easy framework before fighting starts.',
+      },
+    ]);
+  });
+
   it('marks fresh-area targets with direction-aware reasons during local fallback', () => {
     const fallback = getLocalGuidedFallback(settledShapeGame(), 'guided', 'auth-unavailable');
 
