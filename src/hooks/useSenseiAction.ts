@@ -8,6 +8,7 @@ export function useSenseiAction() {
   const dismissBubble = useGameStore((s) => s.dismissBubble);
   const showProblems = useGameStore((s) => s.showProblems);
   const showReview = useGameStore((s) => s.showReview);
+  const showLearningPath = useGameStore((s) => s.showLearningPath);
   const startGuidedIntroGame = useGameStore((s) => s.startGuidedIntroGame);
   const openGuidedGame = useGameStore((s) => s.openGuidedGame);
   const startLesson = useGameStore((s) => s.startLesson);
@@ -28,6 +29,11 @@ export function useSenseiAction() {
 
     if (route.type === 'review') {
       showReview();
+      return;
+    }
+
+    if (route.type === 'learning_path') {
+      showLearningPath();
       return;
     }
 
@@ -76,6 +82,7 @@ export function useSenseiAction() {
     requestGuidedReadReplay,
     requestHint,
     openGuidedGame,
+    showLearningPath,
     showProblems,
     showReview,
     startGuidedIntroGame,

@@ -177,6 +177,25 @@ describe('SenseiBubble actions', () => {
     expect(useGameStore.getState().bubble.visible).toBe(false);
   });
 
+  it('routes learning path actions to the curriculum hub', () => {
+    act(() => {
+      useGameStore.getState().showBubble({
+        text: 'Use the path for your next structured step.',
+        variant: 'teaching',
+        actions: [{ id: 'path', label: 'Learning path' }],
+      });
+      useGameStore.getState().showProblems('capture');
+    });
+
+    render(<SenseiBubble />);
+    finishTypewriter();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Learning path' }));
+
+    expect(useGameStore.getState().appPhase).toBe('path');
+    expect(useGameStore.getState().bubble.visible).toBe(false);
+  });
+
   it('routes generic practice actions to every problem category', () => {
     act(() => {
       useGameStore.getState().showBubble({
