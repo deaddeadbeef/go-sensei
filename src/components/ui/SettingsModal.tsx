@@ -30,7 +30,8 @@ function SettingsModalPanel({
 }: SettingsModalPanelProps) {
   const [boardSize, setBoardSize] = useState<BoardSize>(currentBoardSize);
   const [teachingLevel, setTeachingLevel] = useState<'beginner' | 'intermediate' | 'advanced' | 'guided'>(currentTeachingLevel);
-  const boardSizeHelpText = teachingLevel === 'guided'
+  const isGuided = teachingLevel === 'guided';
+  const boardSizeHelpText = isGuided
     ? 'Guided starts or resumes a 9×9 board with visible targets'
     : boardSize === 9
       ? '9×9 keeps the whole board readable while you practice corners, captures, and territory'
@@ -41,6 +42,16 @@ function SettingsModalPanel({
   const handleSave = () => {
     onSave({ boardSize, teachingLevel });
     onClose();
+  };
+
+  const handleBoardSizeSelect = (size: BoardSize) => {
+    if (isGuided) return;
+    setBoardSize(size);
+  };
+
+  const handleTeachingLevelSelect = (level: 'beginner' | 'intermediate' | 'advanced' | 'guided') => {
+    setTeachingLevel(level);
+    if (level === 'guided') setBoardSize(9);
   };
 
   const handleCancel = () => {
@@ -144,12 +155,15 @@ function SettingsModalPanel({
                 {([9, 13, 19] as BoardSize[]).map((size) => (
                   <button
                     key={size}
-                    onClick={() => setBoardSize(size)}
+                    onClick={() => handleBoardSizeSelect(size)}
+                    disabled={isGuided}
                     className="flex-1 py-2 rounded-lg text-sm font-medium transition-all"
                     style={{
                       backgroundColor: boardSize === size ? COLORS.ui.accent : COLORS.ui.bgPrimary,
                       color: boardSize === size ? COLORS.ui.bgPrimary : COLORS.ui.textSecondary,
                       border: `1px solid ${boardSize === size ? COLORS.ui.accent : COLORS.ui.textSecondary + '30'}`,
+                      opacity: isGuided ? 0.7 : 1,
+                      cursor: isGuided ? 'not-allowed' : 'pointer',
                     }}
                   >
                     {size}×{size}
@@ -170,7 +184,7 @@ function SettingsModalPanel({
                 {(['beginner', 'intermediate', 'advanced', 'guided'] as const).map((level) => (
                   <button
                     key={level}
-                    onClick={() => setTeachingLevel(level)}
+                    onClick={() => handleTeachingLevelSelect(level)}
                     className="flex-1 py-2 rounded-lg text-sm font-medium transition-all"
                     style={{
                       backgroundColor: teachingLevel === level ? COLORS.ui.accent : COLORS.ui.bgPrimary,
