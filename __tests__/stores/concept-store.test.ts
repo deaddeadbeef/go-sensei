@@ -76,10 +76,36 @@ describe('concept store', () => {
     expect(m.evidenceScore).toBe(3);
   });
 
+  it('recordEvidence ignores unknown concept ids', () => {
+    act(() => {
+      useConceptStore.getState().recordEvidence('missing-concept-id', 'ai_tag_success');
+      useConceptStore.getState().recordEvidence('liberties', 'ai_tag_success');
+    });
+
+    expect(useConceptStore.getState().mastery).not.toHaveProperty('missing-concept-id');
+    expect(useConceptStore.getState().getMastery('missing-concept-id')).toMatchObject({
+      conceptId: 'missing-concept-id',
+      level: 0,
+      encounterCount: 0,
+    });
+    expect(useConceptStore.getState().getMastery('liberties').level).toBe(1);
+  });
+
   it('setMasteryLevel directly sets the level', () => {
     act(() => useConceptStore.getState().setMasteryLevel('ko', 3));
     const m = useConceptStore.getState().getMastery('ko');
     expect(m.level).toBe(3);
+  });
+
+  it('setMasteryLevel ignores unknown concept ids', () => {
+    act(() => {
+      useConceptStore.getState().setMasteryLevel('missing-concept-id', 3);
+      useConceptStore.getState().setMasteryLevel('ko', 3);
+    });
+
+    expect(useConceptStore.getState().mastery).not.toHaveProperty('missing-concept-id');
+    expect(useConceptStore.getState().getMastery('missing-concept-id').level).toBe(0);
+    expect(useConceptStore.getState().getMastery('ko').level).toBe(3);
   });
 
   it('getUnlockedConcepts includes root concepts (no prerequisites)', () => {
