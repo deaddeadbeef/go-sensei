@@ -229,6 +229,35 @@ describe('app navigation recovery', () => {
     expect(useGameStore.getState().game.board.size).toBe(19);
   });
 
+  it('describes the selected board size in settings before saving', () => {
+    vi.stubGlobal('ResizeObserver', class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    });
+
+    act(() => {
+      useGameStore.getState().startNewGame(19);
+      useGameStore.getState().setTeachingLevel('beginner');
+    });
+
+    render(<GamePage />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+
+    expect(screen.getByText('19×19 is the standard board size')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: '13×13' }));
+
+    expect(screen.getByText('13×13 adds room for direction without making the whole board hard to read')).toBeTruthy();
+    expect(screen.queryByText('19×19 is the standard board size')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: '9×9' }));
+
+    expect(screen.getByText('9×9 keeps the whole board readable while you practice corners, captures, and territory')).toBeTruthy();
+    expect(screen.queryByText('19×19 is the standard board size')).toBeNull();
+  });
+
   it('restarts guided New Game with the first objective and a fresh guided snapshot', async () => {
     vi.stubGlobal('ResizeObserver', class {
       observe() {}
