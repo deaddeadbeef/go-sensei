@@ -592,6 +592,7 @@ function isCandidatePurposeQuestion(q: string, boardSize: BoardSize): boolean {
   if (!mentionedCoordinate(q, boardSize)) return false;
 
   return /\bwhat\s+(would|will|could|can|does|did)\s+[a-hj-t]\d{1,2}\s+(do|change|accomplish|help)\b/.test(q)
+    || /\bwhat\s+(is|s)\s+[a-hj-t]\d{1,2}\s+for\b/.test(q)
     || /\bhow\s+(would|will|could|can|does|do)\s+[a-hj-t]\d{1,2}\s+(help|work|change|matter|accomplish)(\s+(me|my\s+stones?|this|the\s+position))?\b/.test(q);
 }
 
