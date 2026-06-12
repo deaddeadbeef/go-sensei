@@ -621,7 +621,8 @@ function isOneSpaceJumpPressureQuestion(q: string): boolean {
     || /\bwhat\s+if\s+(white|opponent|sensei)\s+(plays|attacks|cuts|pressures)\b/.test(q)
     || /\bwhat\s+should\s+i\s+do\s+if\s+(white|opponent|sensei)\s+(plays|attacks|cuts|pressures)\b/.test(q)
     || /\b(if|when)\s+(white|opponent|sensei)\s+(plays|attacks|cuts|pressures)\b/.test(q)
-    || /\b(can|should|do)\s+i\s+(ignore|answer|defend)\s+(the\s+)?(cut|gap|attack|pressure)\b/.test(q);
+    || /\b(can|should|do)\s+i\s+(ignore|answer|defend)\s+(the\s+)?(cut|gap|attack|pressure)\b/.test(q)
+    || /\bhow\s+do\s+i\s+(fix|answer|handle|respond\s+to)\s+(this|the)\s+(cut|gap|attack|pressure)\b/.test(q);
 }
 
 function isOneSpaceJumpConnectionQuestion(q: string, boardSize: BoardSize): boolean {
