@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { getGitHubOAuthClientId } from '@/lib/ai/github-oauth';
 
 export async function POST() {
-  const clientId = getGitHubOAuthClientId();
   try {
+    const clientId = getGitHubOAuthClientId();
     const resp = await fetch('https://github.com/login/device/code', {
       method: 'POST',
       headers: {

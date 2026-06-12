@@ -58,6 +58,7 @@ GITHUB_OAUTH_CLIENT_ID=Iv1_your_client_id
 ```
 
 If this variable is unset, Go Sensei falls back to the VS Code Copilot OAuth client ID for local development compatibility. Do not treat that fallback as production release configuration.
+When `NODE_ENV=production`, the auth routes require `GITHUB_OAUTH_CLIENT_ID` and return a configuration error instead of silently using the development fallback.
 
 ### Alternative: Environment Variable
 
