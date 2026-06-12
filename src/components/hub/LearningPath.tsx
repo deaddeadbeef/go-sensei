@@ -10,13 +10,13 @@ import { useConceptStore } from '@/stores/concept-store';
 import { useGameStore } from '@/stores/game-store';
 import { useProgressStore } from '@/stores/progress-store';
 import { useReviewStore } from '@/stores/review-store';
+import { formatDueReviewPreview } from '@/lib/review/due-review-preview';
 import { COLORS } from '@/utils/colors';
 
 const CONCEPT_BY_ID = new Map(CONCEPTS.map((concept) => [concept.id, concept]));
 const LESSON_IDS = new Set(LESSONS.map((lesson) => lesson.id));
 const PROBLEM_IDS = new Set(PROBLEMS.map((problem) => problem.id));
 const PROBLEM_BY_ID = new Map(PROBLEMS.map((problem) => [problem.id, problem]));
-const DUE_REVIEW_PREVIEW_LIMIT = 3;
 
 const CATEGORY_LABELS: Record<ConceptCategory, string> = {
   fundamentals: 'Fundamental',
@@ -37,22 +37,6 @@ function conceptDisplay(conceptId: string): Concept {
     description: 'A board idea to notice during this recommendation.',
     prerequisites: [],
   };
-}
-
-function formatDueReviewPreview(problemIds: string[]): string | null {
-  const dueProblems = problemIds
-    .map((problemId) => PROBLEM_BY_ID.get(problemId))
-    .filter((problem): problem is NonNullable<typeof problem> => problem !== undefined);
-
-  if (dueProblems.length === 0) return null;
-
-  const previewTitles = dueProblems
-    .slice(0, DUE_REVIEW_PREVIEW_LIMIT)
-    .map((problem) => problem.title);
-  const hiddenCount = dueProblems.length - previewTitles.length;
-  const hiddenText = hiddenCount > 0 ? `, +${hiddenCount} more` : '';
-
-  return `${dueProblems.length} due: ${previewTitles.join(', ')}${hiddenText}.`;
 }
 
 export function LearningPath() {
