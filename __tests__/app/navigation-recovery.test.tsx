@@ -199,6 +199,36 @@ describe('app navigation recovery', () => {
     expect(screen.getByText('Try C7, G7, C3, or G3.')).toBeTruthy();
   });
 
+  it('reopens settings with the saved board and teaching style after canceling local edits', () => {
+    vi.stubGlobal('ResizeObserver', class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    });
+
+    act(() => {
+      useGameStore.getState().startNewGame(19);
+      useGameStore.getState().setTeachingLevel('beginner');
+    });
+
+    render(<GamePage />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    fireEvent.click(screen.getByRole('button', { name: '📖 Guided' }));
+    expect(screen.getByText('Guided starts or resumes a 9×9 board with visible targets')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+
+    expect(screen.getByText('19×19 is the standard board size')).toBeTruthy();
+    expect(screen.getByText('Firm and encouraging — teaches fundamentals with specific corrections')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(useGameStore.getState().teachingLevel).toBe('beginner');
+    expect(useGameStore.getState().game.board.size).toBe(19);
+  });
+
   it('restarts guided New Game with the first objective and a fresh guided snapshot', async () => {
     vi.stubGlobal('ResizeObserver', class {
       observe() {}
