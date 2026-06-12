@@ -801,6 +801,50 @@ function objectiveSuggestions(
   }));
 }
 
+function openingCornerTargets(boardSize: BoardSize): Point[] {
+  const offset = boardSize === 9 ? 2 : 3;
+  const high = boardSize - 1 - offset;
+
+  return [
+    { x: offset, y: offset },
+    { x: high, y: offset },
+    { x: offset, y: high },
+    { x: high, y: high },
+  ];
+}
+
+function buildOpenBoardOpeningAnswer(game: GameState): LocalQuestionAnswer | null {
+  if (game.moveHistory.length > 0 || hasBoardStones(game)) return null;
+  if (game.board.size === 9) return null;
+
+  const targets = openingCornerTargets(game.board.size);
+  const targetCoords = targets.map((point) => pointToCoord(point, game.board.size));
+  const targetText = joinOrList(targetCoords);
+
+  return {
+    text: [
+      `On this ${game.board.size}x${game.board.size} board, start by choosing one corner framework.`,
+      `Try ${targetText}.`,
+      'Corners are calmer first moves because the nearby edges help your stones sketch territory.',
+      'I marked the four 4-4 corner points so you can make the first move without needing live AI.',
+    ].join(' '),
+    conceptIds: ['corner-opening', 'territory'],
+    boardFocus: {
+      suggestions: targets.map((point, index) => {
+        const coord = pointToCoord(point, game.board.size);
+
+        return {
+          id: `local-opening-${game.board.size}-move-${pointKey(point)}`,
+          point: copyPoint(point),
+          rank: index + 1,
+          reason: `Start at ${coord}: the nearby edges help this corner framework grow.`,
+        };
+      }),
+    },
+    actions: [{ id: 'lesson:territory', label: 'Review territory' }],
+  };
+}
+
 const ONE_SPACE_JUMP_DELTAS: Point[] = [
   { x: 2, y: 0 },
   { x: 0, y: 2 },
@@ -4265,7 +4309,7 @@ function buildObjectiveAnswer(game: GameState, teachingLevel: TeachingLevel): Lo
     teachingLevel,
   });
 
-  if (!objective) return null;
+  if (!objective) return buildOpenBoardOpeningAnswer(game);
 
   const followUpContext = getFreshAreaFollowUpContext(game, teachingLevel, objective);
   const targetText = formatObjectiveTargetText(objective, game.board.size, 4, followUpContext);

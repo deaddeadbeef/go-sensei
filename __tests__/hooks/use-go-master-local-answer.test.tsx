@@ -132,6 +132,34 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('territory').encounterCount).toBeGreaterThan(0);
   });
 
+  it('answers empty 19x19 start questions locally without fetching', () => {
+    act(() => {
+      useGameStore.getState().startNewGame(19);
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('Where should I start?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('On this 19x19 board, start by choosing one corner framework.');
+    expect(state.bubble.text).toContain('Try D16, Q16, D4, or Q4.');
+    expect(state.bubble.actions).toEqual([{ id: 'lesson:territory', label: 'Review territory' }]);
+    expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'lesson:territory', label: 'Review territory' }]);
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 3, y: 3 },
+      { x: 15, y: 3 },
+      { x: 3, y: 15 },
+      { x: 15, y: 15 },
+    ]);
+    expect(useConceptStore.getState().getMastery('corner-opening').encounterCount).toBeGreaterThan(0);
+  });
+
   it('answers confused beginner messages with one board job without fetching', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());
