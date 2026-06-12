@@ -167,6 +167,41 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('direction-of-play').encounterCount).toBeGreaterThan(0);
   });
 
+  it('answers move-anxiety messages with a concrete local test before fetching', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage("I'm afraid to make a mistake");
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('A mistake is useful if it tests one clear idea.');
+    expect(state.bubble.text).toContain('Your safe test is: Make your stones work together.');
+    expect(state.bubble.text).toContain('Play a one-space jump from one of your stones. Try E7 or C5.');
+    expect(state.bubble.text).toContain('After you play it, ask what changed');
+    expect(state.bubble.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+    expect(state.chatMessages.at(-1)?.actions).toEqual([{ id: 'hint', label: 'Show targets' }]);
+    expect(state.overlays.suggestions).toEqual([
+      {
+        id: 'local-move-anxiety-move-4,2',
+        point: { x: 4, y: 2 },
+        rank: 1,
+        reason: 'Try E7 as a one-space jump that works with your stones.',
+      },
+      {
+        id: 'local-move-anxiety-move-2,4',
+        point: { x: 2, y: 4 },
+        rank: 2,
+        reason: 'Try C5 as a one-space jump that works with your stones.',
+      },
+    ]);
+    expect(useConceptStore.getState().getMastery('direction-of-play').encounterCount).toBeGreaterThan(0);
+  });
+
   it('answers tenuki locally from the current extension objective without fetching', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());

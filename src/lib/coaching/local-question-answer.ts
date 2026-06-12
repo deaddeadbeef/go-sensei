@@ -307,6 +307,15 @@ function isConfusionQuestion(q: string): boolean {
     || /\bwhere\s+do\s+i\s+even\s+start\b/.test(q);
 }
 
+function isMoveAnxietyQuestion(q: string): boolean {
+  return /\b(i\s+m|im|i\s+am|i\s+feel)\s+(afraid|scared|nervous|worried)\b/.test(q)
+    || /\b(afraid|scared|nervous|worried)\s+(to\s+)?(play|move|choose)\b/.test(q)
+    || /\b(afraid|scared|nervous|worried)\s+(of|about)\s+(making\s+)?(a\s+)?(mistake|bad\s+move|wrong\s+move|blunder|misplay)\b/.test(q)
+    || /\bwhat\s+if\s+i\s+(mess\s+up|make\s+a\s+mistake|play\s+wrong|blunder)\b/.test(q)
+    || /\bi\s+do\s+not\s+want\s+to\s+(mess\s+up|make\s+a\s+mistake|play\s+wrong|blunder)\b/.test(q)
+    || /\bi\s+dont\s+want\s+to\s+(mess\s+up|make\s+a\s+mistake|play\s+wrong|blunder)\b/.test(q);
+}
+
 function isResignRestartQuestion(q: string): boolean {
   return /\b(should|can|could|do)\s+i\s+resign\b/.test(q)
     || /\bhow\s+do\s+i\s+resign\b/.test(q)
@@ -4314,6 +4323,43 @@ function buildConfusionAnswer(game: GameState, teachingLevel: TeachingLevel): Lo
   };
 }
 
+function buildMoveAnxietyAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
+  const objective = getBeginnerObjective({
+    boardSize: game.board.size,
+    board: game.board,
+    moveHistory: game.moveHistory,
+    moveCount: game.moveHistory.length,
+    currentPlayer: 'black',
+    teachingLevel,
+  });
+
+  if (!objective) {
+    return {
+      text: 'A mistake is useful if it tests one clear idea. Pick one candidate, say what it is trying to change, then review the result instead of judging the whole board at once.',
+      conceptIds: ['direction-of-play'],
+    };
+  }
+
+  const followUpContext = getFreshAreaFollowUpContext(game, teachingLevel, objective);
+  const targetText = formatObjectiveTargetText(objective, game.board.size, 4, followUpContext);
+  const suggestions = objectiveSuggestions(objective, game.board.size, 'local-move-anxiety-move', followUpContext);
+
+  return {
+    text: [
+      'A mistake is useful if it tests one clear idea.',
+      `Your safe test is: ${objective.title}.`,
+      objective.instruction,
+      targetText ?? '',
+      objective.why,
+      'After you play it, ask what changed; that turns the move into a lesson instead of a guess.',
+      suggestions.length > 0 ? 'I marked the test points so you can choose instead of freeze.' : '',
+    ].filter(Boolean).join(' '),
+    conceptIds: uniqueConceptIds(['direction-of-play', ...(objective.conceptIds ?? [])]),
+    ...(suggestions.length > 0 ? { boardFocus: { suggestions } } : {}),
+    actions: getBeginnerObjectiveActions(objective),
+  };
+}
+
 function buildResignRestartAnswer(game: GameState, teachingLevel: TeachingLevel): LocalQuestionAnswer {
   const objective = game.phase === 'playing'
     ? getBeginnerObjective({
@@ -4790,6 +4836,10 @@ export function getLocalQuestionAnswer(
 
   if (isConfusionQuestion(q)) {
     return buildConfusionAnswer(game, teachingLevel);
+  }
+
+  if (isMoveAnxietyQuestion(q)) {
+    return buildMoveAnxietyAnswer(game, teachingLevel);
   }
 
   if (isNextMoveQuestion(q)) {

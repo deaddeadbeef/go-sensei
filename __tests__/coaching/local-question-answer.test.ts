@@ -375,6 +375,46 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('turns move anxiety into one safe board test', () => {
+    const answer = getLocalQuestionAnswer("I'm scared to make a mistake", createGame(9), 'guided');
+
+    expect(answer?.text).toContain('A mistake is useful if it tests one clear idea.');
+    expect(answer?.text).toContain('Your safe test is: Start with a corner.');
+    expect(answer?.text).toContain('Place your next stone near an empty corner. Try C7, G7, C3, or G3.');
+    expect(answer?.text).toContain('After you play it, ask what changed; that turns the move into a lesson instead of a guess.');
+    expect(answer?.conceptIds).toEqual(expect.arrayContaining(['direction-of-play', 'corner-opening', 'territory']));
+    expect(answer?.boardFocus?.suggestions).toEqual([
+      {
+        id: 'local-move-anxiety-move-2,2',
+        point: { x: 2, y: 2 },
+        rank: 1,
+        reason: 'Start at C7: the board edge helps this stone make territory.',
+      },
+      {
+        id: 'local-move-anxiety-move-6,2',
+        point: { x: 6, y: 2 },
+        rank: 2,
+        reason: 'Start at G7: the board edge helps this stone make territory.',
+      },
+      {
+        id: 'local-move-anxiety-move-2,6',
+        point: { x: 2, y: 6 },
+        rank: 3,
+        reason: 'Start at C3: the board edge helps this stone make territory.',
+      },
+      {
+        id: 'local-move-anxiety-move-6,6',
+        point: { x: 6, y: 6 },
+        rank: 4,
+        reason: 'Start at G3: the board edge helps this stone make territory.',
+      },
+    ]);
+    expect(answer?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'lesson:territory', label: 'Review territory' },
+    ]);
+  });
+
   it('turns resignation questions into a concrete recovery target', () => {
     const answer = getLocalQuestionAnswer('Should I resign?', createGame(9), 'guided');
 
