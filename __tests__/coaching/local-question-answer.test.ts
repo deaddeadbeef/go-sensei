@@ -2072,9 +2072,10 @@ describe('local question answer', () => {
 
     const answer = getLocalQuestionAnswer('What would E7 do?', firstMove.newState, 'guided');
 
-    expect(answer?.text).toContain('Yes. E7 fits the current goal: Make your stones work together.');
+    expect(answer?.text).toContain('E7 would help the current goal: Make your stones work together.');
     expect(answer?.text).toContain('E7 is marked because it is a one-space jump from C7');
-    expect(answer?.text).toContain('I marked the current targets again so you can compare the options before playing.');
+    expect(answer?.text).toContain('I marked the current targets again so you can see what E7 is doing before playing.');
+    expect(answer?.text).not.toContain('Yes. E7 fits the current goal');
     expect(answer?.boardFocus?.suggestions.map((suggestion) => suggestion.point)).toEqual([
       { x: 4, y: 2 },
       { x: 2, y: 4 },
