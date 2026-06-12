@@ -629,7 +629,8 @@ function isOccupiedCutRecoveryQuestion(q: string): boolean {
   return /\b(can|could|do|should)\s+i\s+(still\s+)?(connect|re-?connect)\b/.test(q)
     || /\b(can|could|do|should)\s+(my\s+)?(stones?|groups?)\s+(still\s+)?(connect|re-?connect)\b/.test(q)
     || /\b(am|are)\s+(i|my\s+stones?|my\s+groups?|these\s+stones?|those\s+stones?)\s+(still\s+)?(connected|cut|separated|captured|dead|lost)\b/.test(q)
-    || /\bdid\s+(white|opponent|sensei)\s+(capture|cut\s+off|kill)\s+(me|my\s+stones?|my\s+groups?)\b/.test(q);
+    || /\bdid\s+(white|opponent|sensei)\s+(capture|cut\s+off|kill)\s+(me|my\s+stones?|my\s+groups?)\b/.test(q)
+    || /\b(am|are)\s+(i|my\s+stones?|my\s+groups?|these\s+stones?|those\s+stones?)\s+in\s+atari\b/.test(q);
 }
 
 function isOneSpaceJumpConnectionQuestion(q: string, boardSize: BoardSize): boolean {
@@ -1394,6 +1395,11 @@ function buildOccupiedOneSpaceJumpCutAnswer(game: GameState, q: string): LocalQu
   const anchorLibertyCoords = cut.anchorGroup.liberties.map((liberty) => pointToCoord(liberty, game.board.size));
   const stoneLibertyCoords = cut.stoneGroup.liberties.map((liberty) => pointToCoord(liberty, game.board.size));
   const cutLibertyCoords = cut.cuttingGroup.liberties.map((liberty) => pointToCoord(liberty, game.board.size));
+  const atariLine = /\batari\b/.test(q)
+    ? cut.anchorGroup.liberties.length === 1 || cut.stoneGroup.liberties.length === 1
+      ? 'One Black group is in atari, so save that group before chasing the cutting stone.'
+      : 'Because both Black groups have more than one liberty, this is a cut, not atari yet.'
+    : null;
   const suggestions = cut.cuttingGroup.liberties.slice(0, 4).map((liberty, index) => {
     const coord = pointToCoord(liberty, game.board.size);
 
@@ -1411,11 +1417,12 @@ function buildOccupiedOneSpaceJumpCutAnswer(game: GameState, q: string): LocalQu
       `${anchorCoord} and ${stoneCoord} are separate Black groups by the rules now, but neither is captured.`,
       `Black at ${anchorCoord} has ${libertyCountPhrase(cut.anchorGroup.liberties.length)}: ${joinList(anchorLibertyCoords)}.`,
       `Black at ${stoneCoord} has ${libertyCountPhrase(cut.stoneGroup.liberties.length)}: ${joinList(stoneLibertyCoords)}.`,
+      atariLine,
       `The White cutting stone at ${gapCoord} has ${libertyCountPhrase(cut.cuttingGroup.liberties.length)}: ${joinList(cutLibertyCoords)}.`,
       `Answer the cut by attacking the marked White liberties, starting with ${joinOrList(cutLibertyCoords.slice(0, 2))}.`,
       'I marked both Black groups, the White cutting stone, and the replies to read next.',
-    ].join(' '),
-    conceptIds: ['connect-and-cut', 'reading', 'liberties', 'groups', 'capture'],
+    ].filter(Boolean).join(' '),
+    conceptIds: uniqueConceptIds(['connect-and-cut', 'reading', 'liberties', 'groups', 'capture', ...(atariLine ? ['atari'] : [])]),
     boardFocus: {
       highlights: [{
         id: `local-occupied-cut-stone-${pointKey(cut.gap)}`,
