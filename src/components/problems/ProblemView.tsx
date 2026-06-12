@@ -18,6 +18,7 @@ import { useReviewStore } from '@/stores/review-store';
 import { useConceptStore } from '@/stores/concept-store';
 import { problemCategoryTitle } from '@/lib/learning-path/concept-practice';
 import { getLearningRecommendation } from '@/lib/learning-path/recommendations';
+import { getSolvedProblemIds } from '@/lib/problems/recommendation';
 import { formatProblemPoint, getPrimarySolutionLine, getProblemSolutionTakeaway } from '@/lib/problems/solution-review';
 import { ProblemReadingPlan } from './ProblemReadingPlan';
 import { ProblemSolutionOverlay, ProblemSolutionPanel } from './ProblemSolutionReview';
@@ -162,14 +163,22 @@ export function ProblemView() {
   const scopedProblemFilter = problem && preferredProblemFilter === problem.category
     ? preferredProblemFilter
     : null;
-  const nextProblem = (() => {
+  const solvedProblemIds = useMemo(() => getSolvedProblemIds(problemAttempts), [problemAttempts]);
+  const nextProblem = useMemo(() => {
     if (!problem) return null;
     const candidates = scopedProblemFilter
       ? PROBLEMS.filter((candidate) => candidate.category === scopedProblemFilter)
       : PROBLEMS;
     const idx = candidates.findIndex((candidate) => candidate.id === problem.id);
-    return idx >= 0 && idx < candidates.length - 1 ? candidates[idx + 1] : null;
-  })();
+    if (idx < 0) return null;
+
+    const isUnsolvedOtherProblem = (candidate: (typeof PROBLEMS)[number]) =>
+      candidate.id !== problem.id && !solvedProblemIds.has(candidate.id);
+
+    return candidates.slice(idx + 1).find(isUnsolvedOtherProblem)
+      ?? candidates.find(isUnsolvedOtherProblem)
+      ?? null;
+  }, [problem, scopedProblemFilter, solvedProblemIds]);
   const returnToProblems = () => showProblems(scopedProblemFilter ?? undefined);
   const scopedProblemLabel = scopedProblemFilter
     ? problemCategoryTitle(scopedProblemFilter).toLowerCase()
