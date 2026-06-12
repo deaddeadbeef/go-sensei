@@ -454,9 +454,25 @@ function findStateBeforeLastBlackPlacement(game: GameState): {
   return null;
 }
 
+function largeBoardCornerSuccessText(objective: BeginnerObjective, coord: string, point: Point, boardSize: BoardSize): string {
+  const remainingCoords = objective.targetPoints
+    .filter((target) => !pointEquals(target, point))
+    .map((target) => pointToCoord(target, boardSize));
+  const verb = objective.title === 'Choose another corner'
+    ? 'claimed another corner framework'
+    : 'started a corner framework';
+
+  if (remainingCoords.length === 0) {
+    return `Good: ${coord} ${verb}. Next, connect your corner frameworks along the sides.`;
+  }
+
+  return `Good: ${coord} ${verb}. Next, choose another open corner: ${joinCoordinateList(remainingCoords)}.`;
+}
+
 function successText(objective: BeginnerObjective, coord: string, point: Point, boardSize: BoardSize): string {
   switch (objective.id) {
     case 'claim-corner':
+      if (boardSize !== 9) return largeBoardCornerSuccessText(objective, coord, point, boardSize);
       return `Good: ${coord} hit the marked corner goal. Next, make that stone work with another one.`;
     case 'extend-from-stone':
       return `Good: ${coord} made a one-space jump from your stone. Next, read the open gap before extending again.`;

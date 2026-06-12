@@ -126,7 +126,23 @@ describe('beginner objectives', () => {
       status: 'met',
       objectiveId: 'claim-corner',
       lastMove: { x: 3, y: 3 },
-      text: 'Good: D16 hit the marked corner goal. Next, make that stone work with another one.',
+      text: 'Good: D16 started a corner framework. Next, choose another open corner: Q16, D4, or Q4.',
+    });
+  });
+
+  it('names the remaining 19x19 corner choices after the learner claims a second corner', () => {
+    const firstMove = playMove(createGame(19), { x: 3, y: 3 });
+    if (!firstMove.success) throw new Error('test setup first corner move failed');
+    const secondMove = playMove(passMove(firstMove.newState), { x: 15, y: 3 });
+    if (!secondMove.success) throw new Error('test setup second corner move failed');
+
+    const progress = getBeginnerObjectiveProgress(secondMove.newState, 'beginner');
+
+    expect(progress).toMatchObject({
+      status: 'met',
+      objectiveId: 'claim-corner',
+      lastMove: { x: 15, y: 3 },
+      text: 'Good: Q16 claimed another corner framework. Next, choose another open corner: D4 or Q4.',
     });
   });
 
