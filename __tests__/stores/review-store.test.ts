@@ -96,6 +96,23 @@ describe('review store', () => {
     expect(stats.totalReviewed).toBe(1);
   });
 
+  it('getReviewStats ignores stale reviewed problem ids when calculating streaks', () => {
+    useReviewStore.setState({
+      history: [
+        {
+          problemId: 'missing-problem-id',
+          quality: 5,
+          timestamp: Date.now(),
+        },
+      ],
+    });
+
+    const stats = useReviewStore.getState().getReviewStats();
+
+    expect(stats.totalReviewed).toBe(0);
+    expect(stats.streak).toBe(0);
+  });
+
   it('resetAll clears everything', () => {
     act(() => useReviewStore.getState().recordReview('capture-001', 5));
     act(() => useReviewStore.getState().resetAll());
