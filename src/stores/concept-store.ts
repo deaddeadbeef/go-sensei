@@ -28,6 +28,8 @@ const EVIDENCE_WEIGHTS: Record<ConceptEvidence, number> = {
   ai_tag_mistake: 0,
 };
 
+const CONCEPT_IDS = new Set(CONCEPTS.map((concept) => concept.id));
+
 interface ConceptStore {
   mastery: Record<string, EvidenceAwareConceptMastery>;
 
@@ -80,6 +82,7 @@ export const useConceptStore = create<ConceptStore>()(
       },
 
       recordEvidence: (conceptId: string, evidence: ConceptEvidence) => {
+        if (!CONCEPT_IDS.has(conceptId)) return;
         set((state) => {
           const existing = state.mastery[conceptId] ?? defaultMastery(conceptId);
           const newCount = existing.encounterCount + 1;
@@ -108,6 +111,7 @@ export const useConceptStore = create<ConceptStore>()(
       },
 
       setMasteryLevel: (conceptId: string, level: MasteryLevel) => {
+        if (!CONCEPT_IDS.has(conceptId)) return;
         set((state) => {
           const existing = state.mastery[conceptId] ?? defaultMastery(conceptId);
           return {
