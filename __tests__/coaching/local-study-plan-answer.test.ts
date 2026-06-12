@@ -136,6 +136,21 @@ describe('local study plan answer', () => {
     expect(answer?.actions).toEqual([{ id: 'practice:capture', label: 'Open capture problems' }]);
   });
 
+  it('answers natural focus-today wording with the study plan', () => {
+    const answer = getLocalStudyPlanAnswer('What should I focus on today?', {
+      completedLessons: ['groups'],
+      problemAttempts: [problemAttempt('capture-001', true)],
+      dueReviewCount: 2,
+      hasStartedIntroGame: true,
+      mastery: [mastery('groups', 1, 2)],
+    });
+
+    expect(answer?.text).toContain('Study plan: Daily review.');
+    expect(answer?.text).toContain('2 review positions are due before new material.');
+    expect(answer?.text).toContain('Finish line: All due review cards are answered, and any miss has been replayed once.');
+    expect(answer?.actions).toEqual([{ id: 'review', label: 'Start daily review' }]);
+  });
+
   it('keeps reinforced practice finish lines aligned with direct continuation', () => {
     const answer = getLocalStudyPlanAnswer('What should I practice next?', {
       completedLessons: ['groups', 'liberties', 'capture'],
