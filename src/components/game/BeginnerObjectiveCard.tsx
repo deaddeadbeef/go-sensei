@@ -4940,7 +4940,9 @@ export function BeginnerObjectiveCard() {
           )}
           {finalTargetDisplayText && (
             <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs font-semibold" style={{ color: COLORS.ui.textPrimary }}>
-              <span>{finalTargetDisplayText}</span>
+              <span className="min-w-0 flex-[1_1_100%] leading-relaxed sm:flex-1">
+                {finalTargetDisplayText}
+              </span>
               {playableTargets.map((point) => {
                 const coord = pointToCoord(point, game.board.size);
                 const suggestion = suggestions.find((candidate) => targetKey(candidate.point) === targetKey(point));
