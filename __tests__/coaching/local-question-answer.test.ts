@@ -735,6 +735,21 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('routes natural good-move questions to local move review', () => {
+    const firstMove = playMove(createGame(9), { x: 2, y: 2 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+
+    const answer = getLocalQuestionAnswer('Why was that a good move?', firstMove.newState, 'guided');
+
+    expect(answer?.text).toContain('Yes. Good: C7 hit the marked corner goal.');
+    expect(answer?.text).toContain('C7 is a useful anchor because the edge helps it surround space.');
+    expect(answer?.text).toContain('Next: Play a one-space jump from one of your stones. Try E7 or C5.');
+    expect(answer?.boardFocus?.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+    ]);
+  });
+
   it('does not ask for a first move when reviewing a restored study board', () => {
     const answer = getLocalQuestionAnswer('Was that good?', settledShapeGame(), 'guided');
 
