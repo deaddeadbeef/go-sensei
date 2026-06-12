@@ -10,6 +10,7 @@ import { CONCEPTS } from '@/lib/concepts/concept-data';
 import { LESSONS } from '@/lib/lessons/lesson-data';
 import { getLearningRecommendation, type LearningRecommendation } from '@/lib/learning-path/recommendations';
 import { PROBLEMS } from '@/lib/problems/problem-data';
+import { formatDueReviewPreview } from '@/lib/review/due-review-preview';
 
 const COLORS = {
   bg: '#0a0a0f',
@@ -80,10 +81,12 @@ function conceptLabel(conceptId: string): string {
 
 function NextMovePanel({
   recommendation,
+  dueReviewPreview,
   onStart,
   onLearningPath,
 }: {
   recommendation: LearningRecommendation;
+  dueReviewPreview: string | null;
   onStart: () => void;
   onLearningPath: () => void;
 }) {
@@ -108,6 +111,11 @@ function NextMovePanel({
           <p className="mt-1 text-sm leading-relaxed" style={{ color: COLORS.textDim }}>
             {recommendation.reason}
           </p>
+          {recommendation.kind === 'review' && dueReviewPreview && (
+            <p className="mt-2 text-sm leading-relaxed" style={{ color: COLORS.text }}>
+              Up now: {dueReviewPreview}
+            </p>
+          )}
           <div
             className="mt-2 rounded-lg border px-3 py-2 text-sm leading-relaxed"
             style={{ borderColor: `${COLORS.accent}55`, backgroundColor: `${COLORS.accent}12` }}
@@ -180,6 +188,7 @@ export function ProgressDashboard() {
   const reviewCards = useReviewStore((s) => s.cards);
   const reviewHistory = useReviewStore((s) => s.history);
   const getReviewStats = useReviewStore((s) => s.getReviewStats);
+  const getDueProblems = useReviewStore((s) => s.getDueProblems);
   const reviewStats = useMemo(
     () => {
       void reviewCards;
@@ -188,6 +197,12 @@ export function ProgressDashboard() {
     },
     [getReviewStats, reviewCards, reviewHistory],
   );
+  const dueReviewProblemIds = useMemo(() => {
+    void reviewCards;
+    return getDueProblems();
+  }, [getDueProblems, reviewCards]);
+  const dueReviewCount = dueReviewProblemIds.length;
+  const dueReviewPreview = formatDueReviewPreview(dueReviewProblemIds);
   const returnToGame = useGameStore((s) => s.returnToGame);
   const openGuidedGame = useGameStore((s) => s.openGuidedGame);
   const startGuidedIntroGame = useGameStore((s) => s.startGuidedIntroGame);
@@ -213,13 +228,13 @@ export function ProgressDashboard() {
     () => getLearningRecommendation({
       completedLessons,
       problemAttempts,
-      dueReviewCount: reviewStats.dueToday,
+      dueReviewCount,
       hasStartedIntroGame,
       mastery: Object.values(mastery),
     }),
-    [completedLessons, problemAttempts, reviewStats.dueToday, hasStartedIntroGame, mastery],
+    [completedLessons, problemAttempts, dueReviewCount, hasStartedIntroGame, mastery],
   );
-  const reviewEntryLabel = reviewStats.dueToday > 0
+  const reviewEntryLabel = dueReviewCount > 0
     ? 'Start daily review →'
     : recommendation.kind === 'problem' ? 'Seed review queue →' : 'Review clear →';
 
@@ -270,6 +285,7 @@ export function ProgressDashboard() {
 
         <NextMovePanel
           recommendation={recommendation}
+          dueReviewPreview={dueReviewPreview}
           onStart={startRecommended}
           onLearningPath={showLearningPath}
         />
@@ -279,7 +295,7 @@ export function ProgressDashboard() {
           <StatCard icon="📚" label="Lessons" value={`${completedLessonCount}/${LESSONS.length}`} color={COLORS.blue} delay={0.05} />
           <StatCard icon="🧩" label="Problems Solved" value={`${solvedProblems}/${PROBLEMS.length}`} sub={`${totalAccuracy}% accuracy`} color={COLORS.green} delay={0.1} />
           <StatCard icon="🧠" label="Concepts" value={`${conceptStats.mastered + conceptStats.practiced}/${conceptStats.total}`} sub={`${conceptStats.mastered} mastered`} color={COLORS.amber} delay={0.15} />
-          <StatCard icon="🔥" label="Review Streak" value={`${reviewStats.streak}d`} sub={`${reviewStats.dueToday} due today`} color={COLORS.red} delay={0.2} />
+          <StatCard icon="🔥" label="Review Streak" value={`${reviewStats.streak}d`} sub={`${dueReviewCount} due today`} color={COLORS.red} delay={0.2} />
         </div>
 
         {/* Section: Lessons */}
@@ -360,7 +376,7 @@ export function ProgressDashboard() {
           </div>
           <div className="flex items-center gap-4 text-xs" style={{ color: COLORS.textDim }}>
             <span>🔥 {reviewStats.streak} day streak</span>
-            <span>📋 {reviewStats.dueToday} due today</span>
+            <span>📋 {dueReviewPreview ?? `${dueReviewCount} due today`}</span>
             <span>✅ {reviewStats.totalReviewed} problems reviewed</span>
           </div>
         </motion.div>

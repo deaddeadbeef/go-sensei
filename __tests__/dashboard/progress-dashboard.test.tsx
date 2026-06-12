@@ -165,6 +165,20 @@ describe('ProgressDashboard', () => {
     rerender(<ProgressDashboard />);
 
     expect(screen.getByRole('button', { name: 'Start daily review →' })).toBeTruthy();
+    expect(screen.getByText('Up now: 1 due: Corner Capture.')).toBeTruthy();
+    expect(screen.getByText('📋 1 due: Corner Capture.')).toBeTruthy();
+  });
+
+  it('keeps dashboard due review previews concise', () => {
+    makeReviewDue('capture-001');
+    makeReviewDue('capture-002');
+    makeReviewDue('capture-003');
+    makeReviewDue('capture-004');
+
+    render(<ProgressDashboard />);
+
+    expect(screen.getByText('Up now: 4 due: Corner Capture, Edge Squeeze, Loose Ladder, +1 more.')).toBeTruthy();
+    expect(screen.getByText('📋 4 due: Corner Capture, Edge Squeeze, Loose Ladder, +1 more.')).toBeTruthy();
   });
 
   it('restores guided 9x9 from a guided-game recommendation when the current game is stale', () => {
