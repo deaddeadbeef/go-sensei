@@ -1241,6 +1241,32 @@ describe('local question answer', () => {
     ]);
   });
 
+  it('routes natural mistake-review questions to the local game review', () => {
+    const firstMove = playMove(createGame(9), { x: 4, y: 4 });
+    if (!firstMove.success) throw new Error('test setup move failed');
+
+    const biggestMistake = getLocalQuestionAnswer('What was my biggest mistake?', firstMove.newState, 'guided');
+    const wentWrong = getLocalQuestionAnswer('Where did I go wrong?', firstMove.newState, 'guided');
+
+    for (const answer of [biggestMistake, wentWrong]) {
+      expect(answer?.text).toContain('Beginner game review: here are the board moments to learn from.');
+      expect(answer?.text).toContain('Main fix: Move 1 E5 missed "Start with a corner".');
+      expect(answer?.text).toContain('Next time, Place your next stone near an empty corner. Try C7, G7, C3, or G3.');
+      expect(answer?.boardFocus?.highlights).toEqual([{
+        id: 'local-game-review-fix-4,4',
+        point: { x: 4, y: 4 },
+        variant: 'warning',
+        label: 'Move 1 E5 missed: Start with a corner.',
+      }]);
+      expect(answer?.boardFocus?.suggestions?.map((suggestion) => suggestion.point)).toEqual([
+        { x: 2, y: 2 },
+        { x: 6, y: 2 },
+        { x: 2, y: 6 },
+        { x: 6, y: 6 },
+      ]);
+    }
+  });
+
   it('turns a local beginner game review miss into a concrete replay target', () => {
     const firstMove = playMove(createGame(9), { x: 4, y: 4 });
     if (!firstMove.success) throw new Error('test setup move failed');

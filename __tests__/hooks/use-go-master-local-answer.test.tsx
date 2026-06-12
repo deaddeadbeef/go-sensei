@@ -981,6 +981,39 @@ describe('useGoMaster local answers', () => {
     expect(useConceptStore.getState().getMastery('shape').encounterCount).toBeGreaterThan(0);
   });
 
+  it('answers natural biggest-mistake review questions locally without fetching', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { result } = renderHook(() => useGoMaster());
+
+    act(() => {
+      result.current.sendMessage('What was my biggest mistake?');
+    });
+
+    const state = useGameStore.getState();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(state.bubble.variant).toBe('teaching');
+    expect(state.bubble.text).toContain('Beginner game review: here are the board moments to learn from.');
+    expect(state.bubble.text).toContain('Best move: Move 1 C7 followed "Start with a corner".');
+    expect(state.bubble.text).toContain('Main fix: after Move 1 C7, do not stop at "good"; ask what the stone helps next.');
+    expect(state.chatMessages.at(-1)?.actions).toEqual([
+      { id: 'hint', label: 'Show targets' },
+      { id: 'guided:intro', label: 'Start fresh guided game' },
+    ]);
+    expect(state.overlays.highlights).toEqual([{
+      id: 'local-game-review-best-2,2',
+      point: { x: 2, y: 2 },
+      variant: 'positive',
+      label: 'Move 1 C7 followed: Start with a corner.',
+    }]);
+    expect(state.overlays.suggestions.map((suggestion) => suggestion.point)).toEqual([
+      { x: 4, y: 2 },
+      { x: 2, y: 4 },
+    ]);
+    expect(useConceptStore.getState().getMastery('corner-opening').encounterCount).toBeGreaterThan(0);
+    expect(useConceptStore.getState().getMastery('shape').encounterCount).toBeGreaterThan(0);
+  });
+
   it('explains what the last move changed locally without fetching', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { result } = renderHook(() => useGoMaster());
