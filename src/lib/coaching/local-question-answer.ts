@@ -616,7 +616,7 @@ function isOneSpaceJumpGapQuestion(q: string): boolean {
 }
 
 function isOneSpaceJumpPressureQuestion(q: string): boolean {
-  return /\b(white|opponent|sensei)\b/.test(q) && /\b(cut|attack|threaten|play|reply|answer|pressure)\b/.test(q)
+  return /\b(white|opponent|sensei)\b/.test(q) && /\b(cut|attack|threaten|play|reply|answer|pressure|split|separate)\b/.test(q)
     || /\b(can|could|would|will|might)\s+(white|opponent|sensei)\s+cut\b/.test(q)
     || /\bwhat\s+if\s+(white|opponent|sensei)\s+(plays|attacks|cuts|pressures)\b/.test(q)
     || /\bwhat\s+should\s+i\s+do\s+if\s+(white|opponent|sensei)\s+(plays|attacks|cuts|pressures)\b/.test(q)
