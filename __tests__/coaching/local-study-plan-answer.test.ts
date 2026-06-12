@@ -98,11 +98,13 @@ describe('local study plan answer', () => {
       problemAttempts: [problemAttempt('missing-problem-id', true)],
       dueReviewCount: 0,
       hasStartedIntroGame: false,
-      mastery: [],
+      mastery: [mastery('obsolete-concept-id', 3, 10)],
     });
 
     expect(answer?.text).toContain('Progress check: you have completed no lessons, solved no problems, and not started a guided 9x9 game yet.');
     expect(answer?.text).toContain('That is not a failure; it means the tutor needs one visible move or lesson before it can judge your Go.');
+    expect(answer?.text).not.toContain('Obsolete Concept Id');
+    expect(answer?.conceptIds).not.toContain('obsolete-concept-id');
   });
 
   it('uses daily review language when reviews are due', () => {
