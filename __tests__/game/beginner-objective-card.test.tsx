@@ -1258,7 +1258,14 @@ describe('BeginnerObjectiveCard', () => {
       useGameStore.getState().pass();
     });
 
-    expect(screen.getByText('Extend H2 into the lower-right area: try F2 or H4.')).toBeTruthy();
+    const h2TargetCopy = screen.getByText('Extend H2 into the lower-right area: try F2 or H4.');
+    expect(h2TargetCopy).toBeTruthy();
+    expect(h2TargetCopy.className.split(/\s+/)).toEqual(expect.arrayContaining([
+      'min-w-0',
+      'flex-[1_1_100%]',
+      'leading-relaxed',
+      'sm:flex-1',
+    ]));
 
     const f2Target = screen.getByRole('button', { name: 'Play F2 target for Make your stones work together' });
     fireEvent.focus(f2Target);
