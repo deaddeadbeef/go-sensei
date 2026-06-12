@@ -1,5 +1,17 @@
 import { NextResponse } from 'next/server';
-import { getGitHubOAuthClientId } from '@/lib/ai/github-oauth';
+import { getGitHubOAuthClientId, GitHubOAuthConfigError } from '@/lib/ai/github-oauth';
+
+function authErrorResponse(err: unknown) {
+  if (err instanceof GitHubOAuthConfigError) {
+    return NextResponse.json({
+      code: err.code,
+      error: 'GitHub sign-in is not configured for this deployment.',
+      detail: err.message,
+    }, { status: 500 });
+  }
+
+  return NextResponse.json({ error: (err as Error).message }, { status: 500 });
+}
 
 export async function POST(req: Request) {
   try {
@@ -37,6 +49,6 @@ export async function POST(req: Request) {
     // { error: "access_denied" } — user denied
     return NextResponse.json(data);
   } catch (err) {
-    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
+    return authErrorResponse(err);
   }
 }
