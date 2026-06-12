@@ -625,6 +625,12 @@ function isOneSpaceJumpPressureQuestion(q: string): boolean {
     || /\bhow\s+do\s+i\s+(fix|answer|handle|respond\s+to)\s+(this|the)\s+(cut|gap|attack|pressure)\b/.test(q);
 }
 
+function isOccupiedCutRecoveryQuestion(q: string): boolean {
+  return /\b(can|could|do|should)\s+i\s+(still\s+)?(connect|re-?connect)\b/.test(q)
+    || /\b(can|could|do|should)\s+(my\s+)?(stones?|groups?)\s+(still\s+)?(connect|re-?connect)\b/.test(q)
+    || /\b(am|are)\s+(i|my\s+stones?|my\s+groups?|these\s+stones?|those\s+stones?)\s+(still\s+)?(connected|cut|separated)\b/.test(q);
+}
+
 function isOneSpaceJumpConnectionQuestion(q: string, boardSize: BoardSize): boolean {
   if (mentionedCoordinates(q, boardSize).length < 2) return false;
 
@@ -4641,6 +4647,11 @@ export function getLocalQuestionAnswer(
   if (isSecondObjectiveStrategyQuestion(q)) {
     const strategyAnswer = buildSecondObjectiveStrategyAnswer(game, teachingLevel, q);
     if (strategyAnswer) return strategyAnswer;
+  }
+
+  if (isOccupiedCutRecoveryQuestion(q)) {
+    const occupiedCutAnswer = buildOccupiedOneSpaceJumpCutAnswer(game, q);
+    if (occupiedCutAnswer) return occupiedCutAnswer;
   }
 
   if (isOneSpaceJumpPressureQuestion(q)) {
